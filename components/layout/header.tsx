@@ -4,66 +4,46 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { Film, Search, Bell, Sun, Moon, Sparkles, Shield, Scale, Building2, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { DemoRolePanel } from '@/components/common/demo-role-panel';
 import { DEMO_ROLES } from '@/config/constants';
 import type { DemoRoles } from '@/lib/types';
 
 /**
- * 역할별 GNB 메뉴 아이템 정의
+ * 공통 메뉴 아이템 (역할 무관)
  */
 interface MenuItem {
   label: string;
   href: string;
 }
 
-const getMenuItems = (roles: DemoRoles): MenuItem[] => {
-  const baseItems: MenuItem[] = [
-    { label: '홈', href: '/' },
-    { label: '갤러리', href: '/gallery' },
-    { label: '소식/트렌드', href: '/news' },
-    { label: '고객센터', href: '/support' },
-  ];
+const commonMenuItems: MenuItem[] = [
+  { label: '공모전', href: '/contests' },
+  { label: '갤러리', href: '/gallery' },
+  { label: '소식/트렌드', href: '/news' },
+  { label: '고객센터', href: '/support' },
+];
 
-  if (roles.isAdmin) {
-    return [
-      { label: '홈', href: '/' },
-      { label: '관리자', href: '/admin/dashboard' },
-      { label: '갤러리', href: '/gallery' },
-      { label: '소식/트렌드', href: '/news' },
-      { label: '고객센터', href: '/support' },
-    ];
-  }
+/**
+ * 역할별 대시보드 링크 반환
+ */
+const getRoleDashboardLink = (roles: DemoRoles): { label: string; href: string } | null => {
+  if (roles.isAdmin) return { label: '관리자', href: '/admin/dashboard' };
+  if (roles.isHost) return { label: '대시보드', href: '/dashboard' };
+  if (roles.isJudge) return { label: '심사', href: '/judging' };
+  return null; // 참가자
+};
 
-  if (roles.isJudge) {
-    return [
-      { label: '홈', href: '/' },
-      { label: '심사', href: '/judging' },
-      { label: '갤러리', href: '/gallery' },
-      { label: '소식/트렌드', href: '/news' },
-      { label: '고객센터', href: '/support' },
-    ];
-  }
-
-  if (roles.isHost) {
-    return [
-      { label: '홈', href: '/' },
-      { label: '대시보드', href: '/dashboard' },
-      { label: '공모전', href: '/contests' },
-      { label: '갤러리', href: '/gallery' },
-      { label: '소식/트렌드', href: '/news' },
-      { label: '고객센터', href: '/support' },
-    ];
-  }
-
-  // 참가자 (기본)
-  return [
-    { label: '홈', href: '/' },
-    { label: '공모전', href: '/contests' },
-    ...baseItems.filter(item => item.href !== '/'),
-  ];
+/**
+ * 역할별 아이콘 매핑
+ */
+const roleIconMap: Record<string, React.ReactNode> = {
+  participant: <Film className="h-4 w-4" />,
+  host: <Building2 className="h-4 w-4" />,
+  judge: <Scale className="h-4 w-4" />,
+  admin: <Shield className="h-4 w-4" />,
 };
 
 /**
@@ -92,7 +72,7 @@ export function Header() {
   const router = useRouter();
 
   const { theme, setTheme } = useTheme();
-  const menuItems = getMenuItems(demoRoles);
+  const roleDashboardLink = getRoleDashboardLink(demoRoles);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,30 +107,43 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* 로고 */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <span className="text-primary">🎬</span>
-          <span>AI 영상 공모전</span>
-        </Link>
+      <div className="container flex h-16 items-center px-4">
+        {/* 왼쪽: 로고 */}
+        <div className="flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+            <Film className="h-5 w-5 text-primary" />
+            <span>AI 영상 공모전</span>
+          </Link>
+        </div>
 
-        {/* 데스크톱 GNB */}
-        <nav className="hidden md:flex items-center gap-1">
-          {menuItems.map((item) => (
-            <Link key={item.href} href={item.href as any}>
-              <Button variant="ghost" size="sm">
-                {item.label}
-              </Button>
+        {/* 중앙: 공통 메뉴 */}
+        <nav className="hidden md:flex flex-1 justify-center items-center gap-8">
+          {commonMenuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href as any}
+              className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              {item.label}
             </Link>
           ))}
         </nav>
 
-        {/* 오른쪽 액션 영역 */}
-        <div className="flex items-center gap-2">
+        {/* 오른쪽: 액션 영역 */}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {/* 역할 대시보드 링크 */}
+          {roleDashboardLink && (
+            <Link href={roleDashboardLink.href as any}>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex">
+                {roleDashboardLink.label}
+              </Button>
+            </Link>
+          )}
+
           {/* 검색바 — 데스크톱 */}
           <form onSubmit={handleSearch} className="hidden md:flex items-center">
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">🔍</span>
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
@@ -160,16 +153,19 @@ export function Header() {
               />
             </div>
           </form>
+
           {/* 검색 — 모바일 */}
           <Link href="/search" className="md:hidden">
-            <Button variant="ghost" size="icon">🔍</Button>
+            <Button variant="ghost" size="icon">
+              <Search className="h-4 w-4" />
+            </Button>
           </Link>
 
           {/* 알림 벨 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
-                <span className="text-xl">🔔</span>
+                <Bell className="h-4 w-4" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               </Button>
             </DropdownMenuTrigger>
@@ -188,18 +184,27 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
-                {theme === 'light' ? '☀️' : theme === 'dark' ? '🌙' : '✨'}
+                {theme === 'light' ? (
+                  <Sun className="h-4 w-4" />
+                ) : theme === 'dark' ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme('light')}>
-                ☀️ Light
+              <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center gap-2">
+                <Sun className="h-4 w-4" />
+                Light
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>
-                🌙 Dark
+              <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center gap-2">
+                <Moon className="h-4 w-4" />
+                Dark
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('signature')}>
-                ✨ Signature
+              <DropdownMenuItem onClick={() => setTheme('signature')} className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Signature
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -208,7 +213,14 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                {demoRoles.isAdmin ? '🛡️' : demoRoles.isJudge ? '⚖️' : demoRoles.isHost ? '🏢' : '🎬'} 역할
+                {demoRoles.isAdmin
+                  ? <Shield className="h-4 w-4" />
+                  : demoRoles.isJudge
+                  ? <Scale className="h-4 w-4" />
+                  : demoRoles.isHost
+                  ? <Building2 className="h-4 w-4" />
+                  : <Film className="h-4 w-4" />}
+                <span className="ml-1">역할</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -228,18 +240,25 @@ export function Header() {
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
-                ☰
+                <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="flex flex-col gap-2 mt-8">
-                {menuItems.map((item) => (
+                {commonMenuItems.map((item) => (
                   <Link key={item.href} href={item.href as any}>
                     <Button variant="ghost" className="w-full justify-start">
                       {item.label}
                     </Button>
                   </Link>
                 ))}
+                {roleDashboardLink && (
+                  <Link href={roleDashboardLink.href as any}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      {roleDashboardLink.label}
+                    </Button>
+                  </Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
