@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@theme inline {
+  --color-background: oklch(0.985 0.002 247);
+  --color-foreground: oklch(0.145 0.024 266);
+  --color-card: oklch(0.985 0.002 247);
+  --color-card-foreground: oklch(0.145 0.024 266);
+  --color-popover: oklch(0.985 0.002 247);
+  --color-popover-foreground: oklch(0.145 0.024 266);
+  --color-primary: oklch(0.585 0.233 277);
+  --color-primary-foreground: oklch(0.985 0.002 247);
+  --color-secondary: oklch(0.945 0.013 266);
+  --color-secondary-foreground: oklch(0.205 0.024 266);
+  --color-muted: oklch(0.945 0.013 266);
+  --color-muted-foreground: oklch(0.556 0.024 266);
+  --color-accent: oklch(0.945 0.013 266);
+  --color-accent-foreground: oklch(0.205 0.024 266);
+  --color-destructive: oklch(0.577 0.245 27);
+  --color-destructive-foreground: oklch(0.985 0.002 247);
+  --color-border: oklch(0.895 0.013 266);
+  --color-input: oklch(0.895 0.013 266);
+  --color-ring: oklch(0.585 0.233 277);
+  --radius: 0.625rem;
+  --color-chart-1: oklch(0.585 0.233 277);
+  --color-chart-2: oklch(0.696 0.17 162);
+  --color-chart-3: oklch(0.769 0.188 70);
+  --color-chart-4: oklch(0.627 0.265 303);
+  --color-chart-5: oklch(0.645 0.246 16);
+}
+
+[data-theme="dark"] {
+  --color-background: oklch(0.145 0.024 266);
+  --color-foreground: oklch(0.985 0.002 247);
+  --color-card: oklch(0.205 0.024 266);
+  --color-card-foreground: oklch(0.985 0.002 247);
+  --color-popover: oklch(0.205 0.024 266);
+  --color-popover-foreground: oklch(0.985 0.002 247);
+  --color-primary: oklch(0.647 0.233 277);
+  --color-primary-foreground: oklch(0.145 0.024 266);
+  --color-secondary: oklch(0.269 0.024 266);
+  --color-secondary-foreground: oklch(0.985 0.002 247);
+  --color-muted: oklch(0.269 0.024 266);
+  --color-muted-foreground: oklch(0.636 0.024 266);
+  --color-accent: oklch(0.269 0.024 266);
+  --color-accent-foreground: oklch(0.985 0.002 247);
+  --color-destructive: oklch(0.577 0.245 27);
+  --color-destructive-foreground: oklch(0.985 0.002 247);
+  --color-border: oklch(0.269 0.024 266);
+  --color-input: oklch(0.269 0.024 266);
+  --color-ring: oklch(0.647 0.233 277);
+}
+
+[data-theme="signature"] {
+  --color-background: oklch(0.985 0.002 247);
+  --color-foreground: oklch(0.145 0.024 266);
+  --color-card: oklch(0.985 0.002 247);
+  --color-card-foreground: oklch(0.145 0.024 266);
+  --color-popover: oklch(0.985 0.002 247);
+  --color-popover-foreground: oklch(0.145 0.024 266);
+  --color-primary: oklch(0.585 0.233 277);
+  --color-primary-foreground: oklch(0.985 0.002 247);
+  --color-secondary: oklch(0.945 0.013 266);
+  --color-secondary-foreground: oklch(0.205 0.024 266);
+  --color-muted: oklch(0.945 0.013 266);
+  --color-muted-foreground: oklch(0.556 0.024 266);
+  --color-accent: oklch(0.945 0.013 266);
+  --color-accent-foreground: oklch(0.205 0.024 266);
+  --color-destructive: oklch(0.577 0.245 27);
+  --color-destructive-foreground: oklch(0.985 0.002 247);
+  --color-border: oklch(0.895 0.013 266);
+  --color-input: oklch(0.895 0.013 266);
+  --color-ring: oklch(0.585 0.233 277);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    margin: 0;
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] body {
+    color-scheme: dark;
+  }
+
+  :root,
+  body {
+    font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  }
+}
