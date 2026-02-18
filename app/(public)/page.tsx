@@ -45,7 +45,7 @@ export default async function LandingPage() {
       <ContestCarousel contests={openContests} />
 
       {/* ③ 수상작 갤러리 배너 — 공모전과 간격 줄이고, 가운데 모아 정렬 */}
-      <section className="py-8 px-4 bg-muted/30">
+      <section className="pt-0 pb-8 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl flex justify-center">
           <div className="flex flex-col md:flex-row items-center gap-6 py-4">
             <div className="flex items-center gap-4">
@@ -70,14 +70,14 @@ export default async function LandingPage() {
       </section>
 
       {/* ④ 교육 대형 섹션 — 인디고+보라+보색 그라데이션 */}
-      <section className="py-24 px-4 bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 text-white">
+      <section className="py-24 px-4 bg-gradient-to-br from-amber-950 via-orange-900/80 to-rose-950 text-white">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16 space-y-4">
-            <p className="text-sm font-medium tracking-widest uppercase text-indigo-300">
+            <p className="text-sm font-medium tracking-widest uppercase text-[#EA580C]">
               Education Program
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-white">AI 영상 제작 교육</h2>
-            <p className="text-indigo-200/80 max-w-2xl mx-auto text-lg">
+            <p className="text-orange-200/80 max-w-2xl mx-auto text-lg">
               전문가 강사진과 함께 AI 영상 제작 기초부터 심화까지 배워보세요
             </p>
           </div>
@@ -109,11 +109,11 @@ export default async function LandingPage() {
                 key={feature.title}
                 className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-6 space-y-4 hover:bg-white/15 transition-colors"
               >
-                <div className="w-12 h-12 rounded-xl bg-indigo-400/20 flex items-center justify-center">
-                  <feature.icon className="h-6 w-6 text-indigo-300" />
+                <div className="w-12 h-12 rounded-xl bg-orange-400/20 flex items-center justify-center">
+                  <feature.icon className="h-6 w-6 text-orange-300" />
                 </div>
                 <h3 className="font-semibold text-base text-white">{feature.title}</h3>
-                <p className="text-sm text-indigo-200/70 leading-relaxed">
+                <p className="text-sm text-orange-200/70 leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -122,7 +122,7 @@ export default async function LandingPage() {
 
           <div className="text-center">
             <Link href={"#" as any}>
-              <Button size="lg" className="bg-white text-indigo-950 hover:bg-white/90 cursor-pointer gap-2 font-semibold">
+              <Button size="lg" className="bg-white text-amber-950 hover:bg-white/90 cursor-pointer gap-2 font-semibold">
                 교육 프로그램 보기
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -135,8 +135,8 @@ export default async function LandingPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-foreground to-foreground/90 p-12 md:p-16 text-background">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#EA580C]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#EA580C]/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/30 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1 space-y-4">
@@ -149,7 +149,7 @@ export default async function LandingPage() {
                   </span>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold">
-                  AI 영상 제작 대행 서비스
+                  AI 영상 제작 의뢰 서비스
                 </h3>
                 <p className="text-background/70 leading-relaxed">
                   기업 홍보, 제품 소개, 교육 콘텐츠 등 다양한 AI 영상 제작을 전문 크리에이터에게 맡겨보세요.
@@ -162,7 +162,7 @@ export default async function LandingPage() {
                     size="lg"
                     className="bg-[#EA580C] hover:bg-[#EA580C]/90 text-white cursor-pointer font-semibold gap-2"
                   >
-                    대행 의뢰하기
+                    제작 의뢰하기
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
