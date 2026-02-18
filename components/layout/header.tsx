@@ -4,10 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Film, Search, Bell, Sun, Moon, Sparkles, Shield, Scale, Building2, Menu } from 'lucide-react';
+import { Film, Search, Bell, Sun, Moon, Sparkles, Shield, Scale, Building2, Menu, User, LogIn, LogOut, UserPen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DEMO_ROLES } from '@/config/constants';
 import type { DemoRoles } from '@/lib/types';
 
@@ -30,6 +37,7 @@ const commonMenuItems: MenuItem[] = [
  * 역할별 대시보드 링크 반환
  */
 const getRoleDashboardLink = (roles: DemoRoles): { label: string; href: string } => {
+  if (roles.isGuest) return { label: '로그인', href: '#' };
   if (roles.isAdmin) return { label: '관리자', href: '/admin/dashboard' };
   if (roles.isHost) return { label: '대시보드', href: '/dashboard' };
   if (roles.isJudge) return { label: '심사', href: '/judging' };
@@ -40,6 +48,7 @@ const getRoleDashboardLink = (roles: DemoRoles): { label: string; href: string }
  * 현재 활성 역할 키 반환
  */
 const getActiveRoleKey = (roles: DemoRoles): string => {
+  if (roles.isGuest) return 'guest';
   if (roles.isAdmin) return 'admin';
   if (roles.isHost) return 'host';
   if (roles.isJudge) return 'judge';
@@ -50,10 +59,21 @@ const getActiveRoleKey = (roles: DemoRoles): string => {
  * 역할별 아이콘 매핑
  */
 const roleIconMap: Record<string, React.ReactNode> = {
+  guest: <User className="h-4 w-4" />,
   participant: <Film className="h-4 w-4" />,
   host: <Building2 className="h-4 w-4" />,
   judge: <Scale className="h-4 w-4" />,
   admin: <Shield className="h-4 w-4" />,
+};
+
+/**
+ * 역할별 아바타 이니셜
+ */
+const roleInitialMap: Record<string, string> = {
+  participant: '참',
+  host: '주',
+  judge: '심',
+  admin: '관',
 };
 
 /**
@@ -69,7 +89,7 @@ const DUMMY_NOTIFICATIONS = [
 
 /**
  * 글로벌 헤더 컴포넌트
- * 역할 전환 패널, 알림 벨, GNB 메뉴, 테마 전환 기능 포함
+ * 역할 전환 패널, 알림 벨, GNB 메뉴, 프로필 드롭다운(테마 포함) 기능
  */
 export function Header() {
   const [demoRoles, setDemoRoles] = useState<DemoRoles>({
@@ -87,6 +107,8 @@ export function Header() {
 
   const { theme, setTheme } = useTheme();
   const roleDashboardLink = getRoleDashboardLink(demoRoles);
+  const activeRoleKey = getActiveRoleKey(demoRoles);
+  const isGuest = demoRoles.isGuest;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,31 +170,39 @@ export function Header() {
 
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center px-4">
-          {/* 왼쪽: 로고 */}
-          <div className="flex-shrink-0">
+          {/* 4a: 왼쪽 — 로고 컨테이너 (대칭 min-w) */}
+          <div className="hidden md:flex flex-shrink-0 min-w-[280px] items-center">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <Film className="h-5 w-5 text-primary" />
               <span>AI 영상 공모전</span>
             </Link>
           </div>
 
-          {/* 중앙: 공통 메뉴 */}
+          {/* 모바일 로고 (min-w 없음) */}
+          <div className="flex md:hidden flex-shrink-0 items-center">
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+              <Film className="h-5 w-5 text-primary" />
+              <span>AI 영상 공모전</span>
+            </Link>
+          </div>
+
+          {/* 4b: 중앙 — 공통 메뉴 (text-base, 진정한 센터링) */}
           <nav className="hidden md:flex flex-1 justify-center items-center gap-8">
             {commonMenuItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href as any}
-                className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                className="text-base text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {/* 오른쪽: 액션 영역 */}
-          <div className="flex-shrink-0 flex items-center gap-2">
+          {/* 4a: 오른쪽 — 액션 영역 (대칭 min-w + justify-end) */}
+          <div className="hidden md:flex flex-shrink-0 min-w-[280px] items-center justify-end gap-2">
             {/* 검색바 — 데스크톱 */}
-            <form onSubmit={handleSearch} className="hidden md:flex items-center">
+            <form onSubmit={handleSearch} className="flex items-center">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -184,13 +214,6 @@ export function Header() {
                 />
               </div>
             </form>
-
-            {/* 검색 — 모바일 */}
-            <Link href="/search" className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </Link>
 
             {/* 알림 벨 */}
             <DropdownMenu>
@@ -211,46 +234,161 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 테마 전환 */}
-             <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" size="icon">
-                   {mounted ? (
-                     theme === 'light' ? (
-                       <Sun className="h-4 w-4" />
-                     ) : theme === 'dark' ? (
-                       <Moon className="h-4 w-4" />
-                     ) : (
-                       <Sparkles className="h-4 w-4" />
-                     )
-                   ) : (
-                     <Sun className="h-4 w-4" />
-                   )}
-                 </Button>
-               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
-                  Light
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center gap-2">
-                  <Moon className="h-4 w-4" />
-                  Dark
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('signature')} className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Signature
-                </DropdownMenuItem>
+            {/* 4f: 게스트 상태 — 로그인 버튼만 표시 */}
+            {isGuest ? (
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => handleRoleChange('participant')}
+              >
+                <LogIn className="h-4 w-4" />
+                로그인
+              </Button>
+            ) : (
+              <>
+                {/* 4c: 역할 대시보드 링크 — 통일 너비 */}
+                <Link href={roleDashboardLink.href as any}>
+                  <Button variant="outline" size="sm" className="min-w-[6rem] justify-center gap-1.5 cursor-pointer">
+                    {roleIconMap[activeRoleKey]}
+                    {roleDashboardLink.label}
+                  </Button>
+                </Link>
+
+                {/* 4d + 4e: 프로필 아바타 + 드롭다운 (테마 포함) */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                          {roleInitialMap[activeRoleKey] ?? '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {/* 테마 토글 그룹 */}
+                    <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center gap-2 cursor-pointer">
+                      <Sun className="h-4 w-4" />
+                      라이트
+                      {mounted && theme === 'light' && <span className="ml-auto text-primary">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center gap-2 cursor-pointer">
+                      <Moon className="h-4 w-4" />
+                      다크
+                      {mounted && theme === 'dark' && <span className="ml-auto text-primary">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('signature')} className="flex items-center gap-2 cursor-pointer">
+                      <Sparkles className="h-4 w-4" />
+                      시그니처
+                      {mounted && theme === 'signature' && <span className="ml-auto text-primary">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {/* 프로필 편집 */}
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="#" className="flex items-center gap-2">
+                        <UserPen className="h-4 w-4" />
+                        프로필 편집
+                      </Link>
+                    </DropdownMenuItem>
+                    {/* 로그아웃 */}
+                    <DropdownMenuItem
+                      onClick={() => handleRoleChange('guest')}
+                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      로그아웃
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+
+          {/* 모바일 액션 영역 */}
+          <div className="flex md:hidden flex-1 items-center justify-end gap-1">
+            {/* 검색 — 모바일 */}
+            <Link href="/search">
+              <Button variant="ghost" size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
+            </Link>
+
+            {/* 알림 벨 — 모바일 */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <div className="px-2 py-1.5 text-sm font-semibold">알림</div>
+                {DUMMY_NOTIFICATIONS.map((notif) => (
+                  <DropdownMenuItem key={notif.id} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                    <div className="font-medium text-sm">{notif.title}</div>
+                    <div className="text-xs text-muted-foreground">{notif.message}</div>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 역할 대시보드 링크 — 맨 오른쪽 */}
-            <Link href={roleDashboardLink.href as any}>
-              <Button variant="outline" size="sm" className="hidden md:inline-flex gap-1.5 cursor-pointer">
-                {roleIconMap[getActiveRoleKey(demoRoles)]}
-                {roleDashboardLink.label}
+            {/* 4f: 게스트 — 모바일 로그인 버튼 */}
+            {isGuest ? (
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => handleRoleChange('participant')}
+              >
+                <LogIn className="h-4 w-4" />
+                로그인
               </Button>
-            </Link>
+            ) : (
+              /* 4d: 프로필 아바타 — 모바일 */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                        {roleInitialMap[activeRoleKey] ?? '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center gap-2 cursor-pointer">
+                    <Sun className="h-4 w-4" />
+                    라이트
+                    {mounted && theme === 'light' && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center gap-2 cursor-pointer">
+                    <Moon className="h-4 w-4" />
+                    다크
+                    {mounted && theme === 'dark' && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme('signature')} className="flex items-center gap-2 cursor-pointer">
+                    <Sparkles className="h-4 w-4" />
+                    시그니처
+                    {mounted && theme === 'signature' && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="#" className="flex items-center gap-2">
+                      <UserPen className="h-4 w-4" />
+                      프로필 편집
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleRoleChange('guest')}
+                    className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* 모바일 메뉴 */}
             <Sheet>
@@ -268,14 +406,16 @@ export function Header() {
                       </Button>
                     </Link>
                   ))}
-                  <div className="border-t border-border pt-2 mt-2">
-                    <Link href={roleDashboardLink.href as any}>
-                      <Button variant="ghost" className="w-full justify-start gap-2">
-                        {roleIconMap[getActiveRoleKey(demoRoles)]}
-                        {roleDashboardLink.label}
-                      </Button>
-                    </Link>
-                  </div>
+                  {!isGuest && (
+                    <div className="border-t border-border pt-2 mt-2">
+                      <Link href={roleDashboardLink.href as any}>
+                        <Button variant="ghost" className="w-full justify-start gap-2">
+                          {roleIconMap[activeRoleKey]}
+                          {roleDashboardLink.label}
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
