@@ -11,13 +11,7 @@ import {
 import { Film, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Contest } from '@/lib/types';
 
-const cardGradients = [
-  'from-[#EA580C]/80 to-[#F59E0B]/80',
-  'from-purple-600/80 to-indigo-600/80',
-  'from-teal-600/80 to-cyan-600/80',
-  'from-rose-600/80 to-pink-600/80',
-  'from-violet-600/80 to-purple-700/80',
-];
+
 
 interface ContestCarouselProps {
   contests: Contest[];
@@ -62,7 +56,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
   }
 
   return (
-    <section className="pt-20 pb-8 px-4">
+    <section className="pt-20 pb-0 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
@@ -89,13 +83,15 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
                   key={contest.id}
                   className="pl-4 basis-full md:basis-1/2 lg:basis-1/3"
                 >
-                  <Link href={`/contests/${contest.id}` as any}>
-                    <div className="group border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-border/80 transition-all cursor-pointer h-full">
-                      <div
-                        className={`h-40 bg-gradient-to-br ${cardGradients[index % cardGradients.length]} flex items-center justify-center`}
-                      >
-                        <Film className="h-10 w-10 text-white/60" />
-                      </div>
+                   <Link href={`/contests/${contest.id}` as any}>
+                     <div className="group border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-border/80 transition-all cursor-pointer h-full">
+                       <div className="h-40 rounded-t-xl overflow-hidden">
+                         <img
+                           src={`/images/contest-${(index % 5) + 1}.jpg`}
+                           alt={contest.title}
+                           className="w-full h-full object-cover"
+                         />
+                       </div>
                       <div className="p-5 space-y-3">
                         <h3 className="font-semibold text-base line-clamp-2 group-hover:text-primary transition-colors">
                           {contest.title}
