@@ -9,9 +9,9 @@ const serviceLinks = [
 ];
 
 const extraServiceLinks = [
-  { label: '교육 프로그램', href: '#' },
-  { label: '영상 제작 대행', href: '#' },
-  { label: '마케팅 대행', href: '#' },
+  { label: 'AI 영상제작 교육', href: '#' },
+  { label: '영상 제작', href: '#' },
+  { label: '마케팅', href: '#' },
 ];
 
 const legalLinks = [
@@ -28,7 +28,7 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Film className="h-5 w-5 text-background/80" />
-              <span className="text-lg font-bold">함께봄</span>
+              <span className="text-lg font-bold">AI 영상 공모전</span>
             </div>
             <p className="text-sm text-background/60 leading-relaxed">
               AI 영상 공모전 플랫폼
