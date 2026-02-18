@@ -1,0 +1,30 @@
+{
+  "active_plan": "C:\\YS\\01_Work\\04_MENTO\\02_work\\02_AI_Coding\\02_working\\ai-video-contest\\.sisyphus\\plans\\landing-ux-fixes-v3.md",
+  "plan_name": "landing-ux-fixes-v3",
+  "plan_title": "Landing UX Fixes v3 — 12 Feedback Items",
+  "started_at": "2026-02-18T14:24:53.122Z",
+  "session_ids": ["ses_38f2d9da8ffePi00i49ZndZFDv"],
+  "current_wave": 1,
+  "total_tasks": 14,
+  "completed_tasks": 0,
+  "remaining_tasks": 14,
+  "completed_task_list": [],
+  "remaining_task_list": [
+    "Task 1: Fix Dark Theme CSS Override",
+    "Task 2: Create AI-Generated Placeholder Images",
+    "Task 3: Add Guest Role Type + Install Avatar Component",
+    "Task 4: Header: Symmetric Padding + Nav Centering + Profile/Auth",
+    "Task 5: Hero Carousel: Images + Arrows + Autoplay + Fullbleed",
+    "Task 6: Contest Carousel: Replace Gradients with Images",
+    "Task 7: Landing: Zero Gap + Education Warm Colors",
+    "Task 8: Agency CTA: Circles + Text + Centering",
+    "Task 9: Footer: Brand + Service Text Changes",
+    "Task 10: Terms/Privacy: Alignment + Date Reposition",
+    "F1: Plan Compliance Audit",
+    "F2: Code Quality Review",
+    "F3: Real Manual QA",
+    "F4: Scope Fidelity Check"
+  ],
+  "wave_status": "Wave 1 시작 — Task 1, 2, 3 병렬 실행 중",
+  "next_action": "Wave 1 완료 후 → Wave 2 (Task 4-10) 병렬 실행"
+}

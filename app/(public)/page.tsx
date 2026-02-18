@@ -1,127 +1,173 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getContests } from '@/lib/mock';
-import { Film, Trophy } from 'lucide-react';
+import { getContests, getArticles } from '@/lib/mock';
+import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
+import { ContestCarousel } from '@/components/landing/contest-carousel';
+import { Trophy, GraduationCap, Users, Award, Lightbulb, Clapperboard, ArrowRight } from 'lucide-react';
 
 /**
- * 랜딩 페이지
- * 히어로 섹션, 하이라이트, 수상작 프리뷰, CTA
+ * 랜딩 페이지 v2
+ * 히어로 캐러셀 → 공모전 캐러셀 → 갤러리 배너 → 교육 대형 → 대행 CTA
  */
 export default async function LandingPage() {
-  const contests = await getContests();
-  const highlightContests = contests.filter(c => c.status === 'open').slice(0, 3);
-  const resultContests = contests.filter(c => c.status === 'completed').slice(0, 6);
+  const [contests, articles] = await Promise.all([getContests(), getArticles()]);
+  const openContests = contests.filter(c => c.status === 'open').slice(0, 8);
+
+  // 히어로 슬라이드: 공모전 + 기사 혼합, 최신순 정렬
+  const contestSlides: HeroSlide[] = openContests.slice(0, 3).map(c => ({
+    id: c.id,
+    type: 'contest',
+    title: c.title,
+    description: c.description,
+    date: c.startAt,
+    href: `/contests/${c.id}`,
+    ctaLabel: '자세히 보기',
+  }));
+  const articleSlides: HeroSlide[] = articles.slice(0, 3).map(a => ({
+    id: a.id,
+    type: a.type as HeroSlide['type'],
+    title: a.title,
+    description: a.excerpt,
+    date: a.publishedAt,
+    href: `/news/${a.slug}`,
+    ctaLabel: '자세히 보기',
+  }));
+  const heroSlides = [...contestSlides, ...articleSlides]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 6);
 
   return (
     <div className="w-full">
-      {/* 히어로 섹션 */}
-      <section className="relative w-full py-24 md:py-32 px-4 bg-foreground text-background">
-        <div className="container mx-auto max-w-4xl text-center space-y-8">
-          <p className="text-sm font-medium tracking-widest uppercase text-background/60">
-            AI Video Contest Platform
-          </p>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
-            창의적인 AI 영상<br />제작자들의 무대
-          </h1>
-          <p className="text-lg md:text-xl text-background/70 max-w-2xl mx-auto">
-            공모전에 참여하고, 수상작을 감상하고, AI 영상 제작의 새로운 가능성을 발견하세요.
-          </p>
-          <div className="flex gap-4 justify-center pt-4">
-            <Link href="/contests">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer">
-                공모전 둘러보기
-              </Button>
-            </Link>
+      {/* ① 히어로 캐러셀 */}
+      <HeroCarousel slides={heroSlides} />
+
+      {/* ② 공모전 캐러셀 */}
+      <ContestCarousel contests={openContests} />
+
+      {/* ③ 수상작 갤러리 배너 — 공모전과 간격 줄이고, 가운데 모아 정렬 */}
+      <section className="py-8 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl flex justify-center">
+          <div className="flex flex-col md:flex-row items-center gap-6 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#EA580C]/10 flex items-center justify-center shrink-0">
+                <Trophy className="h-6 w-6 text-[#EA580C]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">수상작 갤러리</h3>
+                <p className="text-sm text-muted-foreground">
+                  역대 공모전 수상작들을 감상해 보세요
+                </p>
+              </div>
+            </div>
             <Link href="/gallery">
-              <Button size="lg" variant="outline" className="border-background/30 text-background hover:bg-background/10 cursor-pointer">
-                수상작 갤러리
+              <Button className="cursor-pointer gap-2">
+                갤러리 보기
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 하이라이트 공모전 */}
-      <section className="py-20 px-4">
+      {/* ④ 교육 대형 섹션 — 인디고+보라+보색 그라데이션 */}
+      <section className="py-24 px-4 bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 text-white">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
-            <Link href="/contests" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              전체 보기 →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {highlightContests.map((contest) => (
-              <Link key={contest.id} href={`/contests/${contest.id}` as any}>
-                <div className="group border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-border/80 transition-all cursor-pointer">
-                  <div className="bg-muted h-40 flex items-center justify-center">
-                    <Film className="h-8 w-8 text-muted-foreground/50" />
-                  </div>
-                  <div className="p-5 space-y-3">
-                    <h3 className="font-semibold text-base line-clamp-2 group-hover:text-primary transition-colors">{contest.title}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{contest.description}</p>
-                    <div className="flex justify-between items-center pt-1">
-                      <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
-                        {contest.status === 'open' ? '접수중' : '마감'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 수상작 프리뷰 */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold">수상작 갤러리</h2>
-            <Link href="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              전체 보기 →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resultContests.slice(0, 6).map((contest) => (
-              <Link key={contest.id} href={`/gallery?contest=${contest.id}`}>
-                <div className="group bg-background rounded-xl border border-border overflow-hidden hover:shadow-md transition-all cursor-pointer">
-                  <div className="aspect-video bg-muted flex items-center justify-center">
-                    <Trophy className="h-8 w-8 text-muted-foreground/40" />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">{contest.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1.5">수상작 {Math.floor(Math.random() * 10) + 1}개</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 교육 배너 */}
-      <section className="py-16 px-4 bg-primary/5 border-y border-border">
-        <div className="container mx-auto max-w-3xl text-center space-y-4">
-          <h3 className="text-xl font-bold">AI 영상 제작 배우기</h3>
-          <p className="text-muted-foreground">전문가 강사진과 함께 AI 영상 제작 기초부터 심화까지 배워보세요</p>
-          <Link href="#">
-            <Button variant="outline" className="cursor-pointer mt-2">교육 프로그램 보기</Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* 대행 의뢰 CTA */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <div className="rounded-2xl border border-border p-10 text-center space-y-4">
-            <h3 className="text-xl font-bold">AI 영상 제작 대행 서비스</h3>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              전문 크리에이터에게 AI 영상 제작을 의뢰하세요.
+          <div className="text-center mb-16 space-y-4">
+            <p className="text-sm font-medium tracking-widest uppercase text-indigo-300">
+              Education Program
             </p>
-            <Link href="#">
-              <Button className="cursor-pointer mt-2">대행 의뢰하기</Button>
+            <h2 className="text-3xl md:text-4xl font-bold text-white">AI 영상 제작 교육</h2>
+            <p className="text-indigo-200/80 max-w-2xl mx-auto text-lg">
+              전문가 강사진과 함께 AI 영상 제작 기초부터 심화까지 배워보세요
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              {
+                icon: GraduationCap,
+                title: '체계적인 커리큘럼',
+                description: 'AI 영상 제작의 기초부터 고급 기법까지 단계별로 학습합니다',
+              },
+              {
+                icon: Users,
+                title: '전문 강사진',
+                description: '현업 AI 영상 크리에이터들이 직접 노하우를 전수합니다',
+              },
+              {
+                icon: Award,
+                title: '수료 인증',
+                description: '과정 수료 시 인증서를 발급하여 역량을 증명할 수 있습니다',
+              },
+              {
+                icon: Lightbulb,
+                title: '실습 중심',
+                description: '이론보다 실습 위주의 교육으로 즉시 활용 가능한 기술을 습득합니다',
+              },
+            ].map((feature) => (
+              <div
+                key={feature.title}
+                className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-6 space-y-4 hover:bg-white/15 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-indigo-400/20 flex items-center justify-center">
+                  <feature.icon className="h-6 w-6 text-indigo-300" />
+                </div>
+                <h3 className="font-semibold text-base text-white">{feature.title}</h3>
+                <p className="text-sm text-indigo-200/70 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link href={"#" as any}>
+              <Button size="lg" className="bg-white text-indigo-950 hover:bg-white/90 cursor-pointer gap-2 font-semibold">
+                교육 프로그램 보기
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ⑤ 영상 제작 대행 CTA — max-w-6xl로 캐러셀과 너비 통일 */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-foreground to-foreground/90 p-12 md:p-16 text-background">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#EA580C]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-[#EA580C]/20 flex items-center justify-center">
+                    <Clapperboard className="h-5 w-5 text-[#EA580C]" />
+                  </div>
+                  <span className="text-xs font-medium tracking-wider uppercase text-background/50">
+                    Agency Service
+                  </span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold">
+                  AI 영상 제작 대행 서비스
+                </h3>
+                <p className="text-background/70 leading-relaxed">
+                  기업 홍보, 제품 소개, 교육 콘텐츠 등 다양한 AI 영상 제작을 전문 크리에이터에게 맡겨보세요.
+                  합리적인 비용으로 고품질 결과물을 받아보실 수 있습니다.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <Link href={"#" as any}>
+                  <Button
+                    size="lg"
+                    className="bg-[#EA580C] hover:bg-[#EA580C]/90 text-white cursor-pointer font-semibold gap-2"
+                  >
+                    대행 의뢰하기
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>

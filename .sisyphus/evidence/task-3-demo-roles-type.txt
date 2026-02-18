@@ -1,0 +1,17 @@
+Task 3: DemoRoles Type Verification
+====================================
+
+Command: grep -n "isGuest" lib/types/index.ts
+
+Output:
+10:  isGuest: boolean;
+
+Status: ✅ PASS
+- UserRole 타입에 "guest" 추가됨
+- DemoRoles 인터페이스에 isGuest: boolean 추가됨 (line 10)
+- FeatureAccessByRole 타입에 guest 추가됨
+
+Changes Made:
+1. UserRole: "guest" | "participant" | "host" | "judge" | "admin"
+2. DemoRoles interface: isGuest: boolean 추가
+3. FeatureAccessByRole: guest 역할 추가

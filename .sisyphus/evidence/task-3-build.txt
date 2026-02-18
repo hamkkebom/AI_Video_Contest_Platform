@@ -1,0 +1,28 @@
+Task 3: Build Verification
+===========================
+
+Command: bun run build
+
+Status: ✅ PASS (Exit Code: 0)
+
+Build Output Summary:
+- Next.js 15.5.12
+- Compilation: ✓ Compiled successfully in 8.4s
+- Type checking: ✓ Passed
+- Static page generation: ✓ Generating static pages (38/38)
+- Build finalization: ✓ Finalizing page optimization
+
+Route Statistics:
+- Total routes: 38
+- Static routes (○): 30
+- Dynamic routes (ƒ): 8
+- First Load JS: 102 kB (shared by all)
+
+Key Changes Verified:
+1. config/constants.ts: guest 엔트리 추가 (DEMO_ROLES, DEFAULT_FEATURE_ACCESS)
+2. lib/types/index.ts: UserRole, DemoRoles, FeatureAccessByRole 타입 업데이트
+3. components/layout/header.tsx: demoRoles 초기값, handleRoleChange, demoRoleKeyMap 수정
+4. components/ui/avatar.tsx: shadcn 컴포넌트 설치
+5. components/common/paywall-overlay.tsx: guest 역할 지원 (자동 호환)
+
+No Build Errors or Warnings.

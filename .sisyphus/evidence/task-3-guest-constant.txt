@@ -1,0 +1,15 @@
+Task 3: Guest Role Constant Verification
+==========================================
+
+Command: grep -n "guest" config/constants.ts
+
+Output:
+2:  guest: {
+85:  guest: {
+
+Status: ✅ PASS
+- guest 엔트리가 DEMO_ROLES의 맨 첫 번째에 추가됨 (line 2)
+- guest 엔트리가 DEFAULT_FEATURE_ACCESS에도 추가됨 (line 85)
+- 라벨: "비로그인"
+- 아이콘: "👤"
+- 설명: "로그인하지 않은 게스트 상태"

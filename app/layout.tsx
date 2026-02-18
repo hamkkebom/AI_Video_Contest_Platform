@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <main className="min-h-screen">
             {children}
           </main>
+          <Footer />
           <FloatingButtons />
         </ThemeProvider>
       </body>

@@ -1,0 +1,15 @@
+=== Build ===
+BUILD SUCCESS
+=== Server Component Check ===
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { getContests } from '@/lib/mock';
+import { HeroCarousel } from '@/components/landing/hero-carousel';
+import { ContestCarousel } from '@/components/landing/contest-carousel';
+=== Imports ===
+import { HeroCarousel } from '@/components/landing/hero-carousel';
+import { ContestCarousel } from '@/components/landing/contest-carousel';
+      <HeroCarousel contests={openContests} />
+      <ContestCarousel contests={openContests} />
+=== Gallery Banner (not grid) ===
+0

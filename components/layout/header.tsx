@@ -73,6 +73,7 @@ const DUMMY_NOTIFICATIONS = [
  */
 export function Header() {
   const [demoRoles, setDemoRoles] = useState<DemoRoles>({
+    isGuest: false,
     isParticipant: true,
     isHost: false,
     isJudge: false,
@@ -97,10 +98,11 @@ export function Header() {
 
   /**
    * 역할 전환 핸들러
-   * DEMO_ROLES 키 (participant, host, judge, admin)를 받아서 DemoRoles 상태로 변환
+   * DEMO_ROLES 키 (guest, participant, host, judge, admin)를 받아서 DemoRoles 상태로 변환
    */
   const handleRoleChange = (role: string) => {
     setDemoRoles({
+      isGuest: role === 'guest',
       isParticipant: role === 'participant',
       isHost: role === 'host',
       isJudge: role === 'judge',
@@ -112,6 +114,7 @@ export function Header() {
    * DEMO_ROLES 키를 DemoRoles 키로 매핑
    */
   const demoRoleKeyMap: Record<string, keyof DemoRoles> = {
+    guest: 'isGuest',
     participant: 'isParticipant',
     host: 'isHost',
     judge: 'isJudge',
