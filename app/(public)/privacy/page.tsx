@@ -2,9 +2,8 @@ export default function PrivacyPage() {
   return (
     <div className="w-full">
       <section className="py-12 px-4 bg-muted/30 border-b border-border">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-4xl text-center">
           <h1 className="text-3xl font-bold">개인정보처리방침</h1>
-          <p className="text-muted-foreground mt-2">최종 수정일: 2025년 1월 1일</p>
         </div>
       </section>
 
@@ -94,6 +93,9 @@ export default function PrivacyPage() {
                 본 개인정보처리방침은 2025년 1월 1일부터 시행됩니다.
               </p>
             </div>
+          </div>
+          <div className="text-right mt-8">
+            <p className="text-xs text-muted-foreground">최종 수정일: 2025년 1월 1일</p>
           </div>
         </div>
       </section>
