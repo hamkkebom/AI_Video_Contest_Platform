@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -79,7 +79,10 @@ export function Header() {
     isAdmin: false,
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => setMounted(true), []);
 
   const { theme, setTheme } = useTheme();
   const roleDashboardLink = getRoleDashboardLink(demoRoles);
@@ -206,18 +209,22 @@ export function Header() {
             </DropdownMenu>
 
             {/* 테마 전환 */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  {theme === 'light' ? (
-                    <Sun className="h-4 w-4" />
-                  ) : theme === 'dark' ? (
-                    <Moon className="h-4 w-4" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" size="icon">
+                   {mounted ? (
+                     theme === 'light' ? (
+                       <Sun className="h-4 w-4" />
+                     ) : theme === 'dark' ? (
+                       <Moon className="h-4 w-4" />
+                     ) : (
+                       <Sparkles className="h-4 w-4" />
+                     )
+                   ) : (
+                     <Sun className="h-4 w-4" />
+                   )}
+                 </Button>
+               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center gap-2">
                   <Sun className="h-4 w-4" />
