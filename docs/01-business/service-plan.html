@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>서비스 기획서 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>사업/전략</span> / <span>서비스 기획서</span></nav>
+    <h1>서비스 기획서</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 서비스 목적</h2>
+      <p>함께봄 AI 영상 공모전 플랫폼은 공모전 접수-심사-결과-갤러리의 핵심 흐름을 한 화면 경험으로 통합해, 주최자 운영 효율과 참가자 참여 전환을 동시에 높이는 것을 목표로 한다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>목표 축</th>
+            <th>정의</th>
+            <th>Phase 1 기준</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>운영 효율</td>
+            <td>공모전 운영 단계별 처리 시간을 단축</td>
+            <td>접수/검수/심사 대시보드 통합 제공</td>
+          </tr>
+          <tr>
+            <td>참여 전환</td>
+            <td>공모전 탐색부터 출품까지의 전환율 개선</td>
+            <td>통합 검색, 갤러리, 좋아요 제공</td>
+          </tr>
+          <tr>
+            <td>확장 기반</td>
+            <td>대행/교육/분석 비즈니스로 확장 가능한 구조 확보</td>
+            <td>Phase 2/3는 placeholder로 자리만 확보</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>2. 서비스 생태계</h2>
+      <div class="mermaid">
+flowchart LR
+  A[함께봄 SSO] --> B[AI 영상 공모전 플랫폼]
+  A --> C[AI 영상 제작 대행 플랫폼]
+  A --> D[교육 플랫폼]
+  A --> E[함께봄 홈페이지]
+  B --> B1[접수/심사/결과]
+  B --> B2[영상 갤러리]
+  B --> B3[크리에이터 프로필]
+  C --> C1[의뢰 접수/매칭]
+  D --> D1[학습 콘텐츠]
+  E --> E1[브랜드 유입 허브]
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>영역</th>
+            <th>역할</th>
+            <th>연계 방식</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>공모전 플랫폼</td>
+            <td>핵심 트래픽/참여 전환</td>
+            <td>SSO 계정 공유, 영상 메타데이터 연계</td>
+          </tr>
+          <tr>
+            <td>대행 플랫폼</td>
+            <td>수익 확장 채널</td>
+            <td>별도 도메인, 내부 API로 참조 연동</td>
+          </tr>
+          <tr>
+            <td>교육 플랫폼</td>
+            <td>리텐션 및 역량 강화</td>
+            <td>향후 연계(Phase 2 이후)</td>
+          </tr>
+          <tr>
+            <td>홈페이지</td>
+            <td>브랜드 진입점</td>
+            <td>캠페인 랜딩/콘텐츠 허브</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 타겟 사용자</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>사용자군</th>
+            <th>핵심 니즈</th>
+            <th>주요 행동</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>참가자</td>
+            <td>간편 출품, 성과 확인, 노출 확대</td>
+            <td>공모전 탐색, 출품, 갤러리 활동</td>
+          </tr>
+          <tr>
+            <td>주최자</td>
+            <td>접수/심사 자동화, 운영 가시성</td>
+            <td>공모전 생성, 심사 운영, 결과 공지</td>
+          </tr>
+          <tr>
+            <td>심사위원</td>
+            <td>평가 효율, 진행률 확인</td>
+            <td>채점, 코멘트 작성, 심사 완료</td>
+          </tr>
+          <tr>
+            <td>관리자</td>
+            <td>플랫폼 운영 통제, 정책 관리</td>
+            <td>회원/콘텐츠/운영 데이터 관리</td>
+          </tr>
+          <tr>
+            <td>게스트</td>
+            <td>서비스 탐색, 가입 유도</td>
+            <td>공개 공모전/갤러리 열람</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 핵심 기능 (F-001~F-010)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>기능 ID</th>
+            <th>기능명</th>
+            <th>설명</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>F-001</td><td>공모전 생성/관리</td><td>주최자 중심 CRUD 및 일정 운영</td><td>Phase 1</td></tr>
+          <tr><td>F-002</td><td>출품 접수</td><td>참가자 영상 출품/수정/제출</td><td>Phase 1</td></tr>
+          <tr><td>F-003</td><td>심사 관리</td><td>심사위원 배정, 점수 입력, 진행률 관리</td><td>Phase 1</td></tr>
+          <tr><td>F-004</td><td>결과 발표</td><td>수상작 발표 및 결과 페이지 노출</td><td>Phase 1</td></tr>
+          <tr><td>F-005</td><td>영상 갤러리</td><td>공개 작품 탐색, 필터, 정렬</td><td>Phase 1</td></tr>
+          <tr><td>F-006</td><td>통합 검색</td><td>공모전/영상/크리에이터 통합 조회</td><td>Phase 1</td></tr>
+          <tr><td>F-007</td><td>좋아요 토글</td><td>작품 반응 지표 수집용 인터랙션</td><td>Phase 1</td></tr>
+          <tr><td>F-008</td><td>고객센터</td><td>FAQ 및 문의 폼 기반 지원 흐름</td><td>Phase 1</td></tr>
+          <tr><td>F-009</td><td>대행 연결</td><td>대행 서비스 연동 진입점 (placeholder)</td><td>Phase 2</td></tr>
+          <tr><td>F-010</td><td>AI 고급 분석</td><td>구독형 분석 서비스 (placeholder)</td><td>Phase 3</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 차별점</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>기존 공모전 서비스</th>
+            <th>함께봄 플랫폼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>가입/접근</td>
+            <td>서비스별 개별 계정</td>
+            <td>SSO 기반 단일 계정 확장</td>
+          </tr>
+          <tr>
+            <td>운영 도구</td>
+            <td>단편 기능 중심</td>
+            <td>접수-심사-결과 연속 흐름 지원</td>
+          </tr>
+          <tr>
+            <td>확장성</td>
+            <td>공모전 내부 기능에 한정</td>
+            <td>대행/교육/분석 생태계 확장 구조</td>
+          </tr>
+          <tr>
+            <td>데이터 활용</td>
+            <td>조회 중심 리포트</td>
+            <td>역할 기반 분석 및 과금 경계 제공</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. KPI</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>KPI</th>
+            <th>측정 방식</th>
+            <th>목표(초기)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>가입 전환율</td><td>방문 대비 회원가입 비율</td><td>15% 이상</td></tr>
+          <tr><td>출품 전환율</td><td>가입자 대비 출품 완료 비율</td><td>30% 이상</td></tr>
+          <tr><td>심사 완료율</td><td>배정 심사 대비 완료 비율</td><td>95% 이상</td></tr>
+          <tr><td>운영 리드타임</td><td>접수 마감 후 결과 공개까지 소요 시간</td><td>30% 단축</td></tr>
+          <tr><td>재방문율</td><td>30일 내 재방문 사용자 비율</td><td>40% 이상</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. Phase 로드맵</h2>
+      <div class="mermaid">
+gantt
+  title 함께봄 플랫폼 Phase 로드맵
+  dateFormat  YYYY-MM-DD
+  axisFormat  %Y-%m
+  section Platform
+  Phase 1 (MVP): active, p1, 2026-01-01, 2026-03-31
+  Phase 2 (확장): p2, 2026-04-01, 2026-06-30
+  Phase 3 (고도화): p3, 2026-10-01, 2026-12-31
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>기간</th>
+            <th>핵심 범위</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Phase 1</td>
+            <td>2026 Q1</td>
+            <td>공모전 접수-심사-결과, 갤러리, 검색, 고객센터</td>
+            <td>MVP</td>
+          </tr>
+          <tr>
+            <td>Phase 2</td>
+            <td>2026 Q2</td>
+            <td>대행 연결, 교육 플랫폼 연동</td>
+            <td>placeholder 범위만 명시</td>
+          </tr>
+          <tr>
+            <td>Phase 3</td>
+            <td>2026 Q4</td>
+            <td>AI 고급 분석, 구독형 인사이트</td>
+            <td>placeholder 범위만 명시</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>8. SSO 구조</h2>
+      <div class="mermaid">
+flowchart TD
+  U[사용자] --> A[통합 인증: Supabase Auth]
+  A --> P[unified_profiles]
+  A --> C[service_consents]
+  P --> S1[공모전 서비스 DB]
+  P --> S2[대행 서비스 DB]
+  P --> S3[교육 서비스 DB]
+  C --> G{서비스 약관 동의 여부}
+  G -->|동의됨| L[자동 로그인]
+  G -->|미동의| O[약관 동의 1회]
+  O --> L
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>구성 요소</th>
+            <th>역할</th>
+            <th>운영 포인트</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>auth.users</td><td>공통 인증 계정</td><td>서비스 간 계정 중복 방지</td></tr>
+          <tr><td>unified_profiles</td><td>통합 프로필</td><td>이름/아바타/계정 타입 공유</td></tr>
+          <tr><td>service_consents</td><td>서비스별 약관 이력</td><td>최초 1회 동의 기록 관리</td></tr>
+          <tr><td>서비스별 DB</td><td>도메인 데이터 분리</td><td>운영 독립성 확보</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>9. 9대 개발원칙</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>원칙</th>
+            <th>적용 포인트</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>사용자 중심 설계</td><td>핵심 사용자 여정 우선 설계</td></tr>
+          <tr><td>2</td><td>성능 최적화</td><td>지연 로딩/렌더 효율 기준 유지</td></tr>
+          <tr><td>3</td><td>보안 우선</td><td>권한 모델과 데이터 보호 우선 적용</td></tr>
+          <tr><td>4</td><td>확장성 고려</td><td>Phase 확장 가능 구조 유지</td></tr>
+          <tr><td>5</td><td>단순성 추구</td><td>운영 복잡도 최소화</td></tr>
+          <tr><td>6</td><td>재사용성</td><td>모듈/컴포넌트 단위 재사용</td></tr>
+          <tr><td>7</td><td>테스트 커버리지</td><td>핵심 흐름 검증 우선</td></tr>
+          <tr><td>8</td><td>문서화</td><td>설계-구현 간 추적 가능성 확보</td></tr>
+          <tr><td>9</td><td>배포 자동화</td><td>반복 배포 절차 자동화 준비</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

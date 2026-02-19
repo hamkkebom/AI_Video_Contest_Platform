@@ -1,53 +1,55 @@
-/* Print 레이아웃 */
-@page {
-  size: A4;
-  margin: 15mm;
-}
+/* Print 레이아웃 — @media print로 감싸서 스크린에서 적용되지 않도록 처리 */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
 
-/* 페이지 나누기 설정 */
-table,
-.mermaid,
-figure {
-  page-break-inside: avoid;
-}
+  /* 페이지 나누기 설정 */
+  table,
+  .mermaid,
+  figure {
+    page-break-inside: avoid;
+  }
 
-h2 {
-  page-break-before: always;
-}
+  h2 {
+    page-break-before: always;
+  }
 
-/* 숨길 요소 */
-button,
-nav,
-.breadcrumb,
-.toc,
-.pdf-button {
-  display: none;
-}
+  /* 숨길 요소 */
+  button,
+  nav,
+  .breadcrumb,
+  .toc,
+  .pdf-button {
+    display: none;
+  }
 
-/* 링크 URL 표시 */
-a::after {
-  content: " (" attr(href) ")";
-  color: #666;
-  font-size: 0.85em;
-}
+  /* 링크 URL 표시 */
+  a::after {
+    content: " (" attr(href) ")";
+    color: #666;
+    font-size: 0.85em;
+  }
 
-/* 폰트 크기 */
-body {
-  font-size: 11pt;
-  color: black;
-}
+  /* 폰트 크기 */
+  body {
+    font-size: 11pt;
+    color: black;
+  }
 
-table {
-  font-size: 9pt;
-}
+  table {
+    font-size: 9pt;
+  }
 
-/* 여백 조정 */
-h1 {
-  margin-top: 0;
-}
+  /* 여백 조정 */
+  h1 {
+    margin-top: 0;
+  }
 
-/* 페이지 넘김 */
-p {
-  orphans: 2;
-  widows: 2;
+  /* 페이지 넘김 */
+  p {
+    orphans: 2;
+    widows: 2;
+  }
 }
