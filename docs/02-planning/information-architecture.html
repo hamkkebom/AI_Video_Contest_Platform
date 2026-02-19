@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>정보구조도 (IA) — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>서비스 기획</span> / <span>정보구조도</span></nav>
+    <h1>정보구조도 (Information Architecture)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 전체 메뉴 구조</h2>
+      <p>함께봄 플랫폼의 7개 라우트 그룹 기반 메뉴 구조:</p>
+      <div class="mermaid">
+graph TD
+  A["함께봄 플랫폼"] --> B["(public)<br/>공개 페이지"]
+  A --> C["(auth)<br/>인증"]
+  A --> D["contests<br/>공모전"]
+  A --> E["gallery<br/>갤러리"]
+  A --> F["(host)<br/>주최자"]
+  A --> G["(judge)<br/>심사위원"]
+  A --> H["(admin)<br/>관리자"]
+  
+  B --> B1["랜딩 페이지"]
+  B --> B2["검색"]
+  B --> B3["뉴스"]
+  
+  C --> C1["로그인"]
+  C --> C2["회원가입"]
+  
+  D --> D1["공모전 목록"]
+  D --> D2["공모전 상세"]
+  D --> D3["제출 현황"]
+  
+  E --> E1["갤러리 목록"]
+  E --> E2["작품 상세"]
+  
+  F --> F1["공모전 생성"]
+  F --> F2["접수 관리"]
+  F --> F3["심사 설정"]
+  
+  G --> G1["심사 목록"]
+  G --> G2["채점"]
+  
+  H --> H1["대시보드"]
+  H --> H2["회원 관리"]
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 라우트 그룹 설명</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>라우트 그룹</th>
+            <th>목적</th>
+            <th>대상 역할</th>
+            <th>핵심 기능</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>(public)</strong></td>
+            <td>공개 페이지</td>
+            <td>guest, all</td>
+            <td>F-004 갤러리, F-011 필터</td>
+          </tr>
+          <tr>
+            <td><strong>(auth)</strong></td>
+            <td>인증 관련</td>
+            <td>guest</td>
+            <td>F-007 역할 전환</td>
+          </tr>
+          <tr>
+            <td><strong>contests</strong></td>
+            <td>공모전 상세</td>
+            <td>participant, host</td>
+            <td>F-001 접수, F-003 결과</td>
+          </tr>
+          <tr>
+            <td><strong>gallery</strong></td>
+            <td>갤러리 상세</td>
+            <td>guest, participant</td>
+            <td>F-004 갤러리, F-005 좋아요</td>
+          </tr>
+          <tr>
+            <td><strong>(host)</strong></td>
+            <td>주최자 전용</td>
+            <td>host</td>
+            <td>F-001 접수관리, F-006 심사자초대</td>
+          </tr>
+          <tr>
+            <td><strong>(judge)</strong></td>
+            <td>심사위원 전용</td>
+            <td>judge</td>
+            <td>F-002 심사, F-009 자동화</td>
+          </tr>
+          <tr>
+            <td><strong>(admin)</strong></td>
+            <td>관리자 전용</td>
+            <td>admin</td>
+            <td>F-008 UTM 추적</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 페이지 트리 (47개 page.tsx)</h2>
+      <p>프로젝트의 모든 라우트 페이지 매핑:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>라우트 그룹</th>
+            <th>페이지 수</th>
+            <th>주요 페이지</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>(public)</td>
+            <td>8</td>
+            <td>/, /search, /news, /pricing, /privacy, /terms, /support, /support/inquiry</td>
+          </tr>
+          <tr>
+            <td>(auth)</td>
+            <td>3</td>
+            <td>/login, /signup, /forgot-password</td>
+          </tr>
+          <tr>
+            <td>contests</td>
+            <td>6</td>
+            <td>/contests, /contests/[id], /contests/create, /my/contests, /my/submissions, /my/results</td>
+          </tr>
+          <tr>
+            <td>gallery</td>
+            <td>4</td>
+            <td>/gallery, /gallery/[id], /gallery/favorites, /gallery/search</td>
+          </tr>
+          <tr>
+            <td>(host)</td>
+            <td>7</td>
+            <td>/host/dashboard, /host/contests, /host/submissions, /host/judges, /host/analytics, /host/settings, /host/billing</td>
+          </tr>
+          <tr>
+            <td>(judge)</td>
+            <td>5</td>
+            <td>/judge/dashboard, /judge/contests, /judge/submissions, /judge/scoring, /judge/profile</td>
+          </tr>
+          <tr>
+            <td>(admin)</td>
+            <td>14</td>
+            <td>/admin/dashboard, /admin/users, /admin/contests, /admin/submissions, /admin/reports, /admin/settings, /admin/logs, /admin/analytics, /admin/moderation, /admin/content, /admin/billing, /admin/api, /admin/audit, /admin/system</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 라우트별 접근 권한</h2>
+      <p>역할별 접근 가능 라우트 그룹:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>역할</th>
+            <th>(public)</th>
+            <th>(auth)</th>
+            <th>contests</th>
+            <th>gallery</th>
+            <th>(host)</th>
+            <th>(judge)</th>
+            <th>(admin)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>guest</strong></td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td><strong>participant</strong></td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td><strong>host</strong></td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td><strong>judge</strong></td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>❌</td>
+            <td>✅</td>
+            <td>❌</td>
+          </tr>
+          <tr>
+            <td><strong>admin</strong></td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+            <td>✅</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

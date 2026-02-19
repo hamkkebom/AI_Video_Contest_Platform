@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>사용자 흐름도 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>서비스 기획</span> / <span>사용자 흐름도</span></nav>
+    <h1>사용자 흐름도 (User Flow)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 참가자 흐름 (F-001, F-003, F-004, F-005)</h2>
+      <p>공모전 참가자의 핵심 사용 경로: 가입 → 탐색 → 제출 → 결과 확인</p>
+      <div class="mermaid">
+graph LR
+  A["회원가입<br/>(F-007)"] --> B["공모전 탐색<br/>(F-004 갤러리)"]
+  B --> C["공모전 상세<br/>확인"]
+  C --> D["영상 제출<br/>(F-001)"]
+  D --> E["제출 확인<br/>상태 추적"]
+  E --> F["결과 확인<br/>(F-003)"]
+  F --> G["갤러리 좋아요<br/>(F-005)"]
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 주최자 흐름 (F-001, F-002, F-003, F-006)</h2>
+      <p>공모전 주최자의 운영 경로: 생성 → 접수 관리 → 심사 설정 → 결과 발표</p>
+      <div class="mermaid">
+graph LR
+  A["공모전 생성<br/>(F-001)"] --> B["접수 관리<br/>제출 현황"]
+  B --> C["심사위원 초대<br/>(F-006)"]
+  C --> D["심사 설정<br/>기준 정의"]
+  D --> E["심사 진행<br/>모니터링"]
+  E --> F["결과 발표<br/>(F-003)"]
+  F --> G["분석 리포트<br/>조회"]
+      </div>
+    </section>
+
+    <section>
+      <h2>3. 심사위원 흐름 (F-002, F-009)</h2>
+      <p>심사위원의 심사 경로: 초대 수락 → 심사 목록 → 채점 → 완료</p>
+      <div class="mermaid">
+graph LR
+  A["초대 수락<br/>계정 생성"] --> B["심사 목록<br/>공모전 확인"]
+  B --> C["작품 상세<br/>검토"]
+  C --> D["채점<br/>(F-002)"]
+  D --> E["점수 제출<br/>저장"]
+  E --> F["심사 완료<br/>확인"]
+  F --> G["자동화 검토<br/>(F-009)"]
+      </div>
+    </section>
+
+    <section>
+      <h2>4. 관리자 흐름 (F-008)</h2>
+      <p>관리자의 운영 경로: 대시보드 → 회원 관리 → 공모전 승인 → 분석</p>
+      <div class="mermaid">
+graph LR
+  A["대시보드<br/>전체 현황"] --> B["회원 관리<br/>역할 관리"]
+  B --> C["공모전 승인<br/>콘텐츠 검수"]
+  C --> D["제재 관리<br/>어뷰징 탐지"]
+  D --> E["분석 리포트<br/>(F-008 UTM)"]
+  E --> F["시스템 설정<br/>정책 관리"]
+      </div>
+    </section>
+
+    <section>
+      <h2>5. 검색/갤러리 흐름 (F-004, F-005, F-011)</h2>
+      <p>비회원/회원의 갤러리 탐색 경로: 탐색 → 필터 → 상세 → 좋아요</p>
+      <div class="mermaid">
+graph LR
+  A["갤러리 진입<br/>(F-004)"] --> B["필터 적용<br/>(F-011)"]
+  B --> C["카테고리/태그<br/>검색"]
+  C --> D["작품 상세<br/>조회"]
+  D --> E["좋아요<br/>(F-005)"]
+  E --> F["크리에이터<br/>프로필 확인"]
+  F --> G["팔로우<br/>또는 메시지"]
+      </div>
+    </section>
+
+    <section>
+      <h2>6. 인증/온보딩 흐름 (F-007)</h2>
+      <p>신규 사용자의 가입 및 역할 설정 경로</p>
+      <div class="mermaid">
+graph LR
+  A["회원가입<br/>이메일 인증"] --> B["계정 유형<br/>선택"]
+  B --> C["프로필 설정<br/>기본 정보"]
+  C --> D["역할 전환<br/>(F-007)"]
+  D --> E["권한 확인<br/>접근 권한"]
+  E --> F["온보딩 완료<br/>서비스 진입"]
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>
