@@ -1,0 +1,53 @@
+/* Print 레이아웃 */
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+/* 페이지 나누기 설정 */
+table,
+.mermaid,
+figure {
+  page-break-inside: avoid;
+}
+
+h2 {
+  page-break-before: always;
+}
+
+/* 숨길 요소 */
+button,
+nav,
+.breadcrumb,
+.toc,
+.pdf-button {
+  display: none;
+}
+
+/* 링크 URL 표시 */
+a::after {
+  content: " (" attr(href) ")";
+  color: #666;
+  font-size: 0.85em;
+}
+
+/* 폰트 크기 */
+body {
+  font-size: 11pt;
+  color: black;
+}
+
+table {
+  font-size: 9pt;
+}
+
+/* 여백 조정 */
+h1 {
+  margin-top: 0;
+}
+
+/* 페이지 넘김 */
+p {
+  orphans: 2;
+  widows: 2;
+}
