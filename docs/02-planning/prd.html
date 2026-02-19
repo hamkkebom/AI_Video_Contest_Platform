@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>PRD — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>서비스 기획</span> / <span>PRD</span></nav>
+    <h1>Product Requirements Document (PRD)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 기능 요구사항</h2>
+      <p>함께봄 AI 영상 공모전 플랫폼의 Phase 1 핵심 기능. 각 기능은 고유 ID(F-001~)로 식별됨.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>기능 ID</th>
+            <th>기능명</th>
+            <th>설명</th>
+            <th>대상 역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>F-001</td>
+            <td>공모전 접수</td>
+            <td>참가자가 공모전을 탐색하고 영상을 제출</td>
+            <td>participant</td>
+          </tr>
+          <tr>
+            <td>F-002</td>
+            <td>공모전 심사</td>
+            <td>심사위원이 제출된 영상을 평가하고 점수 부여</td>
+            <td>judge</td>
+          </tr>
+          <tr>
+            <td>F-003</td>
+            <td>결과 발표</td>
+            <td>공모전 종료 후 순위 및 수상자 공개</td>
+            <td>all</td>
+          </tr>
+          <tr>
+            <td>F-004</td>
+            <td>영상 갤러리</td>
+            <td>제출된 영상들을 갤러리 형식으로 전시</td>
+            <td>guest, participant</td>
+          </tr>
+          <tr>
+            <td>F-005</td>
+            <td>작품 좋아요</td>
+            <td>갤러리에서 영상에 좋아요 기능</td>
+            <td>guest, participant</td>
+          </tr>
+          <tr>
+            <td>F-006</td>
+            <td>심사자 초대</td>
+            <td>공모전 주최자가 심사위원 초대</td>
+            <td>host</td>
+          </tr>
+          <tr>
+            <td>F-007</td>
+            <td>역할 전환</td>
+            <td>사용자 역할 변경 (guest → participant, participant → host)</td>
+            <td>all</td>
+          </tr>
+          <tr>
+            <td>F-008</td>
+            <td>UTM 추적</td>
+            <td>마케팅 채널별 사용자 유입 추적</td>
+            <td>admin</td>
+          </tr>
+          <tr>
+            <td>F-009</td>
+            <td>심사 자동화</td>
+            <td>AI 기반 심사 자동화 (Phase 2)</td>
+            <td>host, judge</td>
+          </tr>
+          <tr>
+            <td>F-010</td>
+            <td>대행 연결</td>
+            <td>제작 대행 플랫폼 연결 (Phase 2)</td>
+            <td>participant</td>
+          </tr>
+          <tr>
+            <td>F-011</td>
+            <td>갤러리 필터</td>
+            <td>카테고리/태그 기반 갤러리 필터링</td>
+            <td>guest, participant</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>2. 비기능 요구사항</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>분류</th>
+            <th>요구사항</th>
+            <th>목표값</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>성능</td>
+            <td>페이지 로드 시간</td>
+            <td>&lt; 2초 (LCP)</td>
+          </tr>
+          <tr>
+            <td>성능</td>
+            <td>API 응답시간</td>
+            <td>&lt; 500ms (평균)</td>
+          </tr>
+          <tr>
+            <td>보안</td>
+            <td>XSS 취약점 제거</td>
+            <td>OWASP Top 10 준수</td>
+          </tr>
+          <tr>
+            <td>보안</td>
+            <td>CSRF 토큰</td>
+            <td>모든 POST 요청에 적용</td>
+          </tr>
+          <tr>
+            <td>확장성</td>
+            <td>동시 사용자</td>
+            <td>1,000명 이상</td>
+          </tr>
+          <tr>
+            <td>접근성</td>
+            <td>WCAG 2.1</td>
+            <td>AA 레벨 준수</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 우선순위 매트릭스 (MoSCoW)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>우선순위</th>
+            <th>기능</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Must</strong></td>
+            <td>F-001, F-002, F-003, F-004</td>
+            <td>공모전 핵심 플로우 필수</td>
+          </tr>
+          <tr>
+            <td><strong>Should</strong></td>
+            <td>F-005, F-006, F-007, F-008</td>
+            <td>사용자 경험 및 관리 기능</td>
+          </tr>
+          <tr>
+            <td><strong>Could</strong></td>
+            <td>F-009, F-010, F-011</td>
+            <td>Phase 2 이후 확장 기능</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 제약사항</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>제약사항</th>
+            <th>설명</th>
+            <th>영향도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>기술 스택 고정</td>
+            <td>Next.js 15, Supabase, Mux (변경 불가)</td>
+            <td>High</td>
+          </tr>
+          <tr>
+            <td>외부 의존성</td>
+            <td>Supabase Auth, Mux API (가용성 의존)</td>
+            <td>High</td>
+          </tr>
+          <tr>
+            <td>영상 용량</td>
+            <td>최대 1GB (Mux 제한)</td>
+            <td>Medium</td>
+          </tr>
+          <tr>
+            <td>지연 로딩</td>
+            <td>ISR 기반 캐싱 (최대 3600초)</td>
+            <td>Medium</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>
