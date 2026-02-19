@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>시스템 아키텍처 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>기술 설계</span> / <span>시스템 아키텍처</span></nav>
+    <h1>시스템 아키텍처</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 전체 시스템 구조</h2>
+      <p>함께봄 플랫폼의 3계층 아키텍처: 클라이언트 → 서버 → 외부 서비스</p>
+      <div class="mermaid">
+graph TB
+  A["클라이언트<br/>Next.js 15 (RSC)"] --> B["API 레이어<br/>Next.js API Routes"]
+  B --> C["비즈니스 로직<br/>Domain Models"]
+  C --> D["데이터 레이어<br/>Supabase"]
+  C --> E["미디어 서비스<br/>Mux"]
+  C --> F["분석<br/>UTM Tracking"]
+  D --> G["PostgreSQL<br/>Database"]
+  E --> H["CDN<br/>Video Playback"]
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 클라이언트/서버 구조</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>계층</th>
+            <th>기술</th>
+            <th>역할</th>
+            <th>특징</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>클라이언트</strong></td>
+            <td>Next.js 15 RSC</td>
+            <td>UI 렌더링, 상호작용</td>
+            <td>Server Component 우선, 최소 JS</td>
+          </tr>
+          <tr>
+            <td><strong>API 레이어</strong></td>
+            <td>Next.js API Routes</td>
+            <td>비즈니스 로직 처리</td>
+            <td>RESTful, JWT 인증</td>
+          </tr>
+          <tr>
+            <td><strong>데이터베이스</strong></td>
+            <td>Supabase (PostgreSQL)</td>
+            <td>데이터 저장, 쿼리</td>
+            <td>RLS 정책, 실시간 구독</td>
+          </tr>
+          <tr>
+            <td><strong>미디어</strong></td>
+            <td>Mux</td>
+            <td>영상 업로드, 재생</td>
+            <td>Direct Upload, Playback ID</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 영상 업로드 구조</h2>
+      <p>사용자 영상 → Mux Direct Upload → Playback ID 저장 → CDN 재생</p>
+      <table>
+        <thead>
+          <tr>
+            <th>단계</th>
+            <th>처리</th>
+            <th>결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. 업로드 요청</td>
+            <td>클라이언트 → API → Mux</td>
+            <td>Upload URL 발급</td>
+          </tr>
+          <tr>
+            <td>2. 파일 전송</td>
+            <td>클라이언트 → Mux Direct Upload</td>
+            <td>영상 저장</td>
+          </tr>
+          <tr>
+            <td>3. 메타데이터 저장</td>
+            <td>API → Supabase</td>
+            <td>Playback ID, 상태 저장</td>
+          </tr>
+          <tr>
+            <td>4. 재생</td>
+            <td>클라이언트 → Mux CDN</td>
+            <td>영상 스트리밍</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 배포 구조</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>호스팅</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Next.js 앱</td>
+            <td>Vercel</td>
+            <td>자동 배포, CDN, 엣지 함수</td>
+          </tr>
+          <tr>
+            <td>데이터베이스</td>
+            <td>Supabase (AWS)</td>
+            <td>PostgreSQL 호스팅, 백업</td>
+          </tr>
+          <tr>
+            <td>영상 CDN</td>
+            <td>Mux</td>
+            <td>글로벌 영상 배포</td>
+          </tr>
+          <tr>
+            <td>정적 자산</td>
+            <td>Vercel CDN</td>
+            <td>이미지, CSS, JS 캐싱</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 캐싱 전략</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>대상</th>
+            <th>방식</th>
+            <th>TTL</th>
+            <th>목적</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>정적 페이지</td>
+            <td>ISR (Incremental Static Regeneration)</td>
+            <td>3600초</td>
+            <td>성능 최적화</td>
+          </tr>
+          <tr>
+            <td>동적 데이터</td>
+            <td>SWR (Stale-While-Revalidate)</td>
+            <td>60초</td>
+            <td>실시간성 + 성능</td>
+          </tr>
+          <tr>
+            <td>영상</td>
+            <td>Mux CDN</td>
+            <td>무제한</td>
+            <td>글로벌 배포</td>
+          </tr>
+          <tr>
+            <td>API 응답</td>
+            <td>메모리 캐시</td>
+            <td>300초</td>
+            <td>DB 부하 감소</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. UTM 추적 구조</h2>
+      <p>마케팅 채널별 사용자 유입 추적 (F-008)</p>
+      <table>
+        <thead>
+          <tr>
+            <th>단계</th>
+            <th>처리</th>
+            <th>저장</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. URL 파라미터</td>
+            <td>?utm_source=google&utm_medium=cpc&utm_campaign=summer</td>
+            <td>클라이언트 쿠키</td>
+          </tr>
+          <tr>
+            <td>2. 미들웨어 처리</td>
+            <td>middleware.ts → 파라미터 검증</td>
+            <td>요청 헤더</td>
+          </tr>
+          <tr>
+            <td>3. API 기록</td>
+            <td>/api/track → 분석 저장</td>
+            <td>analytics 테이블</td>
+          </tr>
+          <tr>
+            <td>4. 리포트</td>
+            <td>관리자 대시보드 조회</td>
+            <td>채널별 전환율</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

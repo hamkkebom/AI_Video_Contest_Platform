@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>데이터베이스 ERD — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>기술 설계</span> / <span>데이터베이스 ERD</span></nav>
+    <h1>데이터베이스 ERD (Entity-Relationship Diagram)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 전체 ERD</h2>
+      <p>함께봄 플랫폼의 핵심 엔티티 관계도:</p>
+      <div class="mermaid">
+erDiagram
+  USERS ||--o{ CONTESTS : hosts
+  USERS ||--o{ SUBMISSIONS : creates
+  USERS ||--o{ SCORES : gives
+  CONTESTS ||--o{ SUBMISSIONS : receives
+  CONTESTS ||--o{ JUDGES : invites
+  SUBMISSIONS ||--o{ SCORES : receives
+  USERS ||--o{ ACTIVITY_LOGS : generates
+  USERS ||--o{ IP_LOGS : creates
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 테이블 정의서</h2>
+      
+      <h3>TBL-001: users (사용자)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>타입</th>
+            <th>제약</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>id</td>
+            <td>UUID</td>
+            <td>PK</td>
+            <td>사용자 ID</td>
+          </tr>
+          <tr>
+            <td>email</td>
+            <td>VARCHAR</td>
+            <td>UNIQUE</td>
+            <td>이메일</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR</td>
+            <td>NOT NULL</td>
+            <td>사용자명</td>
+          </tr>
+          <tr>
+            <td>role</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>guest|participant|host|judge|admin</td>
+          </tr>
+          <tr>
+            <td>status</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>active|inactive|suspended</td>
+          </tr>
+          <tr>
+            <td>created_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT NOW()</td>
+            <td>생성일</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>TBL-002: contests (공모전)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>타입</th>
+            <th>제약</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>id</td>
+            <td>UUID</td>
+            <td>PK</td>
+            <td>공모전 ID</td>
+          </tr>
+          <tr>
+            <td>host_id</td>
+            <td>UUID</td>
+            <td>FK → users</td>
+            <td>주최자 ID</td>
+          </tr>
+          <tr>
+            <td>title</td>
+            <td>VARCHAR</td>
+            <td>NOT NULL</td>
+            <td>공모전 제목</td>
+          </tr>
+          <tr>
+            <td>status</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>draft|open|closed|judging|completed</td>
+          </tr>
+          <tr>
+            <td>start_date</td>
+            <td>TIMESTAMP</td>
+            <td>NOT NULL</td>
+            <td>시작일</td>
+          </tr>
+          <tr>
+            <td>end_date</td>
+            <td>TIMESTAMP</td>
+            <td>NOT NULL</td>
+            <td>마감일</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>TBL-003: submissions (제출)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>타입</th>
+            <th>제약</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>id</td>
+            <td>UUID</td>
+            <td>PK</td>
+            <td>제출 ID</td>
+          </tr>
+          <tr>
+            <td>contest_id</td>
+            <td>UUID</td>
+            <td>FK → contests</td>
+            <td>공모전 ID</td>
+          </tr>
+          <tr>
+            <td>creator_id</td>
+            <td>UUID</td>
+            <td>FK → users</td>
+            <td>제출자 ID</td>
+          </tr>
+          <tr>
+            <td>video_id</td>
+            <td>VARCHAR</td>
+            <td>NOT NULL</td>
+            <td>Mux Playback ID</td>
+          </tr>
+          <tr>
+            <td>status</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>submitted|under-review|approved|rejected|scored|completed</td>
+          </tr>
+          <tr>
+            <td>created_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT NOW()</td>
+            <td>제출일</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>TBL-004: scores (심사 점수)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>타입</th>
+            <th>제약</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>id</td>
+            <td>UUID</td>
+            <td>PK</td>
+            <td>점수 ID</td>
+          </tr>
+          <tr>
+            <td>submission_id</td>
+            <td>UUID</td>
+            <td>FK → submissions</td>
+            <td>제출 ID</td>
+          </tr>
+          <tr>
+            <td>judge_id</td>
+            <td>UUID</td>
+            <td>FK → users</td>
+            <td>심사위원 ID</td>
+          </tr>
+          <tr>
+            <td>creativity</td>
+            <td>INTEGER</td>
+            <td>0-100</td>
+            <td>창의성 점수</td>
+          </tr>
+          <tr>
+            <td>technical</td>
+            <td>INTEGER</td>
+            <td>0-100</td>
+            <td>기술성 점수</td>
+          </tr>
+          <tr>
+            <td>message</td>
+            <td>INTEGER</td>
+            <td>0-100</td>
+            <td>메시지 점수</td>
+          </tr>
+          <tr>
+            <td>created_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT NOW()</td>
+            <td>채점일</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>TBL-005: activity_logs (활동 로그)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>타입</th>
+            <th>제약</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>id</td>
+            <td>UUID</td>
+            <td>PK</td>
+            <td>로그 ID</td>
+          </tr>
+          <tr>
+            <td>user_id</td>
+            <td>UUID</td>
+            <td>FK → users</td>
+            <td>사용자 ID</td>
+          </tr>
+          <tr>
+            <td>action</td>
+            <td>VARCHAR</td>
+            <td>NOT NULL</td>
+            <td>로그인, 제출, 심사 등</td>
+          </tr>
+          <tr>
+            <td>target_type</td>
+            <td>VARCHAR</td>
+            <td>NOT NULL</td>
+            <td>contest, submission, user 등</td>
+          </tr>
+          <tr>
+            <td>created_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT NOW()</td>
+            <td>발생 시간</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 관계 정의</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>관계</th>
+            <th>설명</th>
+            <th>카디널리티</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>users → contests</td>
+            <td>한 사용자가 여러 공모전 주최</td>
+            <td>1:N</td>
+          </tr>
+          <tr>
+            <td>contests → submissions</td>
+            <td>한 공모전에 여러 제출</td>
+            <td>1:N</td>
+          </tr>
+          <tr>
+            <td>submissions → scores</td>
+            <td>한 제출에 여러 심사 점수</td>
+            <td>1:N</td>
+          </tr>
+          <tr>
+            <td>users → activity_logs</td>
+            <td>한 사용자의 여러 활동 기록</td>
+            <td>1:N</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 인덱스 전략</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>테이블</th>
+            <th>인덱스</th>
+            <th>목적</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>users</td>
+            <td>email, role, status</td>
+            <td>로그인, 역할 필터링</td>
+          </tr>
+          <tr>
+            <td>contests</td>
+            <td>host_id, status, end_date</td>
+            <td>주최자 조회, 상태 필터, 마감 정렬</td>
+          </tr>
+          <tr>
+            <td>submissions</td>
+            <td>contest_id, creator_id, status</td>
+            <td>공모전별 제출, 사용자 제출, 상태 필터</td>
+          </tr>
+          <tr>
+            <td>scores</td>
+            <td>submission_id, judge_id</td>
+            <td>제출별 점수, 심사위원 점수</td>
+          </tr>
+          <tr>
+            <td>activity_logs</td>
+            <td>user_id, created_at</td>
+            <td>사용자 활동 추적, 시간순 정렬</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

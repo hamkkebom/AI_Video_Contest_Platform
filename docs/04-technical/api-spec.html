@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>API 명세 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>기술 설계</span> / <span>API 명세</span></nav>
+    <h1>API 명세 (API Specification)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 인증 방식</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>인증 방식</strong></td>
+            <td>Supabase Auth (JWT)</td>
+          </tr>
+          <tr>
+            <td><strong>토큰 위치</strong></td>
+            <td>Authorization: Bearer {token}</td>
+          </tr>
+          <tr>
+            <td><strong>토큰 유효기간</strong></td>
+            <td>1시간 (액세스), 7일 (리프레시)</td>
+          </tr>
+          <tr>
+            <td><strong>CORS</strong></td>
+            <td>https://함께봄.com 허용</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>2. 공모전 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>API-ID</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>인증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API-001</td>
+            <td>GET</td>
+            <td>/api/contests</td>
+            <td>공모전 목록 조회</td>
+            <td>선택</td>
+          </tr>
+          <tr>
+            <td>API-002</td>
+            <td>GET</td>
+            <td>/api/contests/{id}</td>
+            <td>공모전 상세 조회</td>
+            <td>선택</td>
+          </tr>
+          <tr>
+            <td>API-003</td>
+            <td>POST</td>
+            <td>/api/contests</td>
+            <td>공모전 생성 (host)</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-004</td>
+            <td>PATCH</td>
+            <td>/api/contests/{id}</td>
+            <td>공모전 수정</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-005</td>
+            <td>DELETE</td>
+            <td>/api/contests/{id}</td>
+            <td>공모전 삭제</td>
+            <td>필수</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 제출 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>API-ID</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>인증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API-006</td>
+            <td>POST</td>
+            <td>/api/submissions</td>
+            <td>영상 제출 (F-001)</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-007</td>
+            <td>GET</td>
+            <td>/api/submissions/{id}</td>
+            <td>제출 상세 조회</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-008</td>
+            <td>GET</td>
+            <td>/api/contests/{id}/submissions</td>
+            <td>공모전별 제출 목록</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-009</td>
+            <td>PATCH</td>
+            <td>/api/submissions/{id}/status</td>
+            <td>제출 상태 변경 (승인/거절)</td>
+            <td>필수</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 심사 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>API-ID</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>인증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API-010</td>
+            <td>POST</td>
+            <td>/api/scores</td>
+            <td>심사 점수 제출 (F-002)</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-011</td>
+            <td>GET</td>
+            <td>/api/submissions/{id}/scores</td>
+            <td>제출별 심사 점수 조회</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-012</td>
+            <td>GET</td>
+            <td>/api/contests/{id}/ranking</td>
+            <td>공모전 순위 조회 (F-003)</td>
+            <td>선택</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 갤러리 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>API-ID</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>인증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API-013</td>
+            <td>GET</td>
+            <td>/api/gallery</td>
+            <td>갤러리 목록 (F-004)</td>
+            <td>선택</td>
+          </tr>
+          <tr>
+            <td>API-014</td>
+            <td>GET</td>
+            <td>/api/gallery/{id}</td>
+            <td>갤러리 상세</td>
+            <td>선택</td>
+          </tr>
+          <tr>
+            <td>API-015</td>
+            <td>POST</td>
+            <td>/api/gallery/{id}/like</td>
+            <td>좋아요 추가 (F-005)</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-016</td>
+            <td>DELETE</td>
+            <td>/api/gallery/{id}/like</td>
+            <td>좋아요 취소</td>
+            <td>필수</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. 사용자 API</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>API-ID</th>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>인증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API-017</td>
+            <td>POST</td>
+            <td>/api/auth/signup</td>
+            <td>회원가입</td>
+            <td>불필요</td>
+          </tr>
+          <tr>
+            <td>API-018</td>
+            <td>POST</td>
+            <td>/api/auth/login</td>
+            <td>로그인</td>
+            <td>불필요</td>
+          </tr>
+          <tr>
+            <td>API-019</td>
+            <td>POST</td>
+            <td>/api/users/{id}/role</td>
+            <td>역할 변경 (F-007)</td>
+            <td>필수</td>
+          </tr>
+          <tr>
+            <td>API-020</td>
+            <td>GET</td>
+            <td>/api/users/{id}</td>
+            <td>사용자 정보 조회</td>
+            <td>필수</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. 에러 코드</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 코드</th>
+            <th>설명</th>
+            <th>응답 형식</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>200</td>
+            <td>성공</td>
+            <td>{ "data": {...} }</td>
+          </tr>
+          <tr>
+            <td>400</td>
+            <td>잘못된 요청</td>
+            <td>{ "error": "Invalid input" }</td>
+          </tr>
+          <tr>
+            <td>401</td>
+            <td>인증 필요</td>
+            <td>{ "error": "Unauthorized" }</td>
+          </tr>
+          <tr>
+            <td>403</td>
+            <td>권한 없음</td>
+            <td>{ "error": "Forbidden" }</td>
+          </tr>
+          <tr>
+            <td>404</td>
+            <td>리소스 없음</td>
+            <td>{ "error": "Not found" }</td>
+          </tr>
+          <tr>
+            <td>500</td>
+            <td>서버 오류</td>
+            <td>{ "error": "Internal server error" }</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>8. 페이지네이션</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>파라미터</th>
+            <th>타입</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>page</td>
+            <td>integer</td>
+            <td>페이지 번호 (기본값: 1)</td>
+          </tr>
+          <tr>
+            <td>limit</td>
+            <td>integer</td>
+            <td>페이지당 항목 수 (기본값: 20, 최대: 100)</td>
+          </tr>
+          <tr>
+            <td>sort</td>
+            <td>string</td>
+            <td>정렬 기준 (created_at, updated_at, name)</td>
+          </tr>
+          <tr>
+            <td>order</td>
+            <td>string</td>
+            <td>정렬 순서 (asc, desc)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>도메인 모델 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>기술 설계</span> / <span>도메인 모델</span></nav>
+    <h1>도메인 모델 (Domain Model)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 도메인 모델 다이어그램</h2>
+      <p>함께봄 플랫폼의 핵심 도메인 엔티티와 관계:</p>
+      <div class="mermaid">
+classDiagram
+  class User {
+    id: UUID
+    email: string
+    name: string
+    role: UserRole
+    status: UserStatus
+  }
+  
+  class Contest {
+    id: UUID
+    title: string
+    status: ContestStatus
+    startDate: Date
+    endDate: Date
+    hostId: UUID
+  }
+  
+  class Submission {
+    id: UUID
+    contestId: UUID
+    creatorId: UUID
+    videoId: string
+    status: SubmissionStatus
+  }
+  
+  class Score {
+    id: UUID
+    submissionId: UUID
+    judgeId: UUID
+    creativity: number
+    technical: number
+    message: number
+  }
+  
+  User "1" --> "*" Contest: hosts
+  User "1" --> "*" Submission: creates
+  User "1" --> "*" Score: gives
+  Contest "1" --> "*" Submission: receives
+  Submission "1" --> "*" Score: receives
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Aggregate Root 정의</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aggregate</th>
+            <th>Root Entity</th>
+            <th>Child Entities</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Contest Aggregate</strong></td>
+            <td>Contest</td>
+            <td>Submission, Score</td>
+            <td>공모전 및 관련 제출/심사 데이터 관리</td>
+          </tr>
+          <tr>
+            <td><strong>User Aggregate</strong></td>
+            <td>User</td>
+            <td>Profile, Preferences</td>
+            <td>사용자 정보 및 설정 관리</td>
+          </tr>
+          <tr>
+            <td><strong>Submission Aggregate</strong></td>
+            <td>Submission</td>
+            <td>Score, Metadata</td>
+            <td>제출 작품 및 심사 점수 관리</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. Value Object</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Value Object</th>
+            <th>속성</th>
+            <th>용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ContestStatus</strong></td>
+            <td>draft, open, closed, judging, completed</td>
+            <td>공모전 상태 표현</td>
+          </tr>
+          <tr>
+            <td><strong>SubmissionStatus</strong></td>
+            <td>submitted, under-review, approved, rejected, scored, completed</td>
+            <td>제출 상태 표현</td>
+          </tr>
+          <tr>
+            <td><strong>UserRole</strong></td>
+            <td>guest, participant, host, judge, admin</td>
+            <td>사용자 역할 표현</td>
+          </tr>
+          <tr>
+            <td><strong>UserStatus</strong></td>
+            <td>active, inactive, suspended</td>
+            <td>사용자 상태 표현</td>
+          </tr>
+          <tr>
+            <td><strong>Score</strong></td>
+            <td>creativity, technical, message (각 0-100)</td>
+            <td>심사 점수 표현</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 도메인 이벤트</h2>
+      <p>Phase 1 기준 주요 도메인 이벤트:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>이벤트</th>
+            <th>발생 조건</th>
+            <th>처리</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ContestCreated</strong></td>
+            <td>공모전 생성</td>
+            <td>알림 발송, 로그 기록</td>
+          </tr>
+          <tr>
+            <td><strong>SubmissionApproved</strong></td>
+            <td>제출 승인</td>
+            <td>참가자 알림, 심사 대기</td>
+          </tr>
+          <tr>
+            <td><strong>SubmissionRejected</strong></td>
+            <td>제출 거절</td>
+            <td>참가자 알림, 재제출 가능</td>
+          </tr>
+          <tr>
+            <td><strong>ScoreSubmitted</strong></td>
+            <td>심사 점수 제출</td>
+            <td>점수 저장, 평균 계산</td>
+          </tr>
+          <tr>
+            <td><strong>ContestCompleted</strong></td>
+            <td>공모전 종료</td>
+            <td>결과 발표, 수상자 알림</td>
+          </tr>
+          <tr>
+            <td><strong>UserSuspended</strong></td>
+            <td>사용자 제재</td>
+            <td>접근 제한, 로그 기록</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 비즈니스 규칙</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>규칙</th>
+            <th>설명</th>
+            <th>적용 대상</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>마감 후 제출 불가</td>
+            <td>공모전 마감 시간 이후 제출 거부</td>
+            <td>Submission</td>
+          </tr>
+          <tr>
+            <td>중복 심사 방지</td>
+            <td>한 심사위원이 같은 제출에 2회 이상 채점 불가</td>
+            <td>Score</td>
+          </tr>
+          <tr>
+            <td>역할별 접근 제어</td>
+            <td>역할에 따라 접근 가능 기능 제한</td>
+            <td>User</td>
+          </tr>
+          <tr>
+            <td>점수 범위 검증</td>
+            <td>심사 점수는 0-100 범위</td>
+            <td>Score</td>
+          </tr>
+          <tr>
+            <td>상태 전이 규칙</td>
+            <td>정의된 상태 전이만 허용</td>
+            <td>Contest, Submission</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. 서비스 계층</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>서비스</th>
+            <th>책임</th>
+            <th>메서드 예시</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ContestService</strong></td>
+            <td>공모전 생성, 상태 관리</td>
+            <td>createContest(), updateStatus(), getContests()</td>
+          </tr>
+          <tr>
+            <td><strong>SubmissionService</strong></td>
+            <td>제출 관리, 검증</td>
+            <td>submitVideo(), approveSubmission(), rejectSubmission()</td>
+          </tr>
+          <tr>
+            <td><strong>ScoringService</strong></td>
+            <td>심사 점수 관리</td>
+            <td>submitScore(), calculateAverage(), getRanking()</td>
+          </tr>
+          <tr>
+            <td><strong>UserService</strong></td>
+            <td>사용자 관리, 역할 제어</td>
+            <td>createUser(), updateRole(), suspendUser()</td>
+          </tr>
+          <tr>
+            <td><strong>NotificationService</strong></td>
+            <td>알림 발송</td>
+            <td>notifySubmissionApproved(), notifyContestEnded()</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>상태값 정의 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>기술 설계</span> / <span>상태값 정의</span></nav>
+    <h1>상태값 정의 (Status Definitions)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 공모전 상태 (ContestStatus)</h2>
+      <p>공모전의 생명주기 상태:</p>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> draft
+  draft --> open: 공모전 시작
+  open --> closed: 마감 시간 도달
+  closed --> judging: 심사 시작
+  judging --> completed: 심사 완료
+  [*] --> [*]
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 ID</th>
+            <th>값</th>
+            <th>한국어</th>
+            <th>설명</th>
+            <th>가능한 다음 상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ST-001</td>
+            <td>draft</td>
+            <td>초안</td>
+            <td>공모전 생성 후 준비 중</td>
+            <td>open</td>
+          </tr>
+          <tr>
+            <td>ST-002</td>
+            <td>open</td>
+            <td>접수 중</td>
+            <td>공모전 접수 진행 중</td>
+            <td>closed</td>
+          </tr>
+          <tr>
+            <td>ST-003</td>
+            <td>closed</td>
+            <td>접수 마감</td>
+            <td>공모전 접수 종료</td>
+            <td>judging</td>
+          </tr>
+          <tr>
+            <td>ST-004</td>
+            <td>judging</td>
+            <td>심사 중</td>
+            <td>심사 진행 중</td>
+            <td>completed</td>
+          </tr>
+          <tr>
+            <td>ST-005</td>
+            <td>completed</td>
+            <td>완료</td>
+            <td>공모전 종료, 결과 발표</td>
+            <td>없음</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>2. 제출 상태 (SubmissionStatus)</h2>
+      <p>제출 작품의 생명주기 상태:</p>
+      <div class="mermaid">
+stateDiagram-v2
+  [*] --> submitted
+  submitted --> under-review: 자동 검수
+  under-review --> approved: 검수 통과
+  under-review --> rejected: 검수 탈락
+  approved --> scored: 심사 점수 부여
+  scored --> completed: 최종 확정
+  [*] --> [*]
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 ID</th>
+            <th>값</th>
+            <th>한국어</th>
+            <th>설명</th>
+            <th>가능한 다음 상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ST-010</td>
+            <td>submitted</td>
+            <td>제출됨</td>
+            <td>사용자가 영상 제출</td>
+            <td>under-review</td>
+          </tr>
+          <tr>
+            <td>ST-011</td>
+            <td>under-review</td>
+            <td>검수 중</td>
+            <td>자동 검수 진행 중</td>
+            <td>approved, rejected</td>
+          </tr>
+          <tr>
+            <td>ST-012</td>
+            <td>approved</td>
+            <td>승인됨</td>
+            <td>검수 통과, 심사 대기</td>
+            <td>scored</td>
+          </tr>
+          <tr>
+            <td>ST-013</td>
+            <td>rejected</td>
+            <td>거절됨</td>
+            <td>검수 탈락, 재제출 가능</td>
+            <td>submitted (재제출)</td>
+          </tr>
+          <tr>
+            <td>ST-014</td>
+            <td>scored</td>
+            <td>채점됨</td>
+            <td>심사 점수 부여됨</td>
+            <td>completed</td>
+          </tr>
+          <tr>
+            <td>ST-015</td>
+            <td>completed</td>
+            <td>완료</td>
+            <td>최종 확정, 결과 발표</td>
+            <td>없음</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 사용자 역할 (UserRole)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 ID</th>
+            <th>값</th>
+            <th>한국어</th>
+            <th>설명</th>
+            <th>권한</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ST-020</td>
+            <td>guest</td>
+            <td>비회원</td>
+            <td>로그인하지 않은 사용자</td>
+            <td>갤러리 조회, 공모전 탐색</td>
+          </tr>
+          <tr>
+            <td>ST-021</td>
+            <td>participant</td>
+            <td>참가자</td>
+            <td>공모전 참가 사용자</td>
+            <td>영상 제출, 갤러리 좋아요</td>
+          </tr>
+          <tr>
+            <td>ST-022</td>
+            <td>host</td>
+            <td>주최자</td>
+            <td>공모전 주최 사용자</td>
+            <td>공모전 생성, 심사자 초대</td>
+          </tr>
+          <tr>
+            <td>ST-023</td>
+            <td>judge</td>
+            <td>심사위원</td>
+            <td>공모전 심사 사용자</td>
+            <td>심사 점수 부여</td>
+          </tr>
+          <tr>
+            <td>ST-024</td>
+            <td>admin</td>
+            <td>관리자</td>
+            <td>플랫폼 관리 사용자</td>
+            <td>모든 권한</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 사용자 상태 (UserStatus)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 ID</th>
+            <th>값</th>
+            <th>한국어</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ST-030</td>
+            <td>active</td>
+            <td>활성</td>
+            <td>정상 사용 중인 계정</td>
+          </tr>
+          <tr>
+            <td>ST-031</td>
+            <td>inactive</td>
+            <td>비활성</td>
+            <td>12개월 미활동 계정</td>
+          </tr>
+          <tr>
+            <td>ST-032</td>
+            <td>suspended</td>
+            <td>정지</td>
+            <td>정책 위반으로 정지된 계정</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 기타 상태값</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>상태 ID</th>
+            <th>분류</th>
+            <th>값</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ST-040</td>
+            <td>InquiryType</td>
+            <td>general, technical, billing, other</td>
+            <td>문의 유형</td>
+          </tr>
+          <tr>
+            <td>ST-041</td>
+            <td>InquiryStatus</td>
+            <td>open, in-progress, resolved, closed</td>
+            <td>문의 상태</td>
+          </tr>
+          <tr>
+            <td>ST-042</td>
+            <td>ArticleType</td>
+            <td>news, guide, faq, announcement</td>
+            <td>기사 유형</td>
+          </tr>
+          <tr>
+            <td>ST-043</td>
+            <td>FaqCategory</td>
+            <td>account, submission, judging, payment, other</td>
+            <td>FAQ 카테고리</td>
+          </tr>
+          <tr>
+            <td>ST-044</td>
+            <td>JudgingType</td>
+            <td>manual, semi-auto, full-auto</td>
+            <td>심사 유형</td>
+          </tr>
+          <tr>
+            <td>ST-045</td>
+            <td>ReviewPolicy</td>
+            <td>strict, moderate, lenient</td>
+            <td>검수 정책</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. 상태 전이 규칙</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>현재 상태</th>
+            <th>가능한 전이</th>
+            <th>조건</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>draft</td>
+            <td>→ open</td>
+            <td>공모전 시작 버튼 클릭</td>
+          </tr>
+          <tr>
+            <td>open</td>
+            <td>→ closed</td>
+            <td>마감 시간 도달 또는 수동 마감</td>
+          </tr>
+          <tr>
+            <td>closed</td>
+            <td>→ judging</td>
+            <td>심사 시작 버튼 클릭</td>
+          </tr>
+          <tr>
+            <td>judging</td>
+            <td>→ completed</td>
+            <td>모든 제출에 점수 부여 완료</td>
+          </tr>
+          <tr>
+            <td>submitted</td>
+            <td>→ under-review</td>
+            <td>자동 검수 시작</td>
+          </tr>
+          <tr>
+            <td>under-review</td>
+            <td>→ approved</td>
+            <td>검수 통과</td>
+          </tr>
+          <tr>
+            <td>under-review</td>
+            <td>→ rejected</td>
+            <td>검수 탈락</td>
+          </tr>
+          <tr>
+            <td>rejected</td>
+            <td>→ submitted</td>
+            <td>사용자 재제출</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>
