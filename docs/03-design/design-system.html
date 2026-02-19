@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>디자인 시스템 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>UX/디자인</span> / <span>디자인 시스템</span></nav>
+    <h1>디자인 시스템 (Design System)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 색상 토큰 (Color Tokens)</h2>
+      <p>globals.css 기반 oklch 색상 체계:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>토큰명</th>
+            <th>oklch 값</th>
+            <th>용도</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Primary</strong></td>
+            <td>#EA580C</td>
+            <td>주요 버튼, CTA</td>
+            <td>따뜻한 주황색, 높은 명도</td>
+          </tr>
+          <tr>
+            <td><strong>Secondary</strong></td>
+            <td>#6366F1</td>
+            <td>보조 액션, 링크</td>
+            <td>인디고, 신뢰감</td>
+          </tr>
+          <tr>
+            <td><strong>Accent</strong></td>
+            <td>#8B5CF6</td>
+            <td>강조, 하이라이트</td>
+            <td>보라색, 프리미엄 느낌</td>
+          </tr>
+          <tr>
+            <td><strong>Background</strong></td>
+            <td>#F9F7F4</td>
+            <td>페이지 배경</td>
+            <td>따뜻한 베이지</td>
+          </tr>
+          <tr>
+            <td><strong>Text</strong></td>
+            <td>#2D2622</td>
+            <td>본문 텍스트</td>
+            <td>어두운 갈색</td>
+          </tr>
+          <tr>
+            <td><strong>Border</strong></td>
+            <td>#E8E3D8</td>
+            <td>구분선, 테두리</td>
+            <td>밝은 회색</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>2. 타이포그래피 (Typography)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>스타일</th>
+            <th>폰트</th>
+            <th>크기</th>
+            <th>가중치</th>
+            <th>용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>H1</strong></td>
+            <td>Pretendard</td>
+            <td>2.5rem (40px)</td>
+            <td>700</td>
+            <td>페이지 제목</td>
+          </tr>
+          <tr>
+            <td><strong>H2</strong></td>
+            <td>Pretendard</td>
+            <td>2rem (32px)</td>
+            <td>700</td>
+            <td>섹션 제목</td>
+          </tr>
+          <tr>
+            <td><strong>H3</strong></td>
+            <td>Pretendard</td>
+            <td>1.5rem (24px)</td>
+            <td>600</td>
+            <td>소제목</td>
+          </tr>
+          <tr>
+            <td><strong>Body</strong></td>
+            <td>Pretendard</td>
+            <td>1rem (16px)</td>
+            <td>400</td>
+            <td>본문</td>
+          </tr>
+          <tr>
+            <td><strong>Small</strong></td>
+            <td>Pretendard</td>
+            <td>0.875rem (14px)</td>
+            <td>400</td>
+            <td>보조 텍스트</td>
+          </tr>
+          <tr>
+            <td><strong>Caption</strong></td>
+            <td>Pretendard</td>
+            <td>0.75rem (12px)</td>
+            <td>400</td>
+            <td>캡션, 라벨</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 공통 컴포넌트 (Components)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>파일 경로</th>
+            <th>용도</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Button</strong></td>
+            <td>components/ui/button.tsx</td>
+            <td>액션 버튼</td>
+            <td>Primary, Secondary, Outline</td>
+          </tr>
+          <tr>
+            <td><strong>Input</strong></td>
+            <td>components/ui/input.tsx</td>
+            <td>텍스트 입력</td>
+            <td>Default, Error, Disabled</td>
+          </tr>
+          <tr>
+            <td><strong>Card</strong></td>
+            <td>components/ui/card.tsx</td>
+            <td>콘텐츠 컨테이너</td>
+            <td>Elevated, Outlined</td>
+          </tr>
+          <tr>
+            <td><strong>Badge</strong></td>
+            <td>components/ui/badge.tsx</td>
+            <td>상태 표시</td>
+            <td>Success, Warning, Error</td>
+          </tr>
+          <tr>
+            <td><strong>Table</strong></td>
+            <td>components/ui/table.tsx</td>
+            <td>데이터 표시</td>
+            <td>Striped, Bordered</td>
+          </tr>
+          <tr>
+            <td><strong>Avatar</strong></td>
+            <td>components/ui/avatar.tsx</td>
+            <td>사용자 프로필</td>
+            <td>Small, Medium, Large</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 간격 시스템 (Spacing)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>토큰</th>
+            <th>값</th>
+            <th>용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>xs</td>
+            <td>4px</td>
+            <td>아이콘 간격</td>
+          </tr>
+          <tr>
+            <td>sm</td>
+            <td>8px</td>
+            <td>요소 내부 간격</td>
+          </tr>
+          <tr>
+            <td>md</td>
+            <td>16px</td>
+            <td>요소 간 간격</td>
+          </tr>
+          <tr>
+            <td>lg</td>
+            <td>24px</td>
+            <td>섹션 간 간격</td>
+          </tr>
+          <tr>
+            <td>xl</td>
+            <td>32px</td>
+            <td>주요 섹션 간격</td>
+          </tr>
+          <tr>
+            <td>2xl</td>
+            <td>48px</td>
+            <td>페이지 섹션 간격</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 테마 시스템 (Themes)</h2>
+      <p>3가지 테마 지원 (Light, Dark, Signature):</p>
+      <table>
+        <thead>
+          <tr>
+            <th>테마</th>
+            <th>배경</th>
+            <th>텍스트</th>
+            <th>Primary</th>
+            <th>용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Light</strong></td>
+            <td>#FFFFFF</td>
+            <td>#2D2622</td>
+            <td>#EA580C</td>
+            <td>기본 테마</td>
+          </tr>
+          <tr>
+            <td><strong>Dark</strong></td>
+            <td>#1A1A1A</td>
+            <td>#F5F5F5</td>
+            <td>#FF6B35</td>
+            <td>야간 모드</td>
+          </tr>
+          <tr>
+            <td><strong>Signature</strong></td>
+            <td>#F9F7F4</td>
+            <td>#2D2622</td>
+            <td>#EA580C</td>
+            <td>브랜드 테마</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. 그림자 및 반경 (Shadows & Radius)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>토큰</th>
+            <th>값</th>
+            <th>용도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Radius</strong></td>
+            <td>4px, 8px, 12px, 16px</td>
+            <td>버튼, 카드, 입력 필드</td>
+          </tr>
+          <tr>
+            <td><strong>Shadow-sm</strong></td>
+            <td>0 1px 2px rgba(0,0,0,0.05)</td>
+            <td>미묘한 깊이</td>
+          </tr>
+          <tr>
+            <td><strong>Shadow-md</strong></td>
+            <td>0 4px 6px rgba(0,0,0,0.1)</td>
+            <td>일반 깊이</td>
+          </tr>
+          <tr>
+            <td><strong>Shadow-lg</strong></td>
+            <td>0 10px 15px rgba(0,0,0,0.15)</td>
+            <td>강한 깊이</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. 접근성 (Accessibility)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>기준</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>색상 대비</strong></td>
+            <td>WCAG AA (4.5:1)</td>
+            <td>텍스트와 배경 대비</td>
+          </tr>
+          <tr>
+            <td><strong>포커스 상태</strong></td>
+            <td>명확한 시각 표시</td>
+            <td>키보드 네비게이션</td>
+          </tr>
+          <tr>
+            <td><strong>아이콘</strong></td>
+            <td>텍스트 라벨 포함</td>
+            <td>스크린 리더 지원</td>
+          </tr>
+          <tr>
+            <td><strong>폰트 크기</strong></td>
+            <td>최소 16px</td>
+            <td>모바일 가독성</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

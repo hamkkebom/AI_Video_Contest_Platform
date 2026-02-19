@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>컴포넌트 구조 — 함께봄</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>UX/디자인</span> / <span>컴포넌트 구조</span></nav>
+    <h1>컴포넌트 구조 (Component Structure)</h1>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+  </header>
+
+  <main>
+    <section class="doc-meta">
+      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
+    </section>
+
+    <section>
+      <h2>1. 컴포넌트 계층 구조</h2>
+      <p>components/ 폴더의 20개 컴포넌트 조직:</p>
+      <div class="mermaid">
+graph TD
+  A["components/"] --> B["ui/ (11개)"]
+  A --> C["common/ (4개)"]
+  A --> D["layout/ (3개)"]
+  A --> E["landing/ (2개)"]
+  
+  B --> B1["button.tsx"]
+  B --> B2["input.tsx"]
+  B --> B3["card.tsx"]
+  B --> B4["badge.tsx"]
+  B --> B5["table.tsx"]
+  B --> B6["avatar.tsx"]
+  B --> B7["modal.tsx"]
+  B --> B8["dropdown.tsx"]
+  B --> B9["tabs.tsx"]
+  B --> B10["pagination.tsx"]
+  B --> B11["toast.tsx"]
+  
+  C --> C1["header.tsx"]
+  C --> C2["footer.tsx"]
+  C --> C3["navbar.tsx"]
+  C --> C4["sidebar.tsx"]
+  
+  D --> D1["container.tsx"]
+  D --> D2["grid.tsx"]
+  D --> D3["flex.tsx"]
+  
+  E --> E1["hero.tsx"]
+  E --> E2["cta-section.tsx"]
+      </div>
+    </section>
+
+    <section>
+      <h2>2. UI 컴포넌트 (11개)</h2>
+      <p>shadcn/ui 기반 기본 컴포넌트:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>파일</th>
+            <th>Props</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Button</strong></td>
+            <td>ui/button.tsx</td>
+            <td>variant, size, disabled</td>
+            <td>Primary, Secondary, Outline, Ghost</td>
+          </tr>
+          <tr>
+            <td><strong>Input</strong></td>
+            <td>ui/input.tsx</td>
+            <td>type, placeholder, error</td>
+            <td>Text, Email, Password, Number</td>
+          </tr>
+          <tr>
+            <td><strong>Card</strong></td>
+            <td>ui/card.tsx</td>
+            <td>variant, padding</td>
+            <td>Elevated, Outlined, Flat</td>
+          </tr>
+          <tr>
+            <td><strong>Badge</strong></td>
+            <td>ui/badge.tsx</td>
+            <td>variant, size</td>
+            <td>Success, Warning, Error, Info</td>
+          </tr>
+          <tr>
+            <td><strong>Table</strong></td>
+            <td>ui/table.tsx</td>
+            <td>striped, bordered, hoverable</td>
+            <td>Default, Compact, Expanded</td>
+          </tr>
+          <tr>
+            <td><strong>Avatar</strong></td>
+            <td>ui/avatar.tsx</td>
+            <td>src, alt, size</td>
+            <td>Small, Medium, Large</td>
+          </tr>
+          <tr>
+            <td><strong>Modal</strong></td>
+            <td>ui/modal.tsx</td>
+            <td>open, onClose, title</td>
+            <td>Default, Fullscreen</td>
+          </tr>
+          <tr>
+            <td><strong>Dropdown</strong></td>
+            <td>ui/dropdown.tsx</td>
+            <td>items, onSelect</td>
+            <td>Default, Icon, Grouped</td>
+          </tr>
+          <tr>
+            <td><strong>Tabs</strong></td>
+            <td>ui/tabs.tsx</td>
+            <td>tabs, activeTab, onChange</td>
+            <td>Default, Underline, Pills</td>
+          </tr>
+          <tr>
+            <td><strong>Pagination</strong></td>
+            <td>ui/pagination.tsx</td>
+            <td>total, current, onChange</td>
+            <td>Default, Compact</td>
+          </tr>
+          <tr>
+            <td><strong>Toast</strong></td>
+            <td>ui/toast.tsx</td>
+            <td>message, type, duration</td>
+            <td>Success, Error, Warning, Info</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. 공통 컴포넌트 (4개)</h2>
+      <p>페이지 전체에서 사용되는 레이아웃 컴포넌트:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>파일</th>
+            <th>역할</th>
+            <th>포함 요소</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Header</strong></td>
+            <td>common/header.tsx</td>
+            <td>페이지 상단 네비게이션</td>
+            <td>로고, 메뉴, 사용자 메뉴</td>
+          </tr>
+          <tr>
+            <td><strong>Footer</strong></td>
+            <td>common/footer.tsx</td>
+            <td>페이지 하단 정보</td>
+            <td>링크, 저작권, SNS</td>
+          </tr>
+          <tr>
+            <td><strong>Navbar</strong></td>
+            <td>common/navbar.tsx</td>
+            <td>주 네비게이션</td>
+            <td>메뉴 항목, 활성 상태</td>
+          </tr>
+          <tr>
+            <td><strong>Sidebar</strong></td>
+            <td>common/sidebar.tsx</td>
+            <td>보조 네비게이션</td>
+            <td>카테고리, 필터</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. 레이아웃 컴포넌트 (3개)</h2>
+      <p>페이지 구조를 정의하는 컴포넌트:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>파일</th>
+            <th>용도</th>
+            <th>Props</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Container</strong></td>
+            <td>layout/container.tsx</td>
+            <td>최대 너비 제한</td>
+            <td>maxWidth, padding</td>
+          </tr>
+          <tr>
+            <td><strong>Grid</strong></td>
+            <td>layout/grid.tsx</td>
+            <td>그리드 레이아웃</td>
+            <td>columns, gap, responsive</td>
+          </tr>
+          <tr>
+            <td><strong>Flex</strong></td>
+            <td>layout/flex.tsx</td>
+            <td>플렉스 레이아웃</td>
+            <td>direction, justify, align</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. 랜딩 페이지 컴포넌트 (2개)</h2>
+      <p>홈페이지 전용 컴포넌트:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>컴포넌트</th>
+            <th>파일</th>
+            <th>역할</th>
+            <th>포함 요소</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Hero</strong></td>
+            <td>landing/hero.tsx</td>
+            <td>메인 배너</td>
+            <td>배경 이미지, 제목, CTA 버튼</td>
+          </tr>
+          <tr>
+            <td><strong>CTA Section</strong></td>
+            <td>landing/cta-section.tsx</td>
+            <td>행동 유도</td>
+            <td>제목, 설명, 버튼</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. 컴포넌트 사용 패턴</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>패턴</th>
+            <th>설명</th>
+            <th>예시</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Props 기반 변형</strong></td>
+            <td>variant prop으로 스타일 변경</td>
+            <td>&lt;Button variant="primary" /&gt;</td>
+          </tr>
+          <tr>
+            <td><strong>조합 패턴</strong></td>
+            <td>여러 컴포넌트 조합</td>
+            <td>&lt;Card&gt;&lt;Button /&gt;&lt;/Card&gt;</td>
+          </tr>
+          <tr>
+            <td><strong>상태 관리</strong></td>
+            <td>React hooks로 상태 제어</td>
+            <td>useState, useCallback</td>
+          </tr>
+          <tr>
+            <td><strong>컨텍스트 활용</strong></td>
+            <td>전역 상태 공유</td>
+            <td>ThemeContext, AuthContext</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. 컴포넌트 네이밍 규칙</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>규칙</th>
+            <th>예시</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PascalCase</strong></td>
+            <td>MyComponent</td>
+            <td>컴포넌트 이름</td>
+          </tr>
+          <tr>
+            <td><strong>Props 인터페이스</strong></td>
+            <td>MyComponentProps</td>
+            <td>Props 타입 정의</td>
+          </tr>
+          <tr>
+            <td><strong>파일명</strong></td>
+            <td>my-component.tsx</td>
+            <td>kebab-case 파일명</td>
+          </tr>
+          <tr>
+            <td><strong>폴더 구조</strong></td>
+            <td>components/ui/button/</td>
+            <td>카테고리별 폴더</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
+  </footer>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>
