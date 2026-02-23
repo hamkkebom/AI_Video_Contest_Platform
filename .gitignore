@@ -7,3 +7,6 @@ tsconfig.tsbuildinfo
 .sisyphus
 
 .vercel
+.env.local
+.env*.local
+skills/

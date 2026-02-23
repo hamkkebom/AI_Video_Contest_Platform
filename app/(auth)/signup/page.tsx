@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,16 +11,21 @@ import {
   TreePine, Mail, Lock, Eye, EyeOff, CheckCircle2,
   User, Building2, Phone, FileText, UserCheck, ArrowLeft,
 } from 'lucide-react';
+import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
  * 회원가입 페이지
  * 2단계 플로우: Step 1 (계정 유형 선택) → Step 2 (폼 입력)
- * 프리미엄 SaaS 스타일 — CSS 변수 기반 테마 적용 (데모용, 실제 인증 없음)
+ * 프리미엄 SaaS 스타일 — CSS 변수 기반 테마 적용
  */
 export default function SignupPage() {
+  const { signInWithGoogle, signUpWithEmail } = useAuth();
+  const router = useRouter();
   /* 단계 및 계정 유형 */
   const [step, setStep] = useState<1 | 2>(1);
   const [accountType, setAccountType] = useState<'individual' | 'business' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   /* 공통 필드 */
   const [email, setEmail] = useState('');
@@ -36,13 +42,24 @@ export default function SignupPage() {
   const [businessNumber, setBusinessNumber] = useState('');
   const [representativeName, setRepresentativeName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const base = { email, password, confirmPassword, name, mobile, phone, agreeTerms };
-    if (accountType === 'business') {
-      console.log('Business signup:', { ...base, companyName, businessNumber, representativeName });
+    if (password !== confirmPassword) {
+      setErrorMsg('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    if (!agreeTerms) {
+      setErrorMsg('약관에 동의해주세요.');
+      return;
+    }
+    setIsSubmitting(true);
+    setErrorMsg('');
+    const result = await signUpWithEmail(email, password, { name });
+    if (result.error) {
+      setErrorMsg(result.error);
+      setIsSubmitting(false);
     } else {
-      console.log('Individual signup:', base);
+      router.push('/login');
     }
   };
 
@@ -161,7 +178,7 @@ export default function SignupPage() {
                 </div>
 
                 {/* 소셜 가입 버튼 */}
-                <Button variant="outline" className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200">
+                <Button variant="outline" className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200" onClick={signInWithGoogle}>
                   <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -385,8 +402,12 @@ export default function SignupPage() {
                     </Label>
                   </div>
 
-                  <Button type="submit" className="w-full cursor-pointer font-semibold">
-                    회원가입
+                  {/* 에러 메시지 */}
+                  {errorMsg && (
+                    <p className="text-sm text-destructive text-center">{errorMsg}</p>
+                  )}
+                  <Button type="submit" className="w-full cursor-pointer font-semibold" disabled={isSubmitting}>
+                    {isSubmitting ? '가입 중...' : '회원가입'}
                   </Button>
                 </form>
 

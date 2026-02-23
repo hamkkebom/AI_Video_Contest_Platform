@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
+import { AuthProvider } from '@/lib/supabase/auth-context';
 
 export const metadata: Metadata = {
   title: "꿈플 — AI로 꿈을 키우는 나무",
@@ -23,12 +24,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="ko" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
-          <Header />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-          <FloatingButtons />
+          <AuthProvider>
+            <Header />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Footer />
+            <FloatingButtons />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
