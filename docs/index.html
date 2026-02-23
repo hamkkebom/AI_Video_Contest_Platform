@@ -7,150 +7,321 @@
   <meta name="doc-status" content="목업 기준 초안">
   <meta name="last-modified" content="2026-02-19">
   <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
-  <title>설계 문서 포털 — 함께봄 AI 영상 공모전</title>
-  
-  <!-- Pretendard 폰트 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-  
-  <!-- 공통 CSS -->
+  <title>문서 포털 - 함께봄 AI 영상 공모전 플랫폼</title>
   <link rel="stylesheet" href="assets/style.css">
   <link rel="stylesheet" href="assets/print.css">
 </head>
 <body>
-  <header>
-    <h1>함께봄 AI 영상 공모전 플랫폼</h1>
-    <p class="subtitle">설계 문서 포털 v0.1-mockup</p>
-    <button id="pdf-button" class="pdf-button">📄 PDF 다운로드</button>
-  </header>
-
   <main>
-    <!-- 프로젝트 소개 -->
-    <section class="doc-meta">
-      <strong>프로젝트명</strong>: 함께봄 AI 영상 공모전 플랫폼<br/>
-      <strong>버전</strong>: v0.1-mockup<br/>
-      <strong>상태</strong>: 목업 기준 초안<br/>
-      <strong>최종 수정일</strong>: 2026-02-19<br/>
-      <strong>전체 문서 수</strong>: 21개 (+ 이 포털)
-    </section>
 
-    <!-- Mermaid 테스트 다이어그램 -->
-    <section>
-      <h2>📊 문서 체계 개요</h2>
-      <p>아래 다이어그램은 7개 카테고리와 전체 문서 구조를 보여줍니다.</p>
-      <div class="mermaid">
-        graph LR
-          A[문서 포털] --> B["1️⃣ 사업/전략"]
-          A --> C["2️⃣ 서비스 기획"]
-          A --> D["3️⃣ UX/디자인"]
-          A --> E["4️⃣ 기술 설계"]
-          A --> F["5️⃣ 개발 관리"]
-          A --> G["6️⃣ 테스트"]
-          A --> H["7️⃣ 운영"]
-          
-          B --> B1["서비스 기획서"]
-          B --> B2["BM 설계서"]
-          
-          C --> C1["PRD"]
-          C --> C2["기능 명세서"]
-          C --> C3["정책 정의서"]
-          C --> C4["IA"]
-          C --> C5["User Flow"]
-          
-          D --> D1["와이어프레임"]
-          D --> D2["디자인 시스템"]
-          D --> D3["컴포넌트 구조"]
-      </div>
-    </section>
+    <h1>함께봄 AI 영상 공모전 플랫폼</h1>
+    <p>프로젝트 설계 문서 포털 &mdash; v0.1-mockup</p>
 
-    <!-- 1. 사업/전략 -->
-    <section class="category">
-      <h2>1️⃣ 사업/전략</h2>
-      <p>서비스 전략 및 비즈니스 모델 관련 문서</p>
-      <ul>
-        <li><a href="01-business/service-plan.html">⚪ 서비스 기획서</a></li>
-        <li><a href="01-business/business-model.html">⚪ BM 설계서</a></li>
-      </ul>
-    </section>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
 
-    <!-- 2. 서비스 기획 -->
-    <section class="category">
-      <h2>2️⃣ 서비스 기획</h2>
-      <p>기능 요구사항, 정책, 정보 구조 관련 문서</p>
-      <ul>
-        <li><a href="02-planning/prd.html">⚪ PRD</a></li>
-        <li><a href="02-planning/feature-spec.html">⚪ 기능 명세서</a></li>
-        <li><a href="02-planning/policy.html">⚪ 정책 정의서</a></li>
-        <li><a href="02-planning/information-architecture.html">⚪ 정보 구조도 (IA)</a></li>
-        <li><a href="02-planning/user-flow.html">⚪ 사용자 흐름 (User Flow)</a></li>
-      </ul>
-    </section>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안 | 총 21개 문서
+    </div>
 
-    <!-- 3. UX/디자인 -->
-    <section class="category">
-      <h2>3️⃣ UX/디자인</h2>
-      <p>와이어프레임, 디자인 시스템, 컴포넌트 관련 문서</p>
-      <ul>
-        <li><a href="03-design/wireframe.html">⚪ 와이어프레임</a></li>
-        <li><a href="03-design/design-system.html">⚪ 디자인 시스템</a></li>
-        <li><a href="03-design/component-structure.html">⚪ 컴포넌트 구조</a></li>
-      </ul>
-    </section>
+    <!-- ================================================
+         문서 구조 다이어그램
+         ================================================ -->
+    <h2>📂 문서 구조</h2>
 
-    <!-- 4. 기술 설계 -->
-    <section class="category">
-      <h2>4️⃣ 기술 설계</h2>
-      <p>시스템 아키텍처, DB 설계, API 명세 관련 문서</p>
-      <ul>
-        <li><a href="04-technical/system-architecture.html">⚪ 시스템 아키텍처</a></li>
-        <li><a href="04-technical/database-erd.html">⚪ DB ERD</a></li>
-        <li><a href="04-technical/domain-model.html">⚪ 도메인 모델</a></li>
-        <li><a href="04-technical/api-spec.html">⚪ API 명세서</a></li>
-        <li><a href="04-technical/status-definitions.html">⚪ 상태값 정의</a></li>
-      </ul>
-    </section>
+    <div class="mermaid">
+graph LR
+  A[문서 포털] --> B[📋 사업/전략]
+  A --> C[📝 서비스 기획]
+  A --> D[🎨 UX/디자인]
+  A --> E[⚙️ 기술 설계]
+  A --> F[📊 개발 관리]
+  A --> G[🧪 테스트]
+  A --> H[🚀 운영]
+  B --> B1[서비스 기획서]
+  B --> B2[BM 설계서]
+  C --> C1[PRD]
+  C --> C2[기능 명세서]
+  C --> C3[정책 정의서]
+  C --> C4[정보구조도]
+  C --> C5[사용자 흐름도]
+  D --> D1[와이어프레임]
+  D --> D2[디자인 시스템]
+  D --> D3[컴포넌트 구조]
+  E --> E1[시스템 아키텍처]
+  E --> E2[DB 설계서]
+  E --> E3[도메인 모델]
+  E --> E4[API 명세서]
+  E --> E5[상태값 정의]
+  F --> F1[WBS 일정계획]
+  F --> F2[리스크 관리]
+  G --> G1[테스트 계획서]
+  G --> G2[테스트 케이스]
+  H --> H1[사용자 매뉴얼]
+  H --> H2[로그 정책]
+    </div>
 
-    <!-- 5. 개발 관리 -->
-    <section class="category">
-      <h2>5️⃣ 개발 관리</h2>
-      <p>WBS, 일정, 리스크 관리 문서</p>
-      <ul>
-        <li><a href="05-management/wbs.html">⚪ WBS</a></li>
-        <li><a href="05-management/risk-management.html">⚪ 리스크 관리</a></li>
-      </ul>
-    </section>
+    <!-- ================================================
+         1. 사업/전략
+         ================================================ -->
+    <h2>📋 사업/전략</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="01-business/service-plan.html">서비스 기획서</a></td>
+          <td>플랫폼 비전, 목표, 핵심 가치 제안, 타깃 사용자 정의</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="01-business/business-model.html">BM 설계서</a></td>
+          <td>수익 모델, 비용 구조, 성장 전략</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <!-- 6. 테스트 -->
-    <section class="category">
-      <h2>6️⃣ 테스트</h2>
-      <p>테스트 전략, 테스트 케이스 문서</p>
-      <ul>
-        <li><a href="06-testing/test-plan.html">⚪ 테스트 계획서</a></li>
-        <li><a href="06-testing/test-cases.html">⚪ 테스트 케이스</a></li>
-      </ul>
-    </section>
+    <!-- ================================================
+         2. 서비스 기획
+         ================================================ -->
+    <h2>📝 서비스 기획</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="02-planning/prd.html">PRD (제품 요구사항 정의서)</a></td>
+          <td>제품 범위, 핵심 기능 요약, 우선순위</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="02-planning/feature-spec.html">기능 명세서</a></td>
+          <td>기능별 상세 사양, 입출력, 비즈니스 규칙</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="02-planning/policy.html">정책 정의서</a></td>
+          <td>심사 정책, 공모전 규칙, 역할별 권한 <span class="review-badge">⚠️ 검토 필요</span></td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="02-planning/information-architecture.html">정보구조도 (IA)</a></td>
+          <td>사이트맵, 네비게이션 구조, 페이지 계층</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="02-planning/user-flow.html">사용자 흐름도 (User Flow)</a></td>
+          <td>역할별 주요 시나리오 흐름</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <!-- 7. 운영 -->
-    <section class="category">
-      <h2>7️⃣ 운영</h2>
-      <p>사용자 매뉴얼, 로그 정책 문서</p>
-      <ul>
-        <li><a href="07-operations/user-manual.html">⚪ 사용자 매뉴얼</a></li>
-        <li><a href="07-operations/log-policy.html">⚪ 로그 정책</a></li>
-      </ul>
-    </section>
+    <!-- ================================================
+         3. UX/디자인
+         ================================================ -->
+    <h2>🎨 UX/디자인</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="03-design/wireframe.html">와이어프레임</a></td>
+          <td>주요 화면 레이아웃, 와이어프레임 명세</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="03-design/design-system.html">디자인 시스템 정의서</a></td>
+          <td>색상, 타이포그래피, 컴포넌트 토큰, 접근성 가이드</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="03-design/component-structure.html">UI 컴포넌트 구조</a></td>
+          <td>컴포넌트 트리, Props 인터페이스, 재사용 전략</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================
+         4. 기술 설계
+         ================================================ -->
+    <h2>⚙️ 기술 설계</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="04-technical/system-architecture.html">시스템 아키텍처 설계서</a></td>
+          <td>기술 스택, 배포 구조, 인프라 다이어그램</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="04-technical/database-erd.html">DB 설계서 (ERD + 테이블 정의)</a></td>
+          <td>ERD, 테이블 스키마, 인덱스, 관계 정의</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="04-technical/domain-model.html">도메인 모델 정의서</a></td>
+          <td>엔티티, 값 객체, 애그리거트, 바운디드 컨텍스트</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="04-technical/api-spec.html">API 명세서</a></td>
+          <td>엔드포인트, 요청/응답 스키마, 인증, 에러 코드</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="04-technical/status-definitions.html">상태값 정의 문서</a></td>
+          <td>공모전·영상·심사 상태 전이 정의</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================
+         5. 개발 관리
+         ================================================ -->
+    <h2>📊 개발 관리</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="05-management/wbs.html">일정 계획서 (WBS)</a></td>
+          <td>작업 분해 구조, 마일스톤, 간트 차트</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="05-management/risk-management.html">리스크 관리 문서</a></td>
+          <td>리스크 식별, 영향도 평가, 대응 전략</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================
+         6. 테스트
+         ================================================ -->
+    <h2>🧪 테스트</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="06-testing/test-plan.html">테스트 계획서</a></td>
+          <td>테스트 전략, 범위, 환경, 일정</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="06-testing/test-cases.html">테스트 케이스 문서</a></td>
+          <td>기능별 테스트 케이스, 입력/기대결과, 우선순위</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================
+         7. 운영
+         ================================================ -->
+    <h2>🚀 운영</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>문서명</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>✅</td>
+          <td><a href="07-operations/user-manual.html">역할별 사용자 매뉴얼</a></td>
+          <td>관리자·심사위원·참가자 역할별 사용 가이드</td>
+        </tr>
+        <tr>
+          <td>✅</td>
+          <td><a href="07-operations/log-policy.html">로그 정책 문서</a></td>
+          <td>로그 레벨, 수집 범위, 보관 정책, 모니터링 기준</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================
+         문서 간 관계도
+         ================================================ -->
+    <h2>🔗 문서 간 관계도</h2>
+
+    <div class="mermaid">
+graph TD
+  SP[서비스 기획서] --> PRD[PRD]
+  SP --> BM[BM 설계서]
+  PRD --> FS[기능 명세서]
+  PRD --> POL[정책 정의서]
+  FS --> IA[정보구조도]
+  FS --> UF[사용자 흐름도]
+  IA --> WF[와이어프레임]
+  UF --> WF
+  WF --> DS[디자인 시스템]
+  WF --> CS[컴포넌트 구조]
+  FS --> SA[시스템 아키텍처]
+  FS --> API[API 명세서]
+  SA --> DB[DB 설계서]
+  SA --> DM[도메인 모델]
+  DM --> DB
+  DM --> SD[상태값 정의]
+  PRD --> WBS[WBS 일정계획]
+  WBS --> RM[리스크 관리]
+  FS --> TP[테스트 계획서]
+  TP --> TC[테스트 케이스]
+  API --> TC
+  POL --> UM[사용자 매뉴얼]
+  SA --> LP[로그 정책]
+    </div>
+
+    <!-- ================================================
+         푸터
+         ================================================ -->
+    <footer>
+      <hr>
+      <p>
+        <strong>함께봄 AI 영상 공모전 플랫폼</strong> &mdash; 설계 문서 포털<br>
+        버전: v0.1-mockup | 생성일: 2026-02-19 | 총 문서: 21개 (7개 카테고리)<br>
+        <small>본 문서는 목업 기반 초안이며, 개발 진행에 따라 업데이트됩니다.</small>
+      </p>
+    </footer>
 
   </main>
-
-  <footer>
-    <hr>
-    <p style="text-align: center; color: #999; font-size: 0.9em;">
-      설계 문서 포털 v0.1-mockup<br/>
-      생성일: 2026-02-19<br/>
-      모든 문서는 HTML 형식이며 <a href="#" onclick="window.print()">PDF로 다운로드</a>할 수 있습니다.
-    </p>
-  </footer>
-
-  <!-- 공통 JavaScript -->
   <script src="assets/docs.js" defer></script>
 </body>
 </html>

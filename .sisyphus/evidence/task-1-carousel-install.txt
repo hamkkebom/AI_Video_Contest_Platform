@@ -1,8 +1,0 @@
-=== Task 1: Carousel Install ===
-components/ui/carousel.tsx
-node_modules/embla-carousel-autoplay/package.json
-=== Typecheck ===
-
-> ai-video-contest-mockup-v3@0.1.0 typecheck
-> tsc --noEmit
-

@@ -48,10 +48,18 @@ export const FAQ_CATEGORIES = [
   { value: "general", label: "일반" }
 ] as const;
 
+export const FAQ_TOPICS = [
+  { value: "contest", label: "공모전 관련" },
+  { value: "service", label: "서비스 이용" },
+  { value: "payment", label: "결제/환불" },
+  { value: "technical", label: "기술 지원" },
+  { value: "account", label: "계정/회원" }
+] as const;
+
 export const ARTICLE_TYPES = [
-  { value: "trend_report", label: "AI 도구 트렌드" },
-  { value: "announcement", label: "공지사항" },
-  { value: "press_release", label: "보도자료" }
+  { value: "notice", label: "공지" },
+  { value: "program", label: "프로그램" },
+  { value: "insight", label: "인사이트" }
 ] as const;
 
 export const VIDEO_EXTENSIONS = [

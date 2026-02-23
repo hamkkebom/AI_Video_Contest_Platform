@@ -25,10 +25,10 @@ export type HeroSlide = {
 
 const typeLabels: Record<string, string> = {
   contest: '공모전',
-  trend_report: '트렌드',
-  announcement: '교육 소식',
-  press_release: '보도자료',
-  article: '소식',
+  notice: '공지',
+  program: '프로그램',
+  insight: '인사이트',
+  article: '스토리',
 };
 
 interface HeroCarouselProps {
@@ -40,7 +40,7 @@ function FallbackHero() {
     <section className="relative w-full py-24 md:py-32 px-4 bg-foreground text-background">
       <div className="container mx-auto max-w-4xl text-center space-y-8">
         <p className="text-sm font-medium tracking-widest uppercase text-background/60">
-          AI Video Contest Platform
+          꿈트리
         </p>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
           창의적인 AI 영상<br />제작자들의 무대
@@ -49,8 +49,8 @@ function FallbackHero() {
           공모전에 참여하고, 수상작을 감상하고, AI 영상 제작의 새로운 가능성을 발견하세요.
         </p>
         <div className="flex gap-4 justify-center pt-4">
-          <Link href="/contests">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer">
+          <Link href="/contests?status=open">
+            <Button size="lg" className="bg-accent-foreground hover:bg-accent-foreground/90 text-white cursor-pointer">
               공모전 둘러보기
             </Button>
           </Link>
@@ -137,34 +137,42 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           {slides.map((slide, index) => (
             <CarouselItem key={slide.id} className="pl-0">
               <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
-                {/* 히어로 배경 이미지 */}
-                <Image
-                  src={`/images/hero-${(index % 6) + 1}.jpg`}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
+                {/* 히어로 배경 이미지 (Ken Burns 영상 효과) */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <Image
+                    src={`/images/hero-${(index % 6) + 1}.jpg`}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                    style={{
+                      animation: `kenburns-${(index % 3) + 1} 20s ease-in-out infinite alternate`,
+                    }}
+                  />
+                </div>
                 {/* 다크 오버레이 */}
                 <div className="absolute inset-0 bg-black/40" />
                 {/* 슬라이드 컨텐츠 — 수직 가운데 정렬 */}
                 <div className="relative z-10 h-full flex items-center justify-center px-4">
                   <div className="max-w-4xl text-center space-y-6 text-white">
-                    <span className="inline-block text-xs font-medium tracking-wider uppercase px-3 py-1 rounded-full bg-white/15 text-white/80">
+                    <span className="inline-block text-sm font-medium tracking-wider uppercase px-4 py-1.5 rounded-full bg-white/15 text-white/80">
                       {typeLabels[slide.type] || slide.type}
                     </span>
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+                    <h1
+                      className="keep-all-title text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight"
+                      style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                    >
                       {slide.title}
                     </h1>
-                    <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto line-clamp-2">
+                    <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto line-clamp-2">
                       {slide.description}
                     </p>
-                    <p className="text-sm text-white/50">
-                      {formatDate(slide.date)}
+                    <p className="text-base text-white/60 font-medium">
+                      {slide.type === 'contest' ? `~${formatDate(slide.date)}` : formatDate(slide.date)}
                     </p>
                     <div className="flex gap-4 justify-center pt-2">
                       <Link href={slide.href as any}>
-                        <Button size="lg" className="bg-white text-gray-900 hover:bg-white/90 cursor-pointer font-semibold">
+                        <Button size="lg" className="bg-accent-foreground text-white hover:bg-accent-foreground/90 cursor-pointer font-semibold">
                           {slide.ctaLabel}
                         </Button>
                       </Link>
@@ -207,11 +215,10 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
             <button
               key={index}
               onClick={() => handleDotClick(index)}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                index === current
-                  ? 'bg-white w-8'
-                  : 'bg-white/40 hover:bg-white/60'
-              }`}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${index === current
+                ? 'bg-white w-8'
+                : 'bg-white/40 hover:bg-white/60'
+                }`}
               aria-label={`슬라이드 ${index + 1}로 이동`}
             />
           ))}

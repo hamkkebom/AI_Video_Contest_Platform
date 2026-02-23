@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>일정 계획서 (WBS) - 함께봄 AI 영상 공모전 플랫폼</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <main>
+    <h1>🗂️ 일정 계획서 (WBS)</h1>
+    <p>Phase 1 핵심 기능(F-001~F-006) 우선 개발을 기준으로 한 풀 개발 일정 계획서</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
+
+    <h2>1. 개발 범위와 기준</h2>
+    <p>서비스 기획서의 Phase 로드맵을 기준으로 Phase 1을 집중 구간으로 설정하며, API 명세(API-001~API-019), 상태값 정의(ST-001~ST-011), PRD 기능 ID(F-001~F-011)를 일정 산정 기준으로 사용한다.</p>
+
+    <h2>2. Phase 1 중심 WBS 타임라인</h2>
+    <div class="mermaid">
+gantt
+  title Phase 1 개발 일정
+  dateFormat YYYY-MM-DD
+  axisFormat %m/%d
+
+  section 기획/정의
+  목업 완료 :milestone, m1, 2026-03-03, 0d
+  요구사항 확정(F-001~F-011) :a1, 2026-03-01, 2026-03-07
+
+  section 설계
+  DB 설계(ST-003, ST-004 중심) :a2, 2026-03-08, 2026-03-17
+  DB 설계 완료 :milestone, m2, 2026-03-17, 0d
+
+  section 백엔드
+  API 개발(API-004, API-005, API-007, API-013~API-015) :a3, 2026-03-18, 2026-04-07
+  API 개발 완료 :milestone, m3, 2026-04-07, 0d
+
+  section 프론트엔드
+  화면/상태 연동(F-001~F-006) :a4, 2026-03-25, 2026-04-15
+  프론트 연동 완료 :milestone, m4, 2026-04-15, 0d
+
+  section 테스트/배포
+  통합 QA 및 회귀 :a5, 2026-04-16, 2026-04-27
+  QA 완료 :milestone, m5, 2026-04-27, 0d
+  배포 점검 및 프로덕션 반영 :a6, 2026-04-28, 2026-05-02
+  배포 완료 :milestone, m6, 2026-05-02, 0d
+    </div>
+
+    <h2>3. 마일스톤 정의</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>마일스톤</th>
+          <th>완료 기준</th>
+          <th>산출물</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>목업 완료</td>
+          <td>핵심 화면 플로우 확정, 기능/상태 ID 매핑 완료</td>
+          <td>목업 문서 세트, 화면 플로우 체크리스트</td>
+        </tr>
+        <tr>
+          <td>DB 설계</td>
+          <td>ERD 및 상태 전이(ST-003, ST-004) 저장 구조 확정</td>
+          <td>ERD, 스키마 초안, 마이그레이션 계획</td>
+        </tr>
+        <tr>
+          <td>API 개발</td>
+          <td>핵심 API 정상 응답 및 에러 코드 정책 적용</td>
+          <td>API 구현본, 인터페이스 검증 결과</td>
+        </tr>
+        <tr>
+          <td>프론트 연동</td>
+          <td>F-001~F-006 사용자 흐름이 API와 통합 동작</td>
+          <td>연동 빌드, 시나리오 점검표</td>
+        </tr>
+        <tr>
+          <td>QA</td>
+          <td>핵심 경로 결함 Critical 0건, High 허용 기준 이내</td>
+          <td>테스트 결과서, 결함 로그</td>
+        </tr>
+        <tr>
+          <td>배포</td>
+          <td>운영 체크리스트 완료 및 롤백 계획 준비</td>
+          <td>배포 이력, 릴리스 노트</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. 기능별 개발 일정(주 단위)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>기능 ID</th>
+          <th>기능명</th>
+          <th>예상 기간</th>
+          <th>주요 연계 API</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>F-001</td><td>공모전 접수</td><td>3주</td><td>API-004, API-005</td><td>Phase 1 핵심</td></tr>
+        <tr><td>F-002</td><td>공모전 심사</td><td>3주</td><td>API-013, API-014</td><td>Phase 1 핵심</td></tr>
+        <tr><td>F-003</td><td>결과 발표</td><td>2주</td><td>API-015</td><td>Phase 1 핵심</td></tr>
+        <tr><td>F-004</td><td>영상 갤러리</td><td>2주</td><td>API-005, API-006</td><td>Phase 1 포함</td></tr>
+        <tr><td>F-005</td><td>작품 좋아요</td><td>1주</td><td>API-007</td><td>갤러리 연계</td></tr>
+        <tr><td>F-006</td><td>심사자 초대</td><td>2주</td><td>API-013</td><td>권한 검증 포함</td></tr>
+        <tr><td>F-007</td><td>역할 전환</td><td>1주</td><td>API-001</td><td>ST-001 연계</td></tr>
+        <tr><td>F-008</td><td>UTM 추적</td><td>1주</td><td>API-018</td><td>Phase 1 후반</td></tr>
+        <tr><td>F-009</td><td>심사 자동화</td><td>3주</td><td>API-014, API-015</td><td>Phase 2 후보</td></tr>
+        <tr><td>F-010</td><td>대행 연결</td><td>2주</td><td>API-011</td><td>Phase 2 후보</td></tr>
+        <tr><td>F-011</td><td>갤러리 필터</td><td>1주</td><td>API-005, API-018</td><td>성능 최적화 필요</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. 팀 구성 제안</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>역할</th>
+          <th>주요 책임</th>
+          <th>핵심 협업 대상</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>프론트엔드</td>
+          <td>접수/심사/결과/갤러리 UI 구현, 상태 흐름과 API 응답 바인딩</td>
+          <td>백엔드, 디자인, QA</td>
+        </tr>
+        <tr>
+          <td>백엔드</td>
+          <td>도메인 로직, API 구현, 상태 전이(ST-003, ST-004) 검증</td>
+          <td>프론트엔드, QA</td>
+        </tr>
+        <tr>
+          <td>디자인</td>
+          <td>역할별 UX 흐름 정리, 제출/심사 화면 가이드, 에러 피드백 패턴 정의</td>
+          <td>프론트엔드, 기획</td>
+        </tr>
+        <tr>
+          <td>QA</td>
+          <td>기능/예외/마감 시점 회귀 테스트, 릴리스 체크리스트 운영</td>
+          <td>프론트엔드, 백엔드</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

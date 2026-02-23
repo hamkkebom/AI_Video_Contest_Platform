@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Contest Poster Generator</title>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; padding: 20px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 20px; }
+    canvas { border: 1px solid #333; }
+    button { padding: 10px 20px; background: #EA580C; color: white; border: none; cursor: pointer; border-radius: 8px; font-size: 16px; margin: 20px 0; }
+    a { color: #EA580C; }
+  </style>
+</head>
+<body>
+  <h1>공모전 포스터 생성기</h1>
+  <p>아래 이미지들을 우클릭 → 다른 이름으로 저장하거나, 버튼을 클릭하여 다운로드하세요.</p>
+  <button onclick="downloadAll()">전체 다운로드</button>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const posters = [
+      {
+        filename: 'contest-1.jpg',
+        title: '제1회 AI 영상\n페스티벌',
+        subtitle: '2026 GLOBAL AI VIDEO FESTIVAL',
+        prize: '총상금 2,000만원',
+        deadline: '2026.04.30 마감',
+        bg: [
+          { type: 'radial', x: 0.2, y: 0.3, r: 0.6, colors: ['#4F46E5', '#1E1B4B'] },
+          { type: 'radial', x: 0.8, y: 0.7, r: 0.5, colors: ['#7C3AED', '#1E1B4B'] },
+        ],
+        accent: '#A78BFA',
+        accentAlt: '#6366F1',
+        decorations: 'circles',
+      },
+      {
+        filename: 'contest-2.jpg',
+        title: 'AI 단편\n영화제',
+        subtitle: 'AI SHORT FILM AWARDS 2026',
+        prize: '총상금 1,500만원',
+        deadline: '2026.05.15 마감',
+        bg: [
+          { type: 'radial', x: 0.5, y: 0.2, r: 0.7, colors: ['#DC2626', '#450a0a'] },
+          { type: 'radial', x: 0.1, y: 0.9, r: 0.4, colors: ['#F97316', '#450a0a'] },
+        ],
+        accent: '#FCA5A5',
+        accentAlt: '#EF4444',
+        decorations: 'filmstrip',
+      },
+      {
+        filename: 'contest-3.jpg',
+        title: '크리에이터\n챌린지',
+        subtitle: 'CREATOR CHALLENGE SEASON 3',
+        prize: '총상금 1,000만원',
+        deadline: '2026.06.01 마감',
+        bg: [
+          { type: 'radial', x: 0.7, y: 0.3, r: 0.6, colors: ['#EA580C', '#431407'] },
+          { type: 'radial', x: 0.2, y: 0.8, r: 0.5, colors: ['#D97706', '#431407'] },
+        ],
+        accent: '#FED7AA',
+        accentAlt: '#F97316',
+        decorations: 'triangles',
+      },
+      {
+        filename: 'contest-4.jpg',
+        title: 'AI 아트\n영상 대전',
+        subtitle: 'AI ART VIDEO COMPETITION',
+        prize: '총상금 3,000만원',
+        deadline: '2026.07.20 마감',
+        bg: [
+          { type: 'radial', x: 0.3, y: 0.4, r: 0.6, colors: ['#0D9488', '#042f2e'] },
+          { type: 'radial', x: 0.8, y: 0.2, r: 0.5, colors: ['#2563EB', '#042f2e'] },
+        ],
+        accent: '#5EEAD4',
+        accentAlt: '#14B8A6',
+        decorations: 'grid',
+      },
+      {
+        filename: 'contest-5.jpg',
+        title: '대학생\nAI 영상 공모전',
+        subtitle: 'UNIVERSITY AI VIDEO CONTEST',
+        prize: '총상금 500만원',
+        deadline: '2026.08.31 마감',
+        bg: [
+          { type: 'radial', x: 0.5, y: 0.5, r: 0.7, colors: ['#DB2777', '#500724'] },
+          { type: 'radial', x: 0.9, y: 0.1, r: 0.4, colors: ['#9333EA', '#500724'] },
+        ],
+        accent: '#F9A8D4',
+        accentAlt: '#EC4899',
+        decorations: 'stars',
+      },
+    ];
+
+    const WIDTH = 800;
+    const HEIGHT = 600;
+    const grid = document.getElementById('grid');
+
+    function drawPoster(canvas, poster) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+
+      // Background
+      const darkColor = poster.bg[0].colors[1];
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      // Radial gradients
+      poster.bg.forEach(bg => {
+        const grad = ctx.createRadialGradient(
+          bg.x * WIDTH, bg.y * HEIGHT, 0,
+          bg.x * WIDTH, bg.y * HEIGHT, bg.r * Math.max(WIDTH, HEIGHT)
+        );
+        grad.addColorStop(0, bg.colors[0] + 'AA');
+        grad.addColorStop(1, bg.colors[1] + '00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      });
+
+      // Noise overlay
+      ctx.globalAlpha = 0.03;
+      for (let i = 0; i < 8000; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
+        ctx.fillRect(Math.random() * WIDTH, Math.random() * HEIGHT, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+
+      // Decorations
+      drawDecorations(ctx, poster);
+
+      // Top-left badge
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      const badgeW = 140, badgeH = 32;
+      const badgeX = 40, badgeY = 40;
+      ctx.fillStyle = poster.accentAlt;
+      roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 6);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎬 접수중', badgeX + badgeW / 2, badgeY + 21);
+      ctx.restore();
+
+      // Main title
+      ctx.save();
+      const lines = poster.title.split('\n');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 56px "Segoe UI", "맑은 고딕", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 20;
+      lines.forEach((line, i) => {
+        ctx.fillText(line, 50, 160 + i * 70);
+      });
+      ctx.restore();
+
+      // Subtitle
+      ctx.save();
+      ctx.fillStyle = poster.accent;
+      ctx.font = '600 16px "Segoe UI", sans-serif';
+      ctx.letterSpacing = '3px';
+      ctx.textAlign = 'left';
+      ctx.fillText(poster.subtitle, 52, 160 + lines.length * 70 + 10);
+      ctx.restore();
+
+      // Divider line
+      ctx.save();
+      ctx.strokeStyle = poster.accent + '55';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(50, HEIGHT - 130);
+      ctx.lineTo(WIDTH - 50, HEIGHT - 130);
+      ctx.stroke();
+      ctx.restore();
+
+      // Bottom info: prize & deadline
+      ctx.save();
+      // Prize
+      ctx.fillStyle = poster.accent;
+      ctx.font = 'bold 13px "Segoe UI", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('PRIZE', 50, HEIGHT - 95);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px "Segoe UI", "맑은 고딕", sans-serif';
+      ctx.fillText(poster.prize, 50, HEIGHT - 60);
+
+      // Deadline
+      ctx.fillStyle = poster.accent;
+      ctx.font = 'bold 13px "Segoe UI", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('DEADLINE', WIDTH - 50, HEIGHT - 95);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px "Segoe UI", "맑은 고딕", sans-serif';
+      ctx.fillText(poster.deadline, WIDTH - 50, HEIGHT - 60);
+      ctx.restore();
+    }
+
+    function drawDecorations(ctx, poster) {
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      
+      switch(poster.decorations) {
+        case 'circles':
+          for (let i = 0; i < 6; i++) {
+            ctx.strokeStyle = poster.accent;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(WIDTH * 0.75 + (i * 15), HEIGHT * 0.35, 40 + i * 30, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          break;
+        case 'filmstrip':
+          ctx.fillStyle = poster.accent;
+          // Film perforations on right side
+          for (let y = 0; y < HEIGHT; y += 40) {
+            roundRect(ctx, WIDTH - 60, y + 5, 20, 25, 4);
+            ctx.fill();
+          }
+          // Vertical lines
+          ctx.strokeStyle = poster.accent;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(WIDTH - 70, 0); ctx.lineTo(WIDTH - 70, HEIGHT);
+          ctx.moveTo(WIDTH - 35, 0); ctx.lineTo(WIDTH - 35, HEIGHT);
+          ctx.stroke();
+          break;
+        case 'triangles':
+          ctx.strokeStyle = poster.accent;
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            const x = WIDTH * 0.65 + i * 20;
+            const y = HEIGHT * 0.15 + i * 15;
+            const s = 60 + i * 25;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + s, y + s);
+            ctx.lineTo(x - s * 0.3, y + s);
+            ctx.closePath();
+            ctx.stroke();
+          }
+          break;
+        case 'grid':
+          ctx.strokeStyle = poster.accent;
+          ctx.lineWidth = 0.5;
+          for (let x = 0; x < WIDTH; x += 50) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, HEIGHT); ctx.stroke();
+          }
+          for (let y = 0; y < HEIGHT; y += 50) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WIDTH, y); ctx.stroke();
+          }
+          // Glow dots at intersections (sparse)
+          ctx.globalAlpha = 0.15;
+          for (let x = 0; x < WIDTH; x += 100) {
+            for (let y = 0; y < HEIGHT; y += 100) {
+              if (Math.random() > 0.5) {
+                ctx.fillStyle = poster.accent;
+                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+              }
+            }
+          }
+          break;
+        case 'stars':
+          ctx.fillStyle = poster.accent;
+          ctx.globalAlpha = 0.12;
+          for (let i = 0; i < 30; i++) {
+            const x = Math.random() * WIDTH;
+            const y = Math.random() * HEIGHT;
+            const size = 2 + Math.random() * 4;
+            drawStar(ctx, x, y, 5, size, size / 2);
+          }
+          break;
+      }
+      ctx.restore();
+
+      // Accent glow orb
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      const glow = ctx.createRadialGradient(WIDTH * 0.8, HEIGHT * 0.25, 0, WIDTH * 0.8, HEIGHT * 0.25, 150);
+      glow.addColorStop(0, poster.accent);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      ctx.restore();
+    }
+
+    function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+      let rot = Math.PI / 2 * 3;
+      let step = Math.PI / spikes;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerR);
+      for (let i = 0; i < spikes; i++) {
+        ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+        rot += step;
+        ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerR);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // Render all
+    const canvases = [];
+    posters.forEach((poster, i) => {
+      const wrap = document.createElement('div');
+      const label = document.createElement('h3');
+      label.textContent = `${poster.filename}`;
+      wrap.appendChild(label);
+
+      const canvas = document.createElement('canvas');
+      canvases.push({ canvas, poster });
+      drawPoster(canvas, poster);
+      wrap.appendChild(canvas);
+      grid.appendChild(wrap);
+    });
+
+    function downloadAll() {
+      canvases.forEach(({ canvas, poster }) => {
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = poster.filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/jpeg', 0.92);
+      });
+    }
+  </script>
+</body>
+</html>

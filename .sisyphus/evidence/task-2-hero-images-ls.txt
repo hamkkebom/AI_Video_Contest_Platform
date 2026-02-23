@@ -1,6 +1,0 @@
--rw-r--r-- 1 1210y 197609 14388 Feb 18 23:33 public/images/hero-1.jpg
--rw-r--r-- 1 1210y 197609 15794 Feb 18 23:33 public/images/hero-2.jpg
--rw-r--r-- 1 1210y 197609 17234 Feb 18 23:33 public/images/hero-3.jpg
--rw-r--r-- 1 1210y 197609 17236 Feb 18 23:33 public/images/hero-4.jpg
--rw-r--r-- 1 1210y 197609 17765 Feb 18 23:33 public/images/hero-5.jpg
--rw-r--r-- 1 1210y 197609 18077 Feb 18 23:33 public/images/hero-6.jpg

@@ -27,17 +27,11 @@ export function LikeButton({ liked = false, initialCount = 0, onToggle }: LikeBu
       type="button"
       onClick={handleToggle}
       aria-pressed={isLiked}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        border: "1px solid #d1d5db",
-        borderRadius: 999,
-        padding: "6px 12px",
-        background: isLiked ? "#ffe4e6" : "#fff",
-        color: isLiked ? "#be123c" : "#111827",
-        cursor: "pointer"
-      }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+        isLiked
+          ? 'bg-red-50 dark:bg-red-950 text-red-600 border-red-200 dark:border-red-800'
+          : 'bg-background text-foreground border-border hover:bg-muted'
+      }`}
     >
       <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
       <span>{count}</span>

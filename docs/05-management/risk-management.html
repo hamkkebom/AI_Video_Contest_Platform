@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>리스크 관리 문서 - 함께봄 AI 영상 공모전 플랫폼</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <main>
+    <h1>⚠️ 리스크 관리 문서</h1>
+    <p>Phase 1 운영 안정성을 목표로 기술/비즈니스/운영 리스크를 식별하고 대응 전략을 정의한 문서</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
+
+    <h2>1. 리스크 평가 기준</h2>
+    <p>확률(높음/중간/낮음)과 영향도(높음/중간/낮음)를 결합해 우선순위를 판단하며, 상태값 정의 문서의 ST-003(ContestStatus), ST-004(SubmissionStatus) 전이 실패 가능성을 운영 리스크 평가에 반영한다.</p>
+
+    <h2>2. 리스크 매트릭스</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>영향도 \ 확률</th>
+          <th>높음</th>
+          <th>중간</th>
+          <th>낮음</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>높음</td>
+          <td>R-001, R-002, R-007</td>
+          <td>R-003, R-004, R-008</td>
+          <td>R-006</td>
+        </tr>
+        <tr>
+          <td>중간</td>
+          <td>R-005</td>
+          <td>R-009</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>낮음</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. 리스크 상세 목록</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>리스크 ID</th>
+          <th>분류</th>
+          <th>설명</th>
+          <th>확률</th>
+          <th>영향도</th>
+          <th>완화 전략</th>
+          <th>담당자</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R-001</td>
+          <td>기술</td>
+          <td>영상 파일 2GB 제한 초과 업로드로 F-001 접수 실패 증가</td>
+          <td>높음</td>
+          <td>높음</td>
+          <td>사전 용량 체크, 업로드 전 검증 안내, API-005 저장 전 차단 규칙 적용</td>
+          <td>백엔드</td>
+        </tr>
+        <tr>
+          <td>R-002</td>
+          <td>기술</td>
+          <td>마감일 트래픽 급증으로 API-004/API-005 응답 지연 및 타임아웃 발생</td>
+          <td>높음</td>
+          <td>높음</td>
+          <td>캐시/큐 기반 버퍼링, 제출 마감 D-1 부하 리허설, 모니터링 임계치 사전 설정</td>
+          <td>백엔드</td>
+        </tr>
+        <tr>
+          <td>R-003</td>
+          <td>기술</td>
+          <td>Mux 외부 의존성 장애로 영상 재생 및 심사(F-002) 지연</td>
+          <td>중간</td>
+          <td>높음</td>
+          <td>대체 썸네일/재시도 로직, 장애 공지 템플릿, API 응답에 재처리 상태 포함</td>
+          <td>백엔드</td>
+        </tr>
+        <tr>
+          <td>R-004</td>
+          <td>기술</td>
+          <td>Supabase 스케일링 한계로 동시 접속 시 세션/쿼리 병목 발생</td>
+          <td>중간</td>
+          <td>높음</td>
+          <td>읽기 쿼리 분리, 인덱스 점검, ST-003 전이 시 트랜잭션 경량화</td>
+          <td>백엔드</td>
+        </tr>
+        <tr>
+          <td>R-005</td>
+          <td>비즈니스</td>
+          <td>심사 데이터 집계 오류로 F-003 결과 발표 신뢰도 저하</td>
+          <td>높음</td>
+          <td>중간</td>
+          <td>API-014/015 이중 검증 배치, 수동 승인 단계 추가, 감사 로그 검토</td>
+          <td>QA</td>
+        </tr>
+        <tr>
+          <td>R-006</td>
+          <td>비즈니스</td>
+          <td>외부 링크(홍보/참조) 만료로 사용자 이탈 증가</td>
+          <td>낮음</td>
+          <td>높음</td>
+          <td>정기 링크 헬스체크, 대체 페이지 라우팅, 공지 자동화</td>
+          <td>운영</td>
+        </tr>
+        <tr>
+          <td>R-007</td>
+          <td>비즈니스</td>
+          <td>저작권 분쟁 발생 시 작품 비공개/삭제 대응 지연</td>
+          <td>높음</td>
+          <td>높음</td>
+          <td>신고 접수 SLA, 임시 블라인드 상태(ST-004 연계 정책) 정의, 법무 협업 루틴 구축</td>
+          <td>운영</td>
+        </tr>
+        <tr>
+          <td>R-008</td>
+          <td>운영</td>
+          <td>동시 심사자 100명 환경에서 점수 저장(API-014) 충돌 위험</td>
+          <td>중간</td>
+          <td>높음</td>
+          <td>낙관적 잠금/중복 제출 차단, 저장 큐 분리, 심사 세션 타임아웃 정책</td>
+          <td>백엔드</td>
+        </tr>
+        <tr>
+          <td>R-009</td>
+          <td>운영</td>
+          <td>마감 시점 직전 문의 폭주로 사용자 응답 지연</td>
+          <td>중간</td>
+          <td>중간</td>
+          <td>FAQ 우선 노출(API-009), 자동 응답 템플릿, 긴급 티켓 분류 운영</td>
+          <td>QA</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. 운영 원칙</h2>
+    <ul>
+      <li>Phase 1 종료 전 R-001, R-002, R-007은 반드시 리허설 기반으로 재평가한다.</li>
+      <li>모든 High/Critical 리스크는 테스트 계획서의 마감 시점 테스트와 연결해 검증한다.</li>
+      <li>역할 접근 문제는 ST-001(UserRole)과 API 권한 규칙(401/403) 기준으로 대응한다.</li>
+    </ul>
+  </main>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

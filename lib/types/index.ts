@@ -46,7 +46,7 @@ export interface Like {
   createdAt: string;
 }
 
-export type ArticleType = "trend_report" | "announcement" | "press_release";
+export type ArticleType = "notice" | "program" | "insight";
 
 export interface Article {
   id: string;
@@ -79,9 +79,12 @@ export interface Inquiry {
 
 export type FaqCategory = "participant" | "host" | "judge" | "general";
 
+export type FaqTopic = "contest" | "service" | "payment" | "technical" | "account";
+
 export interface FAQ {
   id: string;
   category: FaqCategory;
+  topic: FaqTopic;
   question: string;
   answer: string;
   isPinned: boolean;
@@ -105,6 +108,13 @@ export interface JudgingTemplate {
 
 export type ContestStatus = "draft" | "open" | "closed" | "judging" | "completed";
 
+/** 수상 티어 (상 종류별 인원 설정) */
+export interface AwardTier {
+  label: string;       // 예: "대상", "최우수상", "우수상", "장려상"
+  count: number;       // 해당 상의 수상 인원
+  prizeAmount?: string; // 해당 상의 개인 상금 (선택)
+}
+
 export interface Contest {
   id: string;
   title: string;
@@ -114,13 +124,21 @@ export interface Contest {
   region: string;
   tags: string[];
   status: ContestStatus;
-  startAt: string;
-  endAt: string;
-  submissionDeadline: string;
+  submissionStartAt: string;
+  submissionEndAt: string;
+  judgingStartAt: string;
+  judgingEndAt: string;
+  resultAnnouncedAt: string;
   judgingType: "internal" | "external" | "both";
   reviewPolicy: "manual" | "auto_then_manual";
   maxSubmissionsPerUser: number;
   allowedVideoExtensions: string[];
+  prizeAmount?: string;
+  awardTiers: AwardTier[];
+  posterUrl?: string;
+  promotionVideoUrl?: string;
+  /** 프리미엄 랜딩페이지 보유 여부 (유료 부가 서비스) */
+  hasLandingPage?: boolean;
 }
 
 export type SubmissionStatus =
@@ -143,6 +161,10 @@ export interface Submission {
   submittedAt: string;
   views: number;
   likeCount: number;
+  /** 영상 길이 (초) */
+  videoDuration: number;
+  /** 평균 시청 시간 (초) */
+  avgWatchDuration: number;
   tags: string[];
   autoRejectedReason?: string;
 }

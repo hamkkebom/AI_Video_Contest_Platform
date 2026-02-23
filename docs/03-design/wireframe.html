@@ -7,243 +7,118 @@
   <meta name="doc-status" content="목업 기준 초안">
   <meta name="last-modified" content="2026-02-19">
   <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
-  <title>와이어프레임 — 함께봄</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <title>와이어프레임 - 함께봄 AI 영상 공모전 플랫폼</title>
   <link rel="stylesheet" href="../assets/style.css">
   <link rel="stylesheet" href="../assets/print.css">
 </head>
 <body>
-  <header>
-    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>UX/디자인</span> / <span>와이어프레임</span></nav>
-    <h1>와이어프레임 (Wireframe)</h1>
-    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
-  </header>
-
   <main>
-    <section class="doc-meta">
-      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
-    </section>
+    <h1>🧩 와이어프레임</h1>
+    <p>핵심 사용자 플로우 5개 기준 저해상도 화면 구조와 화면 간 이동 정의</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
 
-    <section>
-      <h2>1. 랜딩 페이지 흐름</h2>
-      <p>신규 사용자의 첫 진입 경로 (F-004 갤러리 노출)</p>
-      <div class="mermaid">
-graph LR
-  A["랜딩 페이지<br/>Hero + CTA"] --> B["공모전 목록<br/>카드 그리드"]
-  B --> C["공모전 상세<br/>정보 + 참가 버튼"]
-  C --> D["회원가입<br/>또는 로그인"]
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>화면</th>
-            <th>주요 요소</th>
-            <th>기능 ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>랜딩</td>
-            <td>Hero 배너, 공모전 추천, CTA 버튼</td>
-            <td>F-004</td>
-          </tr>
-          <tr>
-            <td>공모전 목록</td>
-            <td>카드 그리드, 필터, 검색</td>
-            <td>F-004, F-011</td>
-          </tr>
-          <tr>
-            <td>공모전 상세</td>
-            <td>제목, 설명, 마감일, 참가 버튼</td>
-            <td>F-001</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h2>1. 범위 및 기준</h2>
+    <p>본 문서는 전체 47개 페이지 중 핵심 경험에 직접 영향을 주는 5개 플로우만 다룹니다. 라우트와 기능 ID는 정보구조도(IA) 기준으로 연결했습니다.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>플로우 ID</th>
+          <th>플로우명</th>
+          <th>대표 라우트</th>
+          <th>관련 기능 ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>WF-01</td>
+          <td>랜딩 → 공모전 목록 탐색</td>
+          <td><code>/</code> → <code>/contests</code> → <code>/contests/:id</code></td>
+          <td>F-001, F-011</td>
+        </tr>
+        <tr>
+          <td>WF-02</td>
+          <td>공모전 접수(제출) 플로우</td>
+          <td><code>/contests/:id</code> → <code>/login</code> → <code>/contests/:id</code></td>
+          <td>F-001, F-003, F-007</td>
+        </tr>
+        <tr>
+          <td>WF-03</td>
+          <td>심사 화면 플로우</td>
+          <td><code>/invite/:token</code> → <code>/judging</code> → <code>/judging/:contestId/:submissionId</code></td>
+          <td>F-002, F-006, F-009</td>
+        </tr>
+        <tr>
+          <td>WF-04</td>
+          <td>관리자 대시보드 운영 플로우</td>
+          <td><code>/admin/dashboard</code> → <code>/admin/users</code> → <code>/admin/analytics</code></td>
+          <td>F-007, F-008, F-010</td>
+        </tr>
+        <tr>
+          <td>WF-05</td>
+          <td>갤러리 탐색 플로우</td>
+          <td><code>/gallery</code> → <code>/creators/:id</code> → <code>/search</code></td>
+          <td>F-004, F-005, F-011</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <section>
-      <h2>2. 참가자 제출 흐름</h2>
-      <p>공모전 참가 및 영상 제출 (F-001)</p>
-      <div class="mermaid">
-graph LR
-  A["공모전 상세"] --> B["제출 폼<br/>제목, 설명"]
-  B --> C["영상 업로드<br/>Mux Direct"]
-  C --> D["제출 확인<br/>상태 추적"]
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>화면</th>
-            <th>주요 요소</th>
-            <th>기능 ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>제출 폼</td>
-            <td>제목 입력, 설명 텍스트, 카테고리 선택</td>
-            <td>F-001</td>
-          </tr>
-          <tr>
-            <td>영상 업로드</td>
-            <td>드래그 앤 드롭, 진행률 표시, 미리보기</td>
-            <td>F-001</td>
-          </tr>
-          <tr>
-            <td>제출 완료</td>
-            <td>확인 메시지, 상태 추적, 다음 단계 안내</td>
-            <td>F-001</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h2>2. 화면 전환 맵</h2>
+    <div class="mermaid">
+graph TD
+  L[랜딩 /] --> C[공모전 목록 /contests]
+  C --> CD[공모전 상세 /contests/:id]
+  CD --> LG[로그인 /login]
+  LG --> CD
 
-    <section>
-      <h2>3. 심사 화면 흐름</h2>
-      <p>심사위원의 채점 인터페이스 (F-002)</p>
-      <div class="mermaid">
-graph LR
-  A["심사 목록<br/>제출 작품"] --> B["작품 상세<br/>영상 재생"]
-  B --> C["채점 폼<br/>점수 입력"]
-  C --> D["제출 완료<br/>다음 작품"]
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>화면</th>
-            <th>주요 요소</th>
-            <th>기능 ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>심사 목록</td>
-            <td>제출 작품 카드, 상태 표시, 정렬</td>
-            <td>F-002</td>
-          </tr>
-          <tr>
-            <td>작품 상세</td>
-            <td>영상 플레이어, 메타데이터, 제출자 정보</td>
-            <td>F-002</td>
-          </tr>
-          <tr>
-            <td>채점 폼</td>
-            <td>창의성/기술성/메시지 슬라이더, 의견 입력</td>
-            <td>F-002</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+  IV[심사 초대 /invite/:token] --> JD[심사 대시보드 /judging]
+  JD --> JL[공모전별 심사 /judging/:contestId]
+  JL --> JS[개별 작품 채점 /judging/:contestId/:submissionId]
 
-    <section>
-      <h2>4. 관리자 대시보드 흐름</h2>
-      <p>플랫폼 운영 및 분석 (F-008)</p>
-      <div class="mermaid">
-graph LR
-  A["대시보드<br/>KPI 요약"] --> B["회원 관리<br/>역할 제어"]
-  B --> C["공모전 승인<br/>콘텐츠 검수"]
-  C --> D["분석 리포트<br/>UTM 추적"]
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>화면</th>
-            <th>주요 요소</th>
-            <th>기능 ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>대시보드</td>
-            <td>KPI 카드, 차트, 최근 활동</td>
-            <td>F-008</td>
-          </tr>
-          <tr>
-            <td>회원 관리</td>
-            <td>사용자 목록, 역할 변경, 제재</td>
-            <td>F-007</td>
-          </tr>
-          <tr>
-            <td>분석</td>
-            <td>채널별 유입, 전환율, 트렌드</td>
-            <td>F-008</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+  AD[관리자 대시보드 /admin/dashboard] --> AU[회원 관리 /admin/users]
+  AD --> AA[분석 /admin/analytics]
 
-    <section>
-      <h2>5. 갤러리 탐색 흐름</h2>
-      <p>영상 갤러리 및 상호작용 (F-004, F-005, F-011)</p>
-      <div class="mermaid">
-graph LR
-  A["갤러리 목록<br/>그리드 뷰"] --> B["필터 적용<br/>카테고리/태그"]
-  B --> C["작품 상세<br/>영상 재생"]
-  C --> D["좋아요<br/>크리에이터 팔로우"]
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>화면</th>
-            <th>주요 요소</th>
-            <th>기능 ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>갤러리 목록</td>
-            <td>썸네일 그리드, 정렬, 검색</td>
-            <td>F-004</td>
-          </tr>
-          <tr>
-            <td>필터</td>
-            <td>카테고리 선택, 태그 필터, 기간</td>
-            <td>F-011</td>
-          </tr>
-          <tr>
-            <td>작품 상세</td>
-            <td>영상 플레이어, 메타데이터, 좋아요 버튼</td>
-            <td>F-004, F-005</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+  G[갤러리 /gallery] --> CR[크리에이터 상세 /creators/:id]
+  G --> S[통합검색 /search]
+    </div>
 
-    <section>
-      <h2>6. 반응형 설계 원칙</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>기기</th>
-            <th>레이아웃</th>
-            <th>특징</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>모바일 (< 640px)</td>
-            <td>단일 열</td>
-            <td>터치 최적화, 큰 버튼</td>
-          </tr>
-          <tr>
-            <td>태블릿 (640-1024px)</td>
-            <td>2열 그리드</td>
-            <td>균형잡힌 레이아웃</td>
-          </tr>
-          <tr>
-            <td>데스크톱 (> 1024px)</td>
-            <td>3열 이상</td>
-            <td>풍부한 정보 표시</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h2>3. 핵심 플로우 상세</h2>
+
+    <h3>3.1 WF-01 랜딩 → 공모전 목록 탐색</h3>
+    <p><strong>화면 레이아웃:</strong> 상단 헤더(<code>Header</code>) + 히어로 캐러셀(<code>HeroCarousel</code>) + 진행중 공모전 섹션(<code>ContestCarousel</code>) + 푸터(<code>Footer</code>).</p>
+    <p><strong>인터랙션 포인트:</strong> 히어로 CTA 버튼, 상단 GNB 공모전 링크, 공모전 카드 클릭.</p>
+    <p><strong>다음 화면:</strong> <code>/contests</code> 목록 진입 후 필터/정렬 탐색, 카드 클릭 시 <code>/contests/:id</code>.</p>
+
+    <h3>3.2 WF-02 공모전 접수(제출)</h3>
+    <p><strong>화면 레이아웃:</strong> 공모전 상세 상단 핵심 정보(Card/Badge), 일정/가이드 블록, 제출 CTA(Button), 하단 정책 영역.</p>
+    <p><strong>인터랙션 포인트:</strong> 제출 버튼 클릭 시 인증 상태 확인, 비로그인 상태는 <code>/login</code> 리다이렉트(F-007), 로그인 후 상세 복귀.</p>
+    <p><strong>다음 화면:</strong> 제출 완료 후 <code>/my/submissions</code>에서 상태 확인(F-001, F-003).</p>
+
+    <h3>3.3 WF-03 심사 화면</h3>
+    <p><strong>화면 레이아웃:</strong> 초대 수락 화면(Card) → 심사 대시보드 → 공모전별 제출작 리스트(Input 검색 포함) → 채점 상세.</p>
+    <p><strong>인터랙션 포인트:</strong> 토큰 확인, 작품 선택, 점수 입력, 코멘트 저장.</p>
+    <p><strong>다음 화면:</strong> 채점 제출 후 목록으로 복귀하여 다음 작품 심사(F-002, F-009).</p>
+
+    <h3>3.4 WF-04 관리자 대시보드</h3>
+    <p><strong>화면 레이아웃:</strong> KPI 카드 그리드(Card/Badge), 주요 액션 버튼(Button), 상세 테이블(Table).</p>
+    <p><strong>인터랙션 포인트:</strong> 회원 관리(<code>/admin/users</code>), 분석 리포트(<code>/admin/analytics</code>), 대행 요청(<code>/admin/agency-requests</code>) 진입.</p>
+    <p><strong>다음 화면:</strong> 세부 운영 화면 처리 후 대시보드 복귀(F-008, F-010).</p>
+
+    <h3>3.5 WF-05 갤러리 탐색</h3>
+    <p><strong>화면 레이아웃:</strong> 작품 카드 목록, 정렬/검색 컨트롤, 작품 메타 정보(좋아요/작성자/상태).</p>
+    <p><strong>인터랙션 포인트:</strong> 작품 카드 클릭, 좋아요 토글(<code>LikeButton</code>), 작성자 프로필 이동, 통합 검색 이동.</p>
+    <p><strong>다음 화면:</strong> <code>/creators/:id</code> 또는 <code>/search</code>에서 재탐색(F-004, F-005, F-011).</p>
+
+    <h2>4. 와이어프레임 메모</h2>
+    <ul>
+      <li>공통 레이아웃은 <code>Header</code>, <code>Footer</code>, <code>FloatingButtons</code>를 모든 공개 페이지에 재사용합니다.</li>
+      <li>상태값(접수중/심사중/결과발표)은 <code>Badge</code> 변형으로 통일해 스캔 효율을 유지합니다.</li>
+      <li>입력 구간은 <code>Label</code> + <code>Input</code>/<code>Textarea</code> 조합을 기본 패턴으로 사용합니다.</li>
+      <li>세부 인터랙션 규칙(필터 로직, 심사 점수 규칙)은 기능 명세(F-XXX) 문서로 위임합니다.</li>
+    </ul>
   </main>
-
-  <footer>
-    <hr>
-    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
-  </footer>
   <script src="../assets/docs.js" defer></script>
 </body>
 </html>

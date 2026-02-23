@@ -1,6 +1,0 @@
-=== Hero Carousel ===
-1:'use client';
-12:import Autoplay from 'embla-carousel-autoplay';
-62:export function HeroCarousel({ contests }: HeroCarouselProps) {
-84:  if (contests.length === 0) {
-94:          Autoplay({

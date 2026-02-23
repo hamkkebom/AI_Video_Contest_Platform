@@ -1,7 +1,9 @@
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import Link from 'next/link';
+import { Activity, Globe, Shield, UserCog } from 'lucide-react';
+import { DEMO_ROLES } from '@/config/constants';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -9,9 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { getUsers, getActivityLogs, getIpLogs } from "@/lib/mock";
-import { DEMO_ROLES } from "@/config/constants";
+} from '@/components/ui/table';
+import { getActivityLogs, getIpLogs, getUsers } from '@/lib/mock';
 
 type AdminUserDetailPageProps = {
   params: Promise<{
@@ -19,349 +20,255 @@ type AdminUserDetailPageProps = {
   }>;
 };
 
-/**
- * 관리자 회원 상세 페이지
- * 특정 회원의 프로필 정보, 활동 로그, IP 로그, 관리자 메모를 표시합니다.
- */
-export default async function AdminUserDetailPage({
-  params,
-}: AdminUserDetailPageProps) {
+export default async function AdminUserDetailPage({ params }: AdminUserDetailPageProps) {
   try {
     const { id } = await params;
+    const [users, allActivityLogs, allIpLogs] = await Promise.all([getUsers(), getActivityLogs(), getIpLogs()]);
 
-    const [users, allActivityLogs, allIpLogs] = await Promise.all([
-      getUsers(),
-      getActivityLogs(),
-      getIpLogs(),
-    ]);
-
-    const user = users.find((u) => u.id === id);
+    const user = users.find((item) => item.id === id);
 
     if (!user) {
       return (
-        <div className="w-full py-12 px-4">
-          <div className="container mx-auto max-w-6xl text-center">
-            <p className="text-red-600">해당 회원을 찾을 수 없습니다</p>
-            <Link href="/admin/users">
-              <Button
-                variant="outline"
-                className="mt-4 border-[#EA580C] text-[#EA580C]"
-              >
-                ← 회원 목록
-              </Button>
-            </Link>
-          </div>
+        <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center">
+          <p className="text-destructive">해당 회원을 찾을 수 없습니다</p>
+          <Link href="/admin/users" className="mt-4 inline-block">
+            <Button variant="outline">회원 목록으로</Button>
+          </Link>
         </div>
       );
     }
 
-    const userActivityLogs = allActivityLogs
-      .filter((log) => log.userId === id)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-    const userIpLogs = allIpLogs
-      .filter((log) => log.userId === id)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
     const roleLabelMap: Record<string, { label: string; color: string }> = {
-      participant: {
-        label: DEMO_ROLES.participant.label,
-        color: "bg-blue-100 text-blue-700",
-      },
-      host: {
-        label: DEMO_ROLES.host.label,
-        color: "bg-amber-100 text-amber-700",
-      },
-      judge: {
-        label: DEMO_ROLES.judge.label,
-        color: "bg-purple-100 text-purple-700",
-      },
-      admin: {
-        label: DEMO_ROLES.admin.label,
-        color: "bg-red-100 text-red-700",
-      },
+      participant: { label: DEMO_ROLES.participant.label, color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
+      host: { label: DEMO_ROLES.host.label, color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+      judge: { label: DEMO_ROLES.judge.label, color: 'bg-primary/10 text-primary' },
+      admin: { label: DEMO_ROLES.admin.label, color: 'bg-destructive/10 text-destructive' },
     };
 
     const statusLabelMap: Record<string, { label: string; color: string }> = {
-      active: { label: "활성", color: "bg-green-100 text-green-700" },
-      pending: { label: "대기", color: "bg-yellow-100 text-yellow-700" },
-      suspended: { label: "정지", color: "bg-red-100 text-red-700" },
+      active: { label: '활성', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
+      pending: { label: '대기', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+      suspended: { label: '정지', color: 'bg-destructive/10 text-destructive' },
     };
 
     const riskLabelMap: Record<string, { label: string; color: string }> = {
-      low: { label: "낮음", color: "bg-green-100 text-green-700" },
-      medium: { label: "보통", color: "bg-yellow-100 text-yellow-700" },
-      high: { label: "높음", color: "bg-red-100 text-red-700" },
+      low: { label: '낮음', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
+      medium: { label: '보통', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+      high: { label: '높음', color: 'bg-destructive/10 text-destructive' },
     };
 
     const actionLabelMap: Record<string, string> = {
-      create_submission: "출품작 등록",
-      like_submission: "좋아요",
+      create_submission: '출품작 등록',
+      like_submission: '좋아요',
     };
 
-    const roleInfo = roleLabelMap[user.role] ?? {
-      label: user.role,
-      color: "bg-gray-100 text-gray-700",
-    };
-    const statusInfo = statusLabelMap[user.status] ?? {
-      label: user.status,
-      color: "bg-gray-100 text-gray-700",
-    };
+    const roleInfo = roleLabelMap[user.role] ?? { label: user.role, color: 'bg-muted text-muted-foreground' };
+    const statusInfo = statusLabelMap[user.status] ?? { label: user.status, color: 'bg-muted text-muted-foreground' };
+
+    const userActivityLogs = allActivityLogs
+      .filter((log) => log.userId === id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const userIpLogs = allIpLogs
+      .filter((log) => log.userId === id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return (
-      <div className="w-full">
-        {/* 페이지 헤더 */}
-        <section className="py-12 px-4 bg-gradient-to-r from-[#EA580C]/10 to-[#8B5CF6]/10 border-b border-border">
-          <div className="container mx-auto max-w-6xl">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-[#EA580C]/10 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-[#EA580C]">
-                    {user.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-3xl font-bold">{user.name}</h1>
-                    <Badge className={`${roleInfo.color} border-0`}>
-                      {roleInfo.label}
-                    </Badge>
-                    <Badge className={`${statusInfo.color} border-0`}>
-                      {statusInfo.label}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground">{user.email}</p>
-                </div>
+      <div className="space-y-6 pb-10">
+        <header className="space-y-1">
+          <p className="text-sm text-muted-foreground">회원 상세</p>
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{user.name}</h1>
+          <p className="text-sm text-muted-foreground">프로필, 활동, 보안 로그를 한 화면에서 관리합니다.</p>
+        </header>
+
+        <Card className="border-border">
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                {user.name.charAt(0)}
               </div>
-              <div className="flex gap-3">
-                <Link href="/admin/users">
-                  <Button
-                    variant="outline"
-                    className="border-[#EA580C] text-[#EA580C] hover:bg-[#EA580C]/10"
-                  >
-                    ← 목록
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  className="border-[#8B5CF6] text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
-                >
-                  수정
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                >
-                  정지
-                </Button>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={`${roleInfo.color} border-0`}>{roleInfo.label}</Badge>
+                  <Badge className={`${statusInfo.color} border-0`}>{statusInfo.label}</Badge>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/admin/users">
+                <Button variant="outline">목록</Button>
+              </Link>
+              <Button variant="outline">역할 변경</Button>
+              <Button variant="outline">상태 변경</Button>
+              <Button variant="ghost" className="text-destructive hover:text-destructive">
+                계정 정지
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 pt-0 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">닉네임</p>
+              <p className="font-medium">{user.nickname ?? '미설정'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">소속</p>
+              <p className="font-medium">{user.companyName ?? '개인'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">지역</p>
+              <p className="font-medium">{user.region}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">가입일</p>
+              <p className="font-medium">{new Date(user.createdAt).toLocaleDateString('ko-KR')}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 프로필 정보 */}
-        <section className="py-8 px-4 bg-background">
-          <div className="container mx-auto max-w-6xl">
-            <h2 className="text-2xl font-bold mb-4">프로필 정보</h2>
-            <Card className="p-6 border border-border">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">닉네임</p>
-                  <p className="font-medium">
-                    {user.nickname ?? "미설정"}
-                  </p>
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card className="border-border border-l-4 border-l-primary">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">활동 로그</p>
+                  <p className="text-3xl font-bold tracking-tight">{userActivityLogs.length}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">소속</p>
-                  <p className="font-medium">
-                    {user.companyName ?? "개인"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">지역</p>
-                  <p className="font-medium">{user.region}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">가입일</p>
-                  <p className="font-medium">
-                    {new Date(user.createdAt).toLocaleDateString("ko-KR")}
-                  </p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Activity className="h-5 w-5" />
                 </div>
               </div>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border border-l-4 border-l-sky-500">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">IP 접속 로그</p>
+                  <p className="text-3xl font-bold tracking-tight">{userIpLogs.length}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/10 text-sky-700 dark:text-sky-300">
+                  <Globe className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border border-l-4 border-l-amber-500">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">관리 액션</p>
+                  <p className="text-3xl font-bold tracking-tight">데모</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                  <UserCog className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
-        {/* 활동 로그 */}
-        <section className="py-8 px-4 bg-muted/30">
-          <div className="container mx-auto max-w-6xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">활동 로그</h2>
-              <Badge
-                variant="outline"
-                className="border-[#EA580C] text-[#EA580C]"
-              >
-                {userActivityLogs.length}건
-              </Badge>
-            </div>
-            <Card className="border border-border overflow-hidden">
-              {userActivityLogs.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  활동 로그가 없습니다
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold">활동</TableHead>
-                      <TableHead className="font-semibold">
-                        대상 타입
-                      </TableHead>
-                      <TableHead className="font-semibold">대상 ID</TableHead>
-                      <TableHead className="font-semibold">일시</TableHead>
+        <Card className="border-border overflow-hidden">
+          <CardHeader>
+            <CardTitle>활동 내역</CardTitle>
+            <CardDescription>최근 활동 로그를 시간순으로 확인합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {userActivityLogs.length === 0 ? (
+              <div className="px-6 py-10 text-center text-sm text-muted-foreground">활동 로그가 없습니다.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>활동</TableHead>
+                    <TableHead>대상 타입</TableHead>
+                    <TableHead>대상 ID</TableHead>
+                    <TableHead>일시</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userActivityLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">{actionLabelMap[log.action] ?? log.action}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-primary/10 text-primary">{log.targetType}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{log.targetId}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(log.createdAt).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userActivityLogs.map((log) => (
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <div>
+              <CardTitle>보안 로그</CardTitle>
+              <CardDescription>IP 로그와 위험 수준을 확인합니다.</CardDescription>
+            </div>
+            <Shield className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="p-0">
+            {userIpLogs.length === 0 ? (
+              <div className="px-6 py-10 text-center text-sm text-muted-foreground">IP 로그가 없습니다.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>IP 주소</TableHead>
+                    <TableHead>국가</TableHead>
+                    <TableHead>지역</TableHead>
+                    <TableHead>위험 수준</TableHead>
+                    <TableHead>일시</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userIpLogs.map((log) => {
+                    const riskInfo = riskLabelMap[log.riskLevel] ?? { label: log.riskLevel, color: 'bg-muted text-muted-foreground' };
+
+                    return (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">
-                          {actionLabelMap[log.action] ?? log.action}
-                        </TableCell>
+                        <TableCell className="font-mono text-xs">{log.ipAddress}</TableCell>
+                        <TableCell>{log.country}</TableCell>
+                        <TableCell>{log.region}</TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="text-xs border-[#8B5CF6]/30 text-[#8B5CF6]"
-                          >
-                            {log.targetType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground font-mono">
-                          {log.targetId}
+                          <Badge className={`${riskInfo.color} border-0 text-xs`}>{riskInfo.label}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleDateString("ko-KR", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
+                          {new Date(log.createdAt).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
                           })}
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Card>
-          </div>
-        </section>
-
-        {/* IP 로그 */}
-        <section className="py-8 px-4 bg-background">
-          <div className="container mx-auto max-w-6xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">IP 로그</h2>
-              <Badge
-                variant="outline"
-                className="border-[#8B5CF6] text-[#8B5CF6]"
-              >
-                {userIpLogs.length}건
-              </Badge>
-            </div>
-            <Card className="border border-border overflow-hidden">
-              {userIpLogs.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  IP 로그가 없습니다
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold">IP 주소</TableHead>
-                      <TableHead className="font-semibold">국가</TableHead>
-                      <TableHead className="font-semibold">지역</TableHead>
-                      <TableHead className="font-semibold">
-                        위험 수준
-                      </TableHead>
-                      <TableHead className="font-semibold">일시</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userIpLogs.map((log) => {
-                      const riskInfo = riskLabelMap[log.riskLevel] ?? {
-                        label: log.riskLevel,
-                        color: "bg-gray-100 text-gray-700",
-                      };
-                      return (
-                        <TableRow key={log.id}>
-                          <TableCell className="font-mono text-sm">
-                            {log.ipAddress}
-                          </TableCell>
-                          <TableCell>{log.country}</TableCell>
-                          <TableCell>{log.region}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`${riskInfo.color} border-0 text-xs`}
-                            >
-                              {riskInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(log.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </Card>
-          </div>
-        </section>
-
-        {/* 관리자 메모 */}
-        <section className="py-8 px-4 bg-muted/30">
-          <div className="container mx-auto max-w-6xl">
-            <h2 className="text-2xl font-bold mb-4">관리자 메모</h2>
-            <Card className="p-6 border border-border">
-              <textarea
-                className="w-full h-32 p-4 border border-border rounded-lg bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#EA580C]/30 focus:border-[#EA580C]"
-                placeholder="이 회원에 대한 관리자 메모를 작성하세요..."
-                readOnly
-                defaultValue=""
-              />
-              <div className="flex justify-end mt-3">
-                <Button className="bg-[#EA580C] hover:bg-[#C2540A] text-white">
-                  메모 저장
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </section>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   } catch (error) {
-    console.error("Failed to load user detail:", error);
+    console.error('Failed to load user detail:', error);
     return (
-      <div className="w-full py-12 px-4">
-        <div className="container mx-auto max-w-6xl text-center">
-          <p className="text-red-600">회원 정보를 불러올 수 없습니다</p>
-        </div>
+      <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center">
+        <p className="text-destructive">회원 정보를 불러올 수 없습니다</p>
       </div>
     );
   }

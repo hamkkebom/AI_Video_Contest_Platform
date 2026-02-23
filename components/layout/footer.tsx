@@ -1,15 +1,15 @@
 import Link from 'next/link';
-import { Film } from 'lucide-react';
+import { TreePine } from 'lucide-react';
 
 const serviceLinks = [
-  { label: '공모전', href: '/contests' },
-  { label: '갤러리', href: '/gallery' },
-  { label: '소식/트렌드', href: '/news' },
+  { label: '공모전', href: '/contests?status=open' },
+  { label: '갤러리', href: '/gallery/all' },
+  { label: '스토리', href: '/story' },
   { label: '고객센터', href: '/support' },
 ];
 
 const extraServiceLinks = [
-  { label: 'AI 영상제작 교육', href: '#' },
+  { label: 'AI 영상 제작 교육', href: '#' },
   { label: '영상 제작', href: '#' },
   { label: '마케팅', href: '#' },
 ];
@@ -27,13 +27,12 @@ export function Footer() {
           {/* 브랜드 */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Film className="h-5 w-5 text-background/80" />
-              <span className="text-lg font-bold">AI 영상 공모전</span>
+              <TreePine className="h-5 w-5 text-background/80" />
+              <span className="text-lg font-bold">꿈플</span>
             </div>
             <p className="text-sm text-background/60 leading-relaxed">
-              AI 영상 공모전 플랫폼
-              <br />
-              창의적인 AI 영상 제작자들의 무대
+              AI로 영상과 노래를 시도하며
+              <br />꿈을 키워가는 나무
             </p>
           </div>
 
@@ -95,7 +94,7 @@ export function Footer() {
         {/* 하단 저작권 */}
         <div className="mt-12 pt-8 border-t border-background/10">
           <p className="text-xs text-background/40 text-center">
-            &copy; 2025 함께봄. All rights reserved.
+            &copy; 2026 꿈플. All rights reserved.
           </p>
         </div>
       </div>

@@ -62,7 +62,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
           <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
           <Link
             href={"/contests?status=open" as any}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
           >
             전체보기 →
           </Link>
@@ -74,37 +74,52 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
             opts={{
               align: 'start',
               loop: false,
+              slidesToScroll: 'auto',
+              containScroll: 'trimSnaps',
+              watchSlides: false,
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-4">
+            <CarouselContent className="-ml-4 py-2">
               {contests.map((contest, index) => (
                 <CarouselItem
                   key={contest.id}
                   className="pl-4 basis-full md:basis-1/2 lg:basis-1/3"
                 >
-                   <Link href={`/contests/${contest.id}` as any}>
-                     <div className="group border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-border/80 transition-all cursor-pointer h-full">
-                       <div className="h-40 rounded-t-xl overflow-hidden">
-                         <img
-                           src={`/images/contest-${(index % 5) + 1}.jpg`}
-                           alt={contest.title}
-                           className="w-full h-full object-cover"
-                         />
-                       </div>
-                      <div className="p-5 space-y-3">
-                        <h3 className="font-semibold text-base line-clamp-2 group-hover:text-primary transition-colors">
+                  <Link href={`/contests/${contest.id}` as any}>
+                    <div className="group border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-200 cursor-pointer h-full will-change-[shadow] flex flex-col">
+                      <div className="h-56 rounded-t-xl overflow-hidden relative">
+                        <img
+                          src={`/images/contest-${(index % 5) + 1}.jpg`}
+                          alt={contest.title}
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {/* D-day 뱃지 */}
+                        {contest.status === 'open' && (() => {
+                          const diff = Math.ceil((new Date(contest.submissionEndAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                          return diff >= 0 ? (
+                            <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-lg ${diff <= 7 ? 'bg-red-500' : diff <= 14 ? 'bg-orange-500' : 'bg-violet-500'}`}>
+                              {diff === 0 ? 'D-Day' : `D-${diff}`}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div className="p-5 space-y-3 flex flex-col flex-1">
+                        <h3 className="font-semibold text-base line-clamp-2 group-hover:text-[#EA580C] transition-colors">
                           {contest.title}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {contest.description}
                         </p>
-                        <div className="flex justify-between items-center pt-1">
-                          <span className="text-xs bg-[#EA580C]/10 text-[#EA580C] px-2.5 py-1 rounded-full font-medium">
-                            {contest.status === 'open' ? '접수중' : '진행중'}
+                        <div className="flex justify-between items-center pt-4 mt-auto">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${contest.status === 'open' ? 'bg-accent text-accent-foreground' :
+                            contest.status === 'judging' ? 'bg-pink-500/10 text-pink-600' :
+                              'bg-gray-500/10 text-gray-500'
+                            }`}>
+                            {contest.status === 'open' ? '접수중' : contest.status === 'judging' ? '심사중' : '결과발표'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            ~{formatDate(contest.submissionDeadline)}
+                            ~{formatDate(contest.submissionEndAt)}
                           </span>
                         </div>
                       </div>

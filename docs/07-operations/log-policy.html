@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
+  <title>로그 정책 문서 - 함께봄 AI 영상 공모전 플랫폼</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+<body>
+  <main>
+    <h1>📚 로그 정책 문서</h1>
+    <p>함께봄 AI 영상 공모전 플랫폼의 운영/보안/감사 대응을 위한 로그 수집 및 관리 정책</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
+
+    <h2>1. 로그 이벤트 정의 <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <p>핵심 이벤트를 보안/운영 중요도 기준으로 수집합니다. 이벤트명은 시스템 공통 네이밍 규칙을 따릅니다.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>이벤트명</th>
+          <th>트리거</th>
+          <th>심각도</th>
+          <th>관련 기능/정책</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>auth.login.success</code></td>
+          <td>사용자 로그인 성공</td>
+          <td>INFO</td>
+          <td>F-007, POL-001</td>
+        </tr>
+        <tr>
+          <td><code>auth.logout</code></td>
+          <td>사용자 로그아웃</td>
+          <td>INFO</td>
+          <td>F-007</td>
+        </tr>
+        <tr>
+          <td><code>auth.login.failed</code></td>
+          <td>비밀번호/인증 실패</td>
+          <td>WARN</td>
+          <td>F-007, POL-017</td>
+        </tr>
+        <tr>
+          <td><code>contest.created</code></td>
+          <td>주최자 공모전 생성</td>
+          <td>INFO</td>
+          <td>F-001</td>
+        </tr>
+        <tr>
+          <td><code>contest.opened</code></td>
+          <td>공모전 상태 전환(draft → open)</td>
+          <td>INFO</td>
+          <td>F-001, POL-013</td>
+        </tr>
+        <tr>
+          <td><code>contest.closed</code></td>
+          <td>접수 마감(open → closed)</td>
+          <td>INFO</td>
+          <td>F-001, POL-013</td>
+        </tr>
+        <tr>
+          <td><code>contest.completed</code></td>
+          <td>결과 발표(judging → completed)</td>
+          <td>INFO</td>
+          <td>F-003, POL-016</td>
+        </tr>
+        <tr>
+          <td><code>submission.created</code></td>
+          <td>참가자 작품 제출</td>
+          <td>INFO</td>
+          <td>F-001, POL-005</td>
+        </tr>
+        <tr>
+          <td><code>submission.approved</code></td>
+          <td>작품 검수 승인</td>
+          <td>INFO</td>
+          <td>F-001, POL-008</td>
+        </tr>
+        <tr>
+          <td><code>submission.rejected</code></td>
+          <td>작품 반려 또는 자동 반려</td>
+          <td>WARN</td>
+          <td>F-001, POL-008</td>
+        </tr>
+        <tr>
+          <td><code>admin.role.changed</code></td>
+          <td>관리자 역할 변경 실행</td>
+          <td>WARN</td>
+          <td>F-007, POL-026</td>
+        </tr>
+        <tr>
+          <td><code>admin.content.moderated</code></td>
+          <td>관리자 콘텐츠 블라인드/복구</td>
+          <td>WARN</td>
+          <td>POL-019</td>
+        </tr>
+        <tr>
+          <td><code>system.error</code></td>
+          <td>처리되지 않은 서버 오류 발생</td>
+          <td>ERROR</td>
+          <td>운영 안정성</td>
+        </tr>
+        <tr>
+          <td><code>system.performance.alert</code></td>
+          <td>임계치 초과 지연 또는 자원 사용량 급증</td>
+          <td>WARN</td>
+          <td>성능 요구사항</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. 로그 레벨 정의 <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>정의</th>
+          <th>예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DEBUG</td>
+          <td>개발/문제 재현용 상세 진단 정보</td>
+          <td><code>submission.validation.debug</code> 입력값 검증 경로 기록</td>
+        </tr>
+        <tr>
+          <td>INFO</td>
+          <td>정상 흐름의 주요 상태 변경</td>
+          <td><code>contest.opened</code>, <code>auth.login.success</code></td>
+        </tr>
+        <tr>
+          <td>WARN</td>
+          <td>즉시 장애는 아니지만 점검이 필요한 상황</td>
+          <td><code>auth.login.failed</code>, <code>submission.rejected</code></td>
+        </tr>
+        <tr>
+          <td>ERROR</td>
+          <td>기능 실패 또는 요청 처리 불가</td>
+          <td><code>system.error</code> 5xx 응답 발생</td>
+        </tr>
+        <tr>
+          <td>FATAL</td>
+          <td>서비스 지속 불가 수준의 치명 장애</td>
+          <td>DB 연결 전면 중단, 로그 저장소 장애 확산</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. 보관 기간 정책 <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <p>보관 기간은 법무/보안 검토 후 확정합니다. 기본안은 아래와 같습니다.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>로그 유형</th>
+          <th>예시</th>
+          <th>보관 기간</th>
+          <th>파기 방식</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>인증 로그</td>
+          <td><code>auth.*</code></td>
+          <td>1년</td>
+          <td>기간 만료 시 배치 삭제</td>
+        </tr>
+        <tr>
+          <td>운영 이벤트 로그</td>
+          <td><code>contest.*</code>, <code>submission.*</code></td>
+          <td>2년</td>
+          <td>월 단위 아카이브 후 자동 삭제</td>
+        </tr>
+        <tr>
+          <td>관리자 감사 로그</td>
+          <td><code>admin.*</code></td>
+          <td>3년</td>
+          <td>WORM 스토리지 보관 후 만료 삭제</td>
+        </tr>
+        <tr>
+          <td>오류/성능 로그</td>
+          <td><code>system.error</code>, <code>system.performance.alert</code></td>
+          <td>6개월</td>
+          <td>압축 아카이브 후 삭제</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. 관리자 감사 로그(Audit Log) <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <p>감사 로그는 변경 주체, 변경 전후 값, 사유, 실행 시각을 포함합니다.</p>
+    <ul>
+      <li>추적 대상: 역할 변경, 공모전 승인/반려, 콘텐츠 블라인드, 계정 정지/해제, 정책 예외 승인</li>
+      <li>필수 필드: <code>actorId</code>, <code>actorRole</code>, <code>action</code>, <code>targetType</code>, <code>targetId</code>, <code>before</code>, <code>after</code>, <code>reason</code>, <code>ipHash</code>, <code>timestamp</code></li>
+      <li>조회 권한: <code>admin</code> 중 감사 권한 보유자, 보안 담당자, 지정된 내부 감사자</li>
+      <li>조회 통제: 조회 자체도 <code>admin.audit.viewed</code> 이벤트로 기록</li>
+    </ul>
+
+    <h2>5. 개인정보 마스킹 기준 <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>필드</th>
+          <th>저장 방식</th>
+          <th>마스킹 예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>이메일</td>
+          <td>부분 마스킹</td>
+          <td><code>ha***@example.com</code></td>
+        </tr>
+        <tr>
+          <td>휴대폰 번호</td>
+          <td>부분 마스킹</td>
+          <td><code>010-****-1234</code></td>
+        </tr>
+        <tr>
+          <td>이름</td>
+          <td>부분 마스킹</td>
+          <td><code>김*봄</code></td>
+        </tr>
+        <tr>
+          <td>IP 주소</td>
+          <td>해시 저장</td>
+          <td><code>sha256(ip + salt)</code></td>
+        </tr>
+        <tr>
+          <td>접근 토큰</td>
+          <td>원문 저장 금지</td>
+          <td>토큰 앞 6자 + 나머지 <code>***</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. 로그 저장 구조 <span class="review-badge">⚠️ 검토 필요</span></h2>
+    <p>애플리케이션 로그는 수집기에서 정규화 후 보안 저장소로 적재하며, 운영 대시보드와 감사 조회 시스템에서 분리 조회합니다.</p>
+    <div class="mermaid">
+graph TD
+  A[Application Events] --> B[Log Collector]
+  B --> C[Normalizer and Masking]
+  C --> D[Operational Log Store]
+  C --> E[Audit Log Store WORM]
+  D --> F[Monitoring Dashboard]
+  E --> G[Audit Viewer]
+    </div>
+  </main>
+  <script src="../assets/docs.js" defer></script>
+</body>
+</html>

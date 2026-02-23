@@ -1,63 +1,114 @@
-/* Pretendard 폰트 */
+/* ============================================
+   플랫폼 설계 문서 - 공통 화면 CSS
+   ============================================ */
+
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
-/* 컬러 변수 */
+/* ============================================
+   CSS 변수 (Color Tokens)
+   ============================================ */
 :root {
   --primary: #EA580C;
   --accent: #8B5CF6;
   --bg: #F9F7F4;
   --text: #2D2622;
-  --stripe: #F0EBE5;
+  --table-stripe: #F0EBE5;
   --code-bg: #E8E3D8;
-  --error-bg: #FFECEC;
-  --error-text: #D32F2F;
+  --badge-bg: #FFECEC;
+  --badge-text: #D32F2F;
+  --border: #D4CDBF;
 }
 
-/* 기본 스타일 */
+/* ============================================
+   기본 스타일
+   ============================================ */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
 body {
-  font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
-  background-color: #fff;
-  margin: 0;
-  padding: 0;
+  background-color: var(--bg);
   line-height: 1.6;
+  margin: 0;
+  padding: 120px 0;
 }
 
 main {
-  max-width: 960px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 0 40px;
 }
 
-/* 제목 */
+/* ============================================
+   타이포그래피
+   ============================================ */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--text);
   margin-top: 1.5em;
   margin-bottom: 0.5em;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
-h1 { font-size: 2.5em; }
-h2 { font-size: 2em; }
-h3 { font-size: 1.5em; }
-h4 { font-size: 1.25em; }
-h5 { font-size: 1.1em; }
-h6 { font-size: 1em; }
+h1 {
+  font-size: 2.5rem;
+  color: var(--primary);
+}
 
-/* 링크 */
+h2 {
+  font-size: 2rem;
+  color: var(--primary);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.1rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+p {
+  margin: 1em 0;
+  font-size: 1rem;
+}
+
 a {
   color: var(--primary);
   text-decoration: none;
+  border-bottom: 1px solid var(--primary);
+  transition: all 0.2s ease;
 }
 
 a:hover {
-  text-decoration: underline;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
-/* 테이블 */
+/* ============================================
+   테이블
+   ============================================ */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1em 0;
+  margin: 1.5em 0;
+  font-size: 0.95rem;
 }
 
 thead {
@@ -65,21 +116,28 @@ thead {
   color: white;
 }
 
-th, td {
+thead th {
   padding: 12px;
   text-align: left;
-  border: 1px solid #ddd;
+  font-weight: 700;
+}
+
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 tbody tr:nth-child(even) {
-  background-color: var(--stripe);
+  background-color: var(--table-stripe);
 }
 
 tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: #E8DFD5;
 }
 
-/* 코드 블록 */
+/* ============================================
+   코드 블록
+   ============================================ */
 code {
   font-family: 'Courier New', monospace;
   background-color: var(--code-bg);
@@ -94,27 +152,38 @@ pre {
   border-radius: 4px;
   overflow-x: auto;
   margin: 1em 0;
+  border-left: 4px solid var(--primary);
 }
 
 pre code {
-  background: none;
+  background-color: transparent;
   padding: 0;
+  border-radius: 0;
 }
 
-/* 배지 */
+/* ============================================
+   배지 (.review-badge)
+   ============================================ */
 .review-badge {
-  background-color: var(--error-bg);
-  color: var(--error-text);
+  display: inline-block;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
   padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  font-weight: bold;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 8px;
 }
 
-/* Breadcrumb */
+/* ============================================
+   Breadcrumb
+   ============================================ */
 .breadcrumb {
-  font-size: 0.9em;
-  margin-bottom: 1em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 1em 0;
+  font-size: 0.9rem;
   color: #666;
 }
 
@@ -122,95 +191,283 @@ pre code {
   color: var(--primary);
 }
 
-.breadcrumb span:not(:last-child)::after {
-  content: " / ";
-  margin: 0 8px;
-  color: #ccc;
+.breadcrumb li {
+  list-style: none;
+  display: inline;
 }
 
-/* PDF 다운로드 버튼 */
+.breadcrumb li::before {
+  content: " / ";
+  margin: 0 8px;
+  color: #999;
+}
+
+.breadcrumb li:first-child::before {
+  content: "";
+  margin: 0;
+}
+
+/* ============================================
+   PDF 버튼 (.pdf-button)
+   ============================================ */
 .pdf-button {
+  display: inline-block;
   background-color: var(--primary);
   color: white;
-  padding: 10px 20px;
-  border: none;
+  padding: 10px 16px;
   border-radius: 4px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1em;
-  margin-bottom: 20px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border-bottom: none;
 }
 
 .pdf-button:hover {
-  background-color: #d94702;
-  text-decoration: none;
+  background-color: #D64A08;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(234, 88, 12, 0.3);
 }
 
-/* TOC 사이드바 */
+.pdf-button:active {
+  transform: translateY(0);
+}
+
+@media print {
+  .pdf-button {
+    display: none;
+  }
+}
+
+/* ============================================
+   플로팅 홈 버튼 (.floating-home)
+   ============================================ */
+.floating-home {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background-color: var(--primary);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: none;
+  border-bottom: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.floating-home:hover {
+  background-color: #D64A08;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.4);
+  color: white;
+  border-bottom: none;
+}
+
+@media print {
+  .floating-home {
+    display: none;
+  }
+}
+
+/* ============================================
+   TOC 사이드바 (.toc)
+   ============================================ */
 .toc {
+  position: relative;
   border-left: 3px solid var(--accent);
-  padding-left: 20px;
-  margin: 20px 0;
+  padding-left: 16px;
+  margin: 2em 0;
+  background-color: rgba(139, 92, 246, 0.05);
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.toc h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc li {
+  margin: 0.5em 0;
 }
 
 .toc a {
-  display: block;
-  margin: 8px 0;
-  font-size: 0.95em;
-}
-
-.toc a.active {
   color: var(--primary);
-  font-weight: bold;
 }
 
-/* 다이어그램 컨테이너 */
+/* ============================================
+   Mermaid 다이어그램 (.mermaid)
+   ============================================ */
 .mermaid {
-  border: 1px solid #ddd;
+  display: flex;
+  justify-content: center;
+  margin: 2em 0;
+  padding: 16px;
+  background-color: white;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 20px;
-  background-color: var(--bg);
-  margin: 20px 0;
-  text-align: center;
 }
 
-/* 문서 메타 헤더 */
+/* ============================================
+   문서 메타 헤더 (.doc-meta)
+   ============================================ */
 .doc-meta {
-  background-color: var(--bg);
+  background-color: #F5F0E8;
+  border-left: 4px solid var(--accent);
   padding: 12px 16px;
-  border-left: 4px solid var(--primary);
-  margin-bottom: 20px;
-  font-size: 0.9em;
-  color: #666;
+  margin: 1.5em 0;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  color: #555;
 }
 
 .doc-meta strong {
   color: var(--text);
 }
 
-/* 반응형 */
-@media (max-width: 768px) {
-  main {
-    padding: 20px 10px;
-  }
-  
-  h1 { font-size: 1.8em; }
-  h2 { font-size: 1.4em; }
-  h3 { font-size: 1.1em; }
-  
-  table {
-    font-size: 0.9em;
-  }
-  
-  th, td {
-    padding: 8px;
-  }
+/* ============================================
+   리스트
+   ============================================ */
+ul, ol {
+  margin: 1em 0;
+  padding-left: 2em;
 }
 
-/* Print 전용 숨김 */
-@media print {
-  .pdf-button,
-  nav,
-  .breadcrumb {
-    display: none;
+li {
+  margin: 0.5em 0;
+}
+
+/* ============================================
+   블록 인용
+   ============================================ */
+blockquote {
+  border-left: 4px solid var(--accent);
+  padding-left: 16px;
+  margin: 1.5em 0;
+  color: #666;
+  font-style: italic;
+}
+
+/* ============================================
+   이미지
+   ============================================ */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+figure {
+  margin: 1.5em 0;
+  text-align: center;
+}
+
+figcaption {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5em;
+}
+
+/* ============================================
+   버튼 (일반)
+   ============================================ */
+button {
+  font-family: 'Pretendard', sans-serif;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background-color: white;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--bg);
+  border-color: var(--primary);
+}
+
+/* ============================================
+   네비게이션
+   ============================================ */
+nav {
+  margin: 1.5em 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 1.5em;
+}
+
+nav a {
+  color: var(--text);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+nav a:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ============================================
+   반응형 (모바일)
+   ============================================ */
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+
+  main {
+    max-width: 100%;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  table {
+    font-size: 0.85rem;
+  }
+
+  thead th,
+  tbody td {
+    padding: 8px;
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 0.5em;
   }
 }

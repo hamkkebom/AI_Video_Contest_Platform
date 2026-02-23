@@ -1,151 +1,118 @@
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Eye, Heart, Film } from 'lucide-react';
+import type { SubmissionStatus } from '@/lib/types';
 import { getSubmissions } from '@/lib/mock';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
-/**
- * 내 출품작 페이지
- * 사용자의 출품작 목록을 그리드로 표시 (데모: user-1)
- */
+const statusMeta: Record<SubmissionStatus, { label: string; className: string }> = {
+  pending_review: { label: '검토 중', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+  approved: { label: '승인됨', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
+  rejected: { label: '거절됨', className: 'bg-destructive/10 text-destructive' },
+  auto_rejected: { label: '자동 거절', className: 'bg-destructive/10 text-destructive' },
+  judging: { label: '심사 중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
+  judged: { label: '심사 완료', className: 'bg-primary/10 text-primary' },
+};
+
 export default async function MySubmissionsPage() {
   try {
     const allSubmissions = await getSubmissions();
-    // Demo: user-1의 출품작만 필터링
-    const userSubmissions = allSubmissions.filter((sub) => sub.userId === 'user-1');
-
-    // 상태별 색상 매핑
-    const statusColorMap: Record<string, { bg: string; text: string; label: string }> = {
-      pending_review: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: '검토 중' },
-      approved: { bg: 'bg-green-100', text: 'text-green-800', label: '승인됨' },
-      rejected: { bg: 'bg-red-100', text: 'text-red-800', label: '거절됨' },
-      auto_rejected: { bg: 'bg-red-100', text: 'text-red-800', label: '자동 거절' },
-      judging: { bg: 'bg-blue-100', text: 'text-blue-800', label: '심사 중' },
-      judged: { bg: 'bg-purple-100', text: 'text-purple-800', label: '심사 완료' }
-    };
+    const userSubmissions = allSubmissions.filter((submission) => submission.userId === 'user-1');
 
     return (
-      <div className="w-full">
-        {/* 페이지 헤더 */}
-        <section className="py-12 px-4 bg-gradient-to-r from-[#EA580C]/10 to-[#8B5CF6]/10 border-b border-border">
-          <div className="container mx-auto max-w-6xl">
-            <h1 className="text-4xl font-bold mb-2">내 출품작</h1>
-            <p className="text-muted-foreground">
-              {userSubmissions.length}개의 출품작을 관리하세요
-            </p>
-          </div>
-        </section>
+      <div className="space-y-6 pb-10">
+        <header className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">내 출품작</h1>
+          <p className="text-sm text-muted-foreground">
+            총 {userSubmissions.length}개 작품의 상태와 반응 지표를 한눈에 확인할 수 있어요.
+          </p>
+        </header>
 
-        {/* 출품작 그리드 */}
-        <section className="py-12 px-4 bg-background">
-          <div className="container mx-auto max-w-6xl">
-            {userSubmissions.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">출품작이 없습니다</p>
-                <Button className="bg-[#EA580C] hover:bg-[#C2540A]">
-                  새 출품작 등록
-                </Button>
+        {userSubmissions.length === 0 ? (
+          <Card className="border-border border-dashed">
+            <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Film className="h-6 w-6" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userSubmissions.map((submission) => {
-                  const statusInfo = statusColorMap[submission.status] || {
-                    bg: 'bg-gray-100',
-                    text: 'text-gray-800',
-                    label: submission.status
-                  };
-
-                  return (
-                    <Card
-                      key={submission.id}
-                      className="overflow-hidden hover:shadow-lg transition-all border border-border"
-                    >
-                      {/* 썸네일 */}
-                      <div className="relative w-full h-40 bg-gradient-to-br from-[#EA580C]/20 to-[#8B5CF6]/20 overflow-hidden">
-                        <img
-                          src={submission.thumbnailUrl}
-                          alt={submission.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform"
-                        />
-                        {/* 상태 배지 */}
-                        <div className="absolute top-2 right-2">
-                          <Badge className={`${statusInfo.bg} ${statusInfo.text} border-0`}>
-                            {statusInfo.label}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* 정보 */}
-                      <div className="p-4 space-y-3">
-                        {/* 제목 */}
-                        <h3 className="font-bold text-lg line-clamp-2 hover:text-[#EA580C] cursor-pointer">
-                          {submission.title}
-                        </h3>
-
-                        {/* 설명 */}
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {submission.description}
-                        </p>
-
-                        {/* 통계 */}
-                        <div className="flex gap-4 text-sm pt-2 border-t border-border">
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground">👁️</span>
-                            <span className="font-semibold">{submission.views}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground">❤️</span>
-                            <span className="font-semibold">{submission.likeCount}</span>
-                          </div>
-                        </div>
-
-                        {/* 태그 */}
-                        <div className="flex flex-wrap gap-1">
-                          {submission.tags.slice(0, 2).map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className="text-xs border-[#EA580C] text-[#EA580C]"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* 버튼 */}
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 border-[#EA580C] text-[#EA580C] hover:bg-[#EA580C]/10"
-                          >
-                            보기
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 border-[#8B5CF6] text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
-                          >
-                            수정
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+              <div className="space-y-1">
+                <p className="text-lg font-semibold">아직 출품한 작품이 없습니다</p>
+                <p className="text-sm text-muted-foreground">
+                  첫 작품을 등록하고 조회수와 좋아요 변화를 추적해보세요.
+                </p>
               </div>
-            )}
-          </div>
-        </section>
+              <Button>공모전 둘러보기</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {userSubmissions.map((submission) => {
+              const currentStatus = statusMeta[submission.status];
+
+              return (
+                <Card
+                  key={submission.id}
+                  className="overflow-hidden border-border transition-colors hover:border-primary/40"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-muted">
+                    <img
+                      src={submission.thumbnailUrl}
+                      alt={submission.title}
+                      className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                    <div className="absolute left-3 top-3">
+                      <Badge className={currentStatus.className}>{currentStatus.label}</Badge>
+                    </div>
+                  </div>
+
+                  <CardContent className="space-y-4 p-5">
+                    <div className="space-y-1.5">
+                      <h2 className="line-clamp-2 text-lg font-semibold leading-snug">{submission.title}</h2>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{submission.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-5 rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Eye className="h-4 w-4" />
+                        <span className="font-semibold text-foreground">{submission.views.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Heart className="h-4 w-4" />
+                        <span className="font-semibold text-foreground">{submission.likeCount.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {submission.tags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm">
+                        상세 보기
+                      </Button>
+                      <Button size="sm">수정</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </section>
+        )}
       </div>
     );
   } catch (error) {
     console.error('Failed to load submissions:', error);
+
     return (
-      <div className="w-full py-12 px-4">
-        <div className="container mx-auto max-w-6xl text-center">
-          <p className="text-red-600">출품작을 불러올 수 없습니다</p>
-        </div>
-      </div>
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardContent className="py-10 text-center">
+          <p className="font-medium text-destructive">출품작 데이터를 불러오지 못했습니다.</p>
+          <p className="mt-1 text-sm text-muted-foreground">잠시 후 다시 시도해 주세요.</p>
+        </CardContent>
+      </Card>
     );
   }
 }

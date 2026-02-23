@@ -30,6 +30,7 @@
 }
 
 @layer base {
+
   :root,
   [data-theme="light"],
   [data-theme="signature"] {
@@ -45,8 +46,8 @@
     --secondary-foreground: oklch(0.205 0.024 266);
     --muted: oklch(0.945 0.013 266);
     --muted-foreground: oklch(0.556 0.024 266);
-    --accent: oklch(0.945 0.013 266);
-    --accent-foreground: oklch(0.205 0.024 266);
+    --accent: oklch(0.96 0.04 55);
+    --accent-foreground: oklch(0.62 0.21 41);
     --destructive: oklch(0.577 0.245 27);
     --destructive-foreground: oklch(0.985 0.002 247);
     --border: oklch(0.895 0.013 266);
@@ -72,8 +73,8 @@
     --secondary-foreground: oklch(0.985 0.002 247);
     --muted: oklch(0.269 0.024 266);
     --muted-foreground: oklch(0.636 0.024 266);
-    --accent: oklch(0.269 0.024 266);
-    --accent-foreground: oklch(0.985 0.002 247);
+    --accent: oklch(0.25 0.05 50);
+    --accent-foreground: oklch(0.72 0.19 50);
     --destructive: oklch(0.577 0.245 27);
     --destructive-foreground: oklch(0.985 0.002 247);
     --border: oklch(0.269 0.024 266);
@@ -94,6 +95,8 @@
     @apply bg-background text-foreground antialiased;
     margin: 0;
     color-scheme: light;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   [data-theme="dark"] body {
@@ -104,4 +107,52 @@
   body {
     font-family: "Pretendard", "Noto Sans KR", sans-serif;
   }
+}
+
+/* ── 교육 섹션 오로라 그라데이션 ── */
+.edu-aurora-bg {
+  background:
+    radial-gradient(ellipse at 70% 5%, rgba(251, 146, 60, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 15% 80%, rgba(244, 114, 182, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(192, 132, 252, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 65%, rgba(251, 146, 60, 0.1) 0%, transparent 40%),
+    radial-gradient(ellipse at 10% 25%, rgba(139, 92, 246, 0.18) 0%, transparent 50%),
+    linear-gradient(150deg, #0c0a1e 0%, #110d2b 25%, #150f30 50%, #110d28 75%, #0c0a1e 100%);
+}
+
+/* ── 히어로 Ken Burns 영상 효과 ── */
+@keyframes kenburns-1 {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes kenburns-2 {
+  0% {
+    transform: scale(1.12);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes kenburns-3 {
+  0% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1.18);
+  }
+}
+
+/* ── 한국어 단어 단위 줄바꿈 ── */
+.keep-all-title {
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
 }

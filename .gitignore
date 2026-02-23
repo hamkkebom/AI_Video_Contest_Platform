@@ -1,1 +1,7 @@
 node_modules
+.next
+*.log
+*.png
+NUL
+tsconfig.tsbuildinfo
+.sisyphus

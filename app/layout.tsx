@@ -7,10 +7,10 @@ import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
 
 export const metadata: Metadata = {
-  title: "AI Video Contest Mockup v3",
-  description: "Mockup-only frontend scaffold with async mock data",
+  title: "꿈플 — AI로 꿈을 키우는 나무",
+  description: "꿈플 — AI로 영상과 노래를 시도하며 꿈을 키워가는 나무",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
   },
 };
 

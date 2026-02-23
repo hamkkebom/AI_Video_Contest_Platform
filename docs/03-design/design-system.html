@@ -7,346 +7,271 @@
   <meta name="doc-status" content="목업 기준 초안">
   <meta name="last-modified" content="2026-02-19">
   <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
-  <title>디자인 시스템 — 함께봄</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <title>디자인 시스템 정의서 - 함께봄 AI 영상 공모전 플랫폼</title>
   <link rel="stylesheet" href="../assets/style.css">
   <link rel="stylesheet" href="../assets/print.css">
 </head>
 <body>
-  <header>
-    <nav class="breadcrumb"><span><a href="../index.html">문서 포털</a></span> / <span>UX/디자인</span> / <span>디자인 시스템</span></nav>
-    <h1>디자인 시스템 (Design System)</h1>
-    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
-  </header>
-
   <main>
-    <section class="doc-meta">
-      <strong>버전</strong>: v0.1-mockup | <strong>상태</strong>: 목업 기준 초안 | <strong>수정일</strong>: 2026-02-19
-    </section>
+    <h1>🎨 디자인 시스템 정의서</h1>
+    <p>globals.css와 컴포넌트 소스 기준 토큰-컴포넌트-코드 매핑 문서</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
 
-    <section>
-      <h2>1. 색상 토큰 (Color Tokens)</h2>
-      <p>globals.css 기반 oklch 색상 체계:</p>
-      <table>
-        <thead>
-          <tr>
-            <th>토큰명</th>
-            <th>oklch 값</th>
-            <th>용도</th>
-            <th>설명</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Primary</strong></td>
-            <td>#EA580C</td>
-            <td>주요 버튼, CTA</td>
-            <td>따뜻한 주황색, 높은 명도</td>
-          </tr>
-          <tr>
-            <td><strong>Secondary</strong></td>
-            <td>#6366F1</td>
-            <td>보조 액션, 링크</td>
-            <td>인디고, 신뢰감</td>
-          </tr>
-          <tr>
-            <td><strong>Accent</strong></td>
-            <td>#8B5CF6</td>
-            <td>강조, 하이라이트</td>
-            <td>보라색, 프리미엄 느낌</td>
-          </tr>
-          <tr>
-            <td><strong>Background</strong></td>
-            <td>#F9F7F4</td>
-            <td>페이지 배경</td>
-            <td>따뜻한 베이지</td>
-          </tr>
-          <tr>
-            <td><strong>Text</strong></td>
-            <td>#2D2622</td>
-            <td>본문 텍스트</td>
-            <td>어두운 갈색</td>
-          </tr>
-          <tr>
-            <td><strong>Border</strong></td>
-            <td>#E8E3D8</td>
-            <td>구분선, 테두리</td>
-            <td>밝은 회색</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h2>STEP 1 — UI Tokens</h2>
+    <p>추출 원본: <code>app/globals.css</code>, <code>tailwind.config.ts</code>. 테마는 <code>data-theme="light|dark|signature"</code> 방식이며, <code>signature</code>는 현재 light와 동일 토큰 세트를 공유합니다.</p>
 
-    <section>
-      <h2>2. 타이포그래피 (Typography)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>스타일</th>
-            <th>폰트</th>
-            <th>크기</th>
-            <th>가중치</th>
-            <th>용도</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>H1</strong></td>
-            <td>Pretendard</td>
-            <td>2.5rem (40px)</td>
-            <td>700</td>
-            <td>페이지 제목</td>
-          </tr>
-          <tr>
-            <td><strong>H2</strong></td>
-            <td>Pretendard</td>
-            <td>2rem (32px)</td>
-            <td>700</td>
-            <td>섹션 제목</td>
-          </tr>
-          <tr>
-            <td><strong>H3</strong></td>
-            <td>Pretendard</td>
-            <td>1.5rem (24px)</td>
-            <td>600</td>
-            <td>소제목</td>
-          </tr>
-          <tr>
-            <td><strong>Body</strong></td>
-            <td>Pretendard</td>
-            <td>1rem (16px)</td>
-            <td>400</td>
-            <td>본문</td>
-          </tr>
-          <tr>
-            <td><strong>Small</strong></td>
-            <td>Pretendard</td>
-            <td>0.875rem (14px)</td>
-            <td>400</td>
-            <td>보조 텍스트</td>
-          </tr>
-          <tr>
-            <td><strong>Caption</strong></td>
-            <td>Pretendard</td>
-            <td>0.75rem (12px)</td>
-            <td>400</td>
-            <td>캡션, 라벨</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h3>1.1 Color Token (OKLCH)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Light</th>
+          <th>Dark</th>
+          <th>Signature</th>
+          <th>Preview</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>--background</code></td>
+          <td><code>oklch(0.985 0.002 247)</code></td>
+          <td><code>oklch(0.145 0.024 266)</code></td>
+          <td><code>oklch(0.985 0.002 247)</code></td>
+          <td style="background-color: oklch(0.985 0.002 247);">light/signature 배경</td>
+        </tr>
+        <tr>
+          <td><code>--foreground</code></td>
+          <td><code>oklch(0.145 0.024 266)</code></td>
+          <td><code>oklch(0.985 0.002 247)</code></td>
+          <td><code>oklch(0.145 0.024 266)</code></td>
+          <td style="background-color: oklch(0.145 0.024 266);">텍스트 기본색</td>
+        </tr>
+        <tr>
+          <td><code>--primary</code></td>
+          <td><code>oklch(0.585 0.233 277)</code></td>
+          <td><code>oklch(0.647 0.233 277)</code></td>
+          <td><code>oklch(0.585 0.233 277)</code></td>
+          <td style="background-color: oklch(0.585 0.233 277);">브랜드 액션</td>
+        </tr>
+        <tr>
+          <td><code>--secondary</code></td>
+          <td><code>oklch(0.945 0.013 266)</code></td>
+          <td><code>oklch(0.269 0.024 266)</code></td>
+          <td><code>oklch(0.945 0.013 266)</code></td>
+          <td style="background-color: oklch(0.945 0.013 266);">보조 배경</td>
+        </tr>
+        <tr>
+          <td><code>--accent</code></td>
+          <td><code>oklch(0.945 0.013 266)</code></td>
+          <td><code>oklch(0.269 0.024 266)</code></td>
+          <td><code>oklch(0.945 0.013 266)</code></td>
+          <td style="background-color: oklch(0.945 0.013 266);">hover/강조 영역</td>
+        </tr>
+        <tr>
+          <td><code>--destructive</code></td>
+          <td><code>oklch(0.577 0.245 27)</code></td>
+          <td><code>oklch(0.577 0.245 27)</code></td>
+          <td><code>oklch(0.577 0.245 27)</code></td>
+          <td style="background-color: oklch(0.577 0.245 27);">위험/삭제</td>
+        </tr>
+        <tr>
+          <td><code>--border</code></td>
+          <td><code>oklch(0.895 0.013 266)</code></td>
+          <td><code>oklch(0.269 0.024 266)</code></td>
+          <td><code>oklch(0.895 0.013 266)</code></td>
+          <td style="background-color: oklch(0.895 0.013 266);">보더 기준</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <section>
-      <h2>3. 공통 컴포넌트 (Components)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>컴포넌트</th>
-            <th>파일 경로</th>
-            <th>용도</th>
-            <th>상태</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Button</strong></td>
-            <td>components/ui/button.tsx</td>
-            <td>액션 버튼</td>
-            <td>Primary, Secondary, Outline</td>
-          </tr>
-          <tr>
-            <td><strong>Input</strong></td>
-            <td>components/ui/input.tsx</td>
-            <td>텍스트 입력</td>
-            <td>Default, Error, Disabled</td>
-          </tr>
-          <tr>
-            <td><strong>Card</strong></td>
-            <td>components/ui/card.tsx</td>
-            <td>콘텐츠 컨테이너</td>
-            <td>Elevated, Outlined</td>
-          </tr>
-          <tr>
-            <td><strong>Badge</strong></td>
-            <td>components/ui/badge.tsx</td>
-            <td>상태 표시</td>
-            <td>Success, Warning, Error</td>
-          </tr>
-          <tr>
-            <td><strong>Table</strong></td>
-            <td>components/ui/table.tsx</td>
-            <td>데이터 표시</td>
-            <td>Striped, Bordered</td>
-          </tr>
-          <tr>
-            <td><strong>Avatar</strong></td>
-            <td>components/ui/avatar.tsx</td>
-            <td>사용자 프로필</td>
-            <td>Small, Medium, Large</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h3>1.2 Typography / Radius / Shadow / Spacing</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>영역</th>
+          <th>정의</th>
+          <th>근거</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Font Family</td>
+          <td><code>"Pretendard", "Noto Sans KR", sans-serif</code></td>
+          <td><code>globals.css:106</code></td>
+        </tr>
+        <tr>
+          <td>Type Scale</td>
+          <td><code>text-xs</code>, <code>text-sm</code>, <code>text-base</code>, <code>text-lg</code>, <code>text-2xl</code>, <code>text-6xl</code>까지 컴포넌트별 사용</td>
+          <td><code>button.tsx</code>, <code>card.tsx</code>, <code>header.tsx</code>, <code>hero-carousel.tsx</code></td>
+        </tr>
+        <tr>
+          <td>Radius</td>
+          <td><code>--radius: 0.625rem</code> + 컴포넌트별 <code>rounded-md/lg/full</code></td>
+          <td><code>globals.css:24</code></td>
+        </tr>
+        <tr>
+          <td>Shadow</td>
+          <td><code>shadow-sm</code>, <code>shadow-md</code>, <code>shadow-lg</code>, <code>hover:shadow-xl</code></td>
+          <td><code>card.tsx</code>, <code>dropdown-menu.tsx</code>, <code>floating-buttons.tsx</code></td>
+        </tr>
+        <tr>
+          <td>Spacing</td>
+          <td>Tailwind spacing scale 기준 (<code>p-1~p-6</code>, <code>gap-1~gap-12</code>, <code>px-2~px-8</code>)</td>
+          <td>전 컴포넌트 공통</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <section>
-      <h2>4. 간격 시스템 (Spacing)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>토큰</th>
-            <th>값</th>
-            <th>용도</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>xs</td>
-            <td>4px</td>
-            <td>아이콘 간격</td>
-          </tr>
-          <tr>
-            <td>sm</td>
-            <td>8px</td>
-            <td>요소 내부 간격</td>
-          </tr>
-          <tr>
-            <td>md</td>
-            <td>16px</td>
-            <td>요소 간 간격</td>
-          </tr>
-          <tr>
-            <td>lg</td>
-            <td>24px</td>
-            <td>섹션 간 간격</td>
-          </tr>
-          <tr>
-            <td>xl</td>
-            <td>32px</td>
-            <td>주요 섹션 간격</td>
-          </tr>
-          <tr>
-            <td>2xl</td>
-            <td>48px</td>
-            <td>페이지 섹션 간격</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h3>1.3 3-Theme 비교 요약</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>Light</th>
+          <th>Dark</th>
+          <th>Signature</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>배경/전경 대비</td>
+          <td>밝은 배경 + 진한 텍스트</td>
+          <td>어두운 배경 + 밝은 텍스트</td>
+          <td>Light와 동일</td>
+        </tr>
+        <tr>
+          <td>Primary 톤</td>
+          <td><code>L=0.585</code></td>
+          <td><code>L=0.647</code> (다크에서 약간 밝게 보정)</td>
+          <td>Light와 동일</td>
+        </tr>
+        <tr>
+          <td>Secondary/Accent</td>
+          <td>연한 중성톤</td>
+          <td>짙은 중성톤</td>
+          <td>Light와 동일</td>
+        </tr>
+        <tr>
+          <td>Color Scheme</td>
+          <td><code>light</code></td>
+          <td><code>dark</code></td>
+          <td><code>light</code></td>
+        </tr>
+      </tbody>
+    </table>
 
-    <section>
-      <h2>5. 테마 시스템 (Themes)</h2>
-      <p>3가지 테마 지원 (Light, Dark, Signature):</p>
-      <table>
-        <thead>
-          <tr>
-            <th>테마</th>
-            <th>배경</th>
-            <th>텍스트</th>
-            <th>Primary</th>
-            <th>용도</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Light</strong></td>
-            <td>#FFFFFF</td>
-            <td>#2D2622</td>
-            <td>#EA580C</td>
-            <td>기본 테마</td>
-          </tr>
-          <tr>
-            <td><strong>Dark</strong></td>
-            <td>#1A1A1A</td>
-            <td>#F5F5F5</td>
-            <td>#FF6B35</td>
-            <td>야간 모드</td>
-          </tr>
-          <tr>
-            <td><strong>Signature</strong></td>
-            <td>#F9F7F4</td>
-            <td>#2D2622</td>
-            <td>#EA580C</td>
-            <td>브랜드 테마</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h2>STEP 2 — Component Catalog</h2>
+    <p>총 20개 컴포넌트 (ui 11, common 4, layout 3, landing 2).</p>
 
-    <section>
-      <h2>6. 그림자 및 반경 (Shadows & Radius)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>토큰</th>
-            <th>값</th>
-            <th>용도</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Radius</strong></td>
-            <td>4px, 8px, 12px, 16px</td>
-            <td>버튼, 카드, 입력 필드</td>
-          </tr>
-          <tr>
-            <td><strong>Shadow-sm</strong></td>
-            <td>0 1px 2px rgba(0,0,0,0.05)</td>
-            <td>미묘한 깊이</td>
-          </tr>
-          <tr>
-            <td><strong>Shadow-md</strong></td>
-            <td>0 4px 6px rgba(0,0,0,0.1)</td>
-            <td>일반 깊이</td>
-          </tr>
-          <tr>
-            <td><strong>Shadow-lg</strong></td>
-            <td>0 10px 15px rgba(0,0,0,0.15)</td>
-            <td>강한 깊이</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h3>2.1 UI Components (11)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>컴포넌트</th>
+          <th>Variants</th>
+          <th>Key Props</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Button</code></td><td><code>variant(default/destructive/outline/secondary/ghost/link)</code>, <code>size(default/sm/lg/icon)</code></td><td><code>asChild</code>, 표준 button attrs</td></tr>
+        <tr><td><code>Badge</code></td><td><code>variant(default/secondary/destructive/outline)</code></td><td>HTML div attrs</td></tr>
+        <tr><td><code>Card</code></td><td>slot 구성(<code>CardHeader</code>, <code>CardContent</code>, <code>CardFooter</code> 등)</td><td>HTML attrs</td></tr>
+        <tr><td><code>Input</code></td><td>없음</td><td><code>type</code> 포함 Input attrs</td></tr>
+        <tr><td><code>Label</code></td><td>없음(cva 기본 스타일)</td><td>Radix Label props</td></tr>
+        <tr><td><code>Textarea</code></td><td>없음</td><td>textarea props</td></tr>
+        <tr><td><code>Avatar</code></td><td>slot 구성(<code>AvatarImage</code>, <code>AvatarFallback</code>)</td><td>Radix Avatar props</td></tr>
+        <tr><td><code>Table</code></td><td>slot 구성(<code>TableHeader</code>, <code>TableRow</code> 등)</td><td>table/thead/tbody attrs</td></tr>
+        <tr><td><code>DropdownMenu</code></td><td>Item/Checkbox/Radio/Sub variants</td><td><code>inset</code>, <code>sideOffset</code>, Radix menu props</td></tr>
+        <tr><td><code>Sheet</code></td><td><code>side(top/bottom/left/right)</code></td><td>Dialog props + <code>SheetContent side</code></td></tr>
+        <tr><td><code>Carousel</code></td><td><code>orientation(horizontal/vertical)</code></td><td><code>opts</code>, <code>plugins</code>, <code>setApi</code></td></tr>
+      </tbody>
+    </table>
 
-    <section>
-      <h2>7. 접근성 (Accessibility)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>항목</th>
-            <th>기준</th>
-            <th>설명</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>색상 대비</strong></td>
-            <td>WCAG AA (4.5:1)</td>
-            <td>텍스트와 배경 대비</td>
-          </tr>
-          <tr>
-            <td><strong>포커스 상태</strong></td>
-            <td>명확한 시각 표시</td>
-            <td>키보드 네비게이션</td>
-          </tr>
-          <tr>
-            <td><strong>아이콘</strong></td>
-            <td>텍스트 라벨 포함</td>
-            <td>스크린 리더 지원</td>
-          </tr>
-          <tr>
-            <td><strong>폰트 크기</strong></td>
-            <td>최소 16px</td>
-            <td>모바일 가독성</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <h3>2.2 Common / Layout / Landing Components (9)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>그룹</th>
+          <th>컴포넌트</th>
+          <th>핵심 Props/역할</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>common</td><td><code>FloatingButtons</code></td><td>스크롤 Top + 문의 링크 고정 FAB</td></tr>
+        <tr><td>common</td><td><code>PaywallOverlay</code></td><td><code>role</code>, <code>featureKey</code>, <code>children</code>, <code>message</code></td></tr>
+        <tr><td>common</td><td><code>DemoRolePanel</code></td><td><code>defaultRole</code>, <code>onRoleChange</code></td></tr>
+        <tr><td>common</td><td><code>LikeButton</code></td><td><code>liked</code>, <code>initialCount</code>, <code>onToggle</code></td></tr>
+        <tr><td>layout</td><td><code>Header</code></td><td>GNB, 검색, 알림, 테마/역할 전환, 모바일 시트 메뉴</td></tr>
+        <tr><td>layout</td><td><code>Footer</code></td><td>서비스/법적 링크 섹션, 브랜딩 블록</td></tr>
+        <tr><td>layout</td><td><code>DemoRolePanel(re-export)</code></td><td>common 컴포넌트 재노출</td></tr>
+        <tr><td>landing</td><td><code>HeroCarousel</code></td><td><code>slides: HeroSlide[]</code>, autoplay + dots/arrow</td></tr>
+        <tr><td>landing</td><td><code>ContestCarousel</code></td><td><code>contests: Contest[]</code>, 카드형 슬라이드</td></tr>
+      </tbody>
+    </table>
+
+    <h2>STEP 3 — Visual Preview</h2>
+    <p>핵심 컴포넌트(Button, Card, Badge, Input)의 HTML 클래스 예시입니다.</p>
+
+    <h3>3.1 Button Preview</h3>
+    <pre><code>&lt;button class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground"&gt;Primary&lt;/button&gt;
+&lt;button class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-input bg-background"&gt;Outline&lt;/button&gt;</code></pre>
+
+    <h3>3.2 Card Preview</h3>
+    <pre><code>&lt;div class="rounded-lg border border-card bg-card text-card-foreground shadow-sm"&gt;
+  &lt;div class="flex flex-col space-y-1.5 p-6"&gt;
+    &lt;h2 class="text-2xl font-semibold leading-none tracking-tight"&gt;Card Title&lt;/h2&gt;
+    &lt;p class="text-sm text-muted-foreground"&gt;Description&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>3.3 Badge Preview</h3>
+    <pre><code>&lt;div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-primary text-primary-foreground"&gt;접수중&lt;/div&gt;
+&lt;div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground"&gt;심사중&lt;/div&gt;</code></pre>
+
+    <h3>3.4 Input Preview</h3>
+    <pre><code>&lt;input class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base placeholder:text-muted-foreground" placeholder="검색어 입력" /&gt;</code></pre>
+
+    <h2>STEP 4 — Design-Code Mapping Table</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Design 컴포넌트명</th>
+          <th>Code 컴포넌트 파일</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Button</td><td><code>components/ui/button.tsx</code></td></tr>
+        <tr><td>Badge</td><td><code>components/ui/badge.tsx</code></td></tr>
+        <tr><td>Card</td><td><code>components/ui/card.tsx</code></td></tr>
+        <tr><td>Input</td><td><code>components/ui/input.tsx</code></td></tr>
+        <tr><td>Label</td><td><code>components/ui/label.tsx</code></td></tr>
+        <tr><td>Textarea</td><td><code>components/ui/textarea.tsx</code></td></tr>
+        <tr><td>Avatar</td><td><code>components/ui/avatar.tsx</code></td></tr>
+        <tr><td>Table</td><td><code>components/ui/table.tsx</code></td></tr>
+        <tr><td>Dropdown Menu</td><td><code>components/ui/dropdown-menu.tsx</code></td></tr>
+        <tr><td>Sheet</td><td><code>components/ui/sheet.tsx</code></td></tr>
+        <tr><td>Carousel Primitive</td><td><code>components/ui/carousel.tsx</code></td></tr>
+        <tr><td>Hero Carousel</td><td><code>components/landing/hero-carousel.tsx</code></td></tr>
+        <tr><td>Contest Carousel</td><td><code>components/landing/contest-carousel.tsx</code></td></tr>
+        <tr><td>Header</td><td><code>components/layout/header.tsx</code></td></tr>
+        <tr><td>Footer</td><td><code>components/layout/footer.tsx</code></td></tr>
+        <tr><td>Floating Buttons</td><td><code>components/common/floating-buttons.tsx</code></td></tr>
+        <tr><td>Paywall Overlay</td><td><code>components/common/paywall-overlay.tsx</code></td></tr>
+        <tr><td>Demo Role Panel</td><td><code>components/common/demo-role-panel.tsx</code>, <code>components/layout/demo-role-panel.tsx</code></td></tr>
+        <tr><td>Like Button</td><td><code>components/common/like-button.tsx</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>부록 — Tailwind Config 관찰사항</h2>
+    <ul>
+      <li><code>tailwind.config.ts</code>는 <code>app</code>, <code>components</code>, <code>lib</code>, <code>config</code> 경로를 스캔 대상으로 지정합니다.</li>
+      <li>추가 플러그인 배열은 비어 있으며, 실제 애니메이션 유틸은 <code>globals.css</code>의 <code>@plugin "tailwindcss-animate"</code>를 통해 연결됩니다.</li>
+      <li>토큰 시스템은 CSS 변수 기반이라 컴포넌트 클래스는 테마 전환 시 재작성 없이 동작합니다.</li>
+    </ul>
   </main>
-
-  <footer>
-    <hr>
-    <p style="text-align:center;color:#999;font-size:0.9em;">함께봄 AI 영상 공모전 플랫폼 — v0.1-mockup</p>
-  </footer>
   <script src="../assets/docs.js" defer></script>
 </body>
 </html>

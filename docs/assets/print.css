@@ -1,55 +1,284 @@
-/* Print 레이아웃 — @media print로 감싸서 스크린에서 적용되지 않도록 처리 */
+/* ============================================
+   플랫폼 설계 문서 - 인쇄 전용 CSS
+   ============================================ */
+
+/* ============================================
+   페이지 설정
+   ============================================ */
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+/* ============================================
+   페이지 나누기 규칙
+   ============================================ */
+h2 {
+  page-break-before: always;
+}
+
+table,
+.mermaid,
+figure {
+  page-break-inside: avoid;
+}
+
+/* ============================================
+   인쇄 시 숨길 요소
+   ============================================ */
+button,
+nav,
+.breadcrumb,
+.toc,
+.pdf-button {
+  display: none !important;
+}
+
+/* ============================================
+   링크 URL 표시
+   ============================================ */
+a::after {
+  content: " (" attr(href) ")";
+  font-size: 0.85em;
+  color: #666;
+}
+
+/* ============================================
+   폰트 크기 조정
+   ============================================ */
+body {
+  font-size: 11pt;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 24pt;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 18pt;
+  margin-top: 12pt;
+  margin-bottom: 6pt;
+}
+
+h3 {
+  font-size: 14pt;
+  margin-top: 10pt;
+  margin-bottom: 4pt;
+}
+
+h4 {
+  font-size: 12pt;
+}
+
+h5 {
+  font-size: 11pt;
+}
+
+h6 {
+  font-size: 10pt;
+}
+
+p {
+  font-size: 11pt;
+  margin: 6pt 0;
+}
+
+/* ============================================
+   테이블 인쇄 스타일
+   ============================================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12pt 0;
+}
+
+thead {
+  background-color: #333;
+  color: white;
+}
+
+thead th {
+  padding: 6pt;
+  text-align: left;
+  font-weight: bold;
+  font-size: 9pt;
+}
+
+tbody td {
+  padding: 4pt 6pt;
+  border: 1px solid #ccc;
+  font-size: 9pt;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f5f5f5;
+}
+
+/* ============================================
+   코드 블록 인쇄 스타일
+   ============================================ */
+code {
+  font-family: 'Courier New', monospace;
+  font-size: 9pt;
+  background-color: #f0f0f0;
+  padding: 1pt 3pt;
+}
+
+pre {
+  background-color: #f0f0f0;
+  padding: 8pt;
+  margin: 8pt 0;
+  border-left: 3pt solid #333;
+  font-size: 9pt;
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* ============================================
+   배지 인쇄 스타일
+   ============================================ */
+.review-badge {
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 2pt 4pt;
+  border: 1pt solid #999;
+  font-size: 8pt;
+  font-weight: bold;
+}
+
+/* ============================================
+   문서 메타 헤더 인쇄 스타일
+   ============================================ */
+.doc-meta {
+  background-color: #f5f5f5;
+  border-left: 3pt solid #333;
+  padding: 8pt;
+  margin: 10pt 0;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+/* ============================================
+   리스트 인쇄 스타일
+   ============================================ */
+ul, ol {
+  margin: 6pt 0;
+  padding-left: 18pt;
+}
+
+li {
+  margin: 3pt 0;
+}
+
+/* ============================================
+   블록 인용 인쇄 스타일
+   ============================================ */
+blockquote {
+  border-left: 3pt solid #333;
+  padding-left: 12pt;
+  margin: 10pt 0;
+  color: #555;
+  font-style: italic;
+  font-size: 10pt;
+}
+
+/* ============================================
+   이미지 인쇄 스타일
+   ============================================ */
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 8pt 0;
+  page-break-inside: avoid;
+}
+
+figure {
+  margin: 10pt 0;
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+figcaption {
+  font-size: 9pt;
+  color: #666;
+  margin-top: 4pt;
+}
+
+/* ============================================
+   배경색 제거 (인쇄 최적화)
+   ============================================ */
+body {
+  background-color: white;
+  color: black;
+}
+
+main {
+  background-color: white;
+}
+
+/* ============================================
+   여백 최적화
+   ============================================ */
+body {
+  padding: 0;
+  margin: 0;
+}
+
+main {
+  max-width: 100%;
+  margin: 0;
+}
+
+/* ============================================
+   색상 제거 (흑백 인쇄)
+   ============================================ */
+a {
+  color: black;
+  text-decoration: underline;
+  border-bottom: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: black;
+}
+
+/* ============================================
+   기타 인쇄 최적화
+   ============================================ */
 @media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
   @page {
-    size: A4;
     margin: 15mm;
   }
 
-  /* 페이지 나누기 설정 */
-  table,
-  .mermaid,
-  figure {
-    page-break-inside: avoid;
-  }
-
-  h2 {
-    page-break-before: always;
-  }
-
-  /* 숨길 요소 */
-  button,
-  nav,
-  .breadcrumb,
-  .toc,
-  .pdf-button {
-    display: none;
-  }
-
-  /* 링크 URL 표시 */
-  a::after {
-    content: " (" attr(href) ")";
-    color: #666;
-    font-size: 0.85em;
-  }
-
-  /* 폰트 크기 */
   body {
-    font-size: 11pt;
-    color: black;
-  }
-
-  table {
-    font-size: 9pt;
-  }
-
-  /* 여백 조정 */
-  h1 {
-    margin-top: 0;
-  }
-
-  /* 페이지 넘김 */
-  p {
-    orphans: 2;
-    widows: 2;
+    margin: 0;
+    padding: 0;
   }
 }

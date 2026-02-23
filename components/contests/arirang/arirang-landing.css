@@ -1,0 +1,84 @@
+/* Pretendard 폰트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+/* 아리랑 랜딩 전용 테마 — .arirang-landing 스코프 */
+.arirang-landing {
+  --ar-primary: #1B1464;
+  --ar-primary-light: #2D2399;
+  --ar-primary-dark: #0D0B1A;
+  --ar-accent: #D4A843;
+  --ar-accent-light: #E8C76A;
+  --ar-point: #C23B22;
+  --ar-point-light: #E05A42;
+  --ar-cream: #F5F0E8;
+  --ar-cream-dark: #E8DFD0;
+  --ar-pine: #2D5A3D;
+  --ar-pine-light: #3D7A52;
+
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background-color: var(--ar-primary-dark);
+  color: var(--ar-cream);
+  font-size: 17px;
+  scroll-behavior: smooth;
+}
+
+/* 메인 사이트 Header/Footer/FloatingButtons/데모바 숨김 — 랜딩페이지에서 main만 보임 */
+body:has(.arirang-landing) > header {
+  display: none !important;
+}
+body:has(.arirang-landing) > footer {
+  display: none !important;
+}
+/* 플로팅 버튼 (fixed bottom-6 right-6) */
+body:has(.arirang-landing) > div.fixed {
+  display: none !important;
+}
+/* 데모 역할 바 (w-full bg-muted/50) */
+body:has(.arirang-landing) > div.w-full.bg-muted\/50 {
+  display: none !important;
+}
+body:has(.arirang-landing) {
+  background-color: #0D0B1A;
+}
+
+/* 스크롤 애니메이션 (AOS 대체) */
+.arirang-animate {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.arirang-animate.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 페이드인 키프레임 */
+@keyframes arirang-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes arirang-fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.arirang-landing .animate-fade-in {
+  animation: arirang-fade-in 0.8s ease-out both;
+}
+.arirang-landing .animate-fade-in-up {
+  animation: arirang-fade-in-up 0.8s ease-out both;
+}
+
+/* 스크롤바 */
+.arirang-landing ::-webkit-scrollbar {
+  width: 8px;
+}
+.arirang-landing ::-webkit-scrollbar-track {
+  background: var(--ar-primary-dark);
+}
+.arirang-landing ::-webkit-scrollbar-thumb {
+  background: var(--ar-primary);
+  border-radius: 4px;
+}
+.arirang-landing ::-webkit-scrollbar-thumb:hover {
+  background: var(--ar-primary-light);
+}

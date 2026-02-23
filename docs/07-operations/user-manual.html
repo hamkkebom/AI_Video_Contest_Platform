@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="doc-version" content="v0.1-mockup">
+  <meta name="doc-status" content="목업 기준 초안">
+  <meta name="last-modified" content="2026-02-19">
+  <meta name="project" content="꿈트리 AI 영상 공모전 플랫폼">
+  <title>역할별 사용자 매뉴얼 - 꿈트리 AI 영상 공모전 플랫폼</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/print.css">
+</head>
+
+<body>
+  <main>
+    <h1>🧭 역할별 사용자 매뉴얼</h1>
+    <p>함께봄 AI 영상 공모전 플랫폼의 5개 역할(guest, participant, host, judge, admin)별 주요 화면과 운영 절차 안내</p>
+    <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
+    <div class="doc-meta">
+      <strong>문서 정보:</strong> v0.1-mockup | 최종 수정: 2026-02-19 | 상태: 목업 기준 초안
+    </div>
+
+    <div class="toc">
+      <h3>목차</h3>
+      <ul>
+        <li><a href="#participant">1. 참가자(Participant) 매뉴얼</a></li>
+        <li><a href="#host">2. 주최자(Host) 매뉴얼</a></li>
+        <li><a href="#judge">3. 심사위원(Judge) 매뉴얼</a></li>
+        <li><a href="#admin">4. 관리자(Admin) 매뉴얼</a></li>
+        <li><a href="#guest">5. 게스트(Guest) 안내</a></li>
+      </ul>
+    </div>
+
+    <h2 id="participant">1. 참가자(Participant) 매뉴얼</h2>
+    <p>핵심 목표: 회원가입 후 공모전 탐색부터 영상 제출, 결과 확인까지의 전체 참가 여정을 완료합니다. (관련 기능: F-001, F-003, F-007, F-011)</p>
+    <h3>주요 화면</h3>
+    <ul>
+      <li><code>/signup</code> - 계정 생성 및 인증 (F-007)</li>
+      <li><code>/contests</code> - 공모전 탐색 및 필터 (F-011)</li>
+      <li><code>/contests/:id</code> - 상세 확인 및 제출 (F-001)</li>
+      <li><code>/my/submissions</code> - 제출 상태 및 결과 확인 (F-001, F-003)</li>
+    </ul>
+    <h3>단계별 절차</h3>
+    <ol>
+      <li><strong>회원가입</strong>: <code>/signup</code>에서 이메일 인증을 완료합니다.</li>
+      <li><strong>공모전 탐색</strong>: <code>/contests</code>에서 분야/기간 필터로 목표 공모전을 찾습니다.</li>
+      <li><strong>상세 확인</strong>: <code>/contests/:id</code>에서 참가 조건과 마감 시각을 검토합니다.</li>
+      <li><strong>영상 제출</strong>: 제목, 설명, 파일을 입력해 제출합니다. 제출 후 상태를 확인합니다.</li>
+      <li><strong>결과 확인</strong>: 결과 발표 후 공모전 상세 또는 내 제출 목록에서 수상 여부를 확인합니다.</li>
+    </ol>
+    <h3>운영 팁</h3>
+    <ul>
+      <li>마감 직전 업로드 지연을 피하기 위해 최소 24시간 전에 제출을 권장합니다.</li>
+      <li>제출 전 영상 파일 형식/용량 정책(POL-005, POL-006) 준수 여부를 점검합니다.</li>
+    </ul>
+    <h3>자주 발생하는 이슈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이슈</th>
+          <th>원인</th>
+          <th>해결 가이드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>제출 버튼 비활성</td>
+          <td>로그인 세션 만료 또는 필수값 미입력</td>
+          <td>재로그인 후 필수 입력 항목(제목/파일)을 다시 확인</td>
+        </tr>
+        <tr>
+          <td>업로드 실패</td>
+          <td>파일 형식/용량 초과</td>
+          <td>허용 형식으로 변환하고 용량을 줄인 뒤 재시도</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="host">2. 주최자(Host) 매뉴얼</h2>
+    <p>핵심 목표: 공모전 생성, 접수 운영, 심사자 초대, 심사 설정, 결과 발표까지 운영 사이클을 관리합니다. (관련 기능: F-001, F-002, F-003, F-006, F-007)</p>
+    <h3>주요 화면</h3>
+    <ul>
+      <li><code>/dashboard/contests/new</code> - 공모전 생성 (F-001)</li>
+      <li><code>/dashboard/contests/:id/submissions</code> - 접수 관리 (F-001)</li>
+      <li><code>/dashboard/contests/:id/judges</code> - 심사자 초대 (F-006)</li>
+      <li><code>/dashboard/contests/:id</code> - 상태 전환/결과 발표 (F-002, F-003)</li>
+    </ul>
+    <h3>단계별 절차</h3>
+    <ol>
+      <li><strong>공모전 생성</strong>: 기본 정보, 기간, 심사 방식, 제출 규격을 등록합니다.</li>
+      <li><strong>접수 관리</strong>: 접수 현황을 모니터링하고 정책 위반 작품을 분류합니다.</li>
+      <li><strong>심사자 초대</strong>: 이메일 기반으로 심사위원을 초대하고 수락 여부를 확인합니다.</li>
+      <li><strong>심사 설정</strong>: 심사 항목/가중치, 심사 일정, 블라인드 여부를 설정합니다.</li>
+      <li><strong>결과 발표</strong>: 심사 완료 후 상태를 <code>completed</code>로 전환하고 발표합니다.</li>
+    </ol>
+    <h3>운영 팁</h3>
+    <ul>
+      <li>공개 전 체크리스트(마감 시각, 규정, 심사기준) 3중 검토를 권장합니다.</li>
+      <li>심사자 초대는 접수 오픈 전에 완료해 심사 공백을 줄입니다.</li>
+    </ul>
+    <h3>자주 발생하는 이슈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이슈</th>
+          <th>원인</th>
+          <th>해결 가이드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>심사 시작 불가</td>
+          <td>초대 수락된 심사자 수 부족</td>
+          <td>필수 심사자 수 충족 후 상태 전환 재시도</td>
+        </tr>
+        <tr>
+          <td>결과 발표 버튼 비활성</td>
+          <td>미채점 제출작 존재</td>
+          <td>미완료 채점 목록을 확인하고 심사 완료 처리</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="judge">3. 심사위원(Judge) 매뉴얼</h2>
+    <p>핵심 목표: 초대를 수락한 뒤 배정된 작품을 기준에 따라 채점하고 코멘트를 남겨 심사를 완료합니다. (관련 기능: F-002, F-006, F-009)</p>
+    <h3>주요 화면</h3>
+    <ul>
+      <li><code>/invite/:token</code> - 초대 수락 (F-006)</li>
+      <li><code>/judging</code> - 심사 목록 확인 (F-002)</li>
+      <li><code>/judging/:contestId/:submissionId</code> - 채점/코멘트 입력 (F-002, F-009)</li>
+    </ul>
+    <h3>단계별 절차</h3>
+    <ol>
+      <li><strong>초대 수락</strong>: 이메일 링크에서 참여를 승인하고 로그인합니다.</li>
+      <li><strong>심사 목록 진입</strong>: 배정된 공모전과 마감 시간을 확인합니다.</li>
+      <li><strong>채점</strong>: 평가 항목별 점수를 입력하고 근거를 기록합니다.</li>
+      <li><strong>코멘트 작성</strong>: 참가자 피드백으로 공개 가능한 문장만 작성합니다.</li>
+      <li><strong>완료</strong>: 모든 작품 채점 후 심사 완료 상태를 확인합니다.</li>
+    </ol>
+    <h3>운영 팁</h3>
+    <ul>
+      <li>심사 기준(POL-010)을 먼저 고정하면 점수 편차를 줄일 수 있습니다.</li>
+      <li>동점이 많은 경우 코멘트 품질과 기준 일치도를 함께 검토합니다.</li>
+    </ul>
+    <h3>자주 발생하는 이슈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이슈</th>
+          <th>원인</th>
+          <th>해결 가이드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>채점 저장 실패</td>
+          <td>필수 항목 누락 또는 세션 만료</td>
+          <td>필수 항목을 채우고 재로그인 후 재저장</td>
+        </tr>
+        <tr>
+          <td>작품 재생 불가</td>
+          <td>브라우저 네트워크/코덱 이슈</td>
+          <td>브라우저 최신화 후 네트워크 상태 점검</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="admin">4. 관리자(Admin) 매뉴얼</h2>
+    <p>핵심 목표: 운영 대시보드에서 회원/공모전/콘텐츠/분석을 통합 관리해 플랫폼 안정성과 품질을 유지합니다. (관련 기능: F-007, F-008, F-010)</p>
+    <h3>주요 화면</h3>
+    <ul>
+      <li><code>/admin/dashboard</code> - 운영 현황 대시보드</li>
+      <li><code>/admin/users</code> - 회원 검색/역할 관리 (F-007)</li>
+      <li><code>/admin/contests</code> - 공모전 승인/보류</li>
+      <li><code>/admin/analytics</code> - 시스템/트래픽 분석 (F-008)</li>
+    </ul>
+    <h3>단계별 절차</h3>
+    <ol>
+      <li><strong>대시보드 확인</strong>: 이상 징후(급격한 실패율 증가 등)를 우선 점검합니다.</li>
+      <li><strong>회원 관리</strong>: 신고 누적/정책 위반 계정을 검토하고 조치합니다.</li>
+      <li><strong>공모전 승인</strong>: 운영 정책 준수 여부를 확인해 승인 또는 반려합니다.</li>
+      <li><strong>시스템 분석</strong>: 주요 지표를 검토하고 개선 과제를 등록합니다.</li>
+    </ol>
+    <h3>운영 팁</h3>
+    <ul>
+      <li>역할 변경, 제재, 승인 같은 중요 조치는 감사 로그와 함께 저장합니다.</li>
+      <li>주간 단위로 성능/오류 지표를 추적해 반복 이슈를 선제 대응합니다.</li>
+    </ul>
+    <h3>자주 발생하는 이슈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이슈</th>
+          <th>원인</th>
+          <th>해결 가이드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>권한 변경 반영 지연</td>
+          <td>세션 캐시 미갱신</td>
+          <td>대상 사용자 재로그인 안내 후 로그 기록 확인</td>
+        </tr>
+        <tr>
+          <td>분석 지표 누락</td>
+          <td>집계 작업 지연</td>
+          <td>배치 상태 점검 후 재집계 실행 이력 확인</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="guest">5. 게스트(Guest) 안내</h2>
+    <p>핵심 목표: 비로그인 상태에서 갤러리를 탐색하고 회원가입으로 자연스럽게 전환합니다. (관련 기능: F-004, F-005, F-011)</p>
+    <h3>주요 화면</h3>
+    <ul>
+      <li><code>/gallery</code> - 공개 작품 탐색 (F-004)</li>
+      <li><code>/search</code> - 통합 검색 및 필터 (F-011)</li>
+      <li><code>/signup</code> - 회원가입 전환 (F-007)</li>
+    </ul>
+    <h3>단계별 절차</h3>
+    <ol>
+      <li><strong>갤러리 탐색</strong>: 장르/기간 필터로 관심 작품을 찾습니다.</li>
+      <li><strong>작품 상세 확인</strong>: 작품 설명과 제작자 정보를 확인합니다.</li>
+      <li><strong>행동 유도</strong>: 좋아요/제출/댓글 등 로그인 필요 기능 시 회원가입을 유도합니다.</li>
+    </ol>
+    <h3>운영 팁</h3>
+    <ul>
+      <li>게스트에게는 최근 인기작과 진행 중 공모전을 먼저 보여 전환율을 높입니다.</li>
+      <li>회원 전환 CTA는 작품 감상 흐름을 끊지 않는 위치에 노출합니다.</li>
+    </ul>
+    <h3>자주 발생하는 이슈</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이슈</th>
+          <th>원인</th>
+          <th>해결 가이드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>좋아요 불가</td>
+          <td>게스트 권한 제한</td>
+          <td><code>/signup</code> 또는 <code>/login</code>으로 유도</td>
+        </tr>
+        <tr>
+          <td>제출 버튼 미노출</td>
+          <td>참가자 권한 미활성화</td>
+          <td>회원가입 후 participant 역할 진입 안내</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="mermaid">
+      graph TD
+      A[게스트 갤러리 탐색 F-004] --> B{로그인 필요 기능 클릭}
+      B -->|예| C[회원가입 또는 로그인 F-007]
+      B -->|아니오| A
+      C --> D[참가자/주최자/심사위원 워크플로우 진입]
+    </div>
+  </main>
+  <script src="../assets/docs.js" defer></script>
+</body>
+
+</html>

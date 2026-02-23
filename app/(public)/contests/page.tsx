@@ -106,8 +106,8 @@ export default async function ContestsPage({
                     <button
                       type="button"
                       className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentStatus === tab.id
-                        ? 'text-violet-500 font-bold'
-                        : 'text-muted-foreground font-medium hover:text-foreground'
+                        ? 'text-violet-500 font-bold bg-violet-500/10'
+                        : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
                       {tab.label}
@@ -119,8 +119,8 @@ export default async function ContestsPage({
 
             {/* 정렬 옵션 & 검색 입력 (오른쪽 정렬) */}
             <div className="flex items-center gap-3">
-              <SearchInput currentSearch={search} currentStatus={currentStatus} currentSort={currentSort} />
               <SortSelect />
+              <SearchInput basePath="/contests" currentSearch={search} extraParams={{ status: currentStatus, sort: currentSort }} placeholder="공모전 검색..." />
             </div>
           </div>
         </div>
@@ -162,14 +162,14 @@ export default async function ContestsPage({
                     <div className="absolute top-[18px] right-3 z-10">
                       {contest.status === 'open' ? (() => {
                         const dday = calcDDay(contest.submissionEndAt);
-                        const colorClass = dday <= 7 ? 'bg-red-500/90' : dday <= 14 ? 'bg-orange-500/90' : 'bg-violet-500/90';
+                        const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
                         return (
                           <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
                             {dday === 0 ? 'D-Day' : `D-${dday}`}
                           </span>
                         );
                       })() : (
-                        <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/90' : 'bg-amber-500/90'
+                        <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'
                           }`}>
                           {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
                         </span>
@@ -179,7 +179,7 @@ export default async function ContestsPage({
                     {/* 하단 그라데이션 오버레이 + 텍스트 */}
                     <div className="absolute inset-x-0 bottom-0 h-1/2 z-10 flex flex-col justify-end">
                       <div className="absolute inset-0 bg-gradient-to-t from-black from-50% to-transparent" />
-                      <div className="relative pb-14 px-4 flex flex-col gap-4">
+                      <div className="relative pb-7 px-4 flex flex-col gap-4">
                         <AutoFitTitle
                           className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
                           maxFontSize={18}
@@ -201,11 +201,12 @@ export default async function ContestsPage({
                         {contest.status === 'open' && (
                           <Link
                             href={`/contests/${contest.id}/submit` as any}
-                            className="block"
+                            className="block group/btn"
                           >
-                            <span className="w-full py-2 rounded-lg bg-orange-500/90 hover:bg-orange-500 text-white text-sm font-semibold flex items-center justify-center gap-1.5 backdrop-blur-sm transition-colors cursor-pointer">
-                              <Upload className="h-3.5 w-3.5" />
-                              작품 제출
+                            <span className="relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer">
+                              <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
+                              <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
+                              <span className="relative z-10 group-hover/btn:text-white transition-colors">작품 제출</span>
                             </span>
                           </Link>
                         )}
@@ -233,7 +234,7 @@ export default async function ContestsPage({
 
           {/* 더보기 버튼 */}
           {hasMore && (
-            <div className="mt-16 flex flex-col items-center gap-3">
+            <div className="mt-10 flex flex-col items-center gap-3">
               {(() => {
                 const params = new URLSearchParams();
                 params.set('status', currentStatus);
@@ -242,7 +243,7 @@ export default async function ContestsPage({
                 if (search) params.set('search', search);
                 return (
                   <Link href={`/contests?${params.toString()}`} scroll={false}>
-                    <button type="button" className="group relative px-10 py-3.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
+                    <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
                       <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                       <span className="relative z-10 flex items-center gap-2">
                         더보기

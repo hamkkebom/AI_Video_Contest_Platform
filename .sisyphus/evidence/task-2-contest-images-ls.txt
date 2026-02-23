@@ -1,5 +1,0 @@
--rw-r--r-- 1 1210y 197609 8779 Feb 18 23:33 public/images/contest-1.jpg
--rw-r--r-- 1 1210y 197609 8981 Feb 18 23:33 public/images/contest-2.jpg
--rw-r--r-- 1 1210y 197609 8302 Feb 18 23:33 public/images/contest-3.jpg
--rw-r--r-- 1 1210y 197609 7781 Feb 18 23:33 public/images/contest-4.jpg
--rw-r--r-- 1 1210y 197609 8367 Feb 18 23:33 public/images/contest-5.jpg
