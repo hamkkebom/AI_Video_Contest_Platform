@@ -86,3 +86,68 @@ export const DEFAULT_FEATURE_ACCESS = {
   },
   admin: "all-free"
 } as const;
+
+/** AI 채팅 도구 */
+export const CHAT_AI_TOOLS = [
+  "ChatGPT",
+  "Claude",
+  "Gemini",
+  "Copilot",
+  "Perplexity",
+  "DeepSeek",
+  "Grok",
+  "HyperCLOVA X",
+] as const;
+
+/** AI 이미지 생성 도구 */
+export const IMAGE_AI_TOOLS = [
+  "Midjourney",
+  "DALL\u00b7E 3",
+  "Stable Diffusion",
+  "Adobe Firefly",
+  "Leonardo.Ai",
+  "Ideogram",
+  "Flux",
+  "Playground",
+] as const;
+
+/** AI 영상 생성 도구 */
+export const VIDEO_AI_TOOLS = [
+  "Sora",
+  "Runway Gen-3",
+  "Kling",
+  "Pika",
+  "Luma Dream Machine",
+  "Veo 2",
+  "HaiLuo",
+  "Synthesia",
+  "Wan",
+  "Hailuo AI",
+] as const;
+
+
+/** 공모전 태그 (프리디파인드) */
+export const CONTEST_TAGS = [
+  "AI 영상",
+  "생성형AI",
+  "숏폼",
+  "롱폼",
+  "다큐멘터리",
+  "뮤직비디오",
+  "애니메이션",
+  "광고",
+  "교육",
+  "환경",
+  "사회공헌",
+  "여행",
+  "음악",
+  "예술",
+] as const;
+
+/** 결과 발표 형태 */
+export const RESULT_FORMATS = [
+  { value: "website", label: "홈페이지 발표" },
+  { value: "email", label: "이메일 개별 통보" },
+  { value: "sns", label: "SNS 발표" },
+  { value: "offline", label: "오프라인 시상식" },
+] as const;

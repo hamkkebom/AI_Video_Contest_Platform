@@ -6,6 +6,9 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
 import { AuthProvider } from '@/lib/supabase/auth-context';
+import { Suspense } from 'react';
+import { UtmTracker } from '@/components/tracking/utm-tracker';
+import { ActivityTracker } from '@/components/tracking/activity-tracker';
 
 export const metadata: Metadata = {
   title: "꿈플 — AI로 꿈을 키우는 나무",
@@ -31,6 +34,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
             </main>
             <Footer />
             <FloatingButtons />
+            <Suspense fallback={null}>
+              <UtmTracker />
+            </Suspense>
+            <Suspense fallback={null}>
+              <ActivityTracker />
+            </Suspense>
           </AuthProvider>
         </ThemeProvider>
       </body>

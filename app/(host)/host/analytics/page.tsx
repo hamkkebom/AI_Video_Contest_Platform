@@ -1,12 +1,17 @@
 import { HostAnalyticsContent } from '@/components/dashboard/host-analytics-content';
-import { getContests, getSubmissions } from '@/lib/mock';
+import { getAuthProfile, getContestsByHost, getSubmissions } from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 export default async function HostAnalyticsPage() {
-  try {
-    const DEMO_HOST_ID = 'user-2';
-    const [allContests, allSubmissions] = await Promise.all([getContests(), getSubmissions()]);
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
 
-    const hostContests = allContests.filter((contest) => contest.hostUserId === DEMO_HOST_ID);
+  try {
+    const [hostContests, allSubmissions] = await Promise.all([
+      getContestsByHost(profile.id),
+      getSubmissions(),
+    ]);
+
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
     const hostSubmissions = allSubmissions.filter((submission) => hostContestIds.has(submission.contestId));
 

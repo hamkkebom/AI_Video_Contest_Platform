@@ -3,9 +3,10 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getContests, getJudges, getSubmissions } from '@/lib/mock';
+import { getAuthProfile, getContestsByHost, getJudges, getSubmissions } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { ClipboardList, Plus, UserCheck } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,21 +41,22 @@ const tabItems: Array<{ value: ContestTabStatus; label: string }> = [
 ];
 
 export default async function HostContestsPage({ searchParams }: ContestListPageProps) {
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
+
   try {
-    const DEMO_HOST_ID = 'user-2';
     const { status } = await searchParams;
     const activeStatus =
       status === 'open' || status === 'closed' || status === 'judging' || status === 'completed'
         ? status
         : 'all';
 
-    const [allContests, allSubmissions, allJudges] = await Promise.all([
-      getContests(),
+    const [hostContests, allSubmissions, allJudges] = await Promise.all([
+      getContestsByHost(profile.id),
       getSubmissions(),
       getJudges(),
     ]);
 
-    const hostContests = allContests.filter((contest) => contest.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
     const hostSubmissions = allSubmissions.filter((submission) => hostContestIds.has(submission.contestId));
     const hostJudges = allJudges.filter((judge) => hostContestIds.has(judge.contestId));

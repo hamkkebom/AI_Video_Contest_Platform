@@ -1,5 +1,5 @@
 import { AdminDashboardContent } from '@/components/dashboard/admin-dashboard-content';
-import { getActivityLogs, getContests, getInquiries, getSubmissions, getUsers } from '@/lib/mock';
+import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
 
 const actionLabelMap: Record<string, string> = {
   create_submission: '출품작을 등록했습니다',
@@ -20,8 +20,8 @@ export default async function AdminDashboardPage() {
       getUsers(),
       getContests(),
       getSubmissions(),
-      getInquiries(),
-      getActivityLogs(),
+      getAllInquiries(),
+      getAllActivityLogs(),
     ]);
 
     const activeUsers = users.filter((user) => user.status === 'active').length;

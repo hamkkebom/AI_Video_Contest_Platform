@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { TreePine, Bell, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid } from 'lucide-react';
+import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -28,17 +28,6 @@ interface MenuItem {
 
 const commonMenuItems: MenuItem[] = [
   // { label: '공모전', href: '/contests?status=open' }, // 미완성 — 배포 시 숨김
-];
-
-/**
- * 더미 알림 데이터
- */
-const DUMMY_NOTIFICATIONS = [
-  { id: '1', title: '새로운 공모전 시작', message: '"AI 영상 공모전 2025" 접수가 시작되었습니다.' },
-  { id: '2', title: '심사 결과 발표', message: '참여하신 공모전의 심사 결과가 발표되었습니다.' },
-  { id: '3', title: '좋아요 알림', message: '당신의 작품에 새로운 좋아요가 있습니다.' },
-  { id: '4', title: '메시지 수신', message: '기업에서 의뢰 요청을 보냈습니다.' },
-  { id: '5', title: '시스템 공지', message: '플랫폼 점검이 예정되어 있습니다.' },
 ];
 
 /**
@@ -134,10 +123,10 @@ export function Header() {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
-  /* 로그아웃 핸들러 */
+  /* 로그아웃 후 현재 페이지 유지 */
   const handleSignOut = async () => {
     await signOut();
-    router.push('/');
+    router.refresh();
   };
 
   /**
@@ -195,28 +184,7 @@ export function Header() {
     </DropdownMenu>
   );
 
-  /**
-   * 알림 벨 드롭다운 (데스크톱/모바일 공용)
-   */
-  const renderNotificationBell = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="bottom" align="end" className="w-80">
-        <div className="px-2 py-1.5 text-sm font-semibold">알림</div>
-        {DUMMY_NOTIFICATIONS.map((notif) => (
-          <DropdownMenuItem key={notif.id} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-            <div className="font-medium text-sm">{notif.title}</div>
-            <div className="text-xs text-muted-foreground">{notif.message}</div>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  /* 알림 벨 — 알림 시스템 구현 전까지 숨김 */
 
   return (
     <>
@@ -272,7 +240,7 @@ export function Header() {
           {/* 오른쪽 — 데스크톱 액션 영역 */}
           <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2">
             {isGuest ? (
-              <Link href="/login">
+              <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
                 <Button
                   variant="default"
                   size="sm"
@@ -295,20 +263,16 @@ export function Header() {
                 {/* 프로필 아바타 + 드롭다운 */}
                 {renderProfileDropdown()}
 
-                {/* 알림 벨 */}
-                {renderNotificationBell()}
               </>
             )}
           </div>
 
           {/* 모바일 액션 영역 */}
           <div className="flex md:hidden flex-1 items-center justify-end gap-1">
-            {/* 알림 벨 — 모바일 (비로그인 숨김) */}
-            {!isGuest && renderNotificationBell()}
 
             {/* 게스트 — 모바일 로그인 버튼 */}
             {isGuest ? (
-              <Link href="/login">
+              <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
                 <Button
                   variant="default"
                   size="sm"

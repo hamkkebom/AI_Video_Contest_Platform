@@ -11,6 +11,7 @@
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createActivityLog } from '@/lib/data';
 
 const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CF_API_TOKEN = process.env.CLOUDFLARE_STREAM_API_TOKEN;
@@ -69,6 +70,14 @@ export async function POST(request: Request) {
 
     const cfData = await cfResponse.json();
     const { uploadURL, uid } = cfData.result;
+
+    // 활동 로그 기록
+    await createActivityLog({
+      userId: user.id,
+      action: 'upload_video',
+      targetType: 'video',
+      targetId: uid,
+    });
 
     return NextResponse.json({ uploadURL, uid });
   } catch (err) {

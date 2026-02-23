@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getContests, getJudges, getUsers } from '@/lib/mock';
+import { getContests, getJudges, getUsers } from '@/lib/data';
 import { Lightbulb, MailPlus, UserCheck } from 'lucide-react';
 
 type ContestJudgesPageProps = {

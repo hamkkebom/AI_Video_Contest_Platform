@@ -42,8 +42,21 @@ export default function SignupPage() {
   const [businessNumber, setBusinessNumber] = useState('');
   const [representativeName, setRepresentativeName] = useState('');
 
+  /* 비밀번호 검증: 8~20자, 영문+숫자+특수문자 모두 포함 */
+  const validatePassword = (pw: string): string | null => {
+    if (pw.length < 8 || pw.length > 20) return '비밀번호는 8자 이상 20자 이하로 입력해주세요.';
+    if (!/[a-zA-Z]/.test(pw)) return '비밀번호에 영문자를 포함해주세요.';
+    if (!/[0-9]/.test(pw)) return '비밀번호에 숫자를 포함해주세요.';
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pw)) return '비밀번호에 특수문자를 포함해주세요.';
+    return null;
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setErrorMsg(pwError);
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMsg('비밀번호가 일치하지 않습니다.');
       return;
@@ -54,7 +67,7 @@ export default function SignupPage() {
     }
     setIsSubmitting(true);
     setErrorMsg('');
-    const result = await signUpWithEmail(email, password, { name });
+    const result = await signUpWithEmail(email, password, { name, phone: mobile || undefined });
     if (result.error) {
       setErrorMsg(result.error);
       setIsSubmitting(false);
@@ -62,20 +75,22 @@ export default function SignupPage() {
       router.push('/login');
     }
   };
-
   /* 계정 유형 선택 → Step 2로 진행 */
   const handleSelectType = (type: 'individual' | 'business') => {
     setAccountType(type);
     setStep(2);
   };
-
   /* Step 1로 돌아가기 */
   const handleBack = () => {
     setStep(1);
   };
 
-  /* 비밀번호 강도 체크 (데모용) */
-  const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
+  /* 비밀번호 강도 체크 (영문/숫자/특수문자 충족 개수 기반) */
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+  const meetsLength = password.length >= 8 && password.length <= 20;
+  const passwordStrength = password.length === 0 ? 0 : [hasLetter, hasNumber, hasSpecial].filter(Boolean).length;
   const strengthLabel = ['', '약함', '보통', '강함'];
   const strengthColor = ['', 'bg-destructive', 'bg-yellow-500', 'bg-green-500'];
 

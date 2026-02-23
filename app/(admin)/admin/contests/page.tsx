@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getContests, getSubmissions } from '@/lib/mock';
+import { getContests, getSubmissions } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { Inbox } from 'lucide-react';
+import ContestRowActions from './contest-row-actions';
 
 /** 공모전 상태 라벨 */
 const statusLabelMap: Record<Contest['status'], string> = {
@@ -49,10 +50,15 @@ export default async function AdminContestsPage() {
 
     return (
       <div className="space-y-6 pb-10">
-        <header className="space-y-1">
-          <p className="text-sm text-muted-foreground">전체 공모전 관리</p>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">공모전 관리</h1>
-          <p className="text-sm text-muted-foreground">총 {allContests.length}개 공모전</p>
+        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">전체 공모전 관리</p>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">공모전 관리</h1>
+            <p className="text-sm text-muted-foreground">총 {allContests.length}개 공모전</p>
+          </div>
+          <Link href={'/admin/contests/new' as Route}>
+            <Button>새 공모전</Button>
+          </Link>
         </header>
 
         {/* 요약 카드 */}
@@ -144,13 +150,7 @@ export default async function AdminContestsPage() {
                           {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-end">
-                            <Link href={`/admin/contests/${contest.id}/submissions` as Route}>
-                              <Button size="sm" variant="outline">
-                                영상 관리
-                              </Button>
-                            </Link>
-                          </div>
+                          <ContestRowActions contestId={contest.id} />
                         </TableCell>
                       </TableRow>
                     ))}

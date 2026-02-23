@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getCompanies, getCompanyMembers, getUsers } from '@/lib/mock';
 import type { Company, CompanyMember, CompanyStatus, User } from '@/lib/types';
 
 /** 기업 승인 상태 라벨 */
@@ -43,23 +42,11 @@ export default function AdminCompanyDetailPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [companies, allMembers, users] = await Promise.all([
-          getCompanies(),
-          getCompanyMembers(),
-          getUsers(),
-        ]);
-
-        const found = companies.find((c) => c.id === companyId) ?? null;
-        setCompany(found);
-
-        // 해당 기업의 멤버 + 사용자 정보 결합
-        const companyMembers = allMembers
-          .filter((m) => m.companyId === companyId)
-          .map((m) => ({
-            ...m,
-            user: users.find((u) => u.id === m.userId),
-          }));
-        setMembers(companyMembers);
+        const res = await fetch(`/api/admin/companies/${companyId}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setCompany(data.company);
+        setMembers(data.members);
       } catch (error) {
         console.error('Failed to load company detail:', error);
       } finally {

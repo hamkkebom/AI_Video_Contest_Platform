@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getUsers } from '@/lib/mock';
+import { getUsers } from '@/lib/data';
 
 const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
   participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },

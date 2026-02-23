@@ -11,6 +11,7 @@ type PaywallOverlayProps = {
   featureKey: FeatureKey;
   children: ReactNode;
   message?: string;
+  planFeatureKeys?: string[];  // DB에서 조회한 사용자 플랜의 feature_keys
 };
 
 function getFeatureAccess(role: UserRole, featureKey: FeatureKey) {
@@ -21,15 +22,23 @@ function getFeatureAccess(role: UserRole, featureKey: FeatureKey) {
   return access ?? { free: false, label: featureKey };
 }
 
-function isFeatureFree(role: UserRole, featureKey: FeatureKey): boolean {
+function isFeatureFree(role: UserRole, featureKey: FeatureKey, planFeatureKeys?: string[]): boolean {
+  // admin 역할은 항상 전체 쇼핑 가능
   if (role === "admin") {
     return true;
   }
+  
+  // planFeatureKeys가 전달된 경우 DB 기반 판단
+  if (planFeatureKeys !== undefined) {
+    return planFeatureKeys.includes(featureKey);
+  }
+  
+  // fallback: 기존 DEFAULT_FEATURE_ACCESS 로직
   return getFeatureAccess(role, featureKey).free;
 }
 
-export function PaywallOverlay({ role, featureKey, children, message }: PaywallOverlayProps) {
-  const free = isFeatureFree(role, featureKey);
+export function PaywallOverlay({ role, featureKey, children, message, planFeatureKeys }: PaywallOverlayProps) {
+  const free = isFeatureFree(role, featureKey, planFeatureKeys);
   const featureAccess = getFeatureAccess(role, featureKey);
 
   return (

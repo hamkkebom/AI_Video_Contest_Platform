@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Device } from '@/lib/types';
+import { useAuth } from '@/lib/supabase/auth-context';
 
 import {
   Apple,
@@ -57,15 +59,26 @@ function formatLastActive(dateString: string): string {
 }
 
 export default function MyDevicesPage() {
+  const { user, loading } = useAuth();
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [trustedDevices, setTrustedDevices] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (loading) return;
+
+    if (!user) {
+      setDevices([]);
+      setTrustedDevices(new Set());
+      setIsLoading(false);
+      return;
+    }
+
     const loadDevices = async () => {
       try {
-        const res = await fetch('/api/devices'); const allDevices: Device[] = await res.json();
-        const userDevices = allDevices.filter((device) => device.userId === 'user-1');
+        const res = await fetch('/api/devices');
+        const allDevices: Device[] = await res.json();
+        const userDevices = allDevices.filter((device) => device.userId === user.id);
         setDevices(userDevices);
         setTrustedDevices(new Set(userDevices.filter((device) => device.isTrusted).map((device) => device.id)));
       } catch (error) {
@@ -76,7 +89,7 @@ export default function MyDevicesPage() {
     };
 
     loadDevices();
-  }, []);
+  }, [loading, user]);
 
   const toggleTrust = (deviceId: string) => {
     setTrustedDevices((prev) => {
@@ -90,11 +103,24 @@ export default function MyDevicesPage() {
     });
   };
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
       <Card className="border-border">
         <CardContent className="py-16 text-center text-sm text-muted-foreground">
           기기 정보를 불러오는 중입니다...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className="border-border">
+        <CardContent className="space-y-4 py-16 text-center">
+          <p className="text-sm text-muted-foreground">로그인이 필요합니다.</p>
+          <Link href="/login">
+            <Button size="sm">로그인하러 가기</Button>
+          </Link>
         </CardContent>
       </Card>
     );

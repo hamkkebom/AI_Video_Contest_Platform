@@ -1,5 +1,5 @@
 import { AdminAnalyticsContent } from '@/components/dashboard/admin-analytics-content';
-import { getActivityLogs, getContests, getInquiries, getSubmissions, getUsers } from '@/lib/mock';
+import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
 
 export default async function AdminAnalyticsPage() {
   try {
@@ -7,8 +7,8 @@ export default async function AdminAnalyticsPage() {
       getUsers(),
       getContests(),
       getSubmissions(),
-      getInquiries(),
-      getActivityLogs(),
+      getAllInquiries(),
+      getAllActivityLogs(),
     ]);
 
     const monthlyActivityMap = new Map<string, number>();

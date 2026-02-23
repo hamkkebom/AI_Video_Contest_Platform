@@ -1,10 +1,23 @@
 /**
  * Middleware용 Supabase 클라이언트
  * 요청마다 세션(쿠키) 갱신 처리
- * 환경변수 미설정 시 패스스루
+ *
+ * 세션 정책 (슬라이딩 만료):
+ * - 매 요청마다 쿠키 maxAge를 1시간으로 재설정
+ * - 마지막 활동 기준 1시간 동안 움직임이 없으면 세션 만료
+ * - 브라우저 종료 시에도 쿠키 소멸
  */
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { SESSION_MAX_AGE } from './client';
+
+/** 쿠키 옵션 (모든 auth 쿠키에 동일 적용) */
+const COOKIE_OPTIONS = {
+  maxAge: SESSION_MAX_AGE,
+  path: '/',
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+};
 
 export async function updateSession(request: NextRequest) {
   /* Supabase 미설정 시 미들웨어 건너뛰기 */
@@ -32,7 +45,10 @@ export async function updateSession(request: NextRequest) {
           }
           supabaseResponse = NextResponse.next({ request });
           for (const { name, value, options } of cookiesToSet) {
-            supabaseResponse.cookies.set(name, value, options);
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              ...COOKIE_OPTIONS,
+            });
           }
         },
       },
@@ -40,7 +56,21 @@ export async function updateSession(request: NextRequest) {
   );
 
   /* 세션 갱신 (만료된 토큰 자동 리프레시) */
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  /**
+   * 슬라이딩 만료: 유저가 인증된 상태면
+   * 매 요청마다 모든 sb-* 쿠키의 maxAge를 1시간으로 재설정
+   *
+   * setAll은 토큰 리프레시 시에만 호출되므로,
+   * 활동 중이지만 토큰 갱신이 불필요한 경우에도 maxAge를 연장해야 함
+   */
+  if (user) {
+    const authCookies = request.cookies.getAll().filter(c => c.name.startsWith('sb-'));
+    for (const cookie of authCookies) {
+      supabaseResponse.cookies.set(cookie.name, cookie.value, COOKIE_OPTIONS);
+    }
+  }
 
   return supabaseResponse;
 }

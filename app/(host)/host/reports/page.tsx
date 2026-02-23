@@ -1,20 +1,28 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getActivityLogs, getContests, getSubmissions, getUsers } from '@/lib/mock';
+import {
+  getAuthProfile,
+  getContestsByHost,
+  getSubmissions,
+  getUsers,
+  getAllActivityLogs,
+} from '@/lib/data';
 import { Download, FileText, History, Trophy } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 export default async function HostReportsPage() {
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
+
   try {
-    const DEMO_HOST_ID = 'user-2';
-    const [allContests, allSubmissions, allActivityLogs, allUsers] = await Promise.all([
-      getContests(),
+    const [hostContests, allSubmissions, allActivityLogs, allUsers] = await Promise.all([
+      getContestsByHost(profile.id),
       getSubmissions(),
-      getActivityLogs(),
+      getAllActivityLogs(),
       getUsers(),
     ]);
 
-    const hostContests = allContests.filter((contest) => contest.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
     const hostSubmissions = allSubmissions.filter((submission) => hostContestIds.has(submission.contestId));
     const hostActivityLogs = allActivityLogs

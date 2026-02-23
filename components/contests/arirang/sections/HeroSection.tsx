@@ -4,10 +4,14 @@ import { useRouter } from 'next/navigation';
 
 import { useCountdown } from '@/hooks/useCountdown';
 import { ChevronDown } from 'lucide-react';
+import { useLang } from '@/components/contests/arirang/lang-context';
+import { t, translations } from '@/components/contests/arirang/translations';
 
 /** 히어로 섹션 — 메인 비주얼 + 카운트다운 */
 export function HeroSection() {
   const countdown = useCountdown('2026-03-28T23:59:59+09:00');
+  const { lang } = useLang();
+  const heroTranslations = translations.hero;
 
   const router = useRouter();
   const goToLogin = () => router.push('/login');
@@ -48,8 +52,8 @@ export function HeroSection() {
 
       {/* 산 실루엣 */}
       <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 200" className="w-full" preserveAspectRatio="none" role="img" aria-label="산 실루엣">
-          <title>산 실루엣</title>
+        <svg viewBox="0 0 1440 200" className="w-full" preserveAspectRatio="none" role="img" aria-label={t(heroTranslations, 'mountainLabel', lang)}>
+          <title>{t(heroTranslations, 'mountainTitle', lang)}</title>
           <path d="M0,200 L0,120 Q180,40 360,100 Q540,160 720,80 Q900,0 1080,60 Q1260,120 1440,80 L1440,200 Z" fill="#0D0B1A" opacity="0.6" />
           <path d="M0,200 L0,150 Q240,80 480,130 Q720,180 960,100 Q1200,20 1440,110 L1440,200 Z" fill="#0D0B1A" />
         </svg>
@@ -60,45 +64,45 @@ export function HeroSection() {
         {/* 뱃지 */}
         <div className="inline-block mb-6 animate-fade-in">
           <span className="px-6 py-2 text-2xl md:text-3xl font-bold rounded-full" style={{ backgroundColor: 'rgba(212,168,67,0.2)', color: 'var(--ar-accent)', border: '1px solid rgba(212,168,67,0.3)' }}>
-            제1회
+            {t(heroTranslations, 'badge', lang)}
           </span>
         </div>
 
         {/* 130주년 기념 문구 */}
         <p className="text-xl md:text-2xl font-semibold mb-5 animate-fade-in-up" style={{ color: 'rgba(212,168,67,0.9)' }}>
-          헐버트 박사의 아리랑 채보 130주년 기념!
+          {t(heroTranslations, 'anniversary', lang)}
         </p>
 
         {/* 제목 */}
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-4 animate-fade-in-up" style={{ color: 'var(--ar-cream)' }}>
-          꿈꾸는 아리랑
+          {t(heroTranslations, 'title', lang)}
         </h1>
         <p className="text-xl md:text-2xl lg:text-3xl font-light mb-10 animate-fade-in-up" style={{ color: 'rgba(245,240,232,0.8)' }}>
-          AI 뮤직비디오 공모전
+          {t(heroTranslations, 'subtitle', lang)}
         </p>
 
         {/* 헐버트 명언 */}
         <blockquote className="mb-10 animate-fade-in-up">
           <p className="text-lg md:text-xl italic" style={{ color: 'rgba(232,199,106,0.9)' }}>
-            &ldquo;아리랑은 한국인의 영원한 노래&rdquo;
+            &ldquo;{t(heroTranslations, 'quote', lang)}&rdquo;
           </p>
           <footer className="mt-3 text-sm" style={{ color: 'rgba(245,240,232,0.6)' }}>
-            &mdash; 호머 헐버트{' '}
-            <span style={{ color: 'rgba(245,240,232,0.4)' }}>(한국의 외국인 독립운동가)</span>
+            &mdash; {t(heroTranslations, 'quoteAuthor', lang)}{' '}
+            <span style={{ color: 'rgba(245,240,232,0.4)' }}>{t(heroTranslations, 'quoteAuthorDesc', lang)}</span>
           </footer>
         </blockquote>
 
         {/* 카운트다운 */}
         <div className="mb-8 animate-fade-in-up">
           <p className="text-sm uppercase tracking-widest mb-3" style={{ color: 'rgba(245,240,232,0.5)' }}>
-            접수 마감까지
+            {t(heroTranslations, 'countdownTitle', lang)}
           </p>
           <div className="flex justify-center gap-3 md:gap-5">
             {[
-              { value: countdown.days, label: '일' },
-              { value: countdown.hours, label: '시간' },
-              { value: countdown.minutes, label: '분' },
-              { value: countdown.seconds, label: '초' },
+              { value: countdown.days, label: t(heroTranslations, 'countdownDays', lang) },
+              { value: countdown.hours, label: t(heroTranslations, 'countdownHours', lang) },
+              { value: countdown.minutes, label: t(heroTranslations, 'countdownMinutes', lang) },
+              { value: countdown.seconds, label: t(heroTranslations, 'countdownSeconds', lang) },
             ].map((item) => (
               <div key={item.label} className="flex flex-col items-center">
                 <div className="w-16 h-16 md:w-20 md:h-20 backdrop-blur-sm rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(45,35,153,0.3)', border: '1px solid rgba(245,240,232,0.1)' }}>
@@ -122,10 +126,10 @@ export function HeroSection() {
             className="px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300 cursor-pointer"
             style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)', boxShadow: '0 10px 25px rgba(212,168,67,0.25)' }}
           >
-            지금 접수하기
+            {t(heroTranslations, 'cta', lang)}
           </button>
           <p className="mt-4 font-bold text-xl md:text-2xl" style={{ color: 'rgba(212,168,67,0.8)' }}>
-            총 상금 1,300만 원
+            {t(heroTranslations, 'totalPrize', lang)}
           </p>
         </div>
       </div>

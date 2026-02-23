@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -12,7 +12,12 @@ export interface Profile {
   nickname: string | null;
   roles: string[];
   region: string | null;
-  preferred_ai_tools: string[] | null;
+  phone: string | null;
+  introduction: string | null;
+  social_links: Record<string, string> | null;
+  preferred_chat_ai: string[] | null;
+  preferred_image_ai: string[] | null;
+  preferred_video_ai: string[] | null;
   plan_id: string | null;
   avatar_url: string | null;
   status: string;
@@ -34,7 +39,7 @@ interface AuthContextValue {
   /** 이메일/비밀번호 로그인 */
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   /** 이메일/비밀번호 회원가입 */
-  signUpWithEmail: (email: string, password: string, metadata?: { name?: string }) => Promise<{ error?: string }>;
+  signUpWithEmail: (email: string, password: string, metadata?: { name?: string; phone?: string }) => Promise<{ error?: string }>;
   /** 로그아웃 */
   signOut: () => Promise<void>;
   /** 프로필 갱신 */
@@ -74,6 +79,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthProviderInner>{children}</AuthProviderInner>;
 }
 
+/** 로그 기록 헬퍼 (fire-and-forget) */
+function sendLog(action: string, metadata?: Record<string, unknown>) {
+  fetch('/api/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, metadata }),
+  }).catch(() => {
+    // 로그 기록 실패는 무시
+  });
+}
+
+/** sendBeacon 기반 로그 (브라우저 닫기/탭 닫기 시 사용, 비동기 보장) */
+function sendBeaconLog(action: string, metadata?: Record<string, unknown>) {
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    const data = JSON.stringify({ action, metadata });
+    navigator.sendBeacon('/api/log', new Blob([data], { type: 'application/json' }));
+  }
+}
+
 /**
  * 실제 Supabase 연동 Provider (환경변수 확인 후 렌더링)
  */
@@ -83,6 +107,11 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = useMemo(() => createClient()!, []);
+
+  // 로그인 로그 중복 방지용 ref
+  const lastLoggedEventRef = useRef<string | null>(null);
+  // 본인 의지 로그아웃 플래그
+  const manualSignOutRef = useRef(false);
 
   /** profiles 테이블에서 사용자 프로필 조회 */
   const fetchProfile = useCallback(async (userId: string) => {
@@ -134,7 +163,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   /** 이메일/비밀번호 회원가입 */
-  const signUpWithEmail = useCallback(async (email: string, password: string, metadata?: { name?: string }) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, metadata?: { name?: string; phone?: string }) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -147,8 +176,19 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     return {};
   }, [supabase]);
 
-  /** 로그아웃 */
+  /** 로그아웃 (본인 의지) */
   const signOut = useCallback(async () => {
+    manualSignOutRef.current = true;
+    // 로그아웃 전에 로그 기록 (인증 토큰이 필요하므로 signOut 전에 호출)
+    try {
+      await fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch {
+      // 로그 기록 실패는 무시
+    }
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
@@ -165,6 +205,8 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       if (currentSession?.user) {
         const p = await fetchProfile(currentSession.user.id);
         setProfile(p);
+        // 세션 복원 — 로그인 로그 기록하지 않음 (이미 로그인한 상태)
+        lastLoggedEventRef.current = currentSession.user.id;
       }
       setLoading(false);
     };
@@ -180,14 +222,50 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         if (newSession?.user) {
           const p = await fetchProfile(newSession.user.id);
           setProfile(p);
+
+          // 실제 로그인 시에만 로그 기록 (세션 복원 시 중복 방지)
+          if (event === 'SIGNED_IN') {
+            const eventKey = `${newSession.user.id}_${event}`;
+            if (lastLoggedEventRef.current !== newSession.user.id) {
+              lastLoggedEventRef.current = newSession.user.id;
+              sendLog('login', {
+                provider: newSession.user.app_metadata?.provider ?? 'email',
+              });
+            } else if (lastLoggedEventRef.current === eventKey) {
+              // 이미 기록함 — 무시
+            }
+          }
         } else {
+          // 세션이 사라짐 — 로그아웃 또는 세션 만료
+          if (!manualSignOutRef.current && lastLoggedEventRef.current) {
+            // 본인 의지 로그아웃이 아님 → 세션 아웃
+            sendLog('session_out');
+          }
           setProfile(null);
+          lastLoggedEventRef.current = null;
+          manualSignOutRef.current = false;
         }
         setLoading(false);
       },
     );
 
-    return () => subscription.unsubscribe();
+    /**
+     * 브라우저/탭 닫기 시 session_out 로그 기록
+     * sendBeacon 사용 — 브라우저가 닫히는 중에도 전송 보장
+     */
+    const handleBeforeUnload = () => {
+      // 로그인 중이고 본인 의지 로그아웃이 아닌 경우에만
+      if (lastLoggedEventRef.current && !manualSignOutRef.current) {
+        sendBeaconLog('session_out', { reason: 'browser_close' });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [supabase, fetchProfile]);
 
   const value = useMemo<AuthContextValue>(() => ({

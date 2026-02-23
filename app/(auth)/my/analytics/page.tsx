@@ -1,11 +1,15 @@
 import { ParticipantAnalyticsContent } from '@/components/dashboard/participant-analytics-content';
-import { getSubmissions } from '@/lib/data';
+import { getSubmissions, getAuthProfile } from '@/lib/data';
+import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default async function ParticipantAnalyticsPage() {
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
+
   try {
     const allSubmissions = await getSubmissions();
-    const userSubmissions = allSubmissions.filter((submission) => submission.userId === 'user-1');
+    const userSubmissions = allSubmissions.filter((submission) => submission.userId === profile.id);
 
     return <ParticipantAnalyticsContent submissions={userSubmissions} />;
   } catch (error) {

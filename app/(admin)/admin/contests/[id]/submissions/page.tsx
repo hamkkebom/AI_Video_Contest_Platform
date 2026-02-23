@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
-import { getContests, getSubmissions, getUsers } from '@/lib/mock';
+import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox } from 'lucide-react';
 

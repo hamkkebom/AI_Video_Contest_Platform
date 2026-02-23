@@ -3,7 +3,7 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getContests, getJudges, getSubmissions, getUsers } from '@/lib/mock';
+import { getContests, getJudges, getSubmissions, getUsers } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { ExternalLink, Inbox, Search, SquarePen, UserCheck } from 'lucide-react';
 

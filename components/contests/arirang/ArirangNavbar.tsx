@@ -2,17 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 
-import { useState, useEffect } from 'react';
-import { Menu, X, Globe } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Menu, X, Globe, LogOut } from 'lucide-react';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { useLang } from '@/components/contests/arirang/lang-context';
+import { t, translations } from '@/components/contests/arirang/translations';
 
 const NAV_ITEMS = [
-  { label: '공모전 소개', href: '#about' },
-  { label: '공모 개요', href: '#overview' },
-  { label: '일정', href: '#schedule' },
-  { label: '참여 방법', href: '#howto' },
-  { label: '시상 내역', href: '#prizes' },
-  { label: '접수', href: '#apply' },
-  { label: '유의사항', href: '#notes' },
+  { labelKey: 'navAbout', href: '#about' },
+  { labelKey: 'navOverview', href: '#overview' },
+  { labelKey: 'navSchedule', href: '#schedule' },
+  { labelKey: 'navHowTo', href: '#howto' },
+  { labelKey: 'navPrizes', href: '#prizes' },
+  { labelKey: 'navApply', href: '#apply' },
+  { labelKey: 'navNotes', href: '#notes' },
 ];
 
 /** 아리랑 랜딩페이지 전용 네비게이션 바 */
@@ -20,7 +23,9 @@ export function ArirangNavbar() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [lang, setLang] = useState<'ko' | 'en'>('ko');
+  const { lang, setLang } = useLang();
+  const { user, profile, signOut } = useAuth();
+  const navbarTranslations = translations.navbar;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -33,6 +38,22 @@ export function ArirangNavbar() {
     const el = document.querySelector(href);
     el?.scrollIntoView({ behavior: 'smooth' });
   };
+
+
+  /** 로그아웃 후 현재 페이지 유지 */
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    router.refresh();
+  }, [signOut, router]);
+
+  /** 역할별 대시보드 경로 */
+  const getDashboardPath = useCallback(() => {
+    const roles = profile?.roles || [];
+    if (roles.includes('admin')) return '/admin/dashboard';
+    if (roles.includes('host')) return '/host/dashboard';
+    if (roles.includes('judge')) return '/judging';
+    return '/my/submissions';
+  }, [profile]);
 
   return (
     <nav
@@ -52,7 +73,7 @@ export function ArirangNavbar() {
             className="font-bold text-lg md:text-xl tracking-tight cursor-pointer"
             style={{ color: 'var(--ar-accent)' }}
           >
-            꿈꾸는 아리랑
+            {t(navbarTranslations, 'brand', lang)}
           </button>
 
           {/* 데스크톱 네비게이션 */}
@@ -67,7 +88,7 @@ export function ArirangNavbar() {
                 onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--ar-cream)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(245,240,232,0.7)'; }}
               >
-                {item.label}
+                {t(navbarTranslations, item.labelKey, lang)}
               </button>
             ))}
           </div>
@@ -84,14 +105,37 @@ export function ArirangNavbar() {
               {lang === 'ko' ? 'EN' : 'KO'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => router.push('/login')}
-              className="hidden md:block px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
-            >
-              접수하기
-            </button>
+            {/* 로그인 상태에 따라 버튼 분기 */}
+            {user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => router.push(getDashboardPath())}
+                  className="hidden md:block px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer"
+                  style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
+                >
+                  {profile?.name || t(navbarTranslations, 'myPage', lang)}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="hidden md:flex items-center gap-1 px-3 py-1.5 text-sm rounded-full transition-colors cursor-pointer"
+                  style={{ color: 'rgba(245,240,232,0.7)', border: '1px solid rgba(245,240,232,0.2)' }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t(navbarTranslations, 'signOut', lang)}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push('/login')}
+                className="hidden md:block px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
+              >
+                {t(navbarTranslations, 'signIn', lang)}
+              </button>
+            )}
 
             {/* 모바일 햄버거 */}
             <button
@@ -121,17 +165,38 @@ export function ArirangNavbar() {
               className="block w-full text-left px-4 py-3 rounded-lg transition-colors cursor-pointer"
               style={{ color: 'rgba(245,240,232,0.8)' }}
             >
-              {item.label}
+              {t(navbarTranslations, item.labelKey, lang)}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => router.push('/login')}
-            className="block w-full mt-2 px-4 py-3 font-semibold rounded-lg text-center cursor-pointer"
-            style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
-          >
-            접수하기
-          </button>
+          {user ? (
+            <>
+              <button
+                type="button"
+                onClick={() => router.push(getDashboardPath())}
+                className="block w-full mt-2 px-4 py-3 font-semibold rounded-lg text-center cursor-pointer"
+                style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
+              >
+                {profile?.name || t(navbarTranslations, 'myPage', lang)}
+              </button>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="block w-full mt-1 px-4 py-3 rounded-lg text-center cursor-pointer"
+                style={{ color: 'rgba(245,240,232,0.8)', border: '1px solid rgba(245,240,232,0.2)' }}
+              >
+                {t(navbarTranslations, 'signOut', lang)}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="block w-full mt-2 px-4 py-3 font-semibold rounded-lg text-center cursor-pointer"
+              style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
+            >
+              {t(navbarTranslations, 'signIn', lang)}
+            </button>
+          )}
         </div>
       </div>
     </nav>

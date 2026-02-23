@@ -1,21 +1,31 @@
 import { JudgeContestContent } from '@/components/dashboard/judge-contest-content';
-import { getContests, getJudges, getJudgingTemplates, getScores, getSubmissions } from '@/lib/mock';
+import {
+  getAuthProfile,
+  getJudgeAssignments,
+  getContests,
+  getJudgingTemplates,
+  getScores,
+  getSubmissions,
+} from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 type JudgeContestPageProps = {
   params: Promise<{ contestId: string }>;
 };
 
 export default async function JudgeContestPage({ params }: JudgeContestPageProps) {
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
+
   try {
-    const DEMO_JUDGE_USER_ID = 'user-3';
     const { contestId } = await params;
 
-    const [allContests, allSubmissions, allScores, allJudges, templates] = await Promise.all([
+    const [allContests, allSubmissions, allScores, templates, judgeAssignments] = await Promise.all([
       getContests(),
       getSubmissions(),
       getScores(),
-      getJudges(),
       getJudgingTemplates(),
+      getJudgeAssignments(profile.id),
     ]);
 
     const contest = allContests.find((item) => item.id === contestId);
@@ -30,8 +40,7 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
     const contestSubmissions = allSubmissions.filter((submission) => submission.contestId === contest.id);
     const submissionIdSet = new Set(contestSubmissions.map((submission) => submission.id));
 
-    const contestJudges = allJudges.filter((judge) => judge.contestId === contest.id);
-    const currentJudgeAssignments = contestJudges.filter((judge) => judge.userId === DEMO_JUDGE_USER_ID);
+    const currentJudgeAssignments = judgeAssignments.filter((judge) => judge.contestId === contest.id);
     const currentJudgeIdSet = new Set(currentJudgeAssignments.map((judge) => judge.id));
 
     const contestScores = allScores.filter((score) => submissionIdSet.has(score.submissionId));

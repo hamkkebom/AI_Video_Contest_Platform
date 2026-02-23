@@ -5,6 +5,7 @@
  */
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { SESSION_MAX_AGE } from './client';
 
 export async function createClient() {
   if (
@@ -28,7 +29,13 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             for (const { name, value, options } of cookiesToSet) {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge: SESSION_MAX_AGE,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+              });
             }
           } catch {
             /* Server Component에서는 쿠키 설정 불가 — middleware에서 처리 */

@@ -12,11 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getArticles, getUsers } from '@/lib/mock';
+import { getAllArticles, getUsers } from '@/lib/data';
 
 export default async function AdminArticlesPage() {
   try {
-    const [articles, users] = await Promise.all([getArticles(), getUsers()]);
+    const [articles, users] = await Promise.all([getAllArticles(), getUsers()]);
 
     const typeColorMap: Record<string, string> = {
       notice: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',

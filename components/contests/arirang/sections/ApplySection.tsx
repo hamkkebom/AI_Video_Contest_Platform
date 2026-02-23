@@ -2,10 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { Send, CheckCircle2, Film, Clock } from 'lucide-react';
+import { useLang } from '@/components/contests/arirang/lang-context';
+import { t, translations } from '@/components/contests/arirang/translations';
 
 /** 공모전 접수 안내 섹션 (폼은 /contests/contest-1/submit 으로 이동) */
 export function ApplySection() {
   const router = useRouter();
+  const { lang } = useLang();
+  const applyTranslations = translations.apply;
 
   return (
     <section id="apply" className="relative py-24 md:py-32">
@@ -19,10 +23,10 @@ export function ApplySection() {
           className="arirang-animate text-3xl md:text-4xl lg:text-5xl font-bold text-center tracking-tight mb-4"
           style={{ color: 'var(--ar-cream)' }}
         >
-          공모전 접수
+          {t(applyTranslations, 'title', lang)}
         </h2>
         <p className="arirang-animate text-center mb-12" style={{ color: 'rgba(245,240,232,0.5)' }}>
-          AI 영상으로 아리랑을 재해석해 주세요
+          {t(applyTranslations, 'subtitle', lang)}
         </p>
 
         {/* 접수 안내 카드 */}
@@ -40,19 +44,19 @@ export function ApplySection() {
               style={{ color: 'var(--ar-cream)' }}
             >
               <Film className="w-5 h-5" style={{ color: 'var(--ar-accent)' }} />
-              접수 안내
+              {t(applyTranslations, 'guideTitle', lang)}
             </h3>
             <ul className="space-y-3">
               {[
-                { icon: CheckCircle2, text: 'AI를 활용하여 제작한 영상 (30초~90초, MP4)' },
-                { icon: CheckCircle2, text: '작품 설명 및 제작과정 서술' },
-                { icon: CheckCircle2, text: '썸네일 이미지 (JPG/PNG, 권장 1920×1080)' },
-                { icon: CheckCircle2, text: '가산점 인증 자료 (선택, 추후 등록 가능)' },
+                { icon: CheckCircle2, key: 'guide1' },
+                { icon: CheckCircle2, key: 'guide2' },
+                { icon: CheckCircle2, key: 'guide3' },
+                { icon: CheckCircle2, key: 'guide4' },
               ].map((item) => (
-                <li key={item.text} className="flex items-start gap-3">
+                <li key={item.key} className="flex items-start gap-3">
                   <item.icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--ar-accent)' }} />
                   <span className="text-sm" style={{ color: 'rgba(245,240,232,0.7)' }}>
-                    {item.text}
+                    {t(applyTranslations, item.key, lang)}
                   </span>
                 </li>
               ))}
@@ -69,8 +73,9 @@ export function ApplySection() {
           >
             <Clock className="w-5 h-5 shrink-0" style={{ color: 'var(--ar-accent)' }} />
             <p className="text-sm" style={{ color: 'rgba(245,240,232,0.6)' }}>
-              접수 마감: <span className="font-semibold" style={{ color: 'var(--ar-cream)' }}>2026년 3월 28일 (토) 23:59</span>
-              {' '}· 1인 1작품 제출 가능 · 팀 참여 불가
+              {t(applyTranslations, 'deadlinePrefix', lang)}{' '}
+              <span className="font-semibold" style={{ color: 'var(--ar-cream)' }}>{t(applyTranslations, 'deadlineValue', lang)}</span>
+              {' '}{t(applyTranslations, 'deadlineSuffix', lang)}
             </p>
           </div>
 
@@ -87,11 +92,11 @@ export function ApplySection() {
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--ar-accent)'; }}
           >
             <Send className="w-5 h-5" />
-            작품 접수하기
+            {t(applyTranslations, 'cta', lang)}
           </button>
 
           <p className="text-center text-xs" style={{ color: 'rgba(245,240,232,0.3)' }}>
-            로그인 후 접수 페이지에서 작품을 제출할 수 있습니다
+            {t(applyTranslations, 'ctaHint', lang)}
           </p>
         </div>
       </div>

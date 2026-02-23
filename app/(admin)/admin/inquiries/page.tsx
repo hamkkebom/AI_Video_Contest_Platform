@@ -11,11 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getInquiries, getUsers } from '@/lib/mock';
+import { getAllInquiries, getUsers } from '@/lib/data';
 
 export default async function AdminInquiriesPage() {
   try {
-    const [inquiries, users] = await Promise.all([getInquiries(), getUsers()]);
+    const [inquiries, users] = await Promise.all([getAllInquiries(), getUsers()]);
 
     const typeLabelMap: Record<string, { label: string; color: string }> = {
       general: { label: '일반', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS } from '@/config/constants';
-import { getContests } from '@/lib/mock';
 import type { Contest } from '@/lib/types';
 import { CheckCircle2, Search, Plus, X, Trophy } from 'lucide-react';
 
@@ -42,8 +41,10 @@ export default function HostContestEditPage({ params }: ContestEditPageProps) {
   useEffect(() => {
     const loadContest = async () => {
       try {
-        const contests = await getContests();
-        const found = contests.find((item) => item.id === id);
+        const res = await fetch(`/api/host/contests/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        const found: Contest | null = data.contest;
 
         if (found) {
           setContest(found);

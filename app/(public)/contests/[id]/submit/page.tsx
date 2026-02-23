@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
@@ -40,6 +40,10 @@ import {
 } from 'lucide-react';
 
 import type { Contest } from '@/lib/types';
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
+
+const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
+const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
 
 /** 제출 폼 상태 타입 */
 interface FormState {
@@ -58,9 +62,8 @@ interface BonusFormEntry {
 }
 
 /**
- * 공모전 작품 제출 페이지 (목업)
+ * 공모전 작품 제출 페이지
  * ApplySection 기준으로 통합된 접수 폼
- * 실제 파일 업로드 없이 UI만 구성
  */
 export default function ContestSubmitPage() {
   const params = useParams();
@@ -81,9 +84,14 @@ export default function ContestSubmitPage() {
     agree: false,
   });
 
-  /* 파일 업로드 목업 상태 */
-  const [videoFileName, setVideoFileName] = useState<string | null>(null);
-  const [thumbnailFileName, setThumbnailFileName] = useState<string | null>(null);
+  /* 파일 업로드 상태 */
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStep, setUploadStep] = useState<'video' | 'thumbnail' | 'submission' | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
   /* 가산점 아코디언 열림 상태 */
   const [openBonuses, setOpenBonuses] = useState<string[]>([]);
@@ -119,17 +127,172 @@ export default function ContestSubmitPage() {
     }));
   };
 
-  /* 목업 파일 선택 핸들러 */
-  const handleVideoSelect = () => setVideoFileName('my-ai-video-작품.mp4');
-  const handleVideoRemove = () => setVideoFileName(null);
-  const handleThumbnailSelect = () => setThumbnailFileName('thumbnail-작품.jpg');
-  const handleThumbnailRemove = () => setThumbnailFileName(null);
+  const formatFileSize = (size: number) => {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
 
-  /* 목업 제출 핸들러 */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleVideoSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] ?? null;
+    if (!selectedFile) return;
+
+    if (selectedFile.size > MAX_VIDEO_SIZE_BYTES) {
+      const message = '영상 파일은 최대 500MB까지 업로드할 수 있습니다.';
+      setSubmitError(message);
+      alert(message);
+      event.target.value = '';
+      return;
+    }
+
+    setSubmitError(null);
+    setVideoFile(selectedFile);
+  };
+
+  const handleVideoRemove = () => {
+    setVideoFile(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+  };
+
+  const handleThumbnailSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] ?? null;
+    if (!selectedFile) return;
+
+    if (selectedFile.size > MAX_THUMBNAIL_SIZE_BYTES) {
+      const message = '썸네일 파일은 최대 10MB까지 업로드할 수 있습니다.';
+      setSubmitError(message);
+      alert(message);
+      event.target.value = '';
+      return;
+    }
+
+    setSubmitError(null);
+    setThumbnailFile(selectedFile);
+  };
+
+  const handleThumbnailRemove = () => {
+    setThumbnailFile(null);
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = '';
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.agree) return;
-    setSubmitted(true);
+
+    if (!videoFile || !thumbnailFile) {
+      const message = '영상 파일과 썸네일 파일을 모두 선택해 주세요.';
+      setSubmitError(message);
+      alert(message);
+      return;
+    }
+
+    try {
+      setSubmitError(null);
+      setIsSubmitting(true);
+
+      setUploadStep('video');
+      const uploadUrlResponse = await fetch('/api/upload/video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ maxDurationSeconds: 600 }),
+      });
+
+      const uploadUrlResult = (await uploadUrlResponse.json()) as {
+        uploadURL?: string;
+        uid?: string;
+        error?: string;
+      };
+
+      if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
+        throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
+      }
+
+      const videoUploadFormData = new FormData();
+      videoUploadFormData.append('file', videoFile);
+
+      const videoUploadResponse = await fetch(uploadUrlResult.uploadURL, {
+        method: 'PUT',
+        body: videoUploadFormData,
+      });
+
+      if (!videoUploadResponse.ok) {
+        throw new Error('영상 파일 업로드에 실패했습니다.');
+      }
+
+      setUploadStep('thumbnail');
+      const supabase = createBrowserClient();
+      if (!supabase) {
+        throw new Error('Supabase 설정이 필요합니다.');
+      }
+
+      const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
+      const { data: thumbnailData, error: thumbnailUploadError } = await supabase.storage
+        .from('thumbnails')
+        .upload(thumbnailPath, thumbnailFile, {
+          contentType: thumbnailFile.type,
+          upsert: false,
+        });
+
+      if (thumbnailUploadError || !thumbnailData?.path) {
+        throw new Error(thumbnailUploadError?.message ?? '썸네일 업로드에 실패했습니다.');
+      }
+
+      const { data: thumbnailPublicData } = supabase.storage
+        .from('thumbnails')
+        .getPublicUrl(thumbnailData.path);
+
+      if (!thumbnailPublicData.publicUrl) {
+        throw new Error('썸네일 공개 URL 생성에 실패했습니다.');
+      }
+
+      setUploadStep('submission');
+      const tags = form.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+      const submissionResponse = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contestId,
+          title: form.title,
+          description: form.description,
+          videoUrl: uploadUrlResult.uid,
+          thumbnailUrl: thumbnailPublicData.publicUrl,
+          tags,
+          aiTools: form.aiTools,
+          productionProcess: form.productionProcess,
+        }),
+      });
+
+      const submissionResult = (await submissionResponse.json()) as {
+        error?: string;
+      };
+
+      if (!submissionResponse.ok) {
+        throw new Error(submissionResult.error ?? '출품작 저장에 실패했습니다.');
+      }
+
+      setSubmitted(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '작품 제출 중 오류가 발생했습니다.';
+      setSubmitError(message);
+      alert(message);
+    } finally {
+      setUploadStep(null);
+      setIsSubmitting(false);
+    }
   };
 
   /* 가산점 존재 여부 */
@@ -140,9 +303,10 @@ export default function ContestSubmitPage() {
     form.title.trim() &&
     form.description.trim() &&
     form.productionProcess.trim() &&
-    videoFileName &&
-    thumbnailFileName &&
-    form.agree;
+    videoFile &&
+    thumbnailFile &&
+    form.agree &&
+    !isSubmitting;
 
   if (loading) {
     return (
@@ -342,13 +506,20 @@ export default function ContestSubmitPage() {
 
             {/* 썸네일 + 영상 업로드 */}
             <div className="grid md:grid-cols-2 gap-4">
-              {/* 썸네일 이미지 업로드 (목업) */}
+              {/* 썸네일 이미지 업로드 */}
               <div className="space-y-2">
                 <Label className="text-base font-semibold">
                   썸네일 이미지 <span className="text-red-500">*</span>
                 </Label>
                 <p className="text-xs text-muted-foreground">JPG, PNG 형식, 권장 1920×1080px</p>
-                {thumbnailFileName ? (
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleThumbnailSelect}
+                />
+                {thumbnailFile ? (
                   <Card className="p-4 border border-border bg-background/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -356,8 +527,10 @@ export default function ContestSubmitPage() {
                           <ImageIcon className="h-5 w-5 text-violet-500" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{thumbnailFileName}</p>
-                          <p className="text-xs text-muted-foreground">1.2 MB · JPG</p>
+                          <p className="text-sm font-medium">{thumbnailFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(thumbnailFile.size)}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -372,7 +545,7 @@ export default function ContestSubmitPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={handleThumbnailSelect}
+                    onClick={() => thumbnailInputRef.current?.click()}
                     className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer min-h-[140px] justify-center"
                   >
                     <ImageIcon className="h-8 w-8 text-muted-foreground" />
@@ -381,7 +554,7 @@ export default function ContestSubmitPage() {
                 )}
               </div>
 
-              {/* 영상 파일 업로드 (목업) */}
+              {/* 영상 파일 업로드 */}
               <div className="space-y-2">
                 <Label className="text-base font-semibold">
                   영상 파일 <span className="text-red-500">*</span>
@@ -389,7 +562,14 @@ export default function ContestSubmitPage() {
                 <p className="text-xs text-muted-foreground">
                   {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 500MB
                 </p>
-                {videoFileName ? (
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleVideoSelect}
+                />
+                {videoFile ? (
                   <Card className="p-4 border border-border bg-background/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -397,8 +577,10 @@ export default function ContestSubmitPage() {
                           <FileVideo className="h-5 w-5 text-orange-500" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{videoFileName}</p>
-                          <p className="text-xs text-muted-foreground">24.5 MB · MP4</p>
+                          <p className="text-sm font-medium">{videoFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(videoFile.size)}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -413,7 +595,7 @@ export default function ContestSubmitPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={handleVideoSelect}
+                    onClick={() => videoInputRef.current?.click()}
                     className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer min-h-[140px] justify-center"
                   >
                     <Upload className="h-8 w-8 text-muted-foreground" />
@@ -595,12 +777,23 @@ export default function ContestSubmitPage() {
             </div>
 
             {/* 제출 버튼 */}
+            {submitError && (
+              <p className="text-sm text-red-500">{submitError}</p>
+            )}
+            {isSubmitting && (
+              <p className="text-sm text-muted-foreground">
+                {uploadStep === 'video' && '영상 업로드 중...'}
+                {uploadStep === 'thumbnail' && '썸네일 업로드 중...'}
+                {uploadStep === 'submission' && '출품작 정보를 저장하는 중...'}
+              </p>
+            )}
             <div className="flex items-center gap-3 pt-2">
               <Link href={`/contests/${contestId}/landing`} className="flex-1">
                 <Button
                   type="button"
                   variant="outline"
                   className="w-full cursor-pointer"
+                  disabled={isSubmitting}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   돌아가기
@@ -612,7 +805,7 @@ export default function ContestSubmitPage() {
                 disabled={!canSubmit}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                작품 제출하기
+                {isSubmitting ? '업로드 중...' : '작품 제출하기'}
               </Button>
             </div>
           </form>

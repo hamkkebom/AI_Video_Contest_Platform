@@ -10,11 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAgencyRequests } from '@/lib/mock';
+import { getAllAgencyRequests } from '@/lib/data';
 
 export default async function AdminAgencyRequestsPage() {
   try {
-    const requests = await getAgencyRequests();
+    const requests = await getAllAgencyRequests();
 
     const statusLabelMap: Record<string, { label: string; color: string }> = {
       new: { label: '신규', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },

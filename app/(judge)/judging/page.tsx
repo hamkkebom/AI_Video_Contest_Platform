@@ -1,19 +1,27 @@
 import { JudgeDashboardContent } from '@/components/dashboard/judge-dashboard-content';
-import { getContests, getJudges, getJudgingTemplates, getScores, getSubmissions } from '@/lib/mock';
+import {
+  getAuthProfile,
+  getJudgeAssignments,
+  getContests,
+  getJudgingTemplates,
+  getScores,
+  getSubmissions,
+} from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 export default async function JudgeContestsPage() {
-  try {
-    const DEMO_JUDGE_USER_ID = 'user-3';
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
 
-    const [allContests, allJudges, allSubmissions, allScores, templates] = await Promise.all([
+  try {
+    const [allContests, judgeAssignments, allSubmissions, allScores, templates] = await Promise.all([
       getContests(),
-      getJudges(),
+      getJudgeAssignments(profile.id),
       getSubmissions(),
       getScores(),
       getJudgingTemplates(),
     ]);
 
-    const judgeAssignments = allJudges.filter((judge) => judge.userId === DEMO_JUDGE_USER_ID);
     const assignedContestIds = new Set(judgeAssignments.map((judge) => judge.contestId));
     const assignedContests = allContests.filter((contest) => assignedContestIds.has(contest.id));
 

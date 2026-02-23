@@ -7,7 +7,12 @@ export interface User {
   nickname?: string;
   roles: UserRole[];               // 복수 역할 지원 (admin은 모든 페이지 접근 가능)
   region?: string;                 // 선택 — 미입력 시 null
-  preferredAiTools?: string[];     // 주로 사용하는 AI 도구 (예: ['Sora', 'Runway', 'Kling'])
+  phone?: string;                  // 전화번호
+  introduction?: string;           // 자기소개
+  socialLinks?: Record<string, string>; // 소셜 링크 (instagram, youtube, portfolio 등)
+  preferredChatAi?: string[];      // 선호 채팅 AI 도구
+  preferredImageAi?: string[];     // 선호 이미지 AI 도구
+  preferredVideoAi?: string[];     // 선호 영상 AI 도구
   planId?: string;                 // FK → pricing_plans.id (가입 시 free 자동 부여)
   createdAt: string;
   status: UserStatus;
@@ -171,6 +176,8 @@ export interface Contest {
   bonusConfigs?: BonusConfig[];
   /** 가산점 총 배점 */
   bonusMaxScore?: number;
+  /** 결과 발표 형태 (website, email, sns, offline) */
+  resultFormat?: string;
 }
 
 export type SubmissionStatus =

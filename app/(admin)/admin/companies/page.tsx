@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getCompanies, getCompanyMembers } from '@/lib/mock';
+import { getCompanies, getCompanyMembers } from '@/lib/data';
 import type { CompanyStatus } from '@/lib/types';
 
 /** 기업 승인 상태 라벨 */

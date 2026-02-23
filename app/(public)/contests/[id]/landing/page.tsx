@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import '@/components/contests/arirang/arirang-landing.css';
 import { ArirangNavbar } from '@/components/contests/arirang/ArirangNavbar';
+import { LangProvider } from '@/components/contests/arirang/lang-context';
 
 
 import { HeroSection } from '@/components/contests/arirang/sections/HeroSection';
@@ -45,18 +46,19 @@ export default function ArirangLandingPage() {
   }, []);
 
   return (
-    <div className="arirang-landing">
-
-      <ArirangNavbar />
-      <HeroSection />
-      <AboutSection />
-      <OverviewSection />
-      <ScheduleSection />
-      <HowToSection />
-      <PrizesSection />
-      <ApplySection />
-      <NotesSection />
-      <FooterSection />
-    </div>
+    <LangProvider>
+      <div className="arirang-landing">
+        <ArirangNavbar />
+        <HeroSection />
+        <AboutSection />
+        <OverviewSection />
+        <ScheduleSection />
+        <HowToSection />
+        <PrizesSection />
+        <ApplySection />
+        <NotesSection />
+        <FooterSection />
+      </div>
+    </LangProvider>
   );
 }

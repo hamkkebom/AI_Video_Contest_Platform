@@ -1,17 +1,18 @@
 import { HostDashboardContent } from '@/components/dashboard/host-dashboard-content';
-import { getContests, getSubmissions, getJudges } from '@/lib/mock';
+import { getAuthProfile, getContestsByHost, getSubmissions, getJudges } from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 export default async function HostDashboardPage() {
-  try {
-    const DEMO_HOST_ID = 'user-2';
+  const profile = await getAuthProfile();
+  if (!profile) redirect('/login');
 
-    const [allContests, allSubmissions, allJudges] = await Promise.all([
-      getContests(),
+  try {
+    const [hostContests, allSubmissions, allJudges] = await Promise.all([
+      getContestsByHost(profile.id),
       getSubmissions(),
       getJudges(),
     ]);
 
-    const hostContests = allContests.filter((c) => c.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((c) => c.id));
     const hostSubmissions = allSubmissions.filter((s) => hostContestIds.has(s.contestId));
     const hostJudges = allJudges.filter((j) => hostContestIds.has(j.contestId));

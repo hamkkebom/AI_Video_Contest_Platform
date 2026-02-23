@@ -1,6 +1,6 @@
 import { REGIONS_KR } from '@/config/constants';
 import { AdminAnalyticsRegionalContent } from '@/components/dashboard/admin-analytics-regional-content';
-import { getContests, getSubmissions, getUsers } from '@/lib/mock';
+import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { RegionalMetric } from '@/lib/types';
 
 export default async function AdminAnalyticsRegionalPage() {
