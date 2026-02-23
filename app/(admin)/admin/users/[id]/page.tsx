@@ -113,7 +113,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
             </div>
             <div>
               <p className="text-xs text-muted-foreground">소속</p>
-              <p className="font-medium">{user.companyName ?? '개인'}</p>
+              <p className="font-medium">개인</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">지역</p>

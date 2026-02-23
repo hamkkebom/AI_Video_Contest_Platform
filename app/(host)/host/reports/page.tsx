@@ -14,7 +14,7 @@ export default async function HostReportsPage() {
       getUsers(),
     ]);
 
-    const hostContests = allContests.filter((contest) => contest.hostId === DEMO_HOST_ID);
+    const hostContests = allContests.filter((contest) => contest.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
     const hostSubmissions = allSubmissions.filter((submission) => hostContestIds.has(submission.contestId));
     const hostActivityLogs = allActivityLogs

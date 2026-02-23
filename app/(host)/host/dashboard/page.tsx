@@ -11,7 +11,7 @@ export default async function HostDashboardPage() {
       getJudges(),
     ]);
 
-    const hostContests = allContests.filter((c) => c.hostId === DEMO_HOST_ID);
+    const hostContests = allContests.filter((c) => c.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((c) => c.id));
     const hostSubmissions = allSubmissions.filter((s) => hostContestIds.has(s.contestId));
     const hostJudges = allJudges.filter((j) => hostContestIds.has(j.contestId));

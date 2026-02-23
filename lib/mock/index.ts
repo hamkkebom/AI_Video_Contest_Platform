@@ -12,6 +12,8 @@ import type {
   Article,
   AwardTier,
   BonusConfig,
+  Company,
+  CompanyMember,
   Contest,
   ContestFilters,
   ContestResult,
@@ -38,21 +40,53 @@ function atDay(offset: number): string {
 
 const usersStore: User[] = Array.from({ length: 60 }, (_, index) => {
   const role = (["participant", "host", "judge", "admin"] as const)[index % 4];
-  const hostNumber = Math.floor(index / 4) + 1;
-  const companyName = role === "host" ? `기업 ${hostNumber}` : undefined;
   return {
     id: `user-${index + 1}`,
     email: `user${index + 1}@mockup.local`,
     name: `사용자 ${index + 1}`,
     nickname: index < 40 ? `닉네임${index + 1}` : undefined,
     role,
-    companyName,
     region: REGIONS_KR[index % REGIONS_KR.length],
     createdAt: atDay(index),
     status: index % 11 === 0 ? "pending" : "active",
     avatarUrl: `https://picsum.photos/seed/user-${index + 1}/160/160`
   };
 });
+
+const hostUsers = usersStore.filter((user) => user.role === "host");
+const participantUsers = usersStore.filter((user) => user.role === "participant");
+const judgeUsers = usersStore.filter((user) => user.role === "judge");
+
+const companiesStore: Company[] = Array.from({ length: 15 }, (_, index) => ({
+  id: `company-${index + 1}`,
+  name: `기업 ${index + 1}`,
+  businessNumber: `${String(100 + index).padStart(3, '0')}-${String(10 + (index % 90)).padStart(2, '0')}-${String(10000 + index * 111).slice(0, 5)}`,
+  representativeName: `대표 ${index + 1}`,
+  address: `서울시 강남구 테헤란로 ${index + 1}`,
+  phone: `02-${String(1000 + index)}-${String(1000 + index * 2)}`,
+  logoUrl: `https://picsum.photos/seed/company-${index + 1}/200/200`,
+  website: `https://company-${index + 1}.example.com`,
+  description: `기업 ${index + 1}은 AI 영상 콘텐츠 전문 기업입니다.`,
+  createdAt: atDay(index),
+  updatedAt: atDay(index + 5),
+}));
+
+const companyMembersStore: CompanyMember[] = [
+  ...hostUsers.map((user, index) => ({
+    id: `member-${index + 1}`,
+    companyId: companiesStore[index % companiesStore.length].id,
+    userId: user.id,
+    role: "owner" as const,
+    joinedAt: atDay(index),
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `member-${hostUsers.length + i + 1}`,
+    companyId: companiesStore[i % companiesStore.length].id,
+    userId: participantUsers[i % participantUsers.length].id,
+    role: "staff" as const,
+    joinedAt: atDay(20 + i),
+  })),
+];
 
 const devicesStore: Device[] = usersStore.flatMap((user, userIndex) =>
   Array.from({ length: (userIndex % 3) + 1 }, (_, deviceIndex) => ({
@@ -103,10 +137,6 @@ const templatesStore: JudgingTemplate[] = [
     createdAt: atDay(3)
   }
 ];
-
-const hostUsers = usersStore.filter((user) => user.role === "host");
-const participantUsers = usersStore.filter((user) => user.role === "participant");
-const judgeUsers = usersStore.filter((user) => user.role === "judge");
 
 const contestTitles = [
   '제1회 AI 영상 페스티벌',
@@ -253,7 +283,8 @@ const contestsStore: Contest[] = Array.from({ length: 60 }, (_, index) => {
     id: `contest-${index + 1}`,
     title: contestTitles[index % contestTitles.length],
     slug: `ai-video-contest-${index + 1}`,
-    hostId: hostUsers[index % hostUsers.length].id,
+    hostCompanyId: companiesStore[index % companiesStore.length].id,
+    hostUserId: hostUsers[index % hostUsers.length].id,
     description: contestDescriptions[index % contestDescriptions.length],
     region: REGIONS_KR[index % REGIONS_KR.length],
     tags: ["ai", "video", `season-${(index % 4) + 1}`],
@@ -535,6 +566,14 @@ export async function getUsers(): Promise<User[]> {
   return asyncReturn(usersStore);
 }
 
+export async function getCompanies(): Promise<Company[]> {
+  return asyncReturn(companiesStore);
+}
+
+export async function getCompanyMembers(): Promise<CompanyMember[]> {
+  return asyncReturn(companyMembersStore);
+}
+
 export async function getDevices(): Promise<Device[]> {
   return asyncReturn(devicesStore);
 }
@@ -769,7 +808,7 @@ export async function searchMockData(filters: SearchFilters): Promise<SearchResu
     includeText(`${submission.title} ${submission.description}`, normalized)
   );
   const users = usersStore.filter((user) =>
-    includeText(`${user.name} ${user.nickname ?? ""} ${user.companyName ?? ""}`, normalized)
+    includeText(`${user.name} ${user.nickname ?? ""}`, normalized)
   );
   const articles = articlesStore.filter((article) =>
     includeText(`${article.title} ${article.excerpt} ${article.content}`, normalized)
@@ -797,7 +836,8 @@ export async function getMockDataCounts(): Promise<Record<string, number>> {
     submissions: submissionsStore.length,
     users: usersStore.length,
     usersWithNickname: usersStore.filter((user) => typeof user.nickname === "string").length,
-    usersWithCompany: usersStore.filter((user) => typeof user.companyName === "string").length,
+    companies: companiesStore.length,
+    companyMembers: companyMembersStore.length,
     likes: likesStore.length,
     faq: faqStore.length,
     articles: articlesStore.length,

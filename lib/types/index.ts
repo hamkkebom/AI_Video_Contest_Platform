@@ -20,11 +20,36 @@ export interface User {
   name: string;
   nickname?: string;
   role: UserRole;
-  companyName?: string;
   region: string;
   createdAt: string;
   status: UserStatus;
   avatarUrl?: string;
+}
+
+export type CompanyMemberRole = "owner" | "manager" | "staff";
+
+/** 기업 (사업자 단위) */
+export interface Company {
+  id: string;
+  name: string;                   // 기업명
+  businessNumber: string;          // 사업자등록번호
+  representativeName: string;      // 대표자명
+  address?: string;                // 사업장 소재지
+  phone?: string;                  // 대표 전화번호
+  logoUrl?: string;                // 기업 로고 URL
+  website?: string;                // 기업 홈페이지 URL
+  description?: string;            // 기업 소개
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 기업-사용자 매핑 (N:M) */
+export interface CompanyMember {
+  id: string;
+  companyId: string;               // FK → companies.id
+  userId: string;                  // FK → users.id
+  role: CompanyMemberRole;         // 기업 내 역할
+  joinedAt: string;
 }
 
 export interface Device {
@@ -130,7 +155,8 @@ export interface Contest {
   id: string;
   title: string;
   slug: string;
-  hostId: string;
+  hostCompanyId: string;           // FK → companies.id (주최 기업)
+  hostUserId: string;              // FK → users.id (주최 담당자)
   description: string;
   region: string;
   tags: string[];

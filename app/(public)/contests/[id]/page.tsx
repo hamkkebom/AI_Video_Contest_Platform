@@ -69,7 +69,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
   }
 
   const statusMeta = getStatusMeta(contest.status);
-  const hostUser = allUsers.find((u) => u.id === contest.hostId);
+  const hostUser = allUsers.find((u) => u.id === contest.hostUserId);
 
   // 클라이언트 컴포넌트에 전달하기 위해 Map → 직렬화 가능한 객체로 변환
   const creatorsRecord: Record<string, (typeof allUsers)[number]> = {};
@@ -258,7 +258,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">주최</span>
-                  <span className="text-right font-medium">{hostUser?.companyName ?? hostUser?.name ?? '운영팀'}</span>
+                  <span className="text-right font-medium">{hostUser?.name ?? '운영팀'}</span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">심사 방식</span>

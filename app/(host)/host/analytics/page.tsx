@@ -6,7 +6,7 @@ export default async function HostAnalyticsPage() {
     const DEMO_HOST_ID = 'user-2';
     const [allContests, allSubmissions] = await Promise.all([getContests(), getSubmissions()]);
 
-    const hostContests = allContests.filter((contest) => contest.hostId === DEMO_HOST_ID);
+    const hostContests = allContests.filter((contest) => contest.hostUserId === DEMO_HOST_ID);
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
     const hostSubmissions = allSubmissions.filter((submission) => hostContestIds.has(submission.contestId));
 

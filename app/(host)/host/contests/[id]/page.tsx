@@ -54,7 +54,7 @@ export default async function HostContestDetailPage({ params }: ContestDetailPag
 
     const submissions = allSubmissions.filter((submission) => submission.contestId === id);
     const judges = allJudges.filter((judge) => judge.contestId === id);
-    const host = allUsers.find((user) => user.id === contest.hostId);
+    const host = allUsers.find((user) => user.id === contest.hostUserId);
 
     const subsByStatus = {
       pendingReview: submissions.filter((submission) => submission.status === 'pending_review').length,
