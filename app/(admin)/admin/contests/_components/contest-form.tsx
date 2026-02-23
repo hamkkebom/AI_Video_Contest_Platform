@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
-import { CheckCircle2, Plus, Search, Trophy, X, Star } from 'lucide-react';
+import { CheckCircle2, Plus, Search, Trophy, X, Star, Upload, ImagePlus } from 'lucide-react';
 
 type ContestFormMode = 'create' | 'edit';
 
@@ -17,7 +17,7 @@ type AwardTierForm = {
   id: string;
   label: string;
   type: 'grand' | 'excellence' | 'merit' | 'encouragement' | 'special' | 'custom';
-  count: number;
+  countStr: string;
   prizeAmount: string;
 };
 
@@ -59,6 +59,9 @@ type ContestMutationPayload = {
   bonusMaxScore?: number;
   awardTiers: Array<{ label: string; count: number; prizeAmount?: string }>;
   bonusConfigs: Array<{ label: string; description?: string; score: number; requiresUrl: boolean; requiresImage: boolean }>;
+  landingPageUrl?: string;
+  detailContent?: string;
+  detailImageUrls?: string[];
 };
 
 /** 수상 등급/유형 옵션 */
@@ -84,7 +87,7 @@ function createAwardTier(label: string, count: number, prizeAmount = '', type: A
     id: globalThis.crypto.randomUUID(),
     label,
     type,
-    count,
+    countStr: String(count),
     prizeAmount,
   };
 }
@@ -112,9 +115,28 @@ function unformatPrize(value: string): string {
   return value.replace(/[^0-9]/g, '');
 }
 
+/** 숫자만 허용하는 문자열 필터 */
+function numericOnly(value: string): string {
+  return value.replace(/[^0-9]/g, '');
+}
+
 /** select 공통 스타일 */
 const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClass = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+/** 파일 업로드 헬퍼 */
+async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | 'detail-image'): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', type);
+  const res = await fetch('/api/upload/contest-asset', { method: 'POST', body: formData });
+  if (!res.ok) {
+    const data = (await res.json()) as { error?: string };
+    throw new Error(data.error ?? '파일 업로드에 실패했습니다.');
+  }
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
 
 export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const router = useRouter();
@@ -134,8 +156,26 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [status, setStatus] = useState<Contest['status']>('draft');
   const [posterUrl, setPosterUrl] = useState('');
   const [promotionVideoUrl, setPromotionVideoUrl] = useState('');
-  const [hasLandingPage, setHasLandingPage] = useState(false);
   const [resultFormat, setResultFormat] = useState('website');
+
+  /* 포스터/홍보영상: URL or 파일 업로드 */
+  const [posterInputMode, setPosterInputMode] = useState<'url' | 'file'>('url');
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [posterUploading, setPosterUploading] = useState(false);
+  const [promoInputMode, setPromoInputMode] = useState<'url' | 'file'>('url');
+  const [promoFile, setPromoFile] = useState<File | null>(null);
+  const [promoUploading, setPromoUploading] = useState(false);
+  const posterFileRef = useRef<HTMLInputElement>(null);
+  const promoFileRef = useRef<HTMLInputElement>(null);
+
+  /* 상세 안내 (신규) */
+  const [detailContent, setDetailContent] = useState('');
+  const [detailImageUrls, setDetailImageUrls] = useState<string[]>([]);
+  const [detailImageUploading, setDetailImageUploading] = useState(false);
+  const detailImageRef = useRef<HTMLInputElement>(null);
+
+  /* 랜딩페이지 URL (토글 제거, URL 직접 입력) */
+  const [landingPageUrl, setLandingPageUrl] = useState('');
 
   /* 태그: 프리디파인드 칩 + 커스텀 추가 */
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -148,12 +188,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [judgingEndDate, setJudgingEndDate] = useState('');
   const [resultDate, setResultDate] = useState('');
 
-  /* 심사 정책 */
+  /* 심사 정책 — maxSubmissions를 문자열로 관리 (스피너 문제 해결) */
   const [judgingType, setJudgingType] = useState<Contest['judgingType']>('internal');
   const [reviewPolicy, setReviewPolicy] = useState<Contest['reviewPolicy']>('manual');
-  const [maxSubmissions, setMaxSubmissions] = useState(3);
+  const [maxSubmissionsStr, setMaxSubmissionsStr] = useState('3');
 
-  /* 허용 영상 형식 — 기본 미선택 (#22) */
+  /* 허용 영상 형식 — 기본 미선택 */
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   const [customExtInput, setCustomExtInput] = useState('');
   const [customExtensions, setCustomExtensions] = useState<string[]>([]);
@@ -165,7 +205,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     createAwardTier('우수상', 3, '', 'merit'),
   ]);
 
-  /* 가산점 항목 (#16) */
+  /* 가산점 항목 */
   const [bonusConfigs, setBonusConfigs] = useState<BonusConfigForm[]>([]);
 
   /* ===== 편집 모드: 기존 데이터 로드 ===== */
@@ -192,8 +232,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setStatus(contest.status);
         setPosterUrl(contest.posterUrl ?? '');
         setPromotionVideoUrl(contest.promotionVideoUrl ?? '');
-        setHasLandingPage(contest.hasLandingPage ?? false);
         setResultFormat(contest.resultFormat ?? 'website');
+        setLandingPageUrl(contest.landingPageUrl ?? '');
+        setDetailContent(contest.detailContent ?? '');
+        setDetailImageUrls(contest.detailImageUrls ?? []);
         setSubmissionStartDate(toDateInputValue(contest.submissionStartAt));
         setSubmissionEndDate(toDateInputValue(contest.submissionEndAt));
         setJudgingStartDate(toDateInputValue(contest.judgingStartAt));
@@ -201,7 +243,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setResultDate(toDateInputValue(contest.resultAnnouncedAt));
         setJudgingType(contest.judgingType);
         setReviewPolicy(contest.reviewPolicy);
-        setMaxSubmissions(contest.maxSubmissionsPerUser);
+        setMaxSubmissionsStr(String(contest.maxSubmissionsPerUser));
         setSelectedExtensions(contest.allowedVideoExtensions);
         setAwardTiers(
           contest.awardTiers.length > 0
@@ -209,7 +251,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 id: globalThis.crypto.randomUUID(),
                 label: tier.label,
                 type: 'custom' as const,
-                count: tier.count,
+                countStr: String(tier.count),
                 prizeAmount: tier.prizeAmount ?? '',
               }))
             : [createAwardTier('대상', 1, '', 'grand')],
@@ -238,29 +280,93 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   }, [contestId, mode]);
 
   /* ===== 파생 값 ===== */
-  const totalAwardCount = useMemo(() => awardTiers.reduce((sum, tier) => sum + tier.count, 0), [awardTiers]);
+  const parsedAwardCounts = useMemo(() => awardTiers.map((t) => {
+    const n = parseInt(t.countStr, 10);
+    return Number.isNaN(n) ? 0 : Math.max(0, Math.min(100, n));
+  }), [awardTiers]);
 
-  /** 총 상금 자동 계산 (#15) */
+  const totalAwardCount = useMemo(() => parsedAwardCounts.reduce((s, c) => s + c, 0), [parsedAwardCounts]);
+
+  /** 총 상금 자동 계산 */
   const totalPrize = useMemo(() => {
-    return awardTiers.reduce((sum, tier) => {
+    return awardTiers.reduce((sum, tier, i) => {
       const amount = Number(unformatPrize(tier.prizeAmount)) || 0;
-      return sum + amount * tier.count;
+      return sum + amount * parsedAwardCounts[i];
     }, 0);
-  }, [awardTiers]);
+  }, [awardTiers, parsedAwardCounts]);
 
-  /** 폼 유효성 (#20) */
+  /** maxSubmissions 파싱 */
+  const parsedMaxSubmissions = useMemo(() => {
+    const n = parseInt(maxSubmissionsStr, 10);
+    return Number.isNaN(n) ? 3 : Math.max(1, Math.min(10, n));
+  }, [maxSubmissionsStr]);
+
+  /** 포스터가 준비되었는지 (URL이든 파일 업로드 완료든) */
+  const hasPoster = !!(posterUrl.trim());
+
+  /** 폼 유효성 */
   const isFormValid = useMemo(() => {
     return !!(
       title.trim() &&
+      description.trim() &&
+      hasPoster &&
+      selectedTags.length > 0 &&
+      resultFormat &&
       submissionStartDate &&
       submissionEndDate &&
       judgingStartDate &&
       judgingEndDate &&
       resultDate &&
       selectedExtensions.length > 0 &&
-      awardTiers.every((t) => t.label.trim() && t.prizeAmount.trim())
+      awardTiers.every((t, i) => {
+        const count = parsedAwardCounts[i];
+        return t.label.trim() && t.prizeAmount.trim() && t.type !== undefined && count >= 1;
+      })
     );
-  }, [title, submissionStartDate, submissionEndDate, judgingStartDate, judgingEndDate, resultDate, selectedExtensions, awardTiers]);
+  }, [title, description, hasPoster, selectedTags, resultFormat, submissionStartDate, submissionEndDate, judgingStartDate, judgingEndDate, resultDate, selectedExtensions, awardTiers, parsedAwardCounts]);
+
+  /* ===== 파일 업로드 핸들러 ===== */
+  const handlePosterFileSelect = async (file: File) => {
+    setPosterFile(file);
+    setPosterUploading(true);
+    try {
+      const url = await uploadContestAsset(file, 'poster');
+      setPosterUrl(url);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '포스터 업로드 실패');
+    } finally {
+      setPosterUploading(false);
+    }
+  };
+
+  const handlePromoFileSelect = async (file: File) => {
+    setPromoFile(file);
+    setPromoUploading(true);
+    try {
+      const url = await uploadContestAsset(file, 'promo-video');
+      setPromotionVideoUrl(url);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '홍보영상 업로드 실패');
+    } finally {
+      setPromoUploading(false);
+    }
+  };
+
+  const handleDetailImageUpload = async (files: FileList) => {
+    setDetailImageUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const url = await uploadContestAsset(file, 'detail-image');
+        urls.push(url);
+      }
+      setDetailImageUrls((prev) => [...prev, ...urls]);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '이미지 업로드 실패');
+    } finally {
+      setDetailImageUploading(false);
+    }
+  };
 
   /* ===== 태그 ===== */
   const toggleTag = (tag: string) => {
@@ -298,15 +404,20 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     next[index] = {
       ...next[index],
       type: typeValue,
-      label: typeValue === 'custom' ? next[index].label : (option?.label ?? ''),
+      /* 유형 변경 시 자동 채움하되, 사용자가 이미 입력한 값이 있으면 덮어씀 (사양: 유형 선택 시 자동 채움) */
+      label: typeValue === 'custom' ? '' : (option?.label ?? ''),
     };
     setAwardTiers(next);
   };
 
-  /* ===== 필드 유효성 검사 (#21) ===== */
+  /* ===== 필드 유효성 검사 ===== */
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!title.trim()) errors.title = '공모전 제목을 입력해주세요.';
+    if (!description.trim()) errors.description = '공모전 설명을 입력해주세요.';
+    if (!hasPoster) errors.posterUrl = '포스터를 등록해주세요. (URL 입력 또는 파일 업로드)';
+    if (selectedTags.length === 0) errors.tags = '최소 1개의 태그를 선택해주세요.';
+    if (!resultFormat) errors.resultFormat = '결과 발표 형태를 선택해주세요.';
     if (!submissionStartDate) errors.submissionStartDate = '제출 시작일을 선택해주세요.';
     if (!submissionEndDate) errors.submissionEndDate = '제출 마감일을 선택해주세요.';
     if (!judgingStartDate) errors.judgingStartDate = '심사 시작일을 선택해주세요.';
@@ -314,7 +425,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     if (!resultDate) errors.resultDate = '결과 발표일을 선택해주세요.';
     if (selectedExtensions.length === 0) errors.extensions = '최소 1개의 영상 형식을 선택해주세요.';
     awardTiers.forEach((tier, i) => {
+      if (!tier.type) errors[`award_type_${i}`] = '유형을 선택해주세요.';
       if (!tier.label.trim()) errors[`award_label_${i}`] = '상 이름을 입력해주세요.';
+      const count = parsedAwardCounts[i];
+      if (count < 1) errors[`award_count_${i}`] = '인원은 1명 이상이어야 합니다.';
       if (!tier.prizeAmount.trim()) errors[`award_prize_${i}`] = '상금을 입력해주세요.';
     });
     setFieldErrors(errors);
@@ -336,16 +450,19 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       resultAnnouncedAt: toIsoDate(resultDate),
       judgingType,
       reviewPolicy,
-      maxSubmissionsPerUser: maxSubmissions,
+      maxSubmissionsPerUser: parsedMaxSubmissions,
       allowedVideoExtensions: selectedExtensions,
       posterUrl: posterUrl.trim() || undefined,
       promotionVideoUrl: promotionVideoUrl.trim() || undefined,
-      hasLandingPage,
+      hasLandingPage: !!landingPageUrl.trim(),
       resultFormat,
+      landingPageUrl: landingPageUrl.trim() || undefined,
+      detailContent: detailContent.trim() || undefined,
+      detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
       awardTiers: awardTiers
-        .map((tier) => ({
+        .map((tier, i) => ({
           label: tier.label.trim(),
-          count: Math.max(1, tier.count),
+          count: Math.max(1, parsedAwardCounts[i]),
           prizeAmount: unformatPrize(tier.prizeAmount) || undefined,
         }))
         .filter((tier) => tier.label.length > 0),
@@ -452,10 +569,33 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     );
   }
 
+  /* ===== 탭 버튼 (URL / 파일 업로드) ===== */
+  const renderInputModeTab = (
+    currentMode: 'url' | 'file',
+    setMode: (m: 'url' | 'file') => void,
+  ) => (
+    <div className="flex gap-1 rounded-md border border-border p-0.5">
+      <button
+        type="button"
+        onClick={() => setMode('url')}
+        className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${currentMode === 'url' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        URL 입력
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode('file')}
+        className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${currentMode === 'file' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        파일 업로드
+      </button>
+    </div>
+  );
+
   /* ===== 메인 폼 ===== */
   return (
     <div className="space-y-6 pb-10">
-      {/* 헤더 (#1 breadcrumb 제거, #2 "공모전 등록", #3 설명 변경) */}
+      {/* 헤더 */}
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
           {mode === 'create' ? '공모전 등록' : title || '공모전 수정'}
@@ -466,14 +606,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ===== 공모전 정보 (#4 "기본 정보" → "공모전 정보") ===== */}
+        {/* ===== 카드 1: 공모전 정보 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>공모전 정보</CardTitle>
             <CardDescription>공모전 소개와 기본 분류 정보를 입력합니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* 제목 + 상태 (#5 region 제거, grid md:grid-cols-2) */}
+            {/* 제목 + 상태 */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label htmlFor="admin-contest-title" className="text-sm font-medium">
@@ -508,46 +648,116 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               </div>
             </div>
 
-            {/* 설명 */}
+            {/* 공모전 설명 (필수) */}
             <div className="space-y-2">
-              <label htmlFor="admin-contest-description" className="text-sm font-medium">공모전 설명</label>
+              <label htmlFor="admin-contest-description" className="text-sm font-medium">
+                공모전 설명 <span className="text-destructive">*</span>
+              </label>
               <textarea
                 id="admin-contest-description"
                 placeholder="목적, 주제, 참가 대상을 입력하세요"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => { setDescription(e.target.value); setFieldErrors((p) => ({ ...p, description: '' })); }}
                 rows={4}
                 className={textareaClass}
               />
+              {fieldErrors.description && <p className="text-xs text-destructive">{fieldErrors.description}</p>}
             </div>
 
-            {/* 포스터 URL (#6) + 홍보영상 URL (#7) */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="admin-contest-poster" className="text-sm font-medium">포스터 URL</label>
+            {/* 포스터 (필수) — URL 입력 / 파일 업로드 탭 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  포스터 <span className="text-destructive">*</span>
+                </label>
+                {renderInputModeTab(posterInputMode, setPosterInputMode)}
+              </div>
+              {posterInputMode === 'url' ? (
                 <Input
-                  id="admin-contest-poster"
                   type="url"
                   placeholder="https://example.com/poster.jpg"
                   value={posterUrl}
-                  onChange={(e) => setPosterUrl(e.target.value)}
+                  onChange={(e) => { setPosterUrl(e.target.value); setFieldErrors((p) => ({ ...p, posterUrl: '' })); }}
                 />
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    ref={posterFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePosterFileSelect(f);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={posterUploading}
+                    onClick={() => posterFileRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {posterUploading ? '업로드 중...' : posterFile ? posterFile.name : '이미지 선택 (JPG, PNG, WebP, GIF)'}
+                  </Button>
+                  {posterUrl && posterInputMode === 'file' && (
+                    <p className="text-xs text-emerald-600">업로드 완료</p>
+                  )}
+                </div>
+              )}
+              {fieldErrors.posterUrl && <p className="text-xs text-destructive">{fieldErrors.posterUrl}</p>}
+            </div>
+
+            {/* 홍보영상 — URL 입력 / 파일 업로드 탭 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">홍보영상</label>
+                {renderInputModeTab(promoInputMode, setPromoInputMode)}
               </div>
-              <div className="space-y-2">
-                <label htmlFor="admin-contest-promo-video" className="text-sm font-medium">홍보영상 URL</label>
+              {promoInputMode === 'url' ? (
                 <Input
-                  id="admin-contest-promo-video"
                   type="url"
                   placeholder="https://youtube.com/watch?v=..."
                   value={promotionVideoUrl}
                   onChange={(e) => setPromotionVideoUrl(e.target.value)}
                 />
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    ref={promoFileRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePromoFileSelect(f);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={promoUploading}
+                    onClick={() => promoFileRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {promoUploading ? '업로드 중...' : promoFile ? promoFile.name : '영상 선택 (MP4, WebM, MOV, AVI)'}
+                  </Button>
+                  {promotionVideoUrl && promoInputMode === 'file' && (
+                    <p className="text-xs text-emerald-600">업로드 완료</p>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* 태그: 프리디파인드 칩 + 커스텀 (#8) */}
+            {/* 태그 (필수) */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">태그</label>
+              <label className="text-sm font-medium">
+                태그 <span className="text-destructive">*</span>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {CONTEST_TAGS.map((tag) => {
                   const active = selectedTags.includes(tag);
@@ -555,7 +765,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     <button
                       key={tag}
                       type="button"
-                      onClick={() => toggleTag(tag)}
+                      onClick={() => { toggleTag(tag); setFieldErrors((p) => ({ ...p, tags: '' })); }}
                       className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
                         active
                           ? 'border-primary bg-primary/10 text-primary'
@@ -585,50 +795,82 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 />
                 <Button type="button" variant="outline" size="sm" onClick={addCustomTag}>추가</Button>
               </div>
-            </div>
-
-            {/* 랜딩페이지 등록 토글 (#9) + 결과 발표 형태 (#10) */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">랜딩페이지 등록</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={hasLandingPage}
-                    onClick={() => setHasLandingPage(!hasLandingPage)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hasLandingPage ? 'bg-primary' : 'bg-muted'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${hasLandingPage ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                  <span className="text-sm text-muted-foreground">{hasLandingPage ? '사용' : '미사용'}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="admin-contest-result-format" className="text-sm font-medium">결과 발표 형태</label>
-                <select
-                  id="admin-contest-result-format"
-                  value={resultFormat}
-                  onChange={(e) => setResultFormat(e.target.value)}
-                  className={selectClass}
-                >
-                  {RESULT_FORMATS.map((rf) => (
-                    <option key={rf.value} value={rf.value}>{rf.label}</option>
-                  ))}
-                </select>
-              </div>
+              {fieldErrors.tags && <p className="text-xs text-destructive">{fieldErrors.tags}</p>}
             </div>
           </CardContent>
         </Card>
 
-        {/* ===== 일정 설정 ===== */}
+        {/* ===== 카드 2: 상세 안내 (신규) ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>상세 안내</CardTitle>
+            <CardDescription>공모전 상세 안내 텍스트와 이미지를 등록합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="admin-contest-detail-content" className="text-sm font-medium">상세 안내 텍스트</label>
+              <textarea
+                id="admin-contest-detail-content"
+                placeholder="참가 방법, 시상 내역, 유의사항 등 상세한 안내를 작성하세요"
+                value={detailContent}
+                onChange={(e) => setDetailContent(e.target.value)}
+                rows={6}
+                className={textareaClass}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">상세 안내 이미지</label>
+              <input
+                ref={detailImageRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) handleDetailImageUpload(e.target.files);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={detailImageUploading}
+                onClick={() => detailImageRef.current?.click()}
+              >
+                <ImagePlus className="h-4 w-4" />
+                {detailImageUploading ? '업로드 중...' : '이미지 추가 (JPG, PNG, WebP, GIF)'}
+              </Button>
+              {detailImageUrls.length > 0 && (
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {detailImageUrls.map((url, i) => (
+                    <div key={url} className="group relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`상세 안내 이미지 ${i + 1}`} className="h-24 w-24 rounded-md border border-border object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setDetailImageUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ===== 카드 3: 일정 설정 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>일정 설정</CardTitle>
             <CardDescription>제출 기간, 심사 기간, 결과 발표일을 설정합니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* 제출 기간 */}
             <div>
               <p className="mb-3 text-sm font-semibold">제출 기간 <span className="text-destructive">*</span></p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -644,6 +886,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 </div>
               </div>
             </div>
+            {/* 심사 기간 */}
             <div>
               <p className="mb-3 text-sm font-semibold">심사 기간 <span className="text-destructive">*</span></p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -659,17 +902,49 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="admin-contest-result-date" className="text-sm font-medium">
-                결과 발표일 <span className="text-destructive">*</span>
-              </label>
-              <Input id="admin-contest-result-date" type="date" value={resultDate} onChange={(e) => { setResultDate(e.target.value); setFieldErrors((p) => ({ ...p, resultDate: '' })); }} />
-              {fieldErrors.resultDate && <p className="text-xs text-destructive">{fieldErrors.resultDate}</p>}
+            {/* 결과 발표: 발표일 + 결과발표형태 + 랜딩페이지 URL (3col 한 줄) */}
+            <div>
+              <p className="mb-3 text-sm font-semibold">결과 발표 <span className="text-destructive">*</span></p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label htmlFor="admin-contest-result-date" className="text-sm font-medium">
+                    발표일 <span className="text-destructive">*</span>
+                  </label>
+                  <Input id="admin-contest-result-date" type="date" value={resultDate} onChange={(e) => { setResultDate(e.target.value); setFieldErrors((p) => ({ ...p, resultDate: '' })); }} />
+                  {fieldErrors.resultDate && <p className="text-xs text-destructive">{fieldErrors.resultDate}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="admin-contest-result-format" className="text-sm font-medium">
+                    결과발표 형태 <span className="text-destructive">*</span>
+                  </label>
+                  <select
+                    id="admin-contest-result-format"
+                    value={resultFormat}
+                    onChange={(e) => { setResultFormat(e.target.value); setFieldErrors((p) => ({ ...p, resultFormat: '' })); }}
+                    className={selectClass}
+                  >
+                    {RESULT_FORMATS.map((rf) => (
+                      <option key={rf.value} value={rf.value}>{rf.label}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.resultFormat && <p className="text-xs text-destructive">{fieldErrors.resultFormat}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="admin-contest-landing-url" className="text-sm font-medium">랜딩페이지 URL</label>
+                  <Input
+                    id="admin-contest-landing-url"
+                    type="url"
+                    placeholder="https://example.com/result"
+                    value={landingPageUrl}
+                    onChange={(e) => setLandingPageUrl(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* ===== 심사 정책 (#17 라벨 보완) ===== */}
+        {/* ===== 카드 4: 심사 정책 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>심사 정책</CardTitle>
@@ -707,37 +982,53 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               </select>
             </div>
 
+            {/* 인당 최대 출품 수 — type="text" + inputMode="numeric" (스피너 문제 해결) */}
             <div className="space-y-2 md:col-span-2">
               <label htmlFor="admin-contest-max-submissions" className="text-sm font-medium">
                 인당 최대 출품 수 <span className="text-destructive">*</span>
               </label>
               <Input
                 id="admin-contest-max-submissions"
-                type="number"
-                min={1}
-                max={10}
-                value={maxSubmissions}
-                onChange={(e) => setMaxSubmissions(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                type="text"
+                inputMode="numeric"
+                placeholder="3"
+                value={maxSubmissionsStr}
+                onChange={(e) => setMaxSubmissionsStr(numericOnly(e.target.value))}
+                onBlur={() => {
+                  const n = parseInt(maxSubmissionsStr, 10);
+                  if (Number.isNaN(n) || n < 1) setMaxSubmissionsStr('1');
+                  else if (n > 10) setMaxSubmissionsStr('10');
+                  else setMaxSubmissionsStr(String(n));
+                }}
+                className="max-w-[120px]"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* ===== 수상 설정 (#11~#15) ===== */}
+        {/* ===== 카드 5: 수상 설정 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
               수상 설정
             </CardTitle>
-            <CardDescription>상 종류, 인원, 상금을 설정합니다. 상금은 필수입니다.</CardDescription>
+            <CardDescription>상 종류, 인원, 상금을 설정합니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* 헤더 라벨 (항상 표시) */}
+            <div className="flex items-end gap-3">
+              <div className="w-28"><span className="text-xs font-medium text-muted-foreground">유형 <span className="text-destructive">*</span></span></div>
+              <div className="flex-1"><span className="text-xs font-medium text-muted-foreground">상 이름 <span className="text-destructive">*</span></span></div>
+              <div className="w-16"><span className="text-xs font-medium text-muted-foreground">인원 <span className="text-destructive">*</span></span></div>
+              <div className="w-36"><span className="text-xs font-medium text-muted-foreground">상금 (원) <span className="text-destructive">*</span></span></div>
+              <div className="w-9 shrink-0" />
+            </div>
+
             {awardTiers.map((tier, index) => (
-              <div key={tier.id} className="flex items-end gap-3">
-                {/* 등급/유형 드롭다운 (#11) */}
+              <div key={tier.id} className="flex items-start gap-3">
+                {/* 유형 (필수) */}
                 <div className="w-28 space-y-1">
-                  {index === 0 && <label className="text-xs font-medium text-muted-foreground">유형</label>}
                   <select
                     value={tier.type}
                     onChange={(e) => handleAwardTypeChange(index, e.target.value as AwardTierForm['type'])}
@@ -747,43 +1038,56 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                  {fieldErrors[`award_type_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_type_${index}`]}</p>}
                 </div>
 
-                {/* 상 이름 */}
+                {/* 상 이름 — 항상 편집 가능 (readOnly 제거) */}
                 <div className="flex-1 space-y-1">
-                  {index === 0 && <label className="text-xs font-medium text-muted-foreground">상 이름 <span className="text-destructive">*</span></label>}
                   <Input
                     type="text"
+                    placeholder="상 이름 입력"
                     value={tier.label}
-                    readOnly={tier.type !== 'custom'}
                     onChange={(e) => {
                       const next = [...awardTiers];
                       next[index] = { ...tier, label: e.target.value };
                       setAwardTiers(next);
+                      setFieldErrors((p) => ({ ...p, [`award_label_${index}`]: '' }));
                     }}
                   />
                   {fieldErrors[`award_label_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_label_${index}`]}</p>}
                 </div>
 
-                {/* 인원 (#12 최대 100명) */}
-                <div className="w-24 space-y-1">
-                  {index === 0 && <label className="text-xs font-medium text-muted-foreground">인원</label>}
+                {/* 인원 (필수) — w-16, type="text" inputMode="numeric" */}
+                <div className="w-16 space-y-1">
                   <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={tier.count}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="1"
+                    value={tier.countStr}
                     onChange={(e) => {
                       const next = [...awardTiers];
-                      next[index] = { ...tier, count: Math.max(1, Math.min(100, Number(e.target.value) || 1)) };
+                      next[index] = { ...tier, countStr: numericOnly(e.target.value) };
                       setAwardTiers(next);
+                      setFieldErrors((p) => ({ ...p, [`award_count_${index}`]: '' }));
+                    }}
+                    onBlur={() => {
+                      const n = parseInt(tier.countStr, 10);
+                      if (Number.isNaN(n) || n < 1) {
+                        const next = [...awardTiers];
+                        next[index] = { ...tier, countStr: '1' };
+                        setAwardTiers(next);
+                      } else if (n > 100) {
+                        const next = [...awardTiers];
+                        next[index] = { ...tier, countStr: '100' };
+                        setAwardTiers(next);
+                      }
                     }}
                   />
+                  {fieldErrors[`award_count_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_count_${index}`]}</p>}
                 </div>
 
-                {/* 상금 (#13 필수, #14 쉼표 포매팅) */}
+                {/* 상금 (필수) */}
                 <div className="w-36 space-y-1">
-                  {index === 0 && <label className="text-xs font-medium text-muted-foreground">상금 (원) <span className="text-destructive">*</span></label>}
                   <Input
                     type="text"
                     placeholder="1,000,000"
@@ -792,6 +1096,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       const next = [...awardTiers];
                       next[index] = { ...tier, prizeAmount: formatPrize(e.target.value) };
                       setAwardTiers(next);
+                      setFieldErrors((p) => ({ ...p, [`award_prize_${index}`]: '' }));
                     }}
                   />
                   {fieldErrors[`award_prize_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_prize_${index}`]}</p>}
@@ -822,7 +1127,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               수상 항목 추가
             </Button>
 
-            {/* 총 수상 인원 + 총 상금 (#15) */}
+            {/* 총 수상 인원 + 총 상금 */}
             <div className="flex flex-wrap gap-6 border-t border-border pt-3 text-sm text-muted-foreground">
               <div>총 수상 인원: <span className="font-semibold text-foreground">{totalAwardCount}명</span></div>
               <div>총 상금: <span className="font-semibold text-foreground">{totalPrize.toLocaleString('ko-KR')}원</span></div>
@@ -830,7 +1135,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
-        {/* ===== 가산점 항목 (#16) ===== */}
+        {/* ===== 카드 6: 가산점 항목 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -939,7 +1244,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
-        {/* ===== 허용 영상 형식 (#22 기본 미선택, #23 커스텀 추가) ===== */}
+        {/* ===== 카드 7: 허용 영상 형식 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>허용 영상 형식 <span className="text-destructive">*</span></CardTitle>
@@ -1001,7 +1306,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         {/* 에러 메시지 */}
         {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
 
-        {/* 제출 버튼 (#20 isFormValid) */}
+        {/* 제출 버튼 */}
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link href={'/admin/contests' as Route}>
             <Button type="button" variant="outline">취소</Button>

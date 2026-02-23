@@ -11,9 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
-import { Camera, Check, X, Loader2, AlertTriangle } from 'lucide-react';
+import { Camera, Check, X, Loader2, AlertTriangle, Plus } from 'lucide-react';
 
-/** AI 도구 칩 선택 컴포넌트 */
+/** AI 도구 칩 선택 컴포넌트 (접이식) */
 function AiToolChips({
   label,
   tools,
@@ -25,6 +25,14 @@ function AiToolChips({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
+  // 선택된 게 없으면 접힌 상태로 시작
+  const [expanded, setExpanded] = useState(selected.length > 0);
+
+  // 외부에서 selected가 바뀌면 expanded 동기화
+  useEffect(() => {
+    if (selected.length > 0) setExpanded(true);
+  }, [selected.length]);
+
   const toggle = (tool: string) => {
     onChange(
       selected.includes(tool)
@@ -32,6 +40,23 @@ function AiToolChips({
         : [...selected, tool],
     );
   };
+
+  // 접힌 상태: 선택된 도구가 없으면 "추가하기" 버튼만 표시
+  if (!expanded && selected.length === 0) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{label}</p>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          추가하기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -55,12 +80,14 @@ function AiToolChips({
           );
         })}
       </div>
+      {selected.length === 0 && (
+        <p className="text-xs text-muted-foreground">사용하는 도구를 선택해주세요</p>
+      )}
     </div>
   );
 }
 
 interface FormData {
-  name: string;
   nickname: string;
   phone: string;
   introduction: string;
@@ -75,9 +102,8 @@ export default function ProfileEditPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 폼 상태
+  // 폼 상태 (이름은 수정 불가이므로 폼에 포함하지 않음)
   const [formData, setFormData] = useState<FormData>({
-    name: '',
     nickname: '',
     phone: '',
     introduction: '',
@@ -113,7 +139,6 @@ export default function ProfileEditPage() {
 
     const socialLinks = profile.social_links ?? {};
     const data: FormData = {
-      name: profile.name || '',
       nickname: profile.nickname || '',
       phone: profile.phone || '',
       introduction: profile.introduction || '',
@@ -132,15 +157,14 @@ export default function ProfileEditPage() {
     setAvatarUrl(profile.avatar_url ?? undefined);
   }, [profile]);
 
-  // isDirty 계산
+  // isDirty 계산 — initialData가 없으면 항상 false (저장 버튼 비활성화)
   const isDirty = useMemo(() => {
     if (!initialData) return false;
     return JSON.stringify(formData) !== JSON.stringify(initialData);
   }, [formData, initialData]);
 
-  const fallbackInitial = (formData.name || formData.nickname || user?.email || '사')
-    .charAt(0)
-    .toUpperCase();
+  const displayName = profile?.name || user?.email?.split('@')[0] || '사용자';
+  const fallbackInitial = displayName.charAt(0).toUpperCase();
 
   // 닉네임 중복 확인
   const checkNickname = useCallback(async () => {
@@ -186,14 +210,12 @@ export default function ProfileEditPage() {
       setSaveMessage({ type: 'error', text: '아바타 업로드 중 오류가 발생했습니다.' });
     } finally {
       setAvatarUploading(false);
-      // input 초기화
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   // 프로필 저장
   const handleSave = async () => {
-    // 닉네임이 '중복'이면 저장 방지
     if (nicknameStatus === 'taken') {
       setSaveMessage({ type: 'error', text: '이미 사용 중인 닉네임입니다.' });
       return;
@@ -206,7 +228,6 @@ export default function ProfileEditPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
           nickname: formData.nickname,
           phone: formData.phone,
           introduction: formData.introduction,
@@ -220,7 +241,6 @@ export default function ProfileEditPage() {
       if (res.ok) {
         setSaveMessage({ type: 'success', text: '프로필이 저장되었습니다.' });
         await refreshProfile();
-        // initialData 업데이트 → isDirty = false
         setInitialData({ ...formData });
       } else {
         setSaveMessage({ type: 'error', text: data.error || '저장에 실패했습니다.' });
@@ -335,8 +355,9 @@ export default function ProfileEditPage() {
       )}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[320px_1fr]">
-        {/* 좌측: 프로필 미리보기 + 아바타 */}
+        {/* 좌측: 프로필 사진 + AI 도구 설정 */}
         <div className="space-y-5">
+          {/* 프로필 사진 */}
           <Card className="border-border">
             <CardHeader>
               <CardTitle>프로필 사진</CardTitle>
@@ -345,7 +366,7 @@ export default function ProfileEditPage() {
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
                   <Avatar className="h-24 w-24 border border-border">
-                    <AvatarImage src={avatarUrl} alt={formData.name || '프로필'} />
+                    <AvatarImage src={avatarUrl} alt={displayName} />
                     <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{fallbackInitial}</AvatarFallback>
                   </Avatar>
                   {avatarUploading && (
@@ -377,19 +398,31 @@ export default function ProfileEditPage() {
             </CardContent>
           </Card>
 
-          {/* 미리보기 */}
+          {/* AI 도구 설정 — 좌측에 배치 */}
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>미리보기</CardTitle>
+              <CardTitle>AI 도구 설정</CardTitle>
+              <CardDescription>주로 사용하는 AI 도구를 선택해주세요.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-center">
-                <p className="text-lg font-semibold">{formData.name || '이름 없음'}</p>
-                <p className="text-sm text-muted-foreground">@{formData.nickname || '닉네임'}</p>
-              </div>
-              {formData.introduction && (
-                <p className="text-sm text-muted-foreground">{formData.introduction}</p>
-              )}
+            <CardContent className="space-y-5">
+              <AiToolChips
+                label="💬 채팅 AI"
+                tools={CHAT_AI_TOOLS}
+                selected={formData.preferredChatAi}
+                onChange={(v) => setFormData((p) => ({ ...p, preferredChatAi: v }))}
+              />
+              <AiToolChips
+                label="🖼️ 이미지 AI"
+                tools={IMAGE_AI_TOOLS}
+                selected={formData.preferredImageAi}
+                onChange={(v) => setFormData((p) => ({ ...p, preferredImageAi: v }))}
+              />
+              <AiToolChips
+                label="🎬 영상 AI"
+                tools={VIDEO_AI_TOOLS}
+                selected={formData.preferredVideoAi}
+                onChange={(v) => setFormData((p) => ({ ...p, preferredVideoAi: v }))}
+              />
             </CardContent>
           </Card>
         </div>
@@ -403,15 +436,84 @@ export default function ProfileEditPage() {
               <CardDescription>변경사항은 저장 버튼을 눌러 반영할 수 있습니다.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              {/* 이름 (readOnly) + 비밀번호 변경 */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">이름 <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="name">이름</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="이름을 입력하세요"
+                    value={displayName}
+                    readOnly
+                    className="bg-muted"
                   />
+                  <p className="text-xs text-muted-foreground">이름은 변경할 수 없습니다.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>비밀번호</Label>
+                  {!showPasswordSection ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowPasswordSection(true)}
+                    >
+                      비밀번호 변경하기
+                    </Button>
+                  ) : (
+                    <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-password" className="text-xs">새 비밀번호</Label>
+                        <Input
+                          id="new-password"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="8~20자, 영문+숫자+특수문자"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="confirm-password" className="text-xs">비밀번호 확인</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="비밀번호를 다시 입력하세요"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handlePasswordChange} disabled={passwordSaving}>
+                          {passwordSaving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                          변경
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setShowPasswordSection(false);
+                            setNewPassword('');
+                            setConfirmPassword('');
+                            setPasswordError('');
+                          }}
+                        >
+                          취소
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 이메일 (readOnly) + 닉네임 */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="email">이메일</Label>
+                  <Input id="email" type="email" value={profile?.email || user?.email || ''} readOnly className="bg-muted" />
+                  <p className="text-xs text-muted-foreground">이메일은 변경할 수 없습니다.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nickname">닉네임</Label>
@@ -445,12 +547,8 @@ export default function ProfileEditPage() {
                 </div>
               </div>
 
+              {/* 전화번호 */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="email">이메일</Label>
-                  <Input id="email" type="email" value={profile?.email || user?.email || ''} readOnly className="bg-muted" />
-                  <p className="text-xs text-muted-foreground">이메일은 변경할 수 없습니다.</p>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">전화번호</Label>
                   <Input
@@ -463,6 +561,7 @@ export default function ProfileEditPage() {
                 </div>
               </div>
 
+              {/* 자기소개 */}
               <div className="space-y-2">
                 <Label htmlFor="introduction">자기소개</Label>
                 <Textarea
@@ -517,36 +616,6 @@ export default function ProfileEditPage() {
             </CardContent>
           </Card>
 
-          {/* AI 도구 설정 — 3분류 */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle>AI 도구 설정</CardTitle>
-              <CardDescription>주로 사용하는 AI 도구를 카테고리별로 선택해주세요.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <AiToolChips
-                  label="💬 채팅 AI"
-                  tools={CHAT_AI_TOOLS}
-                  selected={formData.preferredChatAi}
-                  onChange={(v) => setFormData((p) => ({ ...p, preferredChatAi: v }))}
-                />
-                <AiToolChips
-                  label="🖼️ 이미지 AI"
-                  tools={IMAGE_AI_TOOLS}
-                  selected={formData.preferredImageAi}
-                  onChange={(v) => setFormData((p) => ({ ...p, preferredImageAi: v }))}
-                />
-                <AiToolChips
-                  label="🎬 영상 AI"
-                  tools={VIDEO_AI_TOOLS}
-                  selected={formData.preferredVideoAi}
-                  onChange={(v) => setFormData((p) => ({ ...p, preferredVideoAi: v }))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {/* 저장 버튼 */}
           <div className="flex items-center gap-3">
             <Button
@@ -557,66 +626,10 @@ export default function ProfileEditPage() {
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {saving ? '저장 중...' : '저장'}
             </Button>
-            {!isDirty && (
+            {!isDirty && initialData && (
               <p className="text-xs text-muted-foreground">변경된 내용이 없습니다.</p>
             )}
           </div>
-
-          {/* 비밀번호 변경 */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle>비밀번호 변경</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!showPasswordSection ? (
-                <Button type="button" variant="outline" onClick={() => setShowPasswordSection(true)}>
-                  비밀번호 변경하기
-                </Button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">새 비밀번호</Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="8~20자, 영문+숫자+특수문자"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">비밀번호 확인</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="비밀번호를 다시 입력하세요"
-                    />
-                  </div>
-                  {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
-                  <div className="flex gap-2">
-                    <Button onClick={handlePasswordChange} disabled={passwordSaving}>
-                      {passwordSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      변경
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowPasswordSection(false);
-                        setNewPassword('');
-                        setConfirmPassword('');
-                        setPasswordError('');
-                      }}
-                    >
-                      취소
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* 회원 탈퇴 */}
           <Card className="border-border border-destructive/30">

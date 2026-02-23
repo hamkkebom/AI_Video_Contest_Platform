@@ -295,6 +295,20 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
             <p className="text-xs text-muted-foreground">허용 확장자</p>
             <p className="text-sm font-semibold text-foreground">{contest.allowedVideoExtensions.join(', ')}</p>
           </div>
+          <div className="rounded-lg bg-muted/40 p-4">
+            <p className="text-xs text-muted-foreground">결과 발표 형태</p>
+            <p className="text-sm font-semibold text-foreground">
+              {contest.resultFormat === 'website' ? '홈페이지 발표' : contest.resultFormat === 'email' ? '이메일 개별 통보' : contest.resultFormat === 'sns' ? 'SNS 발표' : contest.resultFormat === 'offline' ? '오프라인 시상식' : contest.resultFormat ?? '-'}
+            </p>
+          </div>
+          {contest.landingPageUrl && (
+            <div className="rounded-lg bg-muted/40 p-4">
+              <p className="text-xs text-muted-foreground">랜딩페이지 URL</p>
+              <a href={contest.landingPageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primary hover:underline break-all">
+                {contest.landingPageUrl}
+              </a>
+            </div>
+          )}
           <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 p-4 sm:col-span-2">
             <p className="mb-2 text-xs text-muted-foreground">수상 설정 (총 {contest.awardTiers.reduce((sum, tier) => sum + tier.count, 0)}명)</p>
             <div className="flex flex-wrap gap-2">

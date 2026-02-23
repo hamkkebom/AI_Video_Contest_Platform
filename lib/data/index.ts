@@ -89,9 +89,12 @@ function toContest(
     posterUrl: (row.poster_url as string) ?? undefined,
     promotionVideoUrl: (row.promotion_video_url as string) ?? undefined,
     hasLandingPage: (row.has_landing_page as boolean) ?? false,
+    landingPageUrl: (row.landing_page_url as string) ?? undefined,
     bonusConfigs: bonusConfigs.length > 0 ? bonusConfigs : undefined,
     bonusMaxScore: (row.bonus_max_score as number) ?? undefined,
     resultFormat: (row.result_format as string) ?? 'website',
+    detailContent: (row.detail_content as string) ?? undefined,
+    detailImageUrls: (row.detail_image_urls as string[]) ?? undefined,
   };
 }
 
@@ -140,6 +143,9 @@ export type ContestMutationInput = {
   awardTiers: AwardTier[];
   bonusConfigs?: Array<Omit<BonusConfig, 'id'>>;
   resultFormat?: string;
+  landingPageUrl?: string;
+  detailContent?: string;
+  detailImageUrls?: string[];
 };
 
 function toContestRowPayload(input: ContestMutationInput): Record<string, unknown> {
@@ -164,6 +170,9 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
     has_landing_page: input.hasLandingPage ?? false,
     bonus_max_score: input.bonusMaxScore ?? null,
     result_format: input.resultFormat ?? 'website',
+    landing_page_url: input.landingPageUrl ?? null,
+    detail_content: input.detailContent ?? null,
+    detail_image_urls: input.detailImageUrls ?? [],
   };
 }
 

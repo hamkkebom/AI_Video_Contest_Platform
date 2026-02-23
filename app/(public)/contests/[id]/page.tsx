@@ -32,6 +32,15 @@ function getJudgingTypeLabel(type: string) {
   return '내부 + 외부 심사';
 }
 
+
+function getResultFormatLabel(format?: string) {
+  if (format === 'website') return '홈페이지 발표';
+  if (format === 'email') return '이메일 개별 통보';
+  if (format === 'sns') return 'SNS 발표';
+  if (format === 'offline') return '오프라인 시상식';
+  return format ?? '-';
+}
+
 export default async function ContestDetailPage({ params }: ContestDetailPageProps) {
   const { id } = await params;
   const [allContests, allSubmissions, allUsers] = await Promise.all([
@@ -279,6 +288,10 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">접수작 수</span>
                   <span className="text-right font-medium">{allSubmissions.length}개</span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-muted-foreground">결과 발표 형태</span>
+                  <span className="text-right font-medium">{getResultFormatLabel(contest.resultFormat)}</span>
                 </div>
               </div>
             </Card>
