@@ -276,14 +276,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   /* 가산점 반영 비율 (%) */
   const [bonusPercentageStr, setBonusPercentageStr] = useState('');
   /* 심사위원 평가 비율 (%) */
-  const [judgeWeightPercentStr, setJudgeWeightPercentStr] = useState('70');
+  const [judgeWeightPercentStr, setJudgeWeightPercentStr] = useState('');
   /* 온라인 투표 비율 (%) */
-  const [onlineVoteWeightPercentStr, setOnlineVoteWeightPercentStr] = useState('20');
+  const [onlineVoteWeightPercentStr, setOnlineVoteWeightPercentStr] = useState('');
   /* 온라인 투표 방식 */
   const [onlineVoteType, setOnlineVoteType] = useState<'likes' | 'views' | 'likes_and_views'>('likes');
   /* 조회수+좋아요 모드: 세부 비율 */
-  const [voteLikesPercentStr, setVoteLikesPercentStr] = useState('50');
-  const [voteViewsPercentStr, setVoteViewsPercentStr] = useState('50');
+  const [voteLikesPercentStr, setVoteLikesPercentStr] = useState('');
+  const [voteViewsPercentStr, setVoteViewsPercentStr] = useState('');
 
   /* 심사기준 */
   const [judgingCriteria, setJudgingCriteria] = useState<JudgingCriteriaForm[]>([
@@ -1214,134 +1214,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
-        {/* ===== 카드 4.1: 평가 비율 배분 ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>평가 비율 배분</CardTitle>
-            <CardDescription>심사위원 평가, 온라인 투표, 가산점의 비율 합이 100%가 되어야 합니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">심사위원 평가</label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="예시) 70"
-                    value={judgeWeightPercentStr}
-                    onChange={(e) => setJudgeWeightPercentStr(numericOnly(e.target.value))}
-                    onBlur={() => {
-                      const n = parseInt(judgeWeightPercentStr, 10);
-                      if (!Number.isNaN(n) && n > 100) setJudgeWeightPercentStr('100');
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">온라인 투표</label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="예시) 20"
-                    value={onlineVoteWeightPercentStr}
-                    onChange={(e) => setOnlineVoteWeightPercentStr(numericOnly(e.target.value))}
-                    onBlur={() => {
-                      const n = parseInt(onlineVoteWeightPercentStr, 10);
-                      if (!Number.isNaN(n) && n > 100) setOnlineVoteWeightPercentStr('100');
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-                <select
-                  value={onlineVoteType}
-                  onChange={(e) => setOnlineVoteType(e.target.value as 'likes' | 'views' | 'likes_and_views')}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="likes">좋아요만</option>
-                  <option value="views">조회수만</option>
-                  <option value="likes_and_views">조회수 + 좋아요</option>
-                </select>
-                {onlineVoteType === 'likes_and_views' && (
-                  <div className="mt-2 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">온라인 투표 세부 비율 (합 100%)</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">좋아요</span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="예시) 50"
-                          value={voteLikesPercentStr}
-                          onChange={(e) => setVoteLikesPercentStr(numericOnly(e.target.value))}
-                          className="w-16 h-8 text-xs"
-                        />
-                        <span className="text-xs text-muted-foreground">%</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">조회수</span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="예시) 50"
-                          value={voteViewsPercentStr}
-                          onChange={(e) => setVoteViewsPercentStr(numericOnly(e.target.value))}
-                          className="w-16 h-8 text-xs"
-                        />
-                        <span className="text-xs text-muted-foreground">%</span>
-                      </div>
-                    </div>
-                    {(() => {
-                      const l = parseInt(voteLikesPercentStr, 10) || 0;
-                      const v = parseInt(voteViewsPercentStr, 10) || 0;
-                      const sub = l + v;
-                      return (
-                        <p className={`text-xs font-medium ${sub === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                          세부 합계: {sub}% {sub === 100 ? '✓' : '(100%가 되어야 합니다)'}
-                        </p>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">가산점</label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="예시) 10"
-                    value={bonusPercentageStr}
-                    onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
-                    onBlur={() => {
-                      const n = parseInt(bonusPercentageStr, 10);
-                      if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-            </div>
-            {(() => {
-              const j = parseInt(judgeWeightPercentStr, 10) || 0;
-              const o = parseInt(onlineVoteWeightPercentStr, 10) || 0;
-              const b = parseInt(bonusPercentageStr, 10) || 0;
-              const total = j + o + b;
-              return (
-                <p className={`text-sm font-medium ${total === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                  합계: {total}% {total === 100 ? '✓' : '(100%가 되어야 합니다)'}
-                </p>
-              );
-            })()}
-          </CardContent>
-        </Card>
-
-        {/* ===== 카드 4.2: 심사기준 ===== */}
+        {/* ===== 카드 4.1: 심사기준 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>심사기준</CardTitle>
@@ -1429,6 +1302,68 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
+        {/* ===== 카드 4.2: 온라인 투표 방식 ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>온라인 투표 방식</CardTitle>
+            <CardDescription>온라인 투표에 반영할 지표와 세부 비율을 설정합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">투표 지표 선택</label>
+              <select
+                value={onlineVoteType}
+                onChange={(e) => setOnlineVoteType(e.target.value as 'likes' | 'views' | 'likes_and_views')}
+                className="flex h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="likes">좋아요만</option>
+                <option value="views">조회수만</option>
+                <option value="likes_and_views">조회수 + 좋아요</option>
+              </select>
+            </div>
+            {onlineVoteType === 'likes_and_views' && (
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <p className="text-sm font-medium">세부 비율 (합 100%)</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-muted-foreground">좋아요</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="예시) 50"
+                      value={voteLikesPercentStr}
+                      onChange={(e) => setVoteLikesPercentStr(numericOnly(e.target.value))}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-muted-foreground">조회수</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="예시) 50"
+                      value={voteViewsPercentStr}
+                      onChange={(e) => setVoteViewsPercentStr(numericOnly(e.target.value))}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+                {(() => {
+                  const l = parseInt(voteLikesPercentStr, 10) || 0;
+                  const v = parseInt(voteViewsPercentStr, 10) || 0;
+                  const sub = l + v;
+                  return (
+                    <p className={`text-sm font-medium ${sub === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                      세부 합계: {sub}% {sub === 100 ? '✓' : '(100%가 되어야 합니다)'}
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+          </CardContent>
+        </Card>
         {/* ===== 카드 4.3: 가산점 항목 ===== */}
         <Card className="border-border">
           <CardHeader>
@@ -1537,6 +1472,83 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               <Plus className="h-4 w-4" />
               가산점 항목 추가
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* ===== 카드 4.4: 평가 비율 배분 ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>평가 비율 배분</CardTitle>
+            <CardDescription>심사위원 평가, 온라인 투표, 가산점의 비율 합이 100%가 되어야 합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">심사위원 평가</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 70"
+                    value={judgeWeightPercentStr}
+                    onChange={(e) => setJudgeWeightPercentStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(judgeWeightPercentStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setJudgeWeightPercentStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">온라인 투표</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 20"
+                    value={onlineVoteWeightPercentStr}
+                    onChange={(e) => setOnlineVoteWeightPercentStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(onlineVoteWeightPercentStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setOnlineVoteWeightPercentStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">가산점</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 10"
+                    value={bonusPercentageStr}
+                    onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(bonusPercentageStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </div>
+            {(() => {
+              const j = parseInt(judgeWeightPercentStr, 10) || 0;
+              const o = parseInt(onlineVoteWeightPercentStr, 10) || 0;
+              const b = parseInt(bonusPercentageStr, 10) || 0;
+              const total = j + o + b;
+              return (
+                <p className={`text-sm font-medium ${total === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                  합계: {total}% {total === 100 ? '✓' : '(100%가 되어야 합니다)'}
+                </p>
+              );
+            })()}
           </CardContent>
         </Card>
 
