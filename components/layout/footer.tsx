@@ -3,16 +3,8 @@ import { TreePine } from 'lucide-react';
 
 const serviceLinks = [
   { label: '공모전', href: '/contests?status=open' },
-  { label: '갤러리', href: '/gallery/all' },
-  { label: '스토리', href: '/story' },
-  { label: '고객센터', href: '/support' },
 ];
 
-const extraServiceLinks = [
-  { label: 'AI 영상 제작 교육', href: '#' },
-  { label: '영상 제작', href: '#' },
-  { label: '마케팅', href: '#' },
-];
 
 const legalLinks = [
   { label: '이용약관', href: '/terms' },
@@ -54,23 +46,6 @@ export function Footer() {
             </nav>
           </div>
 
-          {/* 추가 서비스 */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background/40">
-              제공 서비스
-            </h4>
-            <nav className="flex flex-col gap-2.5">
-              {extraServiceLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href as any}
-                  className="text-sm text-background/60 hover:text-background transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
 
           {/* 안내 */}
           <div className="space-y-4">

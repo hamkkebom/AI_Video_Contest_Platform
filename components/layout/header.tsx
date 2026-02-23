@@ -29,23 +29,6 @@ interface MenuItem {
 
 const commonMenuItems: MenuItem[] = [
   { label: '공모전', href: '/contests?status=open' },
-  {
-    label: '갤러리',
-    href: '/gallery/all',
-    children: [
-      { label: '수상작 갤러리', href: '/gallery/awards' },
-      { label: '전체 갤러리', href: '/gallery/all' },
-    ],
-  },
-  { label: '스토리', href: '/story' },
-  {
-    label: '고객센터',
-    href: '/support',
-    children: [
-      { label: 'FAQ', href: '/support/faq' },
-      { label: '문의하기', href: '/support/inquiry' },
-    ],
-  },
 ];
 
 /**
@@ -313,28 +296,7 @@ export function Header() {
 
   return (
     <>
-      {/* 데모 역할 전환 유틸리티 바 */}
-      <div className="w-full bg-muted/50">
-        <div className="container flex h-8 items-center justify-end px-4 gap-2">
-          <span className="text-xs text-muted-foreground mr-1">데모 역할:</span>
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {Object.entries(DEMO_ROLES).map(([key, value]) => (
-              <button
-                type="button"
-                key={key}
-                onClick={() => handleRoleChange(key)}
-                className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${demoRoles[demoRoleKeyMap[key]]
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-              >
-                {roleIconMap[key]}
-                {value.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* 데모 역할 전환 유틸리티 바 — 배포 시 숨김 */}
 
       {!isDashboardPage && <header className="sticky top-0 z-50 w-full shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-6xl flex h-16 items-center px-4">
