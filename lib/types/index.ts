@@ -178,6 +178,10 @@ export interface Contest {
   bonusConfigs?: BonusConfig[];
   /** 가산점 총 배점 */
   bonusMaxScore?: number;
+  /** 가산점 반영 비율 (%) */
+  bonusPercentage?: number;
+  /** 심사기준 배열 */
+  judgingCriteria?: JudgingCriterion[];
   /** 결과 발표 형태 (website, email, sns, offline) */
   resultFormat?: string;
   /** 상세 안내 텍스트 */

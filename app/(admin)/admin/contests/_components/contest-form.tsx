@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
-import { CheckCircle2, Plus, Search, Trophy, X, Star, Upload, ImagePlus } from 'lucide-react';
+import { CheckCircle2, Plus, Search, Trophy, X, Star, Upload, ImagePlus, Globe } from 'lucide-react';
 
 type ContestFormMode = 'create' | 'edit';
 
@@ -29,6 +29,14 @@ type BonusConfigForm = {
   score: number;
   requiresUrl: boolean;
   requiresImage: boolean;
+};
+
+/** 심사기준 항목 폼 */
+type JudgingCriteriaForm = {
+  id: string;
+  label: string;
+  maxScore: number;
+  description: string;
 };
 
 type ContestFormProps = {
@@ -57,8 +65,10 @@ type ContestMutationPayload = {
   hasLandingPage: boolean;
   resultFormat: string;
   bonusMaxScore?: number;
+  bonusPercentage?: number;
   awardTiers: Array<{ label: string; count: number; prizeAmount?: string }>;
   bonusConfigs: Array<{ label: string; description?: string; score: number; requiresUrl: boolean; requiresImage: boolean }>;
+  judgingCriteria: Array<{ label: string; maxScore: number; description?: string }>;
   landingPageUrl?: string;
   detailContent?: string;
   detailImageUrls?: string[];
@@ -103,6 +113,15 @@ function createBonusConfig(label = '', description = '', score = 1): BonusConfig
   };
 }
 
+function createJudgingCriteria(label = '', maxScore = 100, description = ''): JudgingCriteriaForm {
+  return {
+    id: globalThis.crypto.randomUUID(),
+    label,
+    maxScore,
+    description,
+  };
+}
+
 /** 상금 쉼표 포매팅 */
 function formatPrize(value: string): string {
   const num = value.replace(/[^0-9]/g, '');
@@ -138,6 +157,45 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   return data.url;
 }
 
+/** 비디오 파일에서 스틸 이미지 추출 */
+function extractVideoThumbnail(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    video.addEventListener('loadeddata', () => {
+      /* 1초 지점으로 이동 (짧은 영상이면 0초) */
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    });
+
+    video.addEventListener('seeked', () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas 2D 지원 불가')); return; }
+        ctx.drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        URL.revokeObjectURL(objectUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        URL.revokeObjectURL(objectUrl);
+        reject(err);
+      }
+    });
+
+    video.addEventListener('error', () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('비디오 로드 실패'));
+    });
+  });
+}
+
 export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const router = useRouter();
 
@@ -162,19 +220,22 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [posterInputMode, setPosterInputMode] = useState<'url' | 'file'>('url');
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterUploading, setPosterUploading] = useState(false);
+  const [posterPreviewUrl, setPosterPreviewUrl] = useState('');
   const [promoInputMode, setPromoInputMode] = useState<'url' | 'file'>('url');
   const [promoFile, setPromoFile] = useState<File | null>(null);
   const [promoUploading, setPromoUploading] = useState(false);
+  const [promoThumbnailUrl, setPromoThumbnailUrl] = useState('');
   const posterFileRef = useRef<HTMLInputElement>(null);
   const promoFileRef = useRef<HTMLInputElement>(null);
 
-  /* 상세 안내 (신규) */
+  /* 상세 안내 */
   const [detailContent, setDetailContent] = useState('');
   const [detailImageUrls, setDetailImageUrls] = useState<string[]>([]);
   const [detailImageUploading, setDetailImageUploading] = useState(false);
   const detailImageRef = useRef<HTMLInputElement>(null);
 
-  /* 랜딩페이지 URL (토글 제거, URL 직접 입력) */
+  /* 랜딩페이지: 토글 + URL */
+  const [hasLandingPage, setHasLandingPage] = useState(false);
   const [landingPageUrl, setLandingPageUrl] = useState('');
 
   /* 태그: 프리디파인드 칩 + 커스텀 추가 */
@@ -207,6 +268,15 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   /* 가산점 항목 */
   const [bonusConfigs, setBonusConfigs] = useState<BonusConfigForm[]>([]);
+  /* 가산점 반영 비율 (%) */
+  const [bonusPercentageStr, setBonusPercentageStr] = useState('');
+
+  /* 심사기준 */
+  const [judgingCriteria, setJudgingCriteria] = useState<JudgingCriteriaForm[]>([
+    createJudgingCriteria('기술력', 40, 'AI 활용 수준'),
+    createJudgingCriteria('스토리', 30, '전달력'),
+    createJudgingCriteria('완성도', 30, '연출 및 편집'),
+  ]);
 
   /* ===== 편집 모드: 기존 데이터 로드 ===== */
   useEffect(() => {
@@ -233,6 +303,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setPosterUrl(contest.posterUrl ?? '');
         setPromotionVideoUrl(contest.promotionVideoUrl ?? '');
         setResultFormat(contest.resultFormat ?? 'website');
+        setHasLandingPage(!!contest.landingPageUrl);
         setLandingPageUrl(contest.landingPageUrl ?? '');
         setDetailContent(contest.detailContent ?? '');
         setDetailImageUrls(contest.detailImageUrls ?? []);
@@ -268,6 +339,13 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
             })),
           );
         }
+        /* 가산점 비율, 심사기준은 contest에 저장된 경우 로드 */
+        if (contest.bonusPercentage) {
+          setBonusPercentageStr(String(contest.bonusPercentage));
+        }
+        if (contest.judgingCriteria && contest.judgingCriteria.length > 0) {
+          setJudgingCriteria(contest.judgingCriteria.map((c) => createJudgingCriteria(c.label, c.maxScore, c.description ?? '')));
+        }
       } catch (error) {
         console.error('Failed to load contest:', error);
         setErrorMessage('공모전 정보를 불러오지 못했습니다.');
@@ -278,6 +356,15 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
     loadContest();
   }, [contestId, mode]);
+
+  /* ===== objectURL 정리 ===== */
+  useEffect(() => {
+    return () => {
+      if (posterPreviewUrl && posterPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(posterPreviewUrl);
+      }
+    };
+  }, [posterPreviewUrl]);
 
   /* ===== 파생 값 ===== */
   const parsedAwardCounts = useMemo(() => awardTiers.map((t) => {
@@ -300,6 +387,11 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     const n = parseInt(maxSubmissionsStr, 10);
     return Number.isNaN(n) ? 3 : Math.max(1, Math.min(10, n));
   }, [maxSubmissionsStr]);
+
+  /** 심사기준 총 배점 */
+  const totalCriteriaScore = useMemo(() => {
+    return judgingCriteria.reduce((sum, c) => sum + (c.maxScore || 0), 0);
+  }, [judgingCriteria]);
 
   /** 포스터가 준비되었는지 (URL이든 파일 업로드 완료든) */
   const hasPoster = !!(posterUrl.trim());
@@ -328,6 +420,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   /* ===== 파일 업로드 핸들러 ===== */
   const handlePosterFileSelect = async (file: File) => {
     setPosterFile(file);
+    /* 로컬 미리보기 생성 */
+    setPosterPreviewUrl(URL.createObjectURL(file));
     setPosterUploading(true);
     try {
       const url = await uploadContestAsset(file, 'poster');
@@ -341,6 +435,13 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   const handlePromoFileSelect = async (file: File) => {
     setPromoFile(file);
+    /* 비디오에서 스틸 이미지 추출 */
+    try {
+      const thumbnail = await extractVideoThumbnail(file);
+      setPromoThumbnailUrl(thumbnail);
+    } catch {
+      /* 스틸 추출 실패해도 업로드는 계속 진행 */
+    }
     setPromoUploading(true);
     try {
       const url = await uploadContestAsset(file, 'promo-video');
@@ -404,7 +505,6 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     next[index] = {
       ...next[index],
       type: typeValue,
-      /* 유형 변경 시 자동 채움하되, 사용자가 이미 입력한 값이 있으면 덮어씀 (사양: 유형 선택 시 자동 채움) */
       label: typeValue === 'custom' ? '' : (option?.label ?? ''),
     };
     setAwardTiers(next);
@@ -437,6 +537,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   /* ===== 페이로드 빌드 ===== */
   const buildPayload = (): ContestMutationPayload => {
+    const bonusPct = parseInt(bonusPercentageStr, 10);
     return {
       title: title.trim(),
       description: description.trim(),
@@ -454,11 +555,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       allowedVideoExtensions: selectedExtensions,
       posterUrl: posterUrl.trim() || undefined,
       promotionVideoUrl: promotionVideoUrl.trim() || undefined,
-      hasLandingPage: !!landingPageUrl.trim(),
+      hasLandingPage,
       resultFormat,
-      landingPageUrl: landingPageUrl.trim() || undefined,
+      landingPageUrl: hasLandingPage ? (landingPageUrl.trim() || undefined) : undefined,
       detailContent: detailContent.trim() || undefined,
       detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
+      bonusPercentage: !Number.isNaN(bonusPct) && bonusPct > 0 ? bonusPct : undefined,
       awardTiers: awardTiers
         .map((tier, i) => ({
           label: tier.label.trim(),
@@ -474,6 +576,13 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           score: bc.score,
           requiresUrl: bc.requiresUrl,
           requiresImage: bc.requiresImage,
+        })),
+      judgingCriteria: judgingCriteria
+        .filter((c) => c.label.trim())
+        .map((c) => ({
+          label: c.label.trim(),
+          maxScore: c.maxScore,
+          description: c.description.trim() || undefined,
         })),
     };
   };
@@ -512,6 +621,15 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /* ===== 실시간 제약 경고 렌더러 ===== */
+  const renderRangeWarning = (value: string, min: number, max: number, unit: string) => {
+    const n = parseInt(value, 10);
+    if (!value || Number.isNaN(n)) return null;
+    if (n > max) return <p className="text-xs text-amber-600">최대 {max}{unit}까지 설정할 수 있습니다.</p>;
+    if (n < min) return <p className="text-xs text-amber-600">최소 {min}{unit} 이상이어야 합니다.</p>;
+    return null;
   };
 
   /* ===== 로딩/미발견/저장완료 UI ===== */
@@ -592,6 +710,21 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     </div>
   );
 
+  /** 미리보기 이미지 렌더러 */
+  const renderPreviewImage = (src: string, alt: string, onClear: () => void) => (
+    <div className="group relative mt-2 inline-block">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className="max-h-[200px] rounded-lg border border-border object-contain" />
+      <button
+        type="button"
+        onClick={onClear}
+        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 shadow transition-opacity group-hover:opacity-100"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+
   /* ===== 메인 폼 ===== */
   return (
     <div className="space-y-6 pb-10">
@@ -664,7 +797,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               {fieldErrors.description && <p className="text-xs text-destructive">{fieldErrors.description}</p>}
             </div>
 
-            {/* 포스터 (필수) — URL 입력 / 파일 업로드 탭 */}
+            {/* 포스터 (필수) — URL 입력 / 파일 업로드 탭 + 미리보기 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
@@ -673,12 +806,18 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 {renderInputModeTab(posterInputMode, setPosterInputMode)}
               </div>
               {posterInputMode === 'url' ? (
-                <Input
-                  type="url"
-                  placeholder="https://example.com/poster.jpg"
-                  value={posterUrl}
-                  onChange={(e) => { setPosterUrl(e.target.value); setFieldErrors((p) => ({ ...p, posterUrl: '' })); }}
-                />
+                <>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/poster.jpg"
+                    value={posterUrl}
+                    onChange={(e) => { setPosterUrl(e.target.value); setFieldErrors((p) => ({ ...p, posterUrl: '' })); }}
+                  />
+                  {/* URL 입력 시 미리보기 */}
+                  {posterUrl.trim() && /^https?:\/\/.+/i.test(posterUrl.trim()) && (
+                    renderPreviewImage(posterUrl.trim(), '포스터 미리보기', () => setPosterUrl(''))
+                  )}
+                </>
               ) : (
                 <div className="space-y-2">
                   <input
@@ -705,12 +844,20 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   {posterUrl && posterInputMode === 'file' && (
                     <p className="text-xs text-emerald-600">업로드 완료</p>
                   )}
+                  {/* 파일 업로드 미리보기 */}
+                  {posterPreviewUrl && (
+                    renderPreviewImage(posterPreviewUrl, '포스터 미리보기', () => {
+                      setPosterPreviewUrl('');
+                      setPosterFile(null);
+                      setPosterUrl('');
+                    })
+                  )}
                 </div>
               )}
               {fieldErrors.posterUrl && <p className="text-xs text-destructive">{fieldErrors.posterUrl}</p>}
             </div>
 
-            {/* 홍보영상 — URL 입력 / 파일 업로드 탭 */}
+            {/* 홍보영상 — URL 입력 / 파일 업로드 탭 + 스틸 미리보기 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">홍보영상</label>
@@ -748,6 +895,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   </Button>
                   {promotionVideoUrl && promoInputMode === 'file' && (
                     <p className="text-xs text-emerald-600">업로드 완료</p>
+                  )}
+                  {/* 비디오 스틸 이미지 미리보기 */}
+                  {promoThumbnailUrl && (
+                    renderPreviewImage(promoThumbnailUrl, '홍보영상 스틸 미리보기', () => {
+                      setPromoThumbnailUrl('');
+                      setPromoFile(null);
+                      setPromotionVideoUrl('');
+                    })
                   )}
                 </div>
               )}
@@ -797,10 +952,38 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               </div>
               {fieldErrors.tags && <p className="text-xs text-destructive">{fieldErrors.tags}</p>}
             </div>
+
+            {/* 랜딩페이지 — 토글 스위치 + URL 입력 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Globe className="h-4 w-4" />
+                  랜딩페이지
+                </label>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={hasLandingPage}
+                  onClick={() => { setHasLandingPage(!hasLandingPage); if (hasLandingPage) setLandingPageUrl(''); }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${hasLandingPage ? 'bg-primary' : 'bg-muted'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${hasLandingPage ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+                {hasLandingPage && (
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/landing"
+                    value={landingPageUrl}
+                    onChange={(e) => setLandingPageUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* ===== 카드 2: 상세 안내 (신규) ===== */}
+        {/* ===== 카드 2: 상세 안내 ===== */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>상세 안내</CardTitle>
@@ -902,10 +1085,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 </div>
               </div>
             </div>
-            {/* 결과 발표: 발표일 + 결과발표형태 + 랜딩페이지 URL (3col 한 줄) */}
+            {/* 결과 발표: 발표일 + 결과발표형태 (2col — 랜딩페이지는 카드1로 이동) */}
             <div>
               <p className="mb-3 text-sm font-semibold">결과 발표 <span className="text-destructive">*</span></p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label htmlFor="admin-contest-result-date" className="text-sm font-medium">
                     발표일 <span className="text-destructive">*</span>
@@ -928,16 +1111,6 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     ))}
                   </select>
                   {fieldErrors.resultFormat && <p className="text-xs text-destructive">{fieldErrors.resultFormat}</p>}
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="admin-contest-landing-url" className="text-sm font-medium">랜딩페이지 URL</label>
-                  <Input
-                    id="admin-contest-landing-url"
-                    type="url"
-                    placeholder="https://example.com/result"
-                    value={landingPageUrl}
-                    onChange={(e) => setLandingPageUrl(e.target.value)}
-                  />
                 </div>
               </div>
             </div>
@@ -982,7 +1155,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               </select>
             </div>
 
-            {/* 인당 최대 출품 수 — type="text" + inputMode="numeric" (스피너 문제 해결) */}
+            {/* 인당 최대 출품 수 */}
             <div className="space-y-2 md:col-span-2">
               <label htmlFor="admin-contest-max-submissions" className="text-sm font-medium">
                 인당 최대 출품 수 <span className="text-destructive">*</span>
@@ -991,7 +1164,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 id="admin-contest-max-submissions"
                 type="text"
                 inputMode="numeric"
-                placeholder="3"
+                placeholder="예시) 3"
                 value={maxSubmissionsStr}
                 onChange={(e) => setMaxSubmissionsStr(numericOnly(e.target.value))}
                 onBlur={() => {
@@ -1002,6 +1175,97 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 }}
                 className="max-w-[120px]"
               />
+              {renderRangeWarning(maxSubmissionsStr, 1, 10, '개')}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ===== 카드 4.5: 심사기준 ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>심사기준</CardTitle>
+            <CardDescription>심사 항목별 배점을 설정합니다. 총 배점은 100점을 권장합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* 헤더 라벨 */}
+            <div className="flex items-end gap-3">
+              <div className="flex-1"><span className="text-xs font-medium text-muted-foreground">심사 항목명</span></div>
+              <div className="w-20"><span className="text-xs font-medium text-muted-foreground">배점</span></div>
+              <div className="flex-1"><span className="text-xs font-medium text-muted-foreground">설명 (선택)</span></div>
+              <div className="w-9 shrink-0" />
+            </div>
+
+            {judgingCriteria.map((criterion, index) => (
+              <div key={criterion.id} className="flex items-start gap-3">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="예시) 기술력"
+                    value={criterion.label}
+                    onChange={(e) => {
+                      const next = [...judgingCriteria];
+                      next[index] = { ...criterion, label: e.target.value };
+                      setJudgingCriteria(next);
+                    }}
+                  />
+                </div>
+                <div className="w-20">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 40"
+                    value={criterion.maxScore || ''}
+                    onChange={(e) => {
+                      const next = [...judgingCriteria];
+                      const val = numericOnly(e.target.value);
+                      next[index] = { ...criterion, maxScore: val ? parseInt(val, 10) : 0 };
+                      setJudgingCriteria(next);
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="예시) AI 활용 수준"
+                    value={criterion.description}
+                    onChange={(e) => {
+                      const next = [...judgingCriteria];
+                      next[index] = { ...criterion, description: e.target.value };
+                      setJudgingCriteria(next);
+                    }}
+                  />
+                </div>
+                {judgingCriteria.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setJudgingCriteria(judgingCriteria.filter((_, i) => i !== index))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : <div className="w-9 shrink-0" />}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 gap-1.5"
+              onClick={() => setJudgingCriteria([...judgingCriteria, createJudgingCriteria()])}
+            >
+              <Plus className="h-4 w-4" />
+              심사 항목 추가
+            </Button>
+
+            {/* 총 배점 표시 */}
+            <div className="flex flex-wrap gap-6 border-t border-border pt-3 text-sm text-muted-foreground">
+              <div>
+                총 배점: <span className={`font-semibold ${totalCriteriaScore === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>{totalCriteriaScore}점</span>
+                {totalCriteriaScore !== 100 && <span className="ml-1 text-xs text-amber-600">(100점 권장)</span>}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1041,7 +1305,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   {fieldErrors[`award_type_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_type_${index}`]}</p>}
                 </div>
 
-                {/* 상 이름 — 항상 편집 가능 (readOnly 제거) */}
+                {/* 상 이름 */}
                 <div className="flex-1 space-y-1">
                   <Input
                     type="text"
@@ -1057,12 +1321,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   {fieldErrors[`award_label_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_label_${index}`]}</p>}
                 </div>
 
-                {/* 인원 (필수) — w-16, type="text" inputMode="numeric" */}
+                {/* 인원 (필수) */}
                 <div className="w-16 space-y-1">
                   <Input
                     type="text"
                     inputMode="numeric"
-                    placeholder="1"
+                    placeholder="예시) 1"
                     value={tier.countStr}
                     onChange={(e) => {
                       const next = [...awardTiers];
@@ -1083,6 +1347,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       }
                     }}
                   />
+                  {renderRangeWarning(tier.countStr, 1, 100, '명')}
                   {fieldErrors[`award_count_${index}`] && <p className="text-xs text-destructive">{fieldErrors[`award_count_${index}`]}</p>}
                 </div>
 
@@ -1090,7 +1355,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 <div className="w-36 space-y-1">
                   <Input
                     type="text"
-                    placeholder="1,000,000"
+                    placeholder="예시) 1,000,000"
                     value={tier.prizeAmount}
                     onChange={(e) => {
                       const next = [...awardTiers];
@@ -1145,6 +1410,28 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
             <CardDescription>참가자가 추가 점수를 받을 수 있는 가산점 항목을 설정합니다. (선택)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* 가산점 반영 비율 */}
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+              <label className="text-sm font-medium whitespace-nowrap">가산점 반영 비율</label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="예시) 10"
+                  value={bonusPercentageStr}
+                  onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
+                  onBlur={() => {
+                    const n = parseInt(bonusPercentageStr, 10);
+                    if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
+                  }}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+              {renderRangeWarning(bonusPercentageStr, 0, 100, '%')}
+              <span className="text-xs text-muted-foreground ml-auto">총 심사 점수 중 가산점이 차지하는 비율</span>
+            </div>
+
             {bonusConfigs.map((bc, index) => (
               <div key={bc.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
                 <div className="flex-1 space-y-2">
@@ -1178,16 +1465,18 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">점수</label>
                       <Input
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={bc.score}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="예시) 1"
+                        value={bc.score || ''}
                         onChange={(e) => {
                           const next = [...bonusConfigs];
-                          next[index] = { ...bc, score: Math.max(1, Math.min(10, Number(e.target.value) || 1)) };
+                          const val = numericOnly(e.target.value);
+                          next[index] = { ...bc, score: val ? Math.max(1, Math.min(10, parseInt(val, 10) || 1)) : 1 };
                           setBonusConfigs(next);
                         }}
                       />
+                      {renderRangeWarning(String(bc.score), 1, 10, '점')}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-sm">

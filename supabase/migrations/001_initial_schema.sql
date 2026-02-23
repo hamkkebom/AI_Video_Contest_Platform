@@ -104,6 +104,8 @@ CREATE TABLE contests (
   promotion_video_url TEXT,
   has_landing_page BOOLEAN DEFAULT FALSE,
   bonus_max_score INT,
+  bonus_percentage INT,                              -- 가산점 반영 비율 (%)
+  judging_criteria JSONB DEFAULT '[]'::jsonb,        -- 심사기준 배열 [{label, maxScore, description}]
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
