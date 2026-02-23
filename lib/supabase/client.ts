@@ -29,6 +29,15 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      auth: {
+        /**
+         * Navigator LockManager 타임아웃 방지
+         * stale lock / 탭 경쟁으로 인한 10s 타임아웃 에러 해결
+         */
+        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<unknown>) => {
+          return await fn();
+        },
+      },
       cookieOptions: {
         // maxAge 없이 session cookie — 브라우저 종료 시 삭제
         // (middleware에서도 maxAge: 3600 적용하여 1시간 제한)
