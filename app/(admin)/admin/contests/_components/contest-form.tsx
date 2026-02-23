@@ -107,7 +107,7 @@ function createAwardTier(label: string, count: number, prizeAmount = '', type: A
   };
 }
 
-function createBonusConfig(label = '', description = '', score = 1): BonusConfigForm {
+function createBonusConfig(label = '', description = '', score = 0): BonusConfigForm {
   return {
     id: globalThis.crypto.randomUUID(),
     label,
@@ -118,7 +118,7 @@ function createBonusConfig(label = '', description = '', score = 1): BonusConfig
   };
 }
 
-function createJudgingCriteria(label = '', maxScore = 100, description = ''): JudgingCriteriaForm {
+function createJudgingCriteria(label = '', maxScore = 0, description = ''): JudgingCriteriaForm {
   return {
     id: globalThis.crypto.randomUUID(),
     label,
@@ -257,7 +257,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   /* 심사 정책 — maxSubmissions를 문자열로 관리 (스피너 문제 해결) */
   const [judgingType, setJudgingType] = useState<Contest['judgingType']>('internal');
   const [reviewPolicy, setReviewPolicy] = useState<Contest['reviewPolicy']>('manual');
-  const [maxSubmissionsStr, setMaxSubmissionsStr] = useState('3');
+  const [maxSubmissionsStr, setMaxSubmissionsStr] = useState('');
 
   /* 허용 영상 형식 — 기본 미선택 */
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
@@ -266,9 +266,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   /* 수상 설정 */
   const [awardTiers, setAwardTiers] = useState<AwardTierForm[]>([
-    createAwardTier('대상', 1, '', 'grand'),
-    createAwardTier('최우수상', 2, '', 'excellence'),
-    createAwardTier('우수상', 3, '', 'merit'),
+    createAwardTier('대상', 0, '', 'grand'),
+    createAwardTier('최우수상', 0, '', 'excellence'),
+    createAwardTier('우수상', 0, '', 'merit'),
   ]);
 
   /* 가산점 항목 */
@@ -287,9 +287,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   /* 심사기준 */
   const [judgingCriteria, setJudgingCriteria] = useState<JudgingCriteriaForm[]>([
-    createJudgingCriteria('기술력', 40, 'AI 활용 수준'),
-    createJudgingCriteria('스토리', 30, '전달력'),
-    createJudgingCriteria('완성도', 30, '연출 및 편집'),
+    createJudgingCriteria('기술력', 0, 'AI 활용 수준'),
+    createJudgingCriteria('스토리', 0, '전달력'),
+    createJudgingCriteria('완성도', 0, '연출 및 편집'),
   ]);
 
   /* ===== 편집 모드: 기존 데이터 로드 ===== */
@@ -333,12 +333,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setAwardTiers(
           contest.awardTiers.length > 0
             ? contest.awardTiers.map((tier) => ({
-                id: globalThis.crypto.randomUUID(),
-                label: tier.label,
-                type: 'custom' as const,
-                countStr: String(tier.count),
-                prizeAmount: tier.prizeAmount ?? '',
-              }))
+              id: globalThis.crypto.randomUUID(),
+              label: tier.label,
+              type: 'custom' as const,
+              countStr: String(tier.count),
+              prizeAmount: tier.prizeAmount ?? '',
+            }))
             : [createAwardTier('대상', 1, '', 'grand')],
         );
         if (contest.bonusConfigs && contest.bonusConfigs.length > 0) {
@@ -955,11 +955,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       key={tag}
                       type="button"
                       onClick={() => { toggleTag(tag); setFieldErrors((p) => ({ ...p, tags: '' })); }}
-                      className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                        active
+                      className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${active
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border bg-background text-muted-foreground hover:border-primary/40'
-                      }`}
+                        }`}
                     >
                       {tag}
                     </button>
@@ -1697,11 +1696,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     key={extension.value}
                     type="button"
                     onClick={() => toggleExtension(extension.value)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      selected
+                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${selected
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border bg-background text-muted-foreground hover:border-primary/40'
-                    }`}
+                      }`}
                   >
                     .{extension.label}
                   </button>
@@ -1715,11 +1713,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     key={ext}
                     type="button"
                     onClick={() => toggleExtension(ext)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      selected
+                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${selected
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border bg-background text-muted-foreground hover:border-primary/40'
-                    }`}
+                      }`}
                   >
                     .{ext}
                   </button>
