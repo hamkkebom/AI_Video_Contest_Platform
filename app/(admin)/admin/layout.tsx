@@ -10,12 +10,16 @@ import {
   MessageSquare,
   Newspaper,
   Settings,
+  Trophy,
   Users,
+  Video,
 } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 
 const adminDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: '/admin/dashboard', label: '대시보드', icon: LayoutDashboard },
+  { href: '/admin/contests', label: '공모전 관리', icon: Trophy },
+  { href: '/admin/submissions', label: '제출물 관리', icon: Video },
   { href: '/admin/users', label: '회원 관리', icon: Users },
   { href: '/admin/inquiries', label: '문의 관리', icon: MessageSquare },
   { href: '/admin/articles', label: '아티클', icon: Newspaper },
