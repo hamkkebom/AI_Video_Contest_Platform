@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getUsers, getSubmissions, getContests } from '@/lib/mock';
+import { getUsers, getSubmissions, getContests } from '@/lib/data';
 import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
 
 type CreatorDetailPageProps = {

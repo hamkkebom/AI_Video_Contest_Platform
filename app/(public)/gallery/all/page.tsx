@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Eye, Heart } from 'lucide-react';
-import { getGallerySubmissions, getFeaturedSubmissions } from '@/lib/mock';
+import { getGallerySubmissions, getFeaturedSubmissions } from '@/lib/data';
 import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
 import { SearchInput } from '@/components/ui/search-input';
 

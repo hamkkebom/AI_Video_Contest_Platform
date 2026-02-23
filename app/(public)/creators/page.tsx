@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getUsers } from '@/lib/mock';
+import { getUsers } from '@/lib/data';
 
 /**
  * 크리에이터 프로필 목록 페이지

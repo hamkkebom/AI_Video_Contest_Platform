@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
-import { getCompletedContests } from '@/lib/mock';
+import { getCompletedContests } from '@/lib/data';
 
 /**
  * 수상작 갤러리 메인 페이지

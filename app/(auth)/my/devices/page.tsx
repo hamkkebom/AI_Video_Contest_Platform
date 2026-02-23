@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Device } from '@/lib/types';
-import { getDevices } from '@/lib/mock';
+
 import {
   Apple,
   Bot,
@@ -64,7 +64,7 @@ export default function MyDevicesPage() {
   useEffect(() => {
     const loadDevices = async () => {
       try {
-        const allDevices = await getDevices();
+        const res = await fetch('/api/devices'); const allDevices: Device[] = await res.json();
         const userDevices = allDevices.filter((device) => device.userId === 'user-1');
         setDevices(userDevices);
         setTrustedDevices(new Set(userDevices.filter((device) => device.isTrusted).map((device) => device.id)));

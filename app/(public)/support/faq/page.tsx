@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getFaqs } from '@/lib/mock';
+
 import { FAQ_CATEGORIES, FAQ_TOPICS } from '@/config/constants';
 import type { FAQ, FaqCategory, FaqTopic } from '@/lib/types';
 
@@ -25,7 +25,7 @@ export default function FaqPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getFaqs();
+        const res = await fetch('/api/faqs'); const data = await res.json();
         setFaqs(data);
       } catch (error) {
         console.error('Failed to load FAQs:', error);

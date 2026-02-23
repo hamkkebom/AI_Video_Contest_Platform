@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { getArticles } from '@/lib/mock';
+
 import type { Article } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ function NewsContent() {
   useEffect(() => {
     const loadArticles = async () => {
       try {
-        const data = await getArticles();
+        const res = await fetch('/api/articles'); const data = await res.json();
         setArticles(data);
       } catch (error) {
         console.error('Failed to load articles:', error);

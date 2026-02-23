@@ -1,5 +1,5 @@
 import { ParticipantAnalyticsContent } from '@/components/dashboard/participant-analytics-content';
-import { getSubmissions } from '@/lib/mock';
+import { getSubmissions } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default async function ParticipantAnalyticsPage() {

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Play, Search, Trophy, Calendar, User } from 'lucide-react';
-import { getSubmissionById, getGallerySubmissions } from '@/lib/mock';
+import { getSubmissionById, getGallerySubmissions } from '@/lib/data';
 
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;

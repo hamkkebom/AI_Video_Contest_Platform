@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Trophy, Award, Upload, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
-import { getContests } from '@/lib/mock';
+import { getContests } from '@/lib/data';
 import { SortSelect } from '@/components/ui/sort-select';
 import { SearchInput } from '@/components/ui/search-input';
 

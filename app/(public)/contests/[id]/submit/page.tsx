@@ -38,7 +38,7 @@ import {
   Cpu,
   ThumbsUp,
 } from 'lucide-react';
-import { getContests } from '@/lib/mock';
+
 import type { Contest } from '@/lib/types';
 
 /** 제출 폼 상태 타입 */
@@ -92,7 +92,7 @@ export default function ContestSubmitPage() {
 
   useEffect(() => {
     const load = async () => {
-      const contests = await getContests();
+      const res = await fetch('/api/contests'); const contests: Contest[] = await res.json();
       const found = contests.find((c) => c.id === contestId);
       setContest(found ?? null);
       setLoading(false);

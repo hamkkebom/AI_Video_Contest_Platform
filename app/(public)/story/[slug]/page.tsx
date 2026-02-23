@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Calendar, Tag } from 'lucide-react';
-import { getArticles } from '@/lib/mock';
+import { getArticles } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
 

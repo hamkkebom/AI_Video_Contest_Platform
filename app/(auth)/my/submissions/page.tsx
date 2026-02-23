@@ -1,6 +1,6 @@
 import { Eye, Heart, Film } from 'lucide-react';
 import type { SubmissionStatus } from '@/lib/types';
-import { getSubmissions } from '@/lib/mock';
+import { getSubmissions } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

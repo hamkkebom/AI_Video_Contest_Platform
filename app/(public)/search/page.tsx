@@ -9,7 +9,7 @@ import {
   Carousel, CarouselContent, CarouselItem, type CarouselApi,
 } from '@/components/ui/carousel';
 import { Search, Trophy, Award, Upload, Eye, Heart, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import { searchMockData } from '@/lib/mock';
+
 import type { SearchResult } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
 
@@ -108,7 +108,7 @@ function SearchContent() {
       setHasSearched(false);
       return;
     }
-    const data = await searchMockData({ query });
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`); const data = await res.json();
     setResults(data);
     setHasSearched(true);
   }, []);

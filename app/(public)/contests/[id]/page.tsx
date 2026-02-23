@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContests, getSubmissions, getUsers } from '@/lib/mock';
+import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import { Calendar, Users, Clock, Trophy, ArrowLeft, Search, Image, Upload } from 'lucide-react';
 import { SubmissionCarousel } from '@/components/contest/submission-carousel';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';

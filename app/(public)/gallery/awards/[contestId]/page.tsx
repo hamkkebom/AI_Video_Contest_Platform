@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Eye, Heart, Trophy, ArrowLeft } from 'lucide-react';
-import { getAwardedSubmissions, getCompletedContests } from '@/lib/mock';
+import { getAwardedSubmissions, getCompletedContests } from '@/lib/data';
 
 /**
  * 공모전별 수상작 상세 갤러리
