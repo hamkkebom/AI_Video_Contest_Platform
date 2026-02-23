@@ -10,6 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
   ArrowLeft,
   Upload,
   Film,
@@ -20,6 +28,15 @@ import {
   AlertCircle,
   Info,
   ChevronDown,
+  Shield,
+  FileCheck,
+  ShoppingBag,
+  Scale,
+  Users,
+  AlertTriangle,
+  Megaphone,
+  Cpu,
+  ThumbsUp,
 } from 'lucide-react';
 import { getContests } from '@/lib/mock';
 import type { Contest } from '@/lib/types';
@@ -52,6 +69,7 @@ export default function ContestSubmitPage() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   /* 제출 폼 상태 */
   const [form, setForm] = useState<FormState>({
@@ -216,21 +234,6 @@ export default function ContestSubmitPage() {
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-8 px-4">
         <div className="container mx-auto max-w-3xl relative z-10">
-          {/* 네비게이션 */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-            <Link href="/contests" className="hover:text-foreground transition-colors">
-              공모전
-            </Link>
-            <span>&gt;</span>
-            <Link
-              href={`/contests/${contestId}`}
-              className="hover:text-foreground transition-colors"
-            >
-              {contest.title}
-            </Link>
-            <span>&gt;</span>
-            <span className="text-foreground">작품 제출</span>
-          </div>
 
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
             작품 제출하기
@@ -546,13 +549,54 @@ export default function ContestSubmitPage() {
                 htmlFor="agree"
                 className={`text-sm cursor-pointer ${form.agree ? 'text-foreground' : 'text-muted-foreground'}`}
               >
-                유의사항 및 저작권 안내에 동의합니다 <span className="text-red-500">*</span>
+                <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 decoration-dashed hover:text-violet-600 transition-colors cursor-pointer"
+                      onClick={(e) => { e.preventDefault(); setNotesOpen(true); }}
+                    >
+                      유의사항 및 저작권 안내
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>유의사항 및 저작권 안내</DialogTitle>
+                      <DialogDescription className="text-sm text-muted-foreground">공모전 참가 전 반드시 확인해 주세요.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      {[
+                        { icon: Shield, title: '권리 귀속', desc: '출품작의 저작권은 제작자에게 있습니다. 단, 수상작에 한하여 저작권은 함께봄과 제작자가 각 50%씩 공동 소유합니다.', note: '향후 AI콘텐츠저작권협회 설립 시 제작자에게 100% 양도 가능' },
+                        { icon: FileCheck, title: '사용권', desc: '출품작에 대한 사용권 및 2차적 저작물 작성권은 함께봄에 100% 귀속되며, 마케팅 및 홍보 목적으로 활용될 수 있습니다.' },
+                        { icon: ShoppingBag, title: '상업적 이용 보장', desc: '응모자는 AI툴로 제작된 결과물이 상업적 이용에 결격 사유가 없는 결과물이어야 합니다.' },
+                        { icon: Scale, title: '법적 책임', desc: '모든 출품작은 제3자의 저작권, 초상권 등을 침해하지 않는 순수 창작물이어야 하며, 문제 발생 시 모든 책임은 출품자에게 있습니다.' },
+                        { icon: Users, title: '중복 참여 및 팀 참여 불가', desc: '1인당 1회 응모 가능하며, 팀으로 작업한 사실이 밝혀질 경우 수상은 취소될 수 있습니다.' },
+                        { icon: AlertTriangle, title: '즉시 실격 처리 대상', desc: '선정적, 차별적, 폭력적 내용 등이 포함된 작품은 즉시 실격 처리됩니다.' },
+                        { icon: Megaphone, title: '작품 활용 안내', desc: '제출된 작품은 행사 홍보·연출에 활용될 수 있습니다.' },
+                        { icon: Cpu, title: 'AI 창작물 필수', desc: '제출 작품은 반드시 AI 활용 창작물이어야 하며, 저작권·초상권 문제 발생 시 실격 처리될 수 있습니다.' },
+                        { icon: ThumbsUp, title: '대중 평가 반영', desc: '제출된 작품은 함께봄 공모전 페이지에 게시되며, 좋아요 수 등 대중평가 점수가 심사에 반영됩니다.' },
+                      ].map((item) => (
+                        <div key={item.title} className="flex gap-3 p-3 rounded-lg bg-muted/50">
+                          <item.icon className="w-5 h-5 text-violet-500 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-semibold text-sm">{item.title}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
+                            {'note' in item && item.note && (
+                              <p className="text-xs text-muted-foreground/70 italic mt-1">* {item.note}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                에 동의합니다 <span className="text-red-500">*</span>
               </label>
             </div>
 
             {/* 제출 버튼 */}
             <div className="flex items-center gap-3 pt-2">
-              <Link href={`/contests/${contestId}`} className="flex-1">
+              <Link href={`/contests/${contestId}/landing`} className="flex-1">
                 <Button
                   type="button"
                   variant="outline"

@@ -34,7 +34,7 @@ interface MenuItem {
 }
 
 const commonMenuItems: MenuItem[] = [
-  { label: '공모전', href: '/contests?status=open' },
+  // { label: '공모전', href: '/contests?status=open' }, // 미완성 — 배포 시 숨김
 ];
 
 /**
@@ -230,8 +230,8 @@ function RoleActivityDropdown({
  */
 export function Header() {
   const [demoRoles, setDemoRoles] = useState<HeaderDemoRoles>({
-    isGuest: false,
-    isParticipant: true,
+    isGuest: true,
+    isParticipant: false,
     isHost: false,
     isJudge: false,
     isAdmin: false,
@@ -248,6 +248,7 @@ export function Header() {
   const isMultiRole = dashboardLinks.length > 1;
   const activeRoleKey = getActiveRoleKey(demoRoles);
   const isGuest = demoRoles.isGuest;
+  const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboardPage =
     pathname.startsWith('/host') ||
     pathname.startsWith('/admin') ||
@@ -301,7 +302,7 @@ export function Header() {
     <>
       {/* 데모 역할 전환 유틸리티 바 — 배포 시 숨김 */}
 
-      {!isDashboardPage && <header className="sticky top-0 z-50 w-full shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {!isDashboardPage && !isLoginPage && <header className="sticky top-0 z-50 w-full shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-6xl flex h-16 items-center px-4">
           {/* 4a: 왼쪽 — 로고 컨테이너 (대칭 min-w) */}
           <div className="hidden md:flex flex-shrink-0 items-center mr-8">
@@ -353,25 +354,7 @@ export function Header() {
 
           {/* 4a: 오른쪽 — 액션 영역 (대칭 min-w + justify-end) */}
           <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2">
-            {/* 검색바 — 데스크톱 (포커스 시 확장 + 검색 버튼) */}
-            <form onSubmit={handleSearch} className="flex items-center">
-              <div className="relative group">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="검색..."
-                  className="pl-3 pr-9 py-1.5 w-44 focus:w-56 text-sm border border-border rounded-lg bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-background transition-all duration-200"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-violet-500 hover:bg-violet-500/10 transition-colors cursor-pointer"
-                  aria-label="검색"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </form>
+            {/* 검색바 — 미완성, 배포 시 숨김 */}
 
             {/* 4f: 게스트 상태 — 로그인 버튼만 표시 */}
             {isGuest ? (
@@ -469,12 +452,7 @@ export function Header() {
 
           {/* 모바일 액션 영역 */}
           <div className="flex md:hidden flex-1 items-center justify-end gap-1">
-            {/* 검색 — 모바일 */}
-            <Link href="/search">
-              <Button variant="ghost" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </Link>
+            {/* 검색 — 모바일: 미완성, 배포 시 숨김 */}
 
             {/* 알림 벨 — 모바일 (비로그인 숨김) */}
             {!isGuest && (

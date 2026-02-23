@@ -69,15 +69,15 @@ export function ApplySection() {
           >
             <Clock className="w-5 h-5 shrink-0" style={{ color: 'var(--ar-accent)' }} />
             <p className="text-sm" style={{ color: 'rgba(245,240,232,0.6)' }}>
-              접수 마감: <span className="font-semibold" style={{ color: 'var(--ar-cream)' }}>2025년 8월 15일</span>
-              {' '}· 1인 최대 3작품 제출 가능
+              접수 마감: <span className="font-semibold" style={{ color: 'var(--ar-cream)' }}>2026년 3월 28일 (토) 23:59</span>
+              {' '}· 1인 1작품 제출 가능 · 팀 참여 불가
             </p>
           </div>
 
           {/* CTA 버튼 */}
           <button
             type="button"
-            onClick={() => router.push('/contests/contest-1/submit')}
+            onClick={() => router.push('/login')}
             className="w-full py-4 font-bold text-lg rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             style={{
               backgroundColor: 'var(--ar-accent)',

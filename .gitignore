@@ -5,3 +5,5 @@ node_modules
 NUL
 tsconfig.tsbuildinfo
 .sisyphus
+
+.vercel

@@ -15,11 +15,19 @@ interface CountdownValues {
  * @param targetDate - 마감 날짜 문자열 (예: '2026-03-28T23:59:59+09:00')
  */
 export function useCountdown(targetDate: string): CountdownValues {
-  const [timeLeft, setTimeLeft] = useState<CountdownValues>(
-    calculateTimeLeft(targetDate)
-  );
+  // SSR에서는 0으로 초기화하여 hydration mismatch 방지
+  const [timeLeft, setTimeLeft] = useState<CountdownValues>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isExpired: false,
+  });
 
   useEffect(() => {
+    // 마운트 시 즉시 계산
+    setTimeLeft(calculateTimeLeft(targetDate));
+
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft(targetDate));
     }, 1000);

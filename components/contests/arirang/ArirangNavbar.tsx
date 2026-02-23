@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: '일정', href: '#schedule' },
   { label: '참여 방법', href: '#howto' },
   { label: '시상 내역', href: '#prizes' },
+  { label: '접수', href: '#apply' },
   { label: '유의사항', href: '#notes' },
 ];
 
