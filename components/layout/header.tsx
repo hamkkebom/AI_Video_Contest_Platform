@@ -112,7 +112,17 @@ export function Header() {
   const { theme, setTheme } = useTheme();
 
   /* 인증 상태 파생 */
+
   const isGuest = !user;
+
+  /* 유저 역할에 따른 대시보드 경로 */
+  const dashboardHref = (() => {
+    const roles = profile?.roles ?? [];
+    if (roles.includes('admin')) return '/admin/dashboard';
+    if (roles.includes('host')) return '/host/dashboard';
+    return '/my/submissions';
+  })();
+
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboardPage =
     pathname.startsWith('/host') ||
@@ -253,7 +263,7 @@ export function Header() {
             ) : (
               <>
                 {/* 대시보드 링크 */}
-                <Link href={'/my/submissions' as any}>
+                <Link href={dashboardHref as any}>
                   <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
                     <LayoutGrid className="h-4 w-4" />
                     대시보드
@@ -344,7 +354,7 @@ export function Header() {
                   })}
                   {!isGuest && (
                     <div className="border-t border-border pt-2 mt-2 space-y-1">
-                      <Link href={'/my/submissions' as any}>
+                      <Link href={dashboardHref as any}>
                         <Button variant="ghost" className="w-full justify-start gap-2">
                           <LayoutGrid className="h-4 w-4" />
                           대시보드

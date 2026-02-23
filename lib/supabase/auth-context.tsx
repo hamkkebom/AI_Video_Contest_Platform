@@ -189,7 +189,11 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     } catch {
       // 로그 기록 실패는 무시
     }
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Supabase signOut 실패해도 클라이언트 상태는 반드시 초기화
+    }
     setUser(null);
     setProfile(null);
     setSession(null);
