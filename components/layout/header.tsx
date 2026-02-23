@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid } from 'lucide-react';
+import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -115,13 +115,23 @@ export function Header() {
 
   const isGuest = !user;
 
-  /* 유저 역할에 따른 대시보드 경로 */
+  /* 유저 역할 */
+  const roles = profile?.roles ?? [];
+  const isAdmin = roles.includes('admin');
+
+  /* admin이 아닌 유저용 단일 대시보드 경로 */
   const dashboardHref = (() => {
-    const roles = profile?.roles ?? [];
-    if (roles.includes('admin')) return '/admin/dashboard';
     if (roles.includes('host')) return '/host/dashboard';
     return '/my/submissions';
   })();
+
+  /* admin용 대시보드 선택지 */
+  const adminDashboards = [
+    { label: '관리자 대시보드', href: '/admin/dashboard', icon: Shield },
+    { label: '주최자 대시보드', href: '/host/dashboard', icon: Building2 },
+    { label: '참가자 대시보드', href: '/my/submissions', icon: User },
+    { label: '심사위원 대시보드', href: '/judging', icon: Scale },
+  ];
 
   const isLoginPage = pathname === '/login' || pathname === '/signup';
   const isDashboardPage =
@@ -262,13 +272,34 @@ export function Header() {
               </Link>
             ) : (
               <>
-                {/* 대시보드 링크 */}
-                <Link href={dashboardHref as any}>
-                  <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
-                    <LayoutGrid className="h-4 w-4" />
-                    대시보드
-                  </Button>
-                </Link>
+                {/* 대시보드 링크 — admin은 드롭다운, 그 외는 바로 이동 */}
+                {isAdmin ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
+                        <LayoutGrid className="h-4 w-4" />
+                        대시보드
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="bottom" align="end" className="w-48">
+                      {adminDashboards.map((d) => (
+                        <DropdownMenuItem key={d.href} asChild className="cursor-pointer">
+                          <Link href={d.href as any} className="flex items-center gap-2">
+                            <d.icon className="h-4 w-4" />
+                            {d.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link href={dashboardHref as any}>
+                    <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
+                      <LayoutGrid className="h-4 w-4" />
+                      대시보드
+                    </Button>
+                  </Link>
+                )}
 
                 {/* 프로필 아바타 + 드롭다운 */}
                 {renderProfileDropdown()}
@@ -354,12 +385,24 @@ export function Header() {
                   })}
                   {!isGuest && (
                     <div className="border-t border-border pt-2 mt-2 space-y-1">
-                      <Link href={dashboardHref as any}>
-                        <Button variant="ghost" className="w-full justify-start gap-2">
-                          <LayoutGrid className="h-4 w-4" />
-                          대시보드
-                        </Button>
-                      </Link>
+                      {isAdmin ? (
+                        /* admin — 4가지 대시보드 선택 */
+                        adminDashboards.map((d) => (
+                          <Link key={d.href} href={d.href as any}>
+                            <Button variant="ghost" className="w-full justify-start gap-2">
+                              <d.icon className="h-4 w-4" />
+                              {d.label}
+                            </Button>
+                          </Link>
+                        ))
+                      ) : (
+                        <Link href={dashboardHref as any}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <LayoutGrid className="h-4 w-4" />
+                            대시보드
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   )}
                 </nav>
