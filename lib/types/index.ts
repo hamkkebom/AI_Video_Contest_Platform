@@ -180,6 +180,10 @@ export interface Contest {
   bonusMaxScore?: number;
   /** 가산점 반영 비율 (%) */
   bonusPercentage?: number;
+  /** 심사위원 평가 비율 (%) */
+  judgeWeightPercent?: number;
+  /** 온라인 투표(좋아요) 비율 (%) */
+  onlineVoteWeightPercent?: number;
   /** 심사기준 배열 */
   judgingCriteria?: JudgingCriterion[];
   /** 결과 발표 형태 (website, email, sns, offline) */

@@ -66,6 +66,8 @@ type ContestMutationPayload = {
   resultFormat: string;
   bonusMaxScore?: number;
   bonusPercentage?: number;
+  judgeWeightPercent?: number;
+  onlineVoteWeightPercent?: number;
   awardTiers: Array<{ label: string; count: number; prizeAmount?: string }>;
   bonusConfigs: Array<{ label: string; description?: string; score: number; requiresUrl: boolean; requiresImage: boolean }>;
   judgingCriteria: Array<{ label: string; maxScore: number; description?: string }>;
@@ -270,6 +272,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [bonusConfigs, setBonusConfigs] = useState<BonusConfigForm[]>([]);
   /* 가산점 반영 비율 (%) */
   const [bonusPercentageStr, setBonusPercentageStr] = useState('');
+  /* 심사위원 평가 비율 (%) */
+  const [judgeWeightPercentStr, setJudgeWeightPercentStr] = useState('70');
+  /* 온라인 투표 비율 (%) */
+  const [onlineVoteWeightPercentStr, setOnlineVoteWeightPercentStr] = useState('20');
 
   /* 심사기준 */
   const [judgingCriteria, setJudgingCriteria] = useState<JudgingCriteriaForm[]>([
@@ -342,6 +348,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         /* 가산점 비율, 심사기준은 contest에 저장된 경우 로드 */
         if (contest.bonusPercentage) {
           setBonusPercentageStr(String(contest.bonusPercentage));
+        }
+        if (contest.judgeWeightPercent != null) {
+          setJudgeWeightPercentStr(String(contest.judgeWeightPercent));
+        }
+        if (contest.onlineVoteWeightPercent != null) {
+          setOnlineVoteWeightPercentStr(String(contest.onlineVoteWeightPercent));
         }
         if (contest.judgingCriteria && contest.judgingCriteria.length > 0) {
           setJudgingCriteria(contest.judgingCriteria.map((c) => createJudgingCriteria(c.label, c.maxScore, c.description ?? '')));
@@ -561,6 +573,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       detailContent: detailContent.trim() || undefined,
       detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
       bonusPercentage: !Number.isNaN(bonusPct) && bonusPct > 0 ? bonusPct : undefined,
+      judgeWeightPercent: (() => { const n = parseInt(judgeWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })(),
+      onlineVoteWeightPercent: (() => { const n = parseInt(onlineVoteWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })(),
       awardTiers: awardTiers
         .map((tier, i) => ({
           label: tier.label.trim(),
@@ -1180,6 +1194,194 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
+        {/* ===== 카드 4.1: 평가 비율 배분 ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>평가 비율 배분</CardTitle>
+            <CardDescription>심사위원 평가, 온라인 투표, 가산점의 비율 합이 100%가 되어야 합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">심사위원 평가</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 70"
+                    value={judgeWeightPercentStr}
+                    onChange={(e) => setJudgeWeightPercentStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(judgeWeightPercentStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setJudgeWeightPercentStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">온라인 투표 (좋아요)</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 20"
+                    value={onlineVoteWeightPercentStr}
+                    onChange={(e) => setOnlineVoteWeightPercentStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(onlineVoteWeightPercentStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setOnlineVoteWeightPercentStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">가산점</label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="예시) 10"
+                    value={bonusPercentageStr}
+                    onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
+                    onBlur={() => {
+                      const n = parseInt(bonusPercentageStr, 10);
+                      if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </div>
+            {(() => {
+              const j = parseInt(judgeWeightPercentStr, 10) || 0;
+              const o = parseInt(onlineVoteWeightPercentStr, 10) || 0;
+              const b = parseInt(bonusPercentageStr, 10) || 0;
+              const total = j + o + b;
+              return (
+                <p className={`text-sm font-medium ${total === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                  합계: {total}% {total === 100 ? '✓' : '(100%가 되어야 합니다)'}
+                </p>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* ===== 카드 4.2: 가산점 항목 ===== */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5" />
+              가산점 항목
+            </CardTitle>
+            <CardDescription>참가자가 추가 점수를 받을 수 있는 가산점 항목을 설정합니다. (선택)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {bonusConfigs.map((bc, index) => (
+              <div key={bc.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <div className="flex-1 space-y-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">항목명</label>
+                      <Input
+                        type="text"
+                        placeholder="예: 공식포스터 SNS 공유"
+                        value={bc.label}
+                        onChange={(e) => {
+                          const next = [...bonusConfigs];
+                          next[index] = { ...bc, label: e.target.value };
+                          setBonusConfigs(next);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">설명 (선택)</label>
+                      <Input
+                        type="text"
+                        placeholder="참가자에게 보여질 안내"
+                        value={bc.description}
+                        onChange={(e) => {
+                          const next = [...bonusConfigs];
+                          next[index] = { ...bc, description: e.target.value };
+                          setBonusConfigs(next);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">점수</label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="예시) 1"
+                        value={bc.score || ''}
+                        onChange={(e) => {
+                          const next = [...bonusConfigs];
+                          const val = numericOnly(e.target.value);
+                          next[index] = { ...bc, score: val ? Math.max(1, Math.min(10, parseInt(val, 10) || 1)) : 1 };
+                          setBonusConfigs(next);
+                        }}
+                      />
+                      {renderRangeWarning(String(bc.score), 1, 10, '점')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={bc.requiresUrl}
+                        onChange={(e) => {
+                          const next = [...bonusConfigs];
+                          next[index] = { ...bc, requiresUrl: e.target.checked };
+                          setBonusConfigs(next);
+                        }}
+                        className="rounded"
+                      />
+                      URL 제출 필요
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={bc.requiresImage}
+                        onChange={(e) => {
+                          const next = [...bonusConfigs];
+                          next[index] = { ...bc, requiresImage: e.target.checked };
+                          setBonusConfigs(next);
+                        }}
+                        className="rounded"
+                      />
+                      이미지 제출 필요
+                    </label>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive mt-5"
+                  onClick={() => setBonusConfigs(bonusConfigs.filter((_, i) => i !== index))}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setBonusConfigs([...bonusConfigs, createBonusConfig()])}
+            >
+              <Plus className="h-4 w-4" />
+              가산점 항목 추가
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* ===== 카드 4.5: 심사기준 ===== */}
         <Card className="border-border">
           <CardHeader>
@@ -1397,139 +1599,6 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               <div>총 수상 인원: <span className="font-semibold text-foreground">{totalAwardCount}명</span></div>
               <div>총 상금: <span className="font-semibold text-foreground">{totalPrize.toLocaleString('ko-KR')}원</span></div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* ===== 카드 6: 가산점 항목 ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              가산점 항목
-            </CardTitle>
-            <CardDescription>참가자가 추가 점수를 받을 수 있는 가산점 항목을 설정합니다. (선택)</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* 가산점 반영 비율 */}
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-              <label className="text-sm font-medium whitespace-nowrap">가산점 반영 비율</label>
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="예시) 10"
-                  value={bonusPercentageStr}
-                  onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
-                  onBlur={() => {
-                    const n = parseInt(bonusPercentageStr, 10);
-                    if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
-                  }}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
-              {renderRangeWarning(bonusPercentageStr, 0, 100, '%')}
-              <span className="text-xs text-muted-foreground ml-auto">총 심사 점수 중 가산점이 차지하는 비율</span>
-            </div>
-
-            {bonusConfigs.map((bc, index) => (
-              <div key={bc.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">항목명</label>
-                      <Input
-                        type="text"
-                        placeholder="예: 공식포스터 SNS 공유"
-                        value={bc.label}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, label: e.target.value };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">설명 (선택)</label>
-                      <Input
-                        type="text"
-                        placeholder="참가자에게 보여질 안내"
-                        value={bc.description}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, description: e.target.value };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">점수</label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="예시) 1"
-                        value={bc.score || ''}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          const val = numericOnly(e.target.value);
-                          next[index] = { ...bc, score: val ? Math.max(1, Math.min(10, parseInt(val, 10) || 1)) : 1 };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                      {renderRangeWarning(String(bc.score), 1, 10, '점')}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <label className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        checked={bc.requiresUrl}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, requiresUrl: e.target.checked };
-                          setBonusConfigs(next);
-                        }}
-                        className="rounded"
-                      />
-                      URL 제출 필요
-                    </label>
-                    <label className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        checked={bc.requiresImage}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, requiresImage: e.target.checked };
-                          setBonusConfigs(next);
-                        }}
-                        className="rounded"
-                      />
-                      이미지 제출 필요
-                    </label>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive mt-5"
-                  onClick={() => setBonusConfigs(bonusConfigs.filter((_, i) => i !== index))}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setBonusConfigs([...bonusConfigs, createBonusConfig()])}
-            >
-              <Plus className="h-4 w-4" />
-              가산점 항목 추가
-            </Button>
           </CardContent>
         </Card>
 
