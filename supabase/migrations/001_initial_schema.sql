@@ -107,6 +107,9 @@ CREATE TABLE contests (
   bonus_percentage INT,                              -- 가산점 반영 비율 (%)
   judge_weight_percent INT,                          -- 심사위원 평가 비율 (%)
   online_vote_weight_percent INT,                    -- 온라인 투표(좋아요) 비율 (%)
+  online_vote_type TEXT DEFAULT 'likes',              -- 온라인 투표 방식 (likes, views, likes_and_views)
+  vote_likes_percent INT,                             -- 조회수+좋아요 모드: 좋아요 비율 (%)
+  vote_views_percent INT,                             -- 조회수+좋아요 모드: 조회수 비율 (%)
   judging_criteria JSONB DEFAULT '[]'::jsonb,        -- 심사기준 배열 [{label, maxScore, description}]
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL

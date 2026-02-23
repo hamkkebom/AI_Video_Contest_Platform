@@ -182,8 +182,14 @@ export interface Contest {
   bonusPercentage?: number;
   /** 심사위원 평가 비율 (%) */
   judgeWeightPercent?: number;
-  /** 온라인 투표(좋아요) 비율 (%) */
+  /** 온라인 투표 비율 (%) */
   onlineVoteWeightPercent?: number;
+  /** 온라인 투표 방식 (likes | views | likes_and_views) */
+  onlineVoteType?: 'likes' | 'views' | 'likes_and_views';
+  /** 조회수+좋아요 모드일 때 좋아요 비율 (%) */
+  voteLikesPercent?: number;
+  /** 조회수+좋아요 모드일 때 조회수 비율 (%) */
+  voteViewsPercent?: number;
   /** 심사기준 배열 */
   judgingCriteria?: JudgingCriterion[];
   /** 결과 발표 형태 (website, email, sns, offline) */
