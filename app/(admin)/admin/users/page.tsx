@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Filter, ShieldCheck, UserCheck, Users } from 'lucide-react';
-import { DEMO_ROLES } from '@/config/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,16 +13,17 @@ import {
 } from '@/components/ui/table';
 import { getUsers } from '@/lib/mock';
 
+const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
+  participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
+  host: { label: '주최자', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+  judge: { label: '심사위원', color: 'bg-primary/10 text-primary' },
+  admin: { label: '관리자', color: 'bg-destructive/10 text-destructive' },
+  guest: { label: '비로그인', color: 'bg-muted text-muted-foreground' },
+};
+
 export default async function AdminUsersPage() {
   try {
     const users = await getUsers();
-
-    const roleLabelMap: Record<string, { label: string; color: string }> = {
-      participant: { label: DEMO_ROLES.participant.label, color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
-      host: { label: DEMO_ROLES.host.label, color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-      judge: { label: DEMO_ROLES.judge.label, color: 'bg-primary/10 text-primary' },
-      admin: { label: DEMO_ROLES.admin.label, color: 'bg-destructive/10 text-destructive' },
-    };
 
     const statusLabelMap: Record<string, { label: string; color: string }> = {
       active: { label: '활성', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
@@ -33,10 +33,10 @@ export default async function AdminUsersPage() {
 
     const roleCounts = {
       all: users.length,
-      participant: users.filter((user) => user.role === 'participant').length,
-      host: users.filter((user) => user.role === 'host').length,
-      judge: users.filter((user) => user.role === 'judge').length,
-      admin: users.filter((user) => user.role === 'admin').length,
+      participant: users.filter((user) => user.roles.includes('participant')).length,
+      host: users.filter((user) => user.roles.includes('host')).length,
+      judge: users.filter((user) => user.roles.includes('judge')).length,
+      admin: users.filter((user) => user.roles.includes('admin')).length,
     };
 
     const activeCount = users.filter((user) => user.status === 'active').length;
@@ -53,7 +53,7 @@ export default async function AdminUsersPage() {
         iconClass: 'bg-primary/10 text-primary',
       },
       {
-        label: DEMO_ROLES.participant.label,
+        label: ROLE_LABEL_MAP.participant.label,
         value: roleCounts.participant,
         sub: `대기 ${pendingCount}명`,
         icon: UserCheck,
@@ -61,9 +61,9 @@ export default async function AdminUsersPage() {
         iconClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
       },
       {
-        label: DEMO_ROLES.host.label,
+        label: ROLE_LABEL_MAP.host.label,
         value: roleCounts.host,
-        sub: `${DEMO_ROLES.judge.label} ${roleCounts.judge}명`,
+        sub: `${ROLE_LABEL_MAP.judge.label} ${roleCounts.judge}명`,
         icon: ShieldCheck,
         borderClass: 'border-l-amber-500',
         iconClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -71,7 +71,7 @@ export default async function AdminUsersPage() {
       {
         label: '관리 필요 계정',
         value: suspendedCount,
-        sub: `${DEMO_ROLES.admin.label} ${roleCounts.admin}명`,
+        sub: `${ROLE_LABEL_MAP.admin.label} ${roleCounts.admin}명`,
         icon: Filter,
         borderClass: 'border-l-destructive',
         iconClass: 'bg-destructive/10 text-destructive',
@@ -153,10 +153,10 @@ export default async function AdminUsersPage() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => {
-                  const roleInfo = roleLabelMap[user.role] ?? {
-                    label: user.role,
+                  const roleInfos = user.roles.map((role) => ROLE_LABEL_MAP[role] ?? {
+                    label: role,
                     color: 'bg-muted text-muted-foreground',
-                  };
+                  });
                   const statusInfo = statusLabelMap[user.status] ?? {
                     label: user.status,
                     color: 'bg-muted text-muted-foreground',
@@ -177,9 +177,13 @@ export default async function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge className={`${roleInfo.color} border-0 text-xs`}>{roleInfo.label}</Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {roleInfos.map((roleInfo) => (
+                            <Badge key={roleInfo.label} className={`${roleInfo.color} border-0 text-xs`}>{roleInfo.label}</Badge>
+                          ))}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-sm">{user.region}</TableCell>
+                      <TableCell className="text-sm">{user.region ?? '-'}</TableCell>
                       <TableCell>
                         <Badge className={`${statusInfo.color} border-0 text-xs`}>{statusInfo.label}</Badge>
                       </TableCell>

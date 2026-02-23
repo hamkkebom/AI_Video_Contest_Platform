@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="doc-version" content="v0.2-mockup">
-  <meta name="doc-status" content="기업 분리 반영">
+  <meta name="doc-version" content="v0.3-mockup">
+  <meta name="doc-status" content="역할 배열 + DemoRoles 삭제 + 기업 승인 반영">
   <meta name="last-modified" content="2026-02-23">
-  <meta name="project" content="함께봄 AI 영상 공모전 플랫폼">
-  <title>DB 설계서 (ERD + 테이블 정의) - 함께봄 AI 영상 공모전 플랫폼</title>
+  <meta name="project" content="꿈플 AI 영상 공모전 플랫폼">
+  <title>DB 설계서 (ERD + 테이블 정의) - 꿈플 AI 영상 공모전 플랫폼</title>
   <link rel="stylesheet" href="../assets/style.css">
   <link rel="stylesheet" href="../assets/print.css">
 </head>
@@ -17,10 +17,10 @@
     <p><code>lib/types/index.ts</code> 기준 인터페이스를 관계형 테이블로 매핑한 목업용 DB 설계 문서다.</p>
     <button id="pdf-button" class="pdf-button" type="button">📄 PDF 다운로드</button>
     <div class="doc-meta">
-      <strong>문서 정보:</strong> v0.2-mockup | 최종 수정: 2026-02-23 | 상태: 기업 분리 반영
+      <strong>문서 정보:</strong> v0.3-mockup | 최종 수정: 2026-02-23 | 상태: 역할 배열 + DemoRoles 삭제 + 기업 승인 반영
     </div>
 
-    <h2>1. 인터페이스-테이블 매핑</h2>
+    <h2>1. 인터페이스-테이블 매핑 (총 23개 테이블)</h2>
     <table>
       <thead>
         <tr>
@@ -32,31 +32,31 @@
       </thead>
       <tbody>
         <tr><td>TBL-001</td><td>users</td><td>User</td><td>사용자</td></tr>
-        <tr><td>TBL-002</td><td>demo_roles</td><td>DemoRoles</td><td>사용자</td></tr>
-        <tr><td>TBL-003</td><td>devices</td><td>Device</td><td>사용자</td></tr>
-        <tr><td>TBL-004</td><td>contests</td><td>Contest</td><td>공모전</td></tr>
-        <tr><td>TBL-005</td><td>submissions</td><td>Submission</td><td>공모전</td></tr>
-        <tr><td>TBL-006</td><td>likes</td><td>Like</td><td>콘텐츠</td></tr>
-        <tr><td>TBL-007</td><td>judges</td><td>Judge</td><td>심사</td></tr>
-        <tr><td>TBL-008</td><td>judging_templates</td><td>JudgingTemplate</td><td>심사</td></tr>
-        <tr><td>TBL-009</td><td>judging_criteria</td><td>JudgingCriterion</td><td>심사</td></tr>
-        <tr><td>TBL-010</td><td>scores</td><td>Score</td><td>심사</td></tr>
-        <tr><td>TBL-011</td><td>score_criteria_scores</td><td>Score.criteriaScores[]</td><td>심사</td></tr>
-        <tr><td>TBL-012</td><td>contest_results</td><td>ContestResult</td><td>심사</td></tr>
-        <tr><td>TBL-013</td><td>articles</td><td>Article</td><td>콘텐츠</td></tr>
-        <tr><td>TBL-014</td><td>faqs</td><td>FAQ</td><td>콘텐츠</td></tr>
-        <tr><td>TBL-015</td><td>inquiries</td><td>Inquiry</td><td>콘텐츠</td></tr>
-        <tr><td>TBL-016</td><td>agency_requests</td><td>AgencyRequest</td><td>콘텐츠</td></tr>
-        <tr><td>TBL-017</td><td>activity_logs</td><td>ActivityLog</td><td>분석</td></tr>
-        <tr><td>TBL-018</td><td>ip_logs</td><td>IpLog</td><td>분석</td></tr>
-        <tr><td>TBL-019</td><td>utm_templates</td><td>UTMTemplate</td><td>분석</td></tr>
-        <tr><td>TBL-020</td><td>pricing_plans</td><td>PricingPlan</td><td>사용자</td></tr>
-        <tr><td>TBL-021</td><td>plan_feature_access</td><td>PlanFeatureAccess, FeatureAccessByRole</td><td>사용자</td></tr>
-        <tr><td>TBL-022</td><td>regional_metrics</td><td>RegionalMetric</td><td>분석</td></tr>
-        <tr><td>TBL-023</td><td>companies</td><td>Company</td><td>기업</td></tr>
-        <tr><td>TBL-024</td><td>company_members</td><td>CompanyMember</td><td>기업</td></tr>
+        <tr><td>TBL-002</td><td>devices</td><td>Device</td><td>사용자</td></tr>
+        <tr><td>TBL-003</td><td>contests</td><td>Contest</td><td>공모전</td></tr>
+        <tr><td>TBL-004</td><td>submissions</td><td>Submission</td><td>공모전</td></tr>
+        <tr><td>TBL-005</td><td>likes</td><td>Like</td><td>콘텐츠</td></tr>
+        <tr><td>TBL-006</td><td>judges</td><td>Judge</td><td>심사</td></tr>
+        <tr><td>TBL-007</td><td>judging_templates</td><td>JudgingTemplate</td><td>심사</td></tr>
+        <tr><td>TBL-008</td><td>judging_criteria</td><td>JudgingCriterion</td><td>심사</td></tr>
+        <tr><td>TBL-009</td><td>scores</td><td>Score</td><td>심사</td></tr>
+        <tr><td>TBL-010</td><td>score_criteria_scores</td><td>Score.criteriaScores[]</td><td>심사</td></tr>
+        <tr><td>TBL-011</td><td>contest_results</td><td>ContestResult</td><td>심사</td></tr>
+        <tr><td>TBL-012</td><td>articles</td><td>Article</td><td>콘텐츠</td></tr>
+        <tr><td>TBL-013</td><td>faqs</td><td>FAQ</td><td>콘텐츠</td></tr>
+        <tr><td>TBL-014</td><td>inquiries</td><td>Inquiry</td><td>콘텐츠</td></tr>
+        <tr><td>TBL-015</td><td>agency_requests</td><td>AgencyRequest</td><td>콘텐츠</td></tr>
+        <tr><td>TBL-016</td><td>activity_logs</td><td>ActivityLog</td><td>분석</td></tr>
+        <tr><td>TBL-017</td><td>ip_logs</td><td>IpLog</td><td>분석</td></tr>
+        <tr><td>TBL-018</td><td>utm_templates</td><td>UTMTemplate</td><td>분석</td></tr>
+        <tr><td>TBL-019</td><td>pricing_plans</td><td>PricingPlan</td><td>사용자</td></tr>
+        <tr><td>TBL-020</td><td>plan_feature_access</td><td>PlanFeatureAccess, FeatureAccessByRole</td><td>사용자</td></tr>
+        <tr><td>TBL-021</td><td>regional_metrics</td><td>RegionalMetric</td><td>분석</td></tr>
+        <tr><td>TBL-022</td><td>companies</td><td>Company</td><td>기업</td></tr>
+        <tr><td>TBL-023</td><td>company_members</td><td>CompanyMember</td><td>기업</td></tr>
       </tbody>
     </table>
+    <p><strong>삭제된 테이블:</strong> <code>demo_roles</code> — DemoRoles 인터페이스 삭제, 테스트 계정 로그인 방식으로 대체.</p>
     <p><strong>비테이블 타입:</strong> <code>ContestFilters</code>, <code>SubmissionFilters</code>, <code>SearchFilters</code>, <code>SearchResult</code>는 조회 DTO/응답 조합으로 물리 테이블에서 제외한다.</p>
 
     <h2>2. 전체 ERD</h2>
@@ -73,7 +73,7 @@ erDiagram
   USERS ||--o{ ACTIVITY_LOGS : generates
   USERS ||--o{ IP_LOGS : has
   USERS ||--o{ LIKES : gives
-  USERS ||--o{ DEMO_ROLES : has
+  USERS }o--o{ PRICING_PLANS : subscribes
   CONTESTS ||--o{ SUBMISSIONS : receives
   CONTESTS ||--o{ JUDGES : assigns
   CONTESTS ||--o{ CONTEST_RESULTS : publishes
@@ -85,7 +85,7 @@ erDiagram
   SUBMISSIONS ||--o{ LIKES : liked
     </div>
 
-    <h2>3. 도메인별 분할 ERD (5개 도메인)</h2>
+    <h2>3. 도메인별 분할 ERD</h2>
     <h3>3.1 기업/사용자/공모전/심사</h3>
     <div class="mermaid">
 erDiagram
@@ -127,30 +127,29 @@ erDiagram
         </tr>
       </thead>
       <tbody>
-        <tr><td>TBL-001 users</td><td>id, email, name, nickname, role, region, created_at, status, avatar_url</td><td>uuid/text/enum/timestamptz</td><td>PK(id), UQ(email), NN(email,name,role,region,created_at,status)</td></tr>
-        <tr><td>TBL-002 demo_roles</td><td>user_id, is_guest, is_participant, is_host, is_judge, is_admin</td><td>uuid/boolean</td><td>PK(user_id), FK(user_id→users.id), NN(all flags)</td></tr>
-        <tr><td>TBL-003 devices</td><td>id, user_id, name, platform, browser, ip_address, last_active_at, created_at, is_trusted</td><td>uuid/text/enum/timestamptz/boolean</td><td>PK(id), FK(user_id), NN(user_id,name,platform,browser,ip_address,last_active_at,created_at,is_trusted)</td></tr>
-        <tr><td>TBL-004 contests</td><td>id, title, slug, host_company_id, host_user_id, description, region, tags, status, submission_start_at, submission_end_at, judging_start_at, judging_end_at, result_announced_at, judging_type, review_policy, max_submissions_per_user, allowed_video_extensions</td><td>uuid/text/text[]/enum/timestamptz/int</td><td>PK(id), UQ(slug), FK(host_company_id→companies.id, host_user_id→users.id), NN(핵심 컬럼 전부)</td></tr>
-        <tr><td>TBL-005 submissions</td><td>id, contest_id, user_id, title, description, video_url, thumbnail_url, status, submitted_at, views, like_count, tags, auto_rejected_reason</td><td>uuid/text/enum/timestamptz/int/text[]</td><td>PK(id), FK(contest_id→contests.id,user_id→users.id), NN(필수 컬럼), CK(views&gt;=0, like_count&gt;=0)</td></tr>
-        <tr><td>TBL-006 likes</td><td>id, user_id, submission_id, created_at</td><td>uuid/timestamptz</td><td>PK(id), FK(user_id→users.id,submission_id→submissions.id), UQ(user_id,submission_id), NN(all)</td></tr>
-        <tr><td>TBL-007 judges</td><td>id, user_id, contest_id, is_external, email, invited_at, accepted_at</td><td>uuid/boolean/text/timestamptz</td><td>PK(id), FK(user_id→users.id,contest_id→contests.id), UQ(user_id,contest_id), NN(user_id,contest_id,is_external,invited_at)</td></tr>
-        <tr><td>TBL-008 judging_templates</td><td>id, name, description, created_at</td><td>uuid/text/timestamptz</td><td>PK(id), NN(name,description,created_at)</td></tr>
-        <tr><td>TBL-009 judging_criteria</td><td>id, template_id, label, max_score, description</td><td>uuid/text/int</td><td>PK(id), FK(template_id→judging_templates.id), NN(template_id,label,max_score,description), CK(max_score&gt;0)</td></tr>
-        <tr><td>TBL-010 scores</td><td>id, submission_id, judge_id, template_id, total, comment, created_at</td><td>uuid/int/text/timestamptz</td><td>PK(id), FK(submission_id→submissions.id,judge_id→judges.id,template_id→judging_templates.id), UQ(submission_id,judge_id), NN(submission_id,judge_id,template_id,total,created_at)</td></tr>
-        <tr><td>TBL-011 score_criteria_scores</td><td>id, score_id, criterion_id, score</td><td>uuid/int</td><td>PK(id), FK(score_id→scores.id,criterion_id→judging_criteria.id), NN(score_id,criterion_id,score)</td></tr>
-        <tr><td>TBL-012 contest_results</td><td>contest_id, submission_id, rank, prize_label, awarded_at</td><td>uuid/int/text/timestamptz</td><td>PK(contest_id,submission_id), FK(contest_id→contests.id,submission_id→submissions.id), NN(all)</td></tr>
-        <tr><td>TBL-013 articles</td><td>id, type, title, slug, excerpt, content, author_id, tags, published_at, is_published, thumbnail_url</td><td>uuid/enum/text/text[]/timestamptz/boolean</td><td>PK(id), UQ(slug), FK(author_id→users.id), NN(type,title,slug,excerpt,content,author_id,published_at,is_published)</td></tr>
-        <tr><td>TBL-014 faqs</td><td>id, category, question, answer, is_pinned, updated_at</td><td>uuid/enum/text/boolean/timestamptz</td><td>PK(id), NN(category,question,answer,is_pinned,updated_at)</td></tr>
-        <tr><td>TBL-015 inquiries</td><td>id, user_id, type, title, content, status, created_at, updated_at</td><td>uuid/enum/text/timestamptz</td><td>PK(id), FK(user_id→users.id), NN(user_id,type,title,content,status,created_at,updated_at)</td></tr>
-        <tr><td>TBL-016 agency_requests</td><td>id, company_name, contact_name, contact_email, phone_number, budget_range, message, status, created_at</td><td>uuid/text/enum/timestamptz</td><td>PK(id), NN(company_name,contact_name,contact_email,message,status,created_at)</td></tr>
-        <tr><td>TBL-017 activity_logs</td><td>id, user_id, action, target_type, target_id, created_at, metadata</td><td>uuid/text/timestamptz/jsonb</td><td>PK(id), FK(user_id→users.id), NN(user_id,action,target_type,target_id,created_at)</td></tr>
-        <tr><td>TBL-018 ip_logs</td><td>id, user_id, ip_address, country, region, risk_level, created_at</td><td>uuid/text/enum/timestamptz</td><td>PK(id), FK(user_id→users.id), NN(user_id,ip_address,country,region,risk_level,created_at)</td></tr>
-        <tr><td>TBL-019 utm_templates</td><td>id, name, source, medium, campaign, term, content, created_at</td><td>uuid/text/timestamptz</td><td>PK(id), NN(name,source,medium,campaign,created_at)</td></tr>
-        <tr><td>TBL-020 pricing_plans</td><td>id, role, name, monthly_price, yearly_price, active, feature_keys</td><td>uuid/enum/text/numeric/boolean/text[]</td><td>PK(id), NN(role,name,monthly_price,yearly_price,active)</td></tr>
-        <tr><td>TBL-021 plan_feature_access</td><td>id, role, feature_key, free, label</td><td>uuid/enum/text/boolean</td><td>PK(id), UQ(role,feature_key), NN(role,feature_key,free,label)</td></tr>
-        <tr><td>TBL-022 regional_metrics</td><td>region, user_count, contest_count, submission_count</td><td>text/int</td><td>PK(region), NN(all), 집계 뷰 또는 머터리얼라이즈드 뷰 권장</td></tr>
-        <tr><td>TBL-023 companies</td><td>id, name, business_number, representative_name, address, phone, logo_url, website, description, created_at, updated_at</td><td>uuid/text/timestamptz</td><td>PK(id), UQ(business_number), NN(name,business_number,representative_name,created_at,updated_at)</td></tr>
-        <tr><td>TBL-024 company_members</td><td>id, company_id, user_id, role, joined_at</td><td>uuid/enum/timestamptz</td><td>PK(id), FK(company_id→companies.id, user_id→users.id), UQ(company_id,user_id), NN(company_id,user_id,role,joined_at)</td></tr>
+        <tr><td>TBL-001 users</td><td>id, email, name, nickname, roles, region, preferred_ai_tools, plan_id, created_at, status, avatar_url</td><td>uuid/text/text[]/timestamptz/enum</td><td>PK(id), UQ(email), NN(email,name,roles,created_at,status), FK(plan_id→pricing_plans.id)</td></tr>
+        <tr><td>TBL-002 devices</td><td>id, user_id, name, platform, browser, ip_address, last_active_at, created_at, is_trusted</td><td>uuid/text/enum/timestamptz/boolean</td><td>PK(id), FK(user_id), NN(user_id,name,platform,browser,ip_address,last_active_at,created_at,is_trusted). ip_address와 last_active_at은 로그인 시 업데이트.</td></tr>
+        <tr><td>TBL-003 contests</td><td>id, title, slug, host_company_id, host_user_id, description, region, tags, status, submission_start_at, submission_end_at, judging_start_at, judging_end_at, result_announced_at, judging_type, review_policy, max_submissions_per_user, allowed_video_extensions</td><td>uuid/text/text[]/enum/timestamptz/int</td><td>PK(id), UQ(slug), FK(host_company_id→companies.id, host_user_id→users.id), NN(핵심 컬럼 전부)</td></tr>
+        <tr><td>TBL-004 submissions</td><td>id, contest_id, user_id, title, description, video_url, thumbnail_url, status, submitted_at, views, like_count, tags, auto_rejected_reason</td><td>uuid/text/enum/timestamptz/int/text[]</td><td>PK(id), FK(contest_id→contests.id,user_id→users.id), NN(필수 컬럼), CK(views&gt;=0, like_count&gt;=0)</td></tr>
+        <tr><td>TBL-005 likes</td><td>id, user_id, submission_id, created_at</td><td>uuid/timestamptz</td><td>PK(id), FK(user_id→users.id,submission_id→submissions.id), UQ(user_id,submission_id), NN(all)</td></tr>
+        <tr><td>TBL-006 judges</td><td>id, user_id, contest_id, is_external, email, invited_at, accepted_at</td><td>uuid/boolean/text/timestamptz</td><td>PK(id), FK(user_id→users.id,contest_id→contests.id), UQ(user_id,contest_id), NN(user_id,contest_id,is_external,invited_at)</td></tr>
+        <tr><td>TBL-007 judging_templates</td><td>id, name, description, created_at</td><td>uuid/text/timestamptz</td><td>PK(id), NN(name,description,created_at)</td></tr>
+        <tr><td>TBL-008 judging_criteria</td><td>id, template_id, label, max_score, description</td><td>uuid/text/int</td><td>PK(id), FK(template_id→judging_templates.id), NN(template_id,label,max_score,description), CK(max_score&gt;0)</td></tr>
+        <tr><td>TBL-009 scores</td><td>id, submission_id, judge_id, template_id, total, comment, created_at</td><td>uuid/int/text/timestamptz</td><td>PK(id), FK(submission_id→submissions.id,judge_id→judges.id,template_id→judging_templates.id), UQ(submission_id,judge_id), NN(submission_id,judge_id,template_id,total,created_at)</td></tr>
+        <tr><td>TBL-010 score_criteria_scores</td><td>id, score_id, criterion_id, score</td><td>uuid/int</td><td>PK(id), FK(score_id→scores.id,criterion_id→judging_criteria.id), NN(score_id,criterion_id,score)</td></tr>
+        <tr><td>TBL-011 contest_results</td><td>contest_id, submission_id, rank, prize_label, awarded_at</td><td>uuid/int/text/timestamptz</td><td>PK(contest_id,submission_id), FK(contest_id→contests.id,submission_id→submissions.id), NN(all)</td></tr>
+        <tr><td>TBL-012 articles</td><td>id, type, title, slug, excerpt, content, author_id, tags, published_at, is_published, thumbnail_url</td><td>uuid/enum/text/text[]/timestamptz/boolean</td><td>PK(id), UQ(slug), FK(author_id→users.id), NN(type,title,slug,excerpt,content,author_id,published_at,is_published)</td></tr>
+        <tr><td>TBL-013 faqs</td><td>id, category, question, answer, is_pinned, updated_at</td><td>uuid/enum/text/boolean/timestamptz</td><td>PK(id), NN(category,question,answer,is_pinned,updated_at)</td></tr>
+        <tr><td>TBL-014 inquiries</td><td>id, user_id, type, title, content, status, created_at, updated_at</td><td>uuid/enum/text/timestamptz</td><td>PK(id), FK(user_id→users.id), NN(user_id,type,title,content,status,created_at,updated_at)</td></tr>
+        <tr><td>TBL-015 agency_requests</td><td>id, company_name, contact_name, contact_email, phone_number, budget_range, message, status, created_at</td><td>uuid/text/enum/timestamptz</td><td>PK(id), NN(company_name,contact_name,contact_email,message,status,created_at)</td></tr>
+        <tr><td>TBL-016 activity_logs</td><td>id, user_id, action, target_type, target_id, created_at, metadata</td><td>uuid/text/timestamptz/jsonb</td><td>PK(id), FK(user_id→users.id), NN(user_id,action,target_type,target_id,created_at)</td></tr>
+        <tr><td>TBL-017 ip_logs</td><td>id, user_id, ip_address, country, region, risk_level, created_at</td><td>uuid/text/enum/timestamptz</td><td>PK(id), FK(user_id→users.id), NN(user_id,ip_address,country,region,risk_level,created_at)</td></tr>
+        <tr><td>TBL-018 utm_templates</td><td>id, name, source, medium, campaign, term, content, created_at</td><td>uuid/text/timestamptz</td><td>PK(id), NN(name,source,medium,campaign,created_at)</td></tr>
+        <tr><td>TBL-019 pricing_plans</td><td>id, role, name, monthly_price, yearly_price, active, feature_keys</td><td>uuid/enum/text/numeric/boolean/text[]</td><td>PK(id), NN(role,name,monthly_price,yearly_price,active)</td></tr>
+        <tr><td>TBL-020 plan_feature_access</td><td>id, role, feature_key, free, label</td><td>uuid/enum/text/boolean</td><td>PK(id), UQ(role,feature_key), NN(role,feature_key,free,label)</td></tr>
+        <tr><td>TBL-021 regional_metrics</td><td>region, user_count, contest_count, submission_count</td><td>text/int</td><td>PK(region), NN(all), 집계 뷰 또는 머터리얼라이즈드 뷰 권장</td></tr>
+        <tr><td>TBL-022 companies</td><td>id, name, business_number, representative_name, address, phone, logo_url, website, description, business_license_image_url, status, created_at, updated_at</td><td>uuid/text/enum/timestamptz</td><td>PK(id), UQ(business_number), NN(name,business_number,representative_name,status,created_at,updated_at)</td></tr>
+        <tr><td>TBL-023 company_members</td><td>id, company_id, user_id, role, company_email, joined_at</td><td>uuid/enum/text/timestamptz</td><td>PK(id), FK(company_id→companies.id, user_id→users.id), UQ(company_id,user_id), NN(company_id,user_id,role,joined_at)</td></tr>
       </tbody>
     </table>
 
@@ -163,6 +162,7 @@ erDiagram
         </tr>
       </thead>
       <tbody>
+        <tr><td>users.plan_id → pricing_plans.id</td><td>사용자 요금제 (가입 시 free 자동 부여)</td></tr>
         <tr><td>company_members.company_id → companies.id</td><td>기업 소속 매핑</td></tr>
         <tr><td>company_members.user_id → users.id</td><td>기업 멤버 사용자 참조</td></tr>
         <tr><td>contests.host_company_id → companies.id</td><td>공모전 주최 기업 참조</td></tr>
@@ -186,7 +186,8 @@ erDiagram
         </tr>
       </thead>
       <tbody>
-        <tr><td>companies</td><td>UQ(business_number), BTREE(name)</td><td>사업자번호 중복 방지, 기업명 검색</td></tr>
+        <tr><td>users</td><td>GIN(roles), (plan_id)</td><td>역할별 필터링 (배열), 요금제별 조회</td></tr>
+        <tr><td>companies</td><td>UQ(business_number), BTREE(name), (status)</td><td>사업자번호 중복 방지, 기업명 검색, 승인 상태 필터</td></tr>
         <tr><td>company_members</td><td>UQ(company_id, user_id), (user_id)</td><td>중복 소속 방지, 사용자별 소속 조회</td></tr>
         <tr><td>contests</td><td>(status, region), GIN(tags), BTREE(slug), (host_company_id)</td><td>목록 필터/검색/상세 조회/기업별 공모전 조회 최적화</td></tr>
         <tr><td>submissions</td><td>(contest_id, status), (user_id, submitted_at desc), GIN(tags)</td><td>접수함/내 제출물/상태 탭</td></tr>
@@ -198,11 +199,29 @@ erDiagram
       </tbody>
     </table>
 
-    <h2>7. 확장 범위 메모</h2>
+    <h2>7. 설계 변경 이력</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>버전</th>
+          <th>날짜</th>
+          <th>주요 변경</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>v0.1</td><td>2026-02-19</td><td>초기 ERD 작성 (22개 테이블)</td></tr>
+        <tr><td>v0.2</td><td>2026-02-23</td><td>기업 분리: companies/company_members 신설, users에서 company_name 삭제, contests에서 host_id → host_company_id + host_user_id 분리 (24개 테이블)</td></tr>
+        <tr><td>v0.3</td><td>2026-02-23</td><td>역할 배열 전환(role→roles), DemoRoles/demo_roles 삭제, User에 preferred_ai_tools/plan_id 추가, region 선택으로 변경, Company에 business_license_image_url/status 추가, CompanyMember에 company_email 추가 (23개 테이블)</td></tr>
+      </tbody>
+    </table>
+
+    <h2>8. 확장 범위 메모</h2>
     <ul>
       <li>Phase 2/3 테이블은 본 ERD에 포함하지 않고, 별도 문서에서 증분 관리한다.</li>
       <li>분석 스키마의 visitors/sessions/campaigns/events/identity_links는 아키텍처 문서 기준으로만 참조한다.</li>
-      <li>v0.2 변경사항: users에서 company_name 삭제, companies/company_members 테이블 신설, contests에서 host_id → host_company_id + host_user_id 분리.</li>
+      <li>관리자(admin) 역할은 roles 배열에 포함 시 모든 역할 페이지에 접근 가능하다.</li>
+      <li>devices 테이블의 ip_address와 last_active_at은 기존 기기 재로그인 시 UPDATE 방식으로 갱신된다.</li>
+      <li>기업 승인(companies.status): 관리자가 사업자등록증 사본(business_license_image_url) 확인 후 approved/rejected로 변경.</li>
     </ul>
   </main>
   <script src="../assets/docs.js" defer></script>

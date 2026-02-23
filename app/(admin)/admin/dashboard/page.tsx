@@ -31,22 +31,10 @@ export default async function AdminDashboardPage() {
 
     const roleDistribution = users.reduce(
       (acc, user) => {
-        switch (user.role) {
-          case 'participant':
-            acc.participant += 1;
-            break;
-          case 'host':
-            acc.host += 1;
-            break;
-          case 'judge':
-            acc.judge += 1;
-            break;
-          case 'admin':
-            acc.admin += 1;
-            break;
-          default:
-            break;
-        }
+        if (user.roles.includes('participant')) acc.participant += 1;
+        if (user.roles.includes('host')) acc.host += 1;
+        if (user.roles.includes('judge')) acc.judge += 1;
+        if (user.roles.includes('admin')) acc.admin += 1;
         return acc;
       },
       { participant: 0, host: 0, judge: 0, admin: 0 }

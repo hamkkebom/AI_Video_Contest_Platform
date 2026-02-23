@@ -1,31 +1,3 @@
-export const DEMO_ROLES = {
-  guest: {
-    label: "비로그인",
-    icon: "👤",
-    description: "로그인하지 않은 게스트 상태"
-  },
-  participant: {
-    label: "참가자",
-    icon: "🎬",
-    description: "공모전 출품, 갤러리, 좋아요"
-  },
-  host: {
-    label: "주최자",
-    icon: "🏢",
-    description: "공모전 CRUD, 심사 관리, 리포트"
-  },
-  judge: {
-    label: "심사위원",
-    icon: "⚖️",
-    description: "심사, 채점, 진행률"
-  },
-  admin: {
-    label: "관리자",
-    icon: "🛡️",
-    description: "전체 운영, 분석, 회원관리"
-  }
-} as const;
-
 export const JUDGING_TYPES = [
   { value: "internal", label: "내부 심사 (주최측 팀원)" },
   { value: "external", label: "외부 심사 (이메일 초대)" },

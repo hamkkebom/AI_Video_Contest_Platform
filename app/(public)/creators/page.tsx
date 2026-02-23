@@ -8,7 +8,7 @@ import { getUsers } from '@/lib/mock';
  */
 export default async function CreatorsPage() {
   const users = await getUsers();
-  const creators = users.filter(u => u.role === 'participant').slice(0, 24);
+  const creators = users.filter(u => u.roles.includes('participant')).slice(0, 24);
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
@@ -87,7 +87,7 @@ export default async function CreatorsPage() {
                     {/* 정보 */}
                     <div>
                       <h3 className="font-bold text-lg group-hover:text-accent-foreground transition-colors">{creator.nickname || creator.name}</h3>
-                      <p className="text-xs text-muted-foreground">{creator.region}</p>
+                      <p className="text-xs text-muted-foreground">{creator.region ?? '미설정'}</p>
                     </div>
 
                     {/* 통계 */}

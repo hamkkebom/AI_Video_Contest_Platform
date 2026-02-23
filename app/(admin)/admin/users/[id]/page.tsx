@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Activity, Globe, Shield, UserCog } from 'lucide-react';
-import { DEMO_ROLES } from '@/config/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getActivityLogs, getIpLogs, getUsers } from '@/lib/mock';
+
+const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
+  participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
+  host: { label: '주최자', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+  judge: { label: '심사위원', color: 'bg-primary/10 text-primary' },
+  admin: { label: '관리자', color: 'bg-destructive/10 text-destructive' },
+  guest: { label: '비로그인', color: 'bg-muted text-muted-foreground' },
+};
 
 type AdminUserDetailPageProps = {
   params: Promise<{
@@ -38,13 +45,6 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
       );
     }
 
-    const roleLabelMap: Record<string, { label: string; color: string }> = {
-      participant: { label: DEMO_ROLES.participant.label, color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
-      host: { label: DEMO_ROLES.host.label, color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-      judge: { label: DEMO_ROLES.judge.label, color: 'bg-primary/10 text-primary' },
-      admin: { label: DEMO_ROLES.admin.label, color: 'bg-destructive/10 text-destructive' },
-    };
-
     const statusLabelMap: Record<string, { label: string; color: string }> = {
       active: { label: '활성', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
       pending: { label: '대기', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
@@ -62,7 +62,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
       like_submission: '좋아요',
     };
 
-    const roleInfo = roleLabelMap[user.role] ?? { label: user.role, color: 'bg-muted text-muted-foreground' };
+    const roleInfos = user.roles.map((role) => ROLE_LABEL_MAP[role] ?? { label: role, color: 'bg-muted text-muted-foreground' });
     const statusInfo = statusLabelMap[user.status] ?? { label: user.status, color: 'bg-muted text-muted-foreground' };
 
     const userActivityLogs = allActivityLogs
@@ -90,7 +90,9 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">{user.email}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className={`${roleInfo.color} border-0`}>{roleInfo.label}</Badge>
+                  {roleInfos.map((roleInfo) => (
+                    <Badge key={roleInfo.label} className={`${roleInfo.color} border-0`}>{roleInfo.label}</Badge>
+                  ))}
                   <Badge className={`${statusInfo.color} border-0`}>{statusInfo.label}</Badge>
                 </div>
               </div>
@@ -117,7 +119,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
             </div>
             <div>
               <p className="text-xs text-muted-foreground">지역</p>
-              <p className="font-medium">{user.region}</p>
+              <p className="font-medium">{user.region ?? '미설정'}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">가입일</p>

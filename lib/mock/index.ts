@@ -22,6 +22,7 @@ import type {
   Inquiry,
   IpLog,
   Judge,
+  PricingPlan,
   JudgingTemplate,
   Like,
   Score,
@@ -29,7 +30,9 @@ import type {
   SearchResult,
   Submission,
   SubmissionFilters,
-  User
+  User,
+  UserRole,
+  UserStatus
 } from "@/lib/types";
 
 const baseDate = new Date("2026-01-01T00:00:00.000Z");
@@ -38,24 +41,93 @@ function atDay(offset: number): string {
   return new Date(baseDate.getTime() + offset * 24 * 60 * 60 * 1000).toISOString();
 }
 
-const usersStore: User[] = Array.from({ length: 60 }, (_, index) => {
-  const role = (["participant", "host", "judge", "admin"] as const)[index % 4];
-  return {
-    id: `user-${index + 1}`,
-    email: `user${index + 1}@mockup.local`,
-    name: `사용자 ${index + 1}`,
-    nickname: index < 40 ? `닉네임${index + 1}` : undefined,
-    role,
-    region: REGIONS_KR[index % REGIONS_KR.length],
-    createdAt: atDay(index),
-    status: index % 11 === 0 ? "pending" : "active",
-    avatarUrl: `https://picsum.photos/seed/user-${index + 1}/160/160`
-  };
-});
+const AI_TOOLS = ['Sora', 'Runway Gen-3', 'Kling AI', 'Midjourney', 'Pika Labs', 'Stable Video Diffusion', 'HeyGen', 'Suno AI', 'ElevenLabs', 'ChatGPT'];
 
-const hostUsers = usersStore.filter((user) => user.role === "host");
-const participantUsers = usersStore.filter((user) => user.role === "participant");
-const judgeUsers = usersStore.filter((user) => user.role === "judge");
+const usersStore: User[] = [
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `user-admin-${i + 1}`,
+    email: `admin${i + 1}@kkumple.kr`,
+    name: `관리자 ${i + 1}`,
+    nickname: `어드민${i + 1}`,
+    roles: ["admin"] as UserRole[],
+    region: REGIONS_KR[i % REGIONS_KR.length],
+    preferredAiTools: [AI_TOOLS[i % AI_TOOLS.length], AI_TOOLS[(i + 3) % AI_TOOLS.length]],
+    planId: "plan-free",
+    createdAt: atDay(i),
+    status: "active" as const,
+    avatarUrl: `https://picsum.photos/seed/admin-${i + 1}/160/160`,
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `user-participant-${i + 1}`,
+    email: `participant${i + 1}@test.local`,
+    name: `참가자 ${i + 1}`,
+    nickname: `크리에이터${i + 1}`,
+    roles: ["participant"] as UserRole[],
+    region: i < 3 ? REGIONS_KR[(i + 2) % REGIONS_KR.length] : undefined,
+    preferredAiTools: [AI_TOOLS[(i + 1) % AI_TOOLS.length], AI_TOOLS[(i + 5) % AI_TOOLS.length], AI_TOOLS[(i + 7) % AI_TOOLS.length]],
+    planId: "plan-free",
+    createdAt: atDay(5 + i),
+    status: "active" as const,
+    avatarUrl: `https://picsum.photos/seed/participant-${i + 1}/160/160`,
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `user-host-${i + 1}`,
+    email: `host${i + 1}@test.local`,
+    name: `주최담당 ${i + 1}`,
+    nickname: `주최자${i + 1}`,
+    roles: ["host"] as UserRole[],
+    region: REGIONS_KR[(i + 5) % REGIONS_KR.length],
+    preferredAiTools: undefined,
+    planId: "plan-free",
+    createdAt: atDay(10 + i),
+    status: "active" as const,
+    avatarUrl: `https://picsum.photos/seed/host-${i + 1}/160/160`,
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `user-judge-${i + 1}`,
+    email: `judge${i + 1}@test.local`,
+    name: `심사위원 ${i + 1}`,
+    nickname: `심사관${i + 1}`,
+    roles: ["judge"] as UserRole[],
+    region: REGIONS_KR[(i + 8) % REGIONS_KR.length],
+    preferredAiTools: [AI_TOOLS[(i + 2) % AI_TOOLS.length]],
+    planId: "plan-free",
+    createdAt: atDay(15 + i),
+    status: "active" as const,
+    avatarUrl: `https://picsum.photos/seed/judge-${i + 1}/160/160`,
+  })),
+  ...Array.from({ length: 10 }, (_, i) => {
+    const roleCombos: UserRole[][] = [
+      ["participant", "host"],
+      ["participant", "judge"],
+      ["host", "judge"],
+      ["participant", "host", "judge"],
+      ["participant", "host"],
+      ["participant", "judge"],
+      ["host", "judge"],
+      ["participant", "host", "judge"],
+      ["participant", "host"],
+      ["participant", "judge"],
+    ];
+    return {
+      id: `user-multi-${i + 1}`,
+      email: `multi${i + 1}@test.local`,
+      name: `복합사용자 ${i + 1}`,
+      nickname: `멀티${i + 1}`,
+      roles: roleCombos[i],
+      region: i < 7 ? REGIONS_KR[(i + 3) % REGIONS_KR.length] : undefined,
+      preferredAiTools: [AI_TOOLS[i % AI_TOOLS.length], AI_TOOLS[(i + 4) % AI_TOOLS.length]],
+      planId: "plan-free",
+      createdAt: atDay(20 + i),
+      status: (i % 8 === 0 ? "pending" : "active") as UserStatus,
+      avatarUrl: `https://picsum.photos/seed/multi-${i + 1}/160/160`,
+    };
+  }),
+];
+
+const hostUsers = usersStore.filter((user) => user.roles.includes("host"));
+const participantUsers = usersStore.filter((user) => user.roles.includes("participant"));
+const judgeUsers = usersStore.filter((user) => user.roles.includes("judge"));
 
 const companiesStore: Company[] = Array.from({ length: 15 }, (_, index) => ({
   id: `company-${index + 1}`,
@@ -67,25 +139,36 @@ const companiesStore: Company[] = Array.from({ length: 15 }, (_, index) => ({
   logoUrl: `https://picsum.photos/seed/company-${index + 1}/200/200`,
   website: `https://company-${index + 1}.example.com`,
   description: `기업 ${index + 1}은 AI 영상 콘텐츠 전문 기업입니다.`,
+  businessLicenseImageUrl: `https://cdn.mockup.local/license-${index + 1}.jpg`,
+  status: index === 0 ? "pending" : "approved",
   createdAt: atDay(index),
   updatedAt: atDay(index + 5),
 }));
 
 const companyMembersStore: CompanyMember[] = [
-  ...hostUsers.map((user, index) => ({
-    id: `member-${index + 1}`,
-    companyId: companiesStore[index % companiesStore.length].id,
-    userId: user.id,
-    role: "owner" as const,
-    joinedAt: atDay(index),
-  })),
-  ...Array.from({ length: 5 }, (_, i) => ({
-    id: `member-${hostUsers.length + i + 1}`,
-    companyId: companiesStore[i % companiesStore.length].id,
-    userId: participantUsers[i % participantUsers.length].id,
-    role: "staff" as const,
-    joinedAt: atDay(20 + i),
-  })),
+  ...hostUsers.map((user, index) => {
+    const company = companiesStore[index % companiesStore.length];
+    return {
+      id: `member-${index + 1}`,
+      companyId: company.id,
+      userId: user.id,
+      role: "owner" as const,
+      companyEmail: `${user.name.replace(/\s+/g, "").toLowerCase()}@${company.name.replace(/\s+/g, "-").toLowerCase()}.co.kr`,
+      joinedAt: atDay(index),
+    };
+  }),
+  ...Array.from({ length: 5 }, (_, i) => {
+    const company = companiesStore[i % companiesStore.length];
+    const user = participantUsers[i % participantUsers.length];
+    return {
+      id: `member-${hostUsers.length + i + 1}`,
+      companyId: company.id,
+      userId: user.id,
+      role: "staff" as const,
+      companyEmail: `${user.name.replace(/\s+/g, "").toLowerCase()}@${company.name.replace(/\s+/g, "-").toLowerCase()}.co.kr`,
+      joinedAt: atDay(20 + i),
+    };
+  }),
 ];
 
 const devicesStore: Device[] = usersStore.flatMap((user, userIndex) =>
@@ -554,6 +637,64 @@ const resultsStore: ContestResult[] = completedContests.flatMap((contest, ci) =>
   );
 });
 
+// 요금제 플랜 mock 데이터
+const pricingPlansStore: PricingPlan[] = [
+  {
+    id: "plan-free",
+    role: "participant",
+    name: "무료",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    active: true,
+    featureKeys: ["work-performance"],
+  },
+  {
+    id: "plan-participant-premium",
+    role: "participant",
+    name: "참가자 프리미엄",
+    monthlyPrice: 9900,
+    yearlyPrice: 99000,
+    active: true,
+    featureKeys: ["work-performance", "category-competition", "ai-tool-trends", "detailed-analysis"],
+  },
+  {
+    id: "plan-host-basic",
+    role: "host",
+    name: "주최자 기본",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    active: true,
+    featureKeys: ["submission-status"],
+  },
+  {
+    id: "plan-host-premium",
+    role: "host",
+    name: "주최자 프리미엄",
+    monthlyPrice: 29900,
+    yearlyPrice: 299000,
+    active: true,
+    featureKeys: ["submission-status", "participant-distribution", "channel-performance", "detailed-analysis"],
+  },
+  {
+    id: "plan-judge-basic",
+    role: "judge",
+    name: "심사위원 기본",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    active: true,
+    featureKeys: ["progress"],
+  },
+  {
+    id: "plan-judge-premium",
+    role: "judge",
+    name: "심사위원 프리미엄",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    active: true,
+    featureKeys: ["progress", "score-distribution"],
+  },
+];
+
 function includeText(source: string, search: string): boolean {
   return source.toLowerCase().includes(search.toLowerCase());
 }
@@ -679,6 +820,9 @@ export async function getScores(): Promise<Score[]> {
 
 export async function getContestResults(): Promise<ContestResult[]> {
   return asyncReturn(resultsStore);
+}
+export async function getPricingPlans(): Promise<PricingPlan[]> {
+  return asyncReturn(pricingPlansStore);
 }
 
 /** 갤러리 타입: 출품작 + 공모전/크리에이터/수상 정보 결합 */
@@ -846,6 +990,7 @@ export async function getMockDataCounts(): Promise<Record<string, number>> {
     activityLogs: activityLogsStore.length,
     ip_logs: ipLogsStore.length,
     judging_templates: templatesStore.length,
-    devices: devicesStore.length
+    devices: devicesStore.length,
+    pricingPlans: pricingPlansStore.length,
   });
 }

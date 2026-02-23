@@ -7,10 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import {
   DEFAULT_FEATURE_ACCESS,
-  DEMO_ROLES,
 } from '@/config/constants';
 
 type EditableRole = 'participant' | 'host' | 'judge';
+
+const ROLE_LABELS: Record<EditableRole, string> = {
+  participant: '참가자',
+  host: '주최자',
+  judge: '심사위원',
+};
 
 export default function AdminPricingSettingsPage() {
   const [pricing, setPricing] = useState({
@@ -87,7 +92,7 @@ export default function AdminPricingSettingsPage() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">{DEMO_ROLES[role].label}</p>
+                    <p className="text-sm text-muted-foreground">{ROLE_LABELS[role]}</p>
                     <p className="text-3xl font-bold tracking-tight">{pricing[role].price.toLocaleString()}원</p>
                     <p className="text-xs text-muted-foreground">프리미엄 기능 {featureCount}개</p>
                   </div>
@@ -109,9 +114,9 @@ export default function AdminPricingSettingsPage() {
           return (
             <Card key={role} className="border-border">
               <CardHeader>
-                <CardTitle>{DEMO_ROLES[role].label} 요금제</CardTitle>
+                <CardTitle>{ROLE_LABELS[role]} 요금제</CardTitle>
                 <CardDescription>
-                  {isJudge ? '심사위원은 무료 플랜 기반으로 제공됩니다.' : `${DEMO_ROLES[role].label}용 프리미엄 기능 설정`}
+                  {isJudge ? '심사위원은 무료 플랜 기반으로 제공됩니다.' : `${ROLE_LABELS[role]}용 프리미엄 기능 설정`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -176,9 +181,9 @@ export default function AdminPricingSettingsPage() {
               <tr className="bg-muted/50 text-left">
                 <th className="px-4 py-3 font-medium">기능</th>
                 {roleOrder.map((role) => (
-                  <th key={role} className="px-4 py-3 font-medium">
-                    {DEMO_ROLES[role].label}
-                  </th>
+                    <th key={role} className="px-4 py-3 font-medium">
+                      {ROLE_LABELS[role]}
+                    </th>
                 ))}
               </tr>
             </thead>

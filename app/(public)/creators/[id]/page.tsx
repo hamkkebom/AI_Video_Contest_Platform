@@ -31,6 +31,10 @@ function getRoleLabel(role: string) {
   }
 }
 
+function getRoleLabels(roles: string[]) {
+  return roles.map(getRoleLabel);
+}
+
 function getContestStatusLabel(status: string) {
   switch (status) {
     case 'draft':
@@ -137,7 +141,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
-                    {user.region}
+                    {user.region ?? '지역 미설정'}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
@@ -184,7 +188,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">지역</span>
-                <span>{user.region}</span>
+                <span>{user.region ?? '미설정'}</span>
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">가입일</span>
@@ -192,7 +196,11 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">역할</span>
-                <Badge variant="secondary">{getRoleLabel(user.role)}</Badge>
+                <div className="flex flex-wrap justify-end gap-1">
+                  {getRoleLabels(user.roles).map((label) => (
+                    <Badge key={label} variant="secondary">{label}</Badge>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>

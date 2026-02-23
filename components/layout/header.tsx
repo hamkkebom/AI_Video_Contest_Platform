@@ -15,8 +15,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { DEMO_ROLES } from '@/config/constants';
-import type { DemoRoles } from '@/lib/types';
+
+type HeaderDemoRoles = {
+  isGuest: boolean;
+  isParticipant: boolean;
+  isHost: boolean;
+  isJudge: boolean;
+  isAdmin: boolean;
+};
 
 /**
  * 공통 메뉴 아이템 (역할 무관)
@@ -40,7 +46,7 @@ interface RoleDashboardItem {
   href: string;
 }
 
-const getRoleDashboardLinks = (roles: DemoRoles): RoleDashboardItem[] => {
+const getRoleDashboardLinks = (roles: HeaderDemoRoles): RoleDashboardItem[] => {
   if (roles.isGuest) return [{ role: 'guest', label: '로그인', href: '/login' }];
   if (roles.isAdmin) return [{ role: 'admin', label: '대시보드', href: '/admin/dashboard' }];
 
@@ -55,7 +61,7 @@ const getRoleDashboardLinks = (roles: DemoRoles): RoleDashboardItem[] => {
 /**
  * 현재 활성 역할 키 반환 (우선순위: admin > host > judge > participant)
  */
-const getActiveRoleKey = (roles: DemoRoles): string => {
+const getActiveRoleKey = (roles: HeaderDemoRoles): string => {
   if (roles.isGuest) return 'guest';
   if (roles.isAdmin) return 'admin';
   if (roles.isHost) return 'host';
@@ -223,7 +229,7 @@ function RoleActivityDropdown({
  * 역할 전환 패널, 알림 벨, GNB 메뉴, 프로필 드롭다운(테마 포함) 기능
  */
 export function Header() {
-  const [demoRoles, setDemoRoles] = useState<DemoRoles>({
+  const [demoRoles, setDemoRoles] = useState<HeaderDemoRoles>({
     isGuest: false,
     isParticipant: true,
     isHost: false,
@@ -283,10 +289,7 @@ export function Header() {
     });
   };
 
-  /**
-   * DEMO_ROLES 키를 DemoRoles 키로 매핑
-   */
-  const demoRoleKeyMap: Record<string, keyof DemoRoles> = {
+  const demoRoleKeyMap: Record<string, keyof HeaderDemoRoles> = {
     guest: 'isGuest',
     participant: 'isParticipant',
     host: 'isHost',

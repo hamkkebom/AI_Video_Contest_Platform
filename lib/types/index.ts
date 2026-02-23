@@ -1,54 +1,45 @@
 export type UserRole = "guest" | "participant" | "host" | "judge" | "admin";
-
 export type UserStatus = "active" | "pending" | "suspended";
-
-/**
- * 목업 데모용 역할 전환 인터페이스
- * 실 서비스에서는 roles 배열로 대체됨
- */
-export interface DemoRoles {
-  isGuest: boolean;
-  isParticipant: boolean;
-  isHost: boolean;
-  isJudge: boolean;
-  isAdmin: boolean;
-}
-
 export interface User {
   id: string;
   email: string;
   name: string;
   nickname?: string;
-  role: UserRole;
-  region: string;
+  roles: UserRole[];               // 복수 역할 지원 (admin은 모든 페이지 접근 가능)
+  region?: string;                 // 선택 — 미입력 시 null
+  preferredAiTools?: string[];     // 주로 사용하는 AI 도구 (예: ['Sora', 'Runway', 'Kling'])
+  planId?: string;                 // FK → pricing_plans.id (가입 시 free 자동 부여)
   createdAt: string;
   status: UserStatus;
   avatarUrl?: string;
 }
 
-export type CompanyMemberRole = "owner" | "manager" | "staff";
+export type CompanyStatus = "pending" | "approved" | "rejected";
 
+export type CompanyMemberRole = "owner" | "manager" | "staff";
 /** 기업 (사업자 단위) */
 export interface Company {
   id: string;
-  name: string;                   // 기업명
-  businessNumber: string;          // 사업자등록번호
-  representativeName: string;      // 대표자명
-  address?: string;                // 사업장 소재지
-  phone?: string;                  // 대표 전화번호
-  logoUrl?: string;                // 기업 로고 URL
-  website?: string;                // 기업 홈페이지 URL
-  description?: string;            // 기업 소개
+  name: string;                    // 기업명
+  businessNumber: string;           // 사업자등록번호
+  representativeName: string;       // 대표자명
+  address?: string;                 // 사업장 소재지
+  phone?: string;                   // 대표 전화번호
+  logoUrl?: string;                 // 기업 로고 URL
+  website?: string;                 // 기업 홈페이지 URL
+  description?: string;             // 기업 소개
+  businessLicenseImageUrl?: string; // 사업자등록증 사본 이미지 URL
+  status: CompanyStatus;            // 기업 승인 상태
   createdAt: string;
   updatedAt: string;
 }
-
 /** 기업-사용자 매핑 (N:M) */
 export interface CompanyMember {
   id: string;
-  companyId: string;               // FK → companies.id
-  userId: string;                  // FK → users.id
-  role: CompanyMemberRole;         // 기업 내 역할
+  companyId: string;                // FK → companies.id
+  userId: string;                   // FK → users.id
+  role: CompanyMemberRole;          // 기업 내 역할
+  companyEmail?: string;            // 회사 업무용 이메일
   joinedAt: string;
 }
 
