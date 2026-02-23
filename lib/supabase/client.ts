@@ -32,10 +32,30 @@ export function createClient() {
       auth: {
         /**
          * Navigator LockManager 타임아웃 방지
-         * stale lock / 탭 경쟁으로 인한 10s 타임아웃 에러 해결
+         * lock 획득을 시도하되, stale lock / 탭 경쟁 시 graceful fallback
+         * → 동시 토큰 갱신 경쟁은 최소화하면서 타임아웃 차단 방지
          */
-        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<unknown>) => {
-          return await fn();
+        lock: async <R>(name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+          if (typeof navigator === 'undefined' || !navigator.locks) {
+            return await fn();
+          }
+          try {
+            return await navigator.locks.request(
+              name,
+              { mode: 'exclusive', ifAvailable: true },
+              async (lock) => {
+                if (lock) {
+                  // lock 획득 성공 — 정상 실행
+                  return await fn();
+                }
+                // lock 점유 중 (다른 탭이 사용 중) — 대기 없이 실행
+                return await fn();
+              },
+            );
+          } catch {
+            // LockManager API 오류 (브라우저 미지원 등) — fallback
+            return await fn();
+          }
         },
       },
       cookieOptions: {
