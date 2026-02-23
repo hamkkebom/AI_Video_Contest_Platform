@@ -115,6 +115,17 @@ export interface AwardTier {
   prizeAmount?: string; // 해당 상의 개인 상금 (선택)
 }
 
+
+/** 공모전별 가산점 항목 설정 (주최자가 정의) */
+export interface BonusConfig {
+  id: string;
+  label: string;            // 예: "공모전 공식포스터 SNS 공유 인증"
+  description?: string;     // 상세 안내 문구
+  score: number;            // 부여 점수 (보통 1)
+  requiresUrl: boolean;     // SNS URL 제출 필요 여부
+  requiresImage: boolean;   // 인증 이미지 제출 필요 여부
+}
+
 export interface Contest {
   id: string;
   title: string;
@@ -139,6 +150,10 @@ export interface Contest {
   promotionVideoUrl?: string;
   /** 프리미엄 랜딩페이지 보유 여부 (유료 부가 서비스) */
   hasLandingPage?: boolean;
+  /** 가산점 항목 설정 (없으면 가산점 미사용 공모전) */
+  bonusConfigs?: BonusConfig[];
+  /** 가산점 총 배점 */
+  bonusMaxScore?: number;
 }
 
 export type SubmissionStatus =
@@ -167,6 +182,20 @@ export interface Submission {
   avgWatchDuration: number;
   tags: string[];
   autoRejectedReason?: string;
+  /** 사용한 AI 도구 (예: Sora, Runway, Midjourney) */
+  aiTools?: string;
+  /** 제작과정 설명 (긴 서술형) */
+  productionProcess?: string;
+  /** 가산점 인증 내역 */
+  bonusEntries?: BonusEntry[];
+}
+
+/** 참가자가 제출하는 가산점 인증 */
+export interface BonusEntry {
+  bonusConfigId: string;     // Contest.bonusConfigs[].id 참조
+  snsUrl?: string;           // SNS 게시물 URL
+  proofImageUrl?: string;    // 캡처 이미지 URL
+  submittedAt: string;       // 인증 제출 시각
 }
 
 export interface Score {

@@ -11,6 +11,7 @@ import type {
   AgencyRequest,
   Article,
   AwardTier,
+  BonusConfig,
   Contest,
   ContestFilters,
   ContestResult,
@@ -298,6 +299,12 @@ Object.assign(contestsStore[0], {
     { label: '꿈꿈상 (장려상)', count: 30, prizeAmount: '10만원' },
   ],
   hasLandingPage: true,
+  bonusConfigs: [
+    { id: 'bonus-poster', label: '공모전 공식포스터 SNS 업로드 후 인증', description: '공모전 공식포스터를 본인 SNS에 업로드하고 필수 해시태그를 포함하세요.', score: 1, requiresUrl: true, requiresImage: true },
+    { id: 'bonus-hulbert', label: '헐버트박사 기념사업회 링크 SNS 업로드 후 인증', description: 'hulbert.or.kr 링크를 본인 SNS에 공유하고 캡처본을 업로드하세요.', score: 1, requiresUrl: true, requiresImage: true },
+    { id: 'bonus-exhibition', label: '헐버트 아리랑 전시회 참여 인증샷 SNS 업로드 후 인증', description: '전시일정: 3월 12일~24일, 함께봄 본사 (서울 종로구 효자로 7길 10)', score: 1, requiresUrl: true, requiresImage: true },
+  ] satisfies BonusConfig[],
+  bonusMaxScore: 3,
 });
 
 const submissionsStore: Submission[] = Array.from({ length: 600 }, (_, index) => {
@@ -320,7 +327,16 @@ const submissionsStore: Submission[] = Array.from({ length: 600 }, (_, index) =>
     videoDuration: [180, 240, 360, 120, 300, 420, 90, 480, 210, 150, 270, 60, 330, 390, 450, 135, 195, 285, 105, 375, 165, 315, 255, 75][index % 24],
     avgWatchDuration: [135, 192, 234, 96, 270, 252, 77, 336, 179, 90, 230, 54, 122, 332, 405, 74, 157, 228, 74, 338, 89, 284, 191, 41][index % 24],
     tags: ["ai", "creator", `batch-${(index % 12) + 1}`],
-    autoRejectedReason: status === "auto_rejected" ? "형식 검수 실패" : undefined
+    autoRejectedReason: status === "auto_rejected" ? "형식 검수 실패" : undefined,
+    aiTools: ['Sora', 'Runway Gen-3', 'Kling AI', 'Midjourney + Runway', 'Pika Labs', 'Stable Video Diffusion', 'HeyGen', 'Sora + Midjourney'][index % 8],
+    productionProcess: [
+      'Midjourney로 키 비주얼을 생성한 뒤, Runway Gen-3로 모션을 입히고 DaVinci Resolve에서 컬러 그레이딩 및 최종 편집을 진행했습니다. BGM은 Suno AI로 작곡했습니다.',
+      'ChatGPT로 시나리오를 작성하고, Sora로 주요 장면을 생성했습니다. 이후 Premiere Pro에서 장면 전환과 자막을 추가하여 완성했습니다.',
+      'Stable Diffusion으로 300장의 이미지를 생성한 뒤, 프레임 보간 기술(FILM)로 부드럽게 연결하고 After Effects에서 카메라 무빙 효과를 적용했습니다.',
+      'Kling AI로 초안 영상을 만들고, Topaz Video AI로 4K 업스케일링한 뒤 Final Cut Pro에서 사운드 디자인과 편집을 마무리했습니다.',
+      'Pika Labs로 텍스트 기반 영상을 생성하고, ElevenLabs로 나레이션을 만들어 CapCut에서 최종 편집했습니다. 전체 제작 과정은 약 2주 소요되었습니다.',
+      'HeyGen으로 AI 아바타 영상을 촬영하고, Runway의 인페인팅 기능으로 배경을 교체한 뒤 Premiere Pro에서 모션 그래픽을 추가했습니다.',
+    ][index % 6],
   };
 });
 
