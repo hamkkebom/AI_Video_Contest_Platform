@@ -922,6 +922,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     <Upload className="h-4 w-4" />
                     {posterUploading ? '업로드 중...' : posterFile ? posterFile.name : '이미지 선택 (JPG, PNG, WebP, GIF)'}
                   </Button>
+                  <p className="text-xs text-muted-foreground">최대 10MB · JPG, PNG, WebP, GIF</p>
                   {posterUrl && posterInputMode === 'file' && (
                     <p className="text-xs text-emerald-600">업로드 완료</p>
                   )}
@@ -1013,6 +1014,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     <Upload className="h-4 w-4" />
                     {promoUploading ? '업로드 중...' : '영상 선택 (MP4, WebM, MOV, AVI · 복수 선택 가능)'}
                   </Button>
+                  <p className="text-xs text-muted-foreground">최대 500MB · MP4, WebM, MOV, AVI</p>
                   {promoUploadProgress && (
                     <p className="text-xs text-muted-foreground animate-pulse">{promoUploadProgress}</p>
                   )}
@@ -1136,6 +1138,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 <ImagePlus className="h-4 w-4" />
                 {detailImageUploading ? '업로드 중...' : '이미지 추가 (JPG, PNG, WebP, GIF)'}
               </Button>
+              <p className="text-xs text-muted-foreground">최대 10MB · JPG, PNG, WebP, GIF</p>
               {detailImageUrls.length > 0 && (
                 <div className="flex flex-wrap gap-3 mt-2">
                   {detailImageUrls.map((url, i) => (
