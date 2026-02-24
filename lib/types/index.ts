@@ -169,7 +169,7 @@ export interface Contest {
   prizeAmount?: string;
   awardTiers: AwardTier[];
   posterUrl?: string;
-  promotionVideoUrl?: string;
+  promotionVideoUrls?: string[];
   /** 랜딩페이지 보유 여부 */
   hasLandingPage?: boolean;
   /** 랜딩페이지 URL */

@@ -245,7 +245,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
             <Card className="p-6 border border-border">
               <MediaTabs
                 posterUrl={contest.posterUrl}
-                promotionVideoUrl={contest.promotionVideoUrl}
+                promotionVideoUrls={contest.promotionVideoUrls}
                 title={contest.title}
                 defaultTab={tab === 'video' ? 'video' : undefined}
               />

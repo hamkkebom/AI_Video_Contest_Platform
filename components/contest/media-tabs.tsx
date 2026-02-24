@@ -1,18 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Image, Play } from 'lucide-react';
+import { Image, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MediaTabsProps {
     posterUrl?: string;
-    promotionVideoUrl?: string;
+    promotionVideoUrls?: string[];
     title: string;
     defaultTab?: 'poster' | 'video';
 }
 
-export function MediaTabs({ posterUrl, promotionVideoUrl, title, defaultTab }: MediaTabsProps) {
+export function MediaTabs({ posterUrl, promotionVideoUrls, title, defaultTab }: MediaTabsProps) {
     const hasPoster = Boolean(posterUrl);
-    const hasVideo = Boolean(promotionVideoUrl);
+    const hasVideo = Boolean(promotionVideoUrls?.length);
+    const [videoIndex, setVideoIndex] = useState(0);
 
     type TabType = 'poster' | 'video';
     const [activeTab, setActiveTab] = useState<TabType>(defaultTab === 'video' && hasVideo ? 'video' : hasPoster ? 'poster' : 'video');
@@ -28,7 +29,7 @@ export function MediaTabs({ posterUrl, promotionVideoUrl, title, defaultTab }: M
 
     const tabs: Array<{ key: TabType; label: string; icon: typeof Image; available: boolean }> = [
         { key: 'poster', label: '포스터', icon: Image, available: hasPoster },
-        { key: 'video', label: '홍보영상', icon: Play, available: hasVideo },
+        { key: 'video', label: `홍보영상${promotionVideoUrls && promotionVideoUrls.length > 1 ? ` (${promotionVideoUrls.length})` : ''}`, icon: Play, available: hasVideo },
     ];
 
     const availableTabs = tabs.filter((tab) => tab.available);
@@ -75,14 +76,43 @@ export function MediaTabs({ posterUrl, promotionVideoUrl, title, defaultTab }: M
 
             {activeTab === 'video' && hasVideo && (
                 <div className="overflow-hidden rounded-lg bg-muted">
-                    <div className="aspect-video">
+                    <div className="aspect-video relative">
                         <iframe
-                            src={promotionVideoUrl}
+                            src={promotionVideoUrls![videoIndex]}
                             title={`${title} 홍보영상`}
                             className="w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         />
+                        {/* 비디오 네비게이션 */}
+                        {promotionVideoUrls!.length > 1 && (
+                            <>
+                                {/* 이전 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setVideoIndex((prev) => (prev === 0 ? promotionVideoUrls!.length - 1 : prev - 1))}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    aria-label="이전 영상"
+                                >
+                                    <ChevronLeft className="h-6 w-6" />
+                                </button>
+
+                                {/* 다음 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setVideoIndex((prev) => (prev === promotionVideoUrls!.length - 1 ? 0 : prev + 1))}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    aria-label="다음 영상"
+                                >
+                                    <ChevronRight className="h-6 w-6" />
+                                </button>
+
+                                {/* 인디케이터 */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {videoIndex + 1}/{promotionVideoUrls!.length}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

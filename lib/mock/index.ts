@@ -384,7 +384,7 @@ const contestsStore: Contest[] = Array.from({ length: 60 }, (_, index) => {
     prizeAmount: ['500만원', '1,000만원', '2,000만원', '300만원', '5,000만원', '800만원', '1,500만원', '200만원', '700만원', '3,000만원', '100만원', '1,200만원'][index % 12],
     awardTiers: awardTierPresets[index % awardTierPresets.length],
     posterUrl: `/images/contest-${(index % 5) + 1}.jpg`,
-    promotionVideoUrl: index % 3 === 0 ? 'https://www.youtube.com/embed/dQw4w9WgXcQ' : undefined,
+    promotionVideoUrls: index % 3 === 0 ? ['https://www.youtube.com/embed/dQw4w9WgXcQ'] : undefined,
   };
 });
 

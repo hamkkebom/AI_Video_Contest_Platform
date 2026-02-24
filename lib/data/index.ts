@@ -88,7 +88,7 @@ function toContest(
     prizeAmount: (row.prize_amount as string) ?? undefined,
     awardTiers,
     posterUrl: (row.poster_url as string) ?? undefined,
-    promotionVideoUrl: (row.promotion_video_url as string) ?? undefined,
+    promotionVideoUrls: (row.promotion_video_urls as string[]) ?? undefined,
     hasLandingPage: (row.has_landing_page as boolean) ?? false,
     landingPageUrl: (row.landing_page_url as string) ?? undefined,
     bonusConfigs: bonusConfigs.length > 0 ? bonusConfigs : undefined,
@@ -147,7 +147,7 @@ export type ContestMutationInput = {
   allowedVideoExtensions: string[];
   prizeAmount?: string;
   posterUrl?: string;
-  promotionVideoUrl?: string;
+  promotionVideoUrls?: string[];
   hasLandingPage?: boolean;
   bonusMaxScore?: number;
   awardTiers: AwardTier[];
@@ -185,7 +185,7 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
     allowed_video_extensions: input.allowedVideoExtensions,
     prize_amount: input.prizeAmount ?? null,
     poster_url: input.posterUrl ?? null,
-    promotion_video_url: input.promotionVideoUrl ?? null,
+    promotion_video_urls: input.promotionVideoUrls ?? [],
     has_landing_page: input.hasLandingPage ?? false,
     bonus_max_score: input.bonusMaxScore ?? null,
     result_format: input.resultFormat ?? 'website',

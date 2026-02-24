@@ -61,7 +61,7 @@ type ContestMutationPayload = {
   allowedVideoExtensions: string[];
   prizeAmount?: string;
   posterUrl?: string;
-  promotionVideoUrl?: string;
+  promotionVideoUrls?: string[];
   hasLandingPage: boolean;
   resultFormat: string;
   bonusMaxScore?: number;
@@ -220,7 +220,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Contest['status']>('draft');
   const [posterUrl, setPosterUrl] = useState('');
-  const [promotionVideoUrl, setPromotionVideoUrl] = useState('');
+  const [promotionVideoUrls, setPromotionVideoUrls] = useState<string[]>([]);
   const [resultFormat, setResultFormat] = useState('website');
 
   /* 포스터/홍보영상: URL or 파일 업로드 */
@@ -232,6 +232,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [promoFile, setPromoFile] = useState<File | null>(null);
   const [promoUploading, setPromoUploading] = useState(false);
   const [promoThumbnailUrl, setPromoThumbnailUrl] = useState('');
+  const [promoUrlInput, setPromoUrlInput] = useState('');
   const posterFileRef = useRef<HTMLInputElement>(null);
   const promoFileRef = useRef<HTMLInputElement>(null);
 
@@ -321,7 +322,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setSelectedTags(contest.tags);
         setStatus(contest.status);
         setPosterUrl(contest.posterUrl ?? '');
-        setPromotionVideoUrl(contest.promotionVideoUrl ?? '');
+        setPromotionVideoUrls(contest.promotionVideoUrls ?? []);
         setResultFormat(contest.resultFormat ?? 'website');
         setHasLandingPage(!!contest.landingPageUrl);
         setLandingPageUrl(contest.landingPageUrl ?? '');
@@ -483,7 +484,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     setPromoUploading(true);
     try {
       const url = await uploadContestAsset(file, 'promo-video');
-      setPromotionVideoUrl(url);
+      setPromotionVideoUrls(prev => [...prev, url]);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '홍보영상 업로드 실패');
     } finally {
@@ -592,7 +593,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       maxSubmissionsPerUser: parsedMaxSubmissions,
       allowedVideoExtensions: selectedExtensions,
       posterUrl: posterUrl.trim() || undefined,
-      promotionVideoUrl: promotionVideoUrl.trim() || undefined,
+      promotionVideoUrls: promotionVideoUrls.length > 0 ? promotionVideoUrls : undefined,
       hasLandingPage,
       resultFormat,
       landingPageUrl: hasLandingPage ? (landingPageUrl.trim() || undefined) : undefined,
@@ -903,19 +904,55 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               {fieldErrors.posterUrl && <p className="text-xs text-destructive">{fieldErrors.posterUrl}</p>}
             </div>
 
-            {/* 홍보영상 — URL 입력 / 파일 업로드 탭 + 스틸 미리보기 */}
+            {/* 홍보영상 — 다중 URL 입력 / 파일 업로드 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">홍보영상</label>
+                <label className="text-sm font-medium">홍보영상{promotionVideoUrls.length > 0 && ` (${promotionVideoUrls.length}개)`}</label>
                 {renderInputModeTab(promoInputMode, setPromoInputMode)}
               </div>
+              {/* 기존 영상 목록 */}
+              {promotionVideoUrls.length > 0 && (
+                <div className="space-y-1.5">
+                  {promotionVideoUrls.map((url, idx) => (
+                    <div key={url} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm">
+                      <span className="truncate flex-1 text-muted-foreground">{url}</span>
+                      <button
+                        type="button"
+                        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                        onClick={() => setPromotionVideoUrls(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* 새 영상 추가 */}
               {promoInputMode === 'url' ? (
-                <Input
-                  type="url"
-                  placeholder="https://youtube.com/watch?v=..."
-                  value={promotionVideoUrl}
-                  onChange={(e) => setPromotionVideoUrl(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://youtube.com/watch?v=..."
+                    value={promoUrlInput}
+                    onChange={(e) => setPromoUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const v = promoUrlInput.trim();
+                        if (v) { setPromotionVideoUrls(prev => [...prev, v]); setPromoUrlInput(''); }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!promoUrlInput.trim()}
+                    onClick={() => { const v = promoUrlInput.trim(); if (v) { setPromotionVideoUrls(prev => [...prev, v]); setPromoUrlInput(''); } }}
+                  >
+                    추가
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <input
@@ -937,17 +974,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     onClick={() => promoFileRef.current?.click()}
                   >
                     <Upload className="h-4 w-4" />
-                    {promoUploading ? '업로드 중...' : promoFile ? promoFile.name : '영상 선택 (MP4, WebM, MOV, AVI)'}
+                    {promoUploading ? '업로드 중...' : '영상 선택 (MP4, WebM, MOV, AVI)'}
                   </Button>
-                  {promotionVideoUrl && promoInputMode === 'file' && (
-                    <p className="text-xs text-emerald-600">업로드 완료</p>
-                  )}
-                  {/* 비디오 스틸 이미지 미리보기 */}
                   {promoThumbnailUrl && (
                     renderPreviewImage(promoThumbnailUrl, '홍보영상 스틸 미리보기', () => {
                       setPromoThumbnailUrl('');
                       setPromoFile(null);
-                      setPromotionVideoUrl('');
                     })
                   )}
                 </div>

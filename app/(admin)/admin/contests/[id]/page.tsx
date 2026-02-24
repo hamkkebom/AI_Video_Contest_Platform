@@ -50,7 +50,7 @@ type ContestPayload = {
   allowedVideoExtensions: string[];
   prizeAmount?: string;
   posterUrl?: string;
-  promotionVideoUrl?: string;
+  promotionVideoUrls?: string[];
   hasLandingPage: boolean;
   bonusMaxScore?: number;
   awardTiers: Array<{ label: string; count: number; prizeAmount?: string }>;
@@ -75,7 +75,7 @@ function toUpdatePayload(contest: Contest, nextStatus: Contest['status']): Conte
     allowedVideoExtensions: contest.allowedVideoExtensions,
     prizeAmount: contest.prizeAmount,
     posterUrl: contest.posterUrl,
-    promotionVideoUrl: contest.promotionVideoUrl,
+    promotionVideoUrls: contest.promotionVideoUrls,
     hasLandingPage: contest.hasLandingPage ?? false,
     bonusMaxScore: contest.bonusMaxScore,
     awardTiers: contest.awardTiers,
