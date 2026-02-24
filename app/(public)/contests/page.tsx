@@ -247,51 +247,52 @@ export default async function ContestsPage({
                               {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                             </p>
 
-                            {/* 카운트다운: 접수전=시작일까지, 접수중=마감일까지 (lg 크기) */}
-                            {displayStatus === 'open' && (
-                              <ContestCountdown
-                                deadline={contest.submissionEndAt}
-                                label="접수 마감까지 남은시간"
-                                size="lg"
-                              />
-                            )}
-                            {isBeforeStart && (
-                              <ContestCountdown
-                                deadline={contest.submissionStartAt}
-                                label="접수 시작까지 남은시간"
-                                expiredText="접수 시작!"
-                                size="lg"
-                              />
-                            )}
+                            {/* 카운트다운 + 총상금 (같은 라인: 카운트다운 왼쪽, 총상금 오른쪽) */}
+                            <div className="flex items-end justify-between gap-4">
+                              <div>
+                                {displayStatus === 'open' && (
+                                  <ContestCountdown
+                                    deadline={contest.submissionEndAt}
+                                    label="접수 마감까지 남은시간"
+                                    size="lg"
+                                  />
+                                )}
+                                {isBeforeStart && (
+                                  <ContestCountdown
+                                    deadline={contest.submissionStartAt}
+                                    label="접수 시작까지 남은시간"
+                                    expiredText="접수 시작!"
+                                    size="lg"
+                                  />
+                                )}
+                              </div>
+                              {totalPrize && (
+                                <p className="text-white font-bold text-lg md:text-xl whitespace-nowrap">
+                                  총 상금 {totalPrize}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
-                          {/* 하단: 버튼 + 총상금 */}
-                          <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap gap-3">
-                              {/* 접수중(실제 접수 가능)일 때만 제출 버튼 표시 */}
-                              {displayStatus === 'open' && (
-                                <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
-                                  <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
-                                    <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                                    <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
-                                    <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
-                                  </span>
-                                </Link>
-                              )}
-                              {/* 상세보기 버튼 */}
-                              <Link href={`/contests/${contest.id}` as any} className="group/btn2">
-                                <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
-                                  <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
-                                  <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세안내 확인하기</span>
+                          {/* 하단: 버튼 (중앙 정렬) */}
+                          <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap justify-center gap-3">
+                            {/* 접수중(실제 접수 가능)일 때만 제출 버튼 표시 */}
+                            {displayStatus === 'open' && (
+                              <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
+                                <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                                  <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
+                                  <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
+                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
                                 </span>
                               </Link>
-                            </div>
-                            {/* 총상금 오른쪽 하단 */}
-                            {totalPrize && (
-                              <p className="text-white font-bold text-lg md:text-xl whitespace-nowrap">
-                                총 상금 {totalPrize}
-                              </p>
                             )}
+                            {/* 상세보기 버튼 */}
+                            <Link href={`/contests/${contest.id}` as any} className="group/btn2">
+                              <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                                <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
+                                <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세안내 확인하기</span>
+                              </span>
+                            </Link>
                           </div>
                         </div>
                         {/* 오른쪽: 포스터 이미지 */}
