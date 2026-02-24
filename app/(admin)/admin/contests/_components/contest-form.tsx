@@ -229,8 +229,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [posterUploading, setPosterUploading] = useState(false);
   const [posterPreviewUrl, setPosterPreviewUrl] = useState('');
   const [promoInputMode, setPromoInputMode] = useState<'url' | 'file'>('url');
-  const [promoFile, setPromoFile] = useState<File | null>(null);
   const [promoUploading, setPromoUploading] = useState(false);
+  const [promoUploadProgress, setPromoUploadProgress] = useState('');
   const [promoThumbnailUrl, setPromoThumbnailUrl] = useState('');
   const [promoUrlInput, setPromoUrlInput] = useState('');
   const posterFileRef = useRef<HTMLInputElement>(null);
@@ -472,24 +472,32 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     }
   };
 
-  const handlePromoFileSelect = async (file: File) => {
-    setPromoFile(file);
-    /* 비디오에서 스틸 이미지 추출 */
+  const handlePromoFilesSelect = async (files: FileList) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+    setPromoUploading(true);
+    /* 마지막 파일에서 썸네일 추출 (미리보기용) */
     try {
-      const thumbnail = await extractVideoThumbnail(file);
+      const thumbnail = await extractVideoThumbnail(fileArray[fileArray.length - 1]);
       setPromoThumbnailUrl(thumbnail);
     } catch {
       /* 스틸 추출 실패해도 업로드는 계속 진행 */
     }
-    setPromoUploading(true);
-    try {
-      const url = await uploadContestAsset(file, 'promo-video');
-      setPromotionVideoUrls(prev => [...prev, url]);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '홍보영상 업로드 실패');
-    } finally {
-      setPromoUploading(false);
+    let successCount = 0;
+    for (let i = 0; i < fileArray.length; i++) {
+      setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중...`);
+      try {
+        const url = await uploadContestAsset(fileArray[i], 'promo-video');
+        setPromotionVideoUrls(prev => [...prev, url]);
+        successCount++;
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : `홍보영상 업로드 실패 (${fileArray[i].name})`);
+      }
     }
+    setPromoUploadProgress(successCount > 0 ? `${successCount}개 업로드 완료` : '');
+    setPromoUploading(false);
+    /* 3초 후 진행 메시지 초기화 */
+    setTimeout(() => setPromoUploadProgress(''), 3000);
   };
 
   const handleDetailImageUpload = async (files: FileList) => {
@@ -959,10 +967,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     ref={promoFileRef}
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                    multiple
                     className="hidden"
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handlePromoFileSelect(f);
+                      const files = e.target.files;
+                      if (files && files.length > 0) handlePromoFilesSelect(files);
+                      e.target.value = '';
                     }}
                   />
                   <Button
@@ -974,12 +984,13 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     onClick={() => promoFileRef.current?.click()}
                   >
                     <Upload className="h-4 w-4" />
-                    {promoUploading ? '업로드 중...' : '영상 선택 (MP4, WebM, MOV, AVI)'}
+                    {promoUploading
+                      ? (promoUploadProgress || '업로드 중...')
+                      : (promoUploadProgress || '영상 선택 (MP4, WebM, MOV, AVI · 복수 선택 가능)')}
                   </Button>
                   {promoThumbnailUrl && (
                     renderPreviewImage(promoThumbnailUrl, '홍보영상 스틸 미리보기', () => {
                       setPromoThumbnailUrl('');
-                      setPromoFile(null);
                     })
                   )}
                 </div>
