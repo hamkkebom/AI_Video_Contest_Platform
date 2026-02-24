@@ -73,9 +73,11 @@ export function SortSelect({
             params.set(paramKey, val);
             router.push(`${basePath}?${params.toString()}` as Route, { scroll: false });
         } else {
-            // 기본 공모전 경로 (하위호환)
-            const status = searchParams.get('status') || 'open';
-            router.push(`/contests?status=${status}&sort=${val}` as Route, { scroll: false });
+            // 기본 공모전 경로 — 모든 파라미터 보존 (view, search 등)
+            const params = new URLSearchParams(searchParams.toString());
+            params.set(paramKey, val);
+            if (!params.has('status')) params.set('status', 'open');
+            router.push(`/contests?${params.toString()}` as Route, { scroll: false });
         }
     };
 
