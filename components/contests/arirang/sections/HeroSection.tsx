@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 
 import { useCountdown } from '@/hooks/useCountdown';
 import { ChevronDown } from 'lucide-react';
@@ -16,7 +17,14 @@ export function HeroSection() {
   const router = useRouter();
   const params = useParams();
   const contestId = params.id as string;
-  const goToContestDetail = () => router.push(`/contests/${contestId}`);
+  const goToContestDetail = async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    router.push(user ? `/contests/${contestId}` : '/login');
+  };
 
   return (
     <section

@@ -5,5 +5,5 @@ import { redirect } from 'next/navigation';
  * 전체 완성 후 원래 랜딩 페이지로 복구 예정
  */
 export default function HomePage() {
-  redirect('/contests/contest-1/landing');
+  redirect('/contests/3/landing');
 }
