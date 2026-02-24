@@ -590,7 +590,7 @@ export default function ContestSubmitPage() {
                   <Label className="text-sm font-semibold">
                     썸네일 이미지 <span className="text-red-500">*</span>
                   </Label>
-                  <p className="text-xs text-muted-foreground">JPG, PNG 형식, 권장 1920\u00D71080px</p>
+                  <p className="text-xs text-muted-foreground">JPG, PNG 형식, 최대 10MB · 권장 1920×1080px</p>
                   <input
                     ref={thumbnailInputRef}
                     type="file"

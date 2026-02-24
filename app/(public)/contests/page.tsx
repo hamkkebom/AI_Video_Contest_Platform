@@ -234,30 +234,43 @@ export default async function ContestsPage({
                                 {contest.description}
                               </p>
                             )}
-                            {/* 기간 */}
-                            <p className="text-orange-500 font-semibold text-sm">
-                              기간 : {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
-                            </p>
 
-                            {/* 카운트다운 (접수중만, 기간 바로 아래) */}
-                            {contest.status === 'open' && (
-                              <ContestCountdown deadline={contest.submissionEndAt} />
+                            {/* 접수중: 기간 왼쪽 크게 + 상금 오른쪽 끝 */}
+                            {contest.status === 'open' ? (
+                              <>
+                                <div className="flex items-center justify-between gap-4 pt-1">
+                                  <p className="text-orange-500 font-bold text-base md:text-lg">
+                                    {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
+                                  </p>
+                                  {totalPrize && (
+                                    <p className="text-white font-bold text-lg md:text-xl whitespace-nowrap">
+                                      총 상금 {totalPrize}
+                                    </p>
+                                  )}
+                                </div>
+                                <ContestCountdown deadline={contest.submissionEndAt} />
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-orange-500 font-semibold text-sm">
+                                  기간 : {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
+                                </p>
+                                <p className="text-white font-bold text-lg pt-1">
+                                  총 상금 {totalPrize ?? '미정'}
+                                </p>
+                              </>
                             )}
-                            {/* 상금 */}
-                            <p className="text-white font-bold text-lg pt-1">
-                              총 상금 {totalPrize ?? '미정'}
-                            </p>
                           </div>
 
-                          {/* 하단: 구분선 + 버튼 (가운데 정렬) */}
+                          {/* 하단: 구분선 + 버튼 */}
                           <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap justify-center gap-3">
-                            {/* 접수중: 제출 버튼 */}
+                            {/* 접수중일 때만 제출 버튼 표시 */}
                             {contest.status === 'open' && (
                               <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
                                 <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                   <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
                                   <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
-                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">공모전 영상 제출하기</span>
+                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
                                 </span>
                               </Link>
                             )}
@@ -265,7 +278,7 @@ export default async function ContestsPage({
                             <Link href={`/contests/${contest.id}` as any} className="group/btn2">
                               <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                 <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
-                                <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세요강 확인하기</span>
+                                <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세안내 확인하기</span>
                               </span>
                             </Link>
                           </div>
@@ -278,13 +291,13 @@ export default async function ContestsPage({
                               alt={contest.title}
                               className="absolute inset-0 w-full h-full object-cover"
                             />
-                            {/* 상태 뱃지 (접수중/심사중/종료) */}
+                            {/* 상태 뱃지: 접수전=초록, 접수중=주황 */}
                             <div className="absolute top-4 right-4">
                               {contest.status === 'draft' && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-blue-500/70">접수전</span>
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
                               )}
                               {contest.status === 'open' && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-green-500/70">접수중</span>
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">접수중</span>
                               )}
                               {contest.status === 'judging' && (
                                 <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">심사중</span>
@@ -320,7 +333,7 @@ export default async function ContestsPage({
                       {/* 상태 뱃지 */}
                       <div className="absolute top-[18px] right-3 z-10">
                         {contest.status === 'draft' ? (
-                          <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-blue-500/70">접수전</span>
+                          <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
                         ) : contest.status === 'open' ? (() => {
                           const dday = calcDDay(contest.submissionEndAt);
                           const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
@@ -375,7 +388,7 @@ export default async function ContestsPage({
                               <span className="relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer">
                                 <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
                                 <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
-                                <span className="relative z-10 group-hover/btn:text-white transition-colors">작품 제출</span>
+                                <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출</span>
                               </span>
                             </Link>
                           )}
