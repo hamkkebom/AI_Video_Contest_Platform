@@ -158,7 +158,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           <div>
             <Link
               href="/contests"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-violet-500 transition-all"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               돌아가기
@@ -363,6 +363,17 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 </div>
               </div>
             </Card>
+
+
+            {/* 유의사항 및 저작권 안내 */}
+            {contest.notes && (
+              <Card className="p-6 border border-border space-y-3">
+                <h3 className="text-lg font-bold">유의사항 및 저작권 안내</h3>
+                <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {contest.notes}
+                </div>
+              </Card>
+            )}
 
             {/* 태그 */}
             <Card className="p-6 border border-border space-y-3">

@@ -200,6 +200,8 @@ export interface Contest {
   detailImageUrls?: string[];
   /** 참가 규정 및 가이드라인 (공모전별 개별 입력) */
   guidelines?: string;
+  /** 유의사항 및 저작권 안내 (공모전별 개별 입력) */
+  notes?: string;
 }
 
 export type SubmissionStatus =

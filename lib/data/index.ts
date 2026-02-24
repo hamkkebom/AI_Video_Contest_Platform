@@ -97,6 +97,7 @@ function toContest(
     detailContent: (row.detail_content as string) ?? undefined,
     detailImageUrls: (row.detail_image_urls as string[]) ?? undefined,
     guidelines: (row.guidelines as string) ?? undefined,
+    notes: (row.notes as string) ?? undefined,
     bonusPercentage: (row.bonus_percentage as number) ?? undefined,
     judgeWeightPercent: (row.judge_weight_percent as number) ?? undefined,
     onlineVoteWeightPercent: (row.online_vote_weight_percent as number) ?? undefined,
@@ -156,6 +157,7 @@ export type ContestMutationInput = {
   detailContent?: string;
   detailImageUrls?: string[];
   guidelines?: string;
+  notes?: string;
   bonusPercentage?: number;
   judgeWeightPercent?: number;
   onlineVoteWeightPercent?: number;
@@ -191,6 +193,7 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
     detail_content: input.detailContent ?? null,
     detail_image_urls: input.detailImageUrls ?? [],
     guidelines: input.guidelines ?? null,
+    notes: input.notes ?? null,
     bonus_percentage: input.bonusPercentage ?? null,
     judge_weight_percent: input.judgeWeightPercent ?? null,
     online_vote_weight_percent: input.onlineVoteWeightPercent ?? null,

@@ -78,6 +78,7 @@ type ContestMutationPayload = {
   detailContent?: string;
   detailImageUrls?: string[];
   guidelines?: string;
+  notes?: string;
 };
 
 /** 수상 등급/유형 옵션 */
@@ -240,6 +241,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [detailImageUploading, setDetailImageUploading] = useState(false);
   const detailImageRef = useRef<HTMLInputElement>(null);
   const [guidelines, setGuidelines] = useState('');
+  const [notes, setNotes] = useState('');
 
   /* 랜딩페이지: 토글 + URL */
   const [hasLandingPage, setHasLandingPage] = useState(false);
@@ -326,6 +328,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setDetailContent(contest.detailContent ?? '');
         setDetailImageUrls(contest.detailImageUrls ?? []);
         setGuidelines(contest.guidelines ?? '');
+        setNotes(contest.notes ?? '');
         setSubmissionStartDate(toDateInputValue(contest.submissionStartAt));
         setSubmissionEndDate(toDateInputValue(contest.submissionEndAt));
         setJudgingStartDate(toDateInputValue(contest.judgingStartAt));
@@ -596,6 +599,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       detailContent: detailContent.trim() || undefined,
       detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
       guidelines: guidelines.trim() || undefined,
+      notes: notes.trim() || undefined,
       bonusPercentage: !Number.isNaN(bonusPct) && bonusPct > 0 ? bonusPct : undefined,
       judgeWeightPercent: (() => { const n = parseInt(judgeWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })(),
       onlineVoteWeightPercent: useOnlineVote ? (() => { const n = parseInt(onlineVoteWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })() : undefined,
@@ -1096,6 +1100,19 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 onChange={(e) => setGuidelines(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">공모전 상세페이지 우측에 표시됩니다. 입력하지 않으면 해당 섹션이 숨겨집니다.</p>
+            </div>
+
+            {/* 유의사항 및 저작권 안내 */}
+            <div className="space-y-2">
+              <label htmlFor="admin-contest-notes" className="text-sm font-medium">유의사항 및 저작권 안내</label>
+              <textarea
+                id="admin-contest-notes"
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px]"
+                placeholder="유의사항, 저작권 귀속, 실격 사유 등 참가자에게 안내할 내용을 작성하세요"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">접수폼 동의 체크박스의 상세 내용 및 상세페이지에 표시됩니다. 입력하지 않으면 기본 안내 메시지가 표시됩니다.</p>
             </div>
           </CardContent>
         </Card>
