@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
  * 페이지 이동 추적 컴포넌트
@@ -13,14 +14,15 @@ import { usePathname } from 'next/navigation';
  */
 export function ActivityTracker() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const prevPathRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // 비인증 상태에서는 로그 전송하지 않음 (401 방지)
+    if (!user) return;
     // 같은 경로면 중복 전송 방지
     if (pathname === prevPathRef.current) return;
     prevPathRef.current = pathname;
-
-    // 비동기 전송 (실패해도 사용자 경험에 영향 없음)
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,7 +33,7 @@ export function ActivityTracker() {
     }).catch(() => {
       // 로그 기록 실패는 무시
     });
-  }, [pathname]);
+  }, [pathname, user]);
 
   return null;
 }

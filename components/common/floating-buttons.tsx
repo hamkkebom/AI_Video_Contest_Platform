@@ -36,7 +36,7 @@ export function FloatingButtons() {
         <ArrowUp className="h-5 w-5" />
       </button>
 
-      {/* 문의하기 버튼 */}
+      {/* 문의하기 버튼 — 문의 기능 완성 전까지 숨김
       <Link
         href="/support"
         className="w-12 h-12 rounded-full bg-[#EA580C] text-white shadow-lg hover:shadow-xl hover:bg-[#C2410C] hover:scale-105 transition-all duration-300 flex items-center justify-center"
@@ -44,6 +44,7 @@ export function FloatingButtons() {
       >
         <MessageCircle className="h-5 w-5" />
       </Link>
+      */}
     </div>
   );
 }
