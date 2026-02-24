@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
+interface BonusEntryBody {
+  bonusConfigId: string;
+  snsUrl?: string;
+  proofImageUrl?: string;
+}
+
 interface CreateSubmissionBody {
   contestId?: string;
   title?: string;
@@ -11,6 +17,7 @@ interface CreateSubmissionBody {
   tags?: string[];
   aiTools?: string;
   productionProcess?: string;
+  bonusEntries?: BonusEntryBody[];
 }
 
 /** 출품작 생성 API */
@@ -72,6 +79,29 @@ export async function POST(request: Request) {
     if (error || !data) {
       console.error('출품작 생성 실패:', error);
       return NextResponse.json({ error: '출품작 생성에 실패했습니다.' }, { status: 500 });
+    }
+
+    /* 가산점 인증 저장 */
+    if (Array.isArray(body.bonusEntries) && body.bonusEntries.length > 0) {
+      const bonusInserts = body.bonusEntries
+        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .map((e) => ({
+          submission_id: data.id,
+          bonus_config_id: e.bonusConfigId,
+          sns_url: e.snsUrl || null,
+          proof_image_url: e.proofImageUrl || null,
+          submitted_at: new Date().toISOString(),
+        }));
+
+      if (bonusInserts.length > 0) {
+        const { error: bonusError } = await supabase
+          .from('bonus_entries')
+          .insert(bonusInserts);
+
+        if (bonusError) {
+          console.error('가산점 인증 저장 실패 (출품작은 생성됨):', bonusError);
+        }
+      }
     }
 
     // 활동 로그 기록

@@ -38,6 +38,7 @@ import { formatDate } from '@/lib/utils';
 
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_PROOF_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 /** 제출 폼 상태 타입 */
 interface FormState {
@@ -53,7 +54,8 @@ interface FormState {
 /** 가산점 인증 상태 (bonusConfigId별) */
 interface BonusFormEntry {
   snsUrl: string;
-  hasProofImage: boolean;
+  proofImageFile: File | null;
+  proofImagePreview: string | null;
 }
 
 /**
@@ -85,7 +87,7 @@ export default function ContestSubmitPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadStep, setUploadStep] = useState<'video' | 'thumbnail' | 'submission' | null>(null);
+  const [uploadStep, setUploadStep] = useState<'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -115,11 +117,41 @@ export default function ContestSubmitPage() {
     );
   };
 
-  /* 가산점 폼 업데이트 */
-  const updateBonusForm = (configId: string, field: keyof BonusFormEntry, value: string | boolean) => {
+  /* 가산점 폼 업데이트 (SNS URL 전용) */
+  const updateBonusForm = (configId: string, value: string) => {
     setBonusForms((prev) => ({
       ...prev,
-      [configId]: { ...prev[configId], [field]: value },
+      [configId]: { ...prev[configId], snsUrl: value },
+    }));
+  };
+
+  /* 가산점 인증 이미지 선택 */
+  const handleProofImageSelect = (configId: string, file: File) => {
+    if (file.size > MAX_PROOF_IMAGE_SIZE_BYTES) {
+      alert('인증 이미지는 최대 10MB까지 업로드할 수 있습니다.');
+      return;
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('JPG, PNG, WebP, GIF 형식의 이미지만 지원합니다.');
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    setBonusForms((prev) => ({
+      ...prev,
+      [configId]: { ...(prev[configId] || { snsUrl: '' }), proofImageFile: file, proofImagePreview: preview },
+    }));
+  };
+
+  /* 가산점 인증 이미지 제거 */
+  const handleProofImageRemove = (configId: string) => {
+    const entry = bonusForms[configId];
+    if (entry?.proofImagePreview) {
+      URL.revokeObjectURL(entry.proofImagePreview);
+    }
+    setBonusForms((prev) => ({
+      ...prev,
+      [configId]: { ...(prev[configId] || { snsUrl: '' }), proofImageFile: null, proofImagePreview: null },
     }));
   };
 
@@ -265,6 +297,40 @@ export default function ContestSubmitPage() {
         throw new Error('썸네일 공개 URL 생성에 실패했습니다.');
       }
 
+      /* 가산점 인증 이미지 업로드 */
+      const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
+      const bonusFormEntries = Object.entries(bonusForms).filter(
+        ([, entry]) => entry.snsUrl?.trim() || entry.proofImageFile,
+      );
+
+      if (bonusFormEntries.length > 0) {
+        setUploadStep('proof-images');
+        for (const [configId, entry] of bonusFormEntries) {
+          let proofImageUrl: string | undefined;
+          if (entry.proofImageFile) {
+            const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
+            const { data: proofData, error: proofError } = await supabase.storage
+              .from('proof-images')
+              .upload(proofPath, entry.proofImageFile, {
+                contentType: entry.proofImageFile.type,
+                upsert: false,
+              });
+            if (proofError) {
+              console.error('인증 이미지 업로드 실패:', proofError);
+              throw new Error(`인증 이미지 업로드에 실패했습니다: ${proofError.message}`);
+            }
+            const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofData.path);
+            proofImageUrl = proofPublicData.publicUrl;
+          }
+          bonusEntries.push({
+            bonusConfigId: configId,
+            snsUrl: entry.snsUrl?.trim() || undefined,
+            proofImageUrl,
+          });
+        }
+      }
+
       setUploadStep('submission');
       const aiToolsList = [...form.chatAi, ...form.imageAi, ...form.videoAi];
       const submissionResponse = await fetch('/api/submissions', {
@@ -281,6 +347,7 @@ export default function ContestSubmitPage() {
           tags: [],
           aiTools: aiToolsList.join(', '),
           productionProcess: form.productionProcess,
+          bonusEntries: bonusEntries.length > 0 ? bonusEntries : undefined,
         }),
       });
 
@@ -730,7 +797,7 @@ export default function ContestSubmitPage() {
                 <div className="space-y-2">
                   {contest.bonusConfigs!.map((config) => {
                     const isOpen = openBonuses.includes(config.id);
-                    const entry = bonusForms[config.id] || { snsUrl: '', hasProofImage: false };
+                    const entry = bonusForms[config.id] || { snsUrl: '', proofImageFile: null, proofImagePreview: null };
                     return (
                       <Card key={config.id} className="border border-border overflow-hidden">
                         {/* 아코디언 헤더 */}
@@ -746,7 +813,7 @@ export default function ContestSubmitPage() {
                         </button>
                         {/* 아코디언 본문 */}
                         <div
-                          className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}
+                          className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
                         >
                           <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
                             {config.description && (
@@ -756,21 +823,49 @@ export default function ContestSubmitPage() {
                             <Input
                               type="url"
                               value={entry.snsUrl}
-                              onChange={(e) => updateBonusForm(config.id, 'snsUrl', e.target.value)}
+                              onChange={(e) => updateBonusForm(config.id, e.target.value)}
                               placeholder="SNS 게시물 URL (예: https://instagram.com/p/...)"
                               className="bg-background/50 border-border text-sm"
                             />
-                            {/* 인증 이미지 업로드 (목업) */}
-                            <button
-                              type="button"
-                              onClick={() => updateBonusForm(config.id, 'hasProofImage', !entry.hasProofImage)}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border hover:border-violet-500/50 cursor-pointer transition-colors text-left"
-                            >
-                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                {entry.hasProofImage ? '✓ 캡처 이미지 선택됨 (클릭하여 제거)' : '캡처 이미지 업로드'}
-                              </span>
-                            </button>
+                            {/* 인증 이미지 업로드 */}
+                            {entry.proofImageFile && entry.proofImagePreview ? (
+                              <div className="rounded-lg border border-border overflow-hidden">
+                                <div className="relative bg-muted/30">
+                                  <img
+                                    src={entry.proofImagePreview}
+                                    alt="인증 이미지 미리보기"
+                                    className="w-full max-h-48 object-contain"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between px-3 py-2 bg-muted/20">
+                                  <span className="text-xs text-muted-foreground truncate flex-1 mr-2">
+                                    {entry.proofImageFile.name} ({formatFileSize(entry.proofImageFile.size)})
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProofImageRemove(config.id)}
+                                    className="text-xs text-red-500 hover:text-red-600 cursor-pointer font-medium shrink-0"
+                                  >
+                                    제거
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-dashed border-border hover:border-violet-500/50 cursor-pointer transition-colors">
+                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">캡처 이미지 업로드 (JPG, PNG, WebP, 최대 10MB)</span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleProofImageSelect(config.id, file);
+                                    e.target.value = '';
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
                             {/* URL + 이미지 모두 필요 안내 */}
                             <p className="text-xs text-orange-500">
                               ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
@@ -915,6 +1010,7 @@ export default function ContestSubmitPage() {
                 <p className="text-sm text-muted-foreground mt-4">
                   {uploadStep === 'video' && '영상 업로드 중...'}
                   {uploadStep === 'thumbnail' && '썸네일 업로드 중...'}
+                  {uploadStep === 'proof-images' && '인증 이미지 업로드 중...'}
                   {uploadStep === 'submission' && '출품작 정보를 저장하는 중...'}
                 </p>
               )}
