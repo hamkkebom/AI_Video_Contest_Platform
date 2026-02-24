@@ -35,7 +35,7 @@ export function AuthSubmitButton({ contestId }: AuthSubmitButtonProps) {
     >
       <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
       <Upload className="relative z-10 h-4 w-4 group-hover/btn:text-white transition-colors" />
-      <span className="relative z-10 group-hover/btn:text-white transition-colors">작품 제출하기</span>
+      <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
     </button>
   );
 }
