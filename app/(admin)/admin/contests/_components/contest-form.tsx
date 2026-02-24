@@ -97,12 +97,12 @@ function toIsoDate(date: string): string {
   return `${date}T00:00:00.000Z`;
 }
 
-function createAwardTier(label: string, count: number, prizeAmount = '', type: AwardTierForm['type'] = 'custom'): AwardTierForm {
+function createAwardTier(label: string, count: number | '' = '', prizeAmount = '', type: AwardTierForm['type'] = 'custom'): AwardTierForm {
   return {
     id: globalThis.crypto.randomUUID(),
     label,
     type,
-    countStr: String(count),
+    countStr: count === '' ? '' : String(count),
     prizeAmount,
   };
 }
@@ -266,9 +266,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   /* 수상 설정 */
   const [awardTiers, setAwardTiers] = useState<AwardTierForm[]>([
-    createAwardTier('대상', 0, '', 'grand'),
-    createAwardTier('최우수상', 0, '', 'excellence'),
-    createAwardTier('우수상', 0, '', 'merit'),
+    createAwardTier('대상', '', '', 'grand'),
+    createAwardTier('최우수상', '', '', 'excellence'),
+    createAwardTier('우수상', '', '', 'merit'),
   ]);
 
   /* 가산점 항목 */
@@ -959,8 +959,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       type="button"
                       onClick={() => { toggleTag(tag); setFieldErrors((p) => ({ ...p, tags: '' })); }}
                       className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${active
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/40'
                         }`}
                     >
                       {tag}
@@ -1722,8 +1722,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     type="button"
                     onClick={() => toggleExtension(extension.value)}
                     className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${selected
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/40'
                       }`}
                   >
                     .{extension.label}
@@ -1739,8 +1739,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     type="button"
                     onClick={() => toggleExtension(ext)}
                     className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${selected
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/40'
                       }`}
                   >
                     .{ext}
