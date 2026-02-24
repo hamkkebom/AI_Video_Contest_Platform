@@ -95,7 +95,7 @@ export const translations = {
     step1Title: { ko: '홈페이지 가입', en: 'Sign Up on the Website' },
     step1Desc: { ko: '공식 홈페이지에 접속하여 회원가입을 완료하세요.', en: 'Visit the official website and complete your registration.' },
     step2Title: { ko: '콘텐츠 업로드', en: 'Upload Your Content' },
-    step2Desc: { ko: '마이페이지 또는 공모전 접수 메뉴를 통해 영상 및 신청서를 제출하세요.', en: 'Submit your video and application through My Page or the contest submission menu.' },
+    step2Desc: { ko: '공모전 접수 메뉴를 통해 영상 및 신청서를 제출하세요.', en: 'Submit your video and application through the contest submission menu.' },
   },
   prizes: {
     title: { ko: '시상 내역', en: 'Prize Details' },

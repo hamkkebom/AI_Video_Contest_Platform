@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getContests, getSubmissions, getUsers } from '@/lib/data';
-import { Calendar, Users, Gavel, Trophy, ArrowLeft, Search, Upload } from 'lucide-react';
+import { Calendar, Users, Gavel, Trophy, ArrowLeft, Search } from 'lucide-react';
 import { SubmissionCarousel } from '@/components/contest/submission-carousel';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { MediaTabs } from '@/components/contest/media-tabs';
 import type { AwardTier } from '@/lib/types';
+import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -157,33 +158,27 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           <div>
             <Link
               href="/contests"
-              className="inline-flex items-center gap-2 text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               돌아가기
             </Link>
           </div>
           {/* 타이틀 및 설명 */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
-              <Badge className={statusMeta.className}>{statusMeta.label}</Badge>
+              <Badge className={`${statusMeta.className} text-base px-4 py-1`}>{statusMeta.label}</Badge>
             </div>
             {contest.description && (
-              <p className="max-w-3xl text-lg text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4">
+              <p className="max-w-3xl text-lg text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4 whitespace-pre-line">
                 {contest.description}
               </p>
             )}
             {/* 작품 제출 버튼 — 접수중일 때만 표시 */}
             {contest.status === 'open' && (
-              <div className="pt-2">
-                <Link href={`/contests/${contest.id}/submit` as any} className="group/btn inline-block">
-                  <span className="relative inline-flex items-center gap-2 px-8 py-2.5 rounded-lg border-2 border-orange-500 text-orange-500 font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
-                    <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                    <Upload className="relative z-10 h-4 w-4 group-hover/btn:text-white transition-colors" />
-                    <span className="relative z-10 group-hover/btn:text-white transition-colors">작품 제출하기</span>
-                  </span>
-                </Link>
+              <div className="flex justify-end py-3">
+                <AuthSubmitButton contestId={contest.id} />
               </div>
             )}
           </div>
