@@ -82,12 +82,20 @@ export default async function ContestsPage({
     return params;
   };
 
-  // 필터링
-  const filteredContests = contests.filter((c) => {
-    if (currentStatus === 'completed') return c.status === 'completed' || c.status === 'closed';
-    return c.status === currentStatus;
-  });
+  // 서버사이드 현재 시각 (접수중이지만 아직 접수시작 전인지 판별용)
+  const nowMs = Date.now();
+  /** 표시용 상태 계산: open이지만 submissionStartAt이 미래면 'draft'(접수전)으로 취급 */
+  const getDisplayStatus = (c: typeof contests[number]) => {
+    if (c.status === 'open' && new Date(c.submissionStartAt).getTime() > nowMs) return 'draft';
+    return c.status;
+  };
 
+  // 필터링 (표시 상태 기준)
+  const filteredContests = contests.filter((c) => {
+    const ds = getDisplayStatus(c);
+    if (currentStatus === 'completed') return ds === 'completed' || ds === 'closed';
+    return ds === currentStatus;
+  });
   // 정렬 (접수중: 마감일순, 심사중/종료: 결과발표일순)
   const sortedContests = [...filteredContests].sort((a, b) => {
     switch (currentSort) {
@@ -97,6 +105,10 @@ export default async function ContestsPage({
           const db = new Date(b.submissionEndAt).getTime();
           if (da !== db) return da - db;
           return new Date(a.resultAnnouncedAt).getTime() - new Date(b.resultAnnouncedAt).getTime();
+        }
+        if (currentStatus === 'draft') {
+          // 접수전: 접수시작일 기준 오름차순
+          return new Date(a.submissionStartAt).getTime() - new Date(b.submissionStartAt).getTime();
         }
         // 심사중/종료: 결과발표일 기준 내림차순
         return new Date(b.resultAnnouncedAt).getTime() - new Date(a.resultAnnouncedAt).getTime();
@@ -108,12 +120,8 @@ export default async function ContestsPage({
     }
   });
 
-
-  // 서버사이드 현재 시각 (접수중이지만 아직 접수시작 전인지 판별용)
-  const nowMs = Date.now();
-
-  // 접수중 공모전 수 (헤더 고정 표시용)
-  const openContestsCount = contests.filter((c) => c.status === 'open').length;
+  // 접수중 공모전 수 (헤더 고정 표시용 — 실제 접수 가능한 것만)
+  const openContestsCount = contests.filter((c) => getDisplayStatus(c) === 'open').length;
 
   // 페이지네이션
   const displayedContests = sortedContests.slice(0, currentPage * ITEMS_PER_PAGE);
@@ -219,10 +227,8 @@ export default async function ContestsPage({
               <div className="space-y-6">
                 {displayedContests.map((contest, index) => {
                   const totalPrize = contest.prizeAmount || calculateTotalPrize(contest.awardTiers);
-                  // open 상태이지만 아직 접수시작 전인지 판별
-                  const isBeforeStart = contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > nowMs;
-                  // 표시용 상태: open이지만 시작 전이면 'draft' 쳈럼 취급
-                  const displayStatus = isBeforeStart ? 'draft' : contest.status;
+                  const displayStatus = getDisplayStatus(contest);
+                  const isBeforeStart = displayStatus === 'draft' && contest.status === 'open';
                   return (
                     <div key={contest.id} className="group bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-0.5">
                       <div className="flex flex-col md:flex-row">
@@ -329,8 +335,7 @@ export default async function ContestsPage({
               /* ────────────── 카드 뷰 (기존) ────────────── */
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayedContests.map((contest, index) => {
-                  const isBeforeStartCard = contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > nowMs;
-                  const displayStatusCard = isBeforeStartCard ? 'draft' : contest.status;
+                  const displayStatusCard = getDisplayStatus(contest);
                   return (
                   <Link key={contest.id} href={`/contests/${contest.id}` as any} className="group relative block">
                     <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
@@ -342,7 +347,7 @@ export default async function ContestsPage({
                       />
                       {/* 상태 뱃지 */}
                       <div className="absolute top-[18px] right-3 z-10">
-                        {(contest.status === 'draft' || isBeforeStartCard) ? (
+                        {displayStatusCard === 'draft' ? (
                           <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
                         ) : contest.status === 'open' ? (() => {
                           const dday = calcDDay(contest.submissionEndAt);
