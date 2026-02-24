@@ -20,7 +20,6 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as ContestMutationInput;
-    console.log('[POST /api/admin/contests] payload:', JSON.stringify(body, null, 2));
 
     const contest = await createContest(body);
     if (!contest) {

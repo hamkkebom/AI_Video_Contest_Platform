@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Send, CheckCircle2, Film, Clock } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
@@ -8,6 +8,8 @@ import { t, translations } from '@/components/contests/arirang/translations';
 /** 공모전 접수 안내 섹션 (폼은 /contests/contest-1/submit 으로 이동) */
 export function ApplySection() {
   const router = useRouter();
+  const params = useParams();
+  const contestId = params.id as string;
   const { lang } = useLang();
   const applyTranslations = translations.apply;
 
@@ -82,7 +84,7 @@ export function ApplySection() {
           {/* CTA 버튼 */}
           <button
             type="button"
-            onClick={() => router.push('/login')}
+            onClick={() => router.push(`/contests/${contestId}`)}
             className="w-full py-4 font-bold text-lg rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             style={{
               backgroundColor: 'var(--ar-accent)',

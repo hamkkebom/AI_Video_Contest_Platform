@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import { useCountdown } from '@/hooks/useCountdown';
 import { ChevronDown } from 'lucide-react';
@@ -14,7 +14,9 @@ export function HeroSection() {
   const heroTranslations = translations.hero;
 
   const router = useRouter();
-  const goToLogin = () => router.push('/login');
+  const params = useParams();
+  const contestId = params.id as string;
+  const goToContestDetail = () => router.push(`/contests/${contestId}`);
 
   return (
     <section
@@ -122,7 +124,7 @@ export function HeroSection() {
         <div className="animate-fade-in-up">
           <button
             type="button"
-            onClick={goToLogin}
+            onClick={goToContestDetail}
             className="px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300 cursor-pointer"
             style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)', boxShadow: '0 10px 25px rgba(212,168,67,0.25)' }}
           >

@@ -41,7 +41,7 @@ import type {
 /** DB profiles 행 → User 타입 */
 function toUser(row: Record<string, unknown>): User {
   return {
-    id: row.id as string,
+    id: String(row.id),
     email: row.email as string,
     name: row.name as string,
     nickname: (row.nickname as string) ?? undefined,
@@ -67,10 +67,10 @@ function toContest(
   bonusConfigs: BonusConfig[] = [],
 ): Contest {
   return {
-    id: row.id as string,
+    id: String(row.id),
     title: row.title as string,
     slug: row.slug as string,
-    hostCompanyId: ((row.host_company_id as string | null) ?? ''),
+    hostCompanyId: (row.host_company_id ? String(row.host_company_id) : ''),
     hostUserId: ((row.host_user_id as string | null) ?? ''),
     description: row.description as string,
     region: (row.region as string) ?? '',
@@ -118,7 +118,7 @@ function toAwardTier(row: Record<string, unknown>): AwardTier {
 /** contest_bonus_configs 행 → BonusConfig 타입 */
 function toBonusConfig(row: Record<string, unknown>): BonusConfig {
   return {
-    id: row.id as string,
+    id: String(row.id),
     label: row.label as string,
     description: (row.description as string) ?? undefined,
     score: row.score as number,
@@ -224,14 +224,14 @@ async function getContestRelationsByIds(
 
   const tiersMap = new Map<string, AwardTier[]>();
   for (const tier of tierResult.data ?? []) {
-    const contestId = tier.contest_id as string;
+    const contestId = String(tier.contest_id);
     if (!tiersMap.has(contestId)) tiersMap.set(contestId, []);
     tiersMap.get(contestId)!.push(toAwardTier(tier as Record<string, unknown>));
   }
 
   const bonusMap = new Map<string, BonusConfig[]>();
   for (const bonus of bonusResult.data ?? []) {
-    const contestId = bonus.contest_id as string;
+    const contestId = String(bonus.contest_id);
     if (!bonusMap.has(contestId)) bonusMap.set(contestId, []);
     bonusMap.get(contestId)!.push(toBonusConfig(bonus as Record<string, unknown>));
   }
@@ -263,8 +263,8 @@ async function getContestByIdInternal(
 /** DB submissions 행 → Submission 타입 */
 function toSubmission(row: Record<string, unknown>): Submission {
   return {
-    id: row.id as string,
-    contestId: row.contest_id as string,
+    id: String(row.id),
+    contestId: String(row.contest_id),
     userId: row.user_id as string,
     title: row.title as string,
     description: row.description as string,
@@ -286,7 +286,7 @@ function toSubmission(row: Record<string, unknown>): Submission {
 /** DB articles 행 → Article 타입 */
 function toArticle(row: Record<string, unknown>): Article {
   return {
-    id: row.id as string,
+    id: String(row.id),
     type: row.type as Article['type'],
     title: row.title as string,
     slug: row.slug as string,
@@ -303,7 +303,7 @@ function toArticle(row: Record<string, unknown>): Article {
 /** DB faqs 행 → FAQ 타입 */
 function toFaq(row: Record<string, unknown>): FAQ {
   return {
-    id: row.id as string,
+    id: String(row.id),
     category: row.category as FAQ['category'],
     topic: row.topic as FAQ['topic'],
     question: row.question as string,
@@ -316,7 +316,7 @@ function toFaq(row: Record<string, unknown>): FAQ {
 /** DB companies 행 → Company 타입 */
 function toCompany(row: Record<string, unknown>): Company {
   return {
-    id: row.id as string,
+    id: String(row.id),
     name: row.name as string,
     businessNumber: row.business_number as string,
     representativeName: row.representative_name as string,
@@ -335,8 +335,8 @@ function toCompany(row: Record<string, unknown>): Company {
 /** DB company_members 행 → CompanyMember 타입 */
 function toCompanyMember(row: Record<string, unknown>): CompanyMember {
   return {
-    id: row.id as string,
-    companyId: row.company_id as string,
+    id: String(row.id),
+    companyId: String(row.company_id),
     userId: row.user_id as string,
     role: row.role as CompanyMember['role'],
     companyEmail: (row.company_email as string) ?? undefined,
@@ -347,9 +347,9 @@ function toCompanyMember(row: Record<string, unknown>): CompanyMember {
 /** DB likes 행 → Like 타입 */
 function toLike(row: Record<string, unknown>): Like {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
-    submissionId: row.submission_id as string,
+    submissionId: String(row.submission_id),
     createdAt: row.created_at as string,
   };
 }
@@ -357,8 +357,8 @@ function toLike(row: Record<string, unknown>): Like {
 /** DB contest_results 행 → ContestResult 타입 */
 function toContestResult(row: Record<string, unknown>): ContestResult {
   return {
-    contestId: row.contest_id as string,
-    submissionId: row.submission_id as string,
+    contestId: String(row.contest_id),
+    submissionId: String(row.submission_id),
     rank: row.rank as number,
     prizeLabel: row.prize_label as string,
     awardedAt: row.awarded_at as string,
@@ -368,7 +368,7 @@ function toContestResult(row: Record<string, unknown>): ContestResult {
 /** DB devices 행 → Device 타입 */
 function toDevice(row: Record<string, unknown>): Device {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
     name: row.name as string,
     platform: row.platform as Device['platform'],
@@ -383,9 +383,9 @@ function toDevice(row: Record<string, unknown>): Device {
 /** DB judges 행 → Judge 타입 */
 function toJudge(row: Record<string, unknown>): Judge {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
-    contestId: row.contest_id as string,
+    contestId: String(row.contest_id),
     isExternal: row.is_external as boolean,
     email: (row.email as string) ?? undefined,
     invitedAt: row.invited_at as string,
@@ -396,7 +396,7 @@ function toJudge(row: Record<string, unknown>): Judge {
 /** DB pricing_plans 행 → PricingPlan 타입 */
 function toPricingPlan(row: Record<string, unknown>): PricingPlan {
   return {
-    id: row.id as string,
+    id: String(row.id),
     role: row.role as PricingPlan['role'],
     name: row.name as string,
     monthlyPrice: (row.monthly_price as number) ?? 0,
@@ -409,7 +409,7 @@ function toPricingPlan(row: Record<string, unknown>): PricingPlan {
 /** DB inquiries 행 → Inquiry 타입 */
 function toInquiry(row: Record<string, unknown>): Inquiry {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
     type: row.type as Inquiry['type'],
     title: row.title as string,
@@ -423,7 +423,7 @@ function toInquiry(row: Record<string, unknown>): Inquiry {
 /** DB agency_requests 행 → AgencyRequest 타입 */
 function toAgencyRequest(row: Record<string, unknown>): AgencyRequest {
   return {
-    id: row.id as string,
+    id: String(row.id),
     companyName: row.company_name as string,
     contactName: row.contact_name as string,
     contactEmail: row.contact_email as string,
@@ -438,7 +438,7 @@ function toAgencyRequest(row: Record<string, unknown>): AgencyRequest {
 /** DB activity_logs 행 → ActivityLog 타입 */
 function toActivityLog(row: Record<string, unknown>): ActivityLog {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
     action: row.action as string,
     targetType: row.target_type as ActivityLog['targetType'],
@@ -451,7 +451,7 @@ function toActivityLog(row: Record<string, unknown>): ActivityLog {
 /** DB ip_logs 행 → IpLog 타입 */
 function toIpLog(row: Record<string, unknown>): IpLog {
   return {
-    id: row.id as string,
+    id: String(row.id),
     userId: row.user_id as string,
     ipAddress: row.ip_address as string,
     country: (row.country as string) ?? '',
@@ -554,14 +554,14 @@ export async function getContests(filters?: ContestFilters): Promise<Contest[]> 
   const { data: contestRows, error } = await query;
   if (error || !contestRows || contestRows.length === 0) return [];
 
-  const contestIds = contestRows.map((c) => c.id as string);
+  const contestIds = contestRows.map((c) => String(c.id));
   const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
   return contestRows.map((row) =>
     toContest(
       row as Record<string, unknown>,
-      tiersMap.get(row.id as string) ?? [],
-      bonusMap.get(row.id as string) ?? [],
+      tiersMap.get(String(row.id)) ?? [],
+      bonusMap.get(String(row.id)) ?? [],
     ),
   );
 }
@@ -700,7 +700,7 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
     .order('created_at', { ascending: true });
   if (error || !templates) return [];
 
-  const templateIds = templates.map((t) => t.id as string);
+  const templateIds = templates.map((t) => String(t.id));
   const { data: criteria } = await supabase
     .from('judging_criteria')
     .select('*')
@@ -709,10 +709,10 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
 
   const criteriaMap = new Map<string, JudgingTemplate['criteria']>();
   for (const c of criteria ?? []) {
-    const tid = c.template_id as string;
+    const tid = String(c.template_id);
     if (!criteriaMap.has(tid)) criteriaMap.set(tid, []);
     criteriaMap.get(tid)!.push({
-      id: c.id as string,
+      id: String(c.id),
       label: c.label as string,
       maxScore: c.max_score as number,
       description: (c.description as string) ?? '',
@@ -720,10 +720,10 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
   }
 
   return templates.map((row) => ({
-    id: row.id as string,
+    id: String(row.id),
     name: row.name as string,
     description: (row.description as string) ?? '',
-    criteria: criteriaMap.get(row.id as string) ?? [],
+    criteria: criteriaMap.get(String(row.id)) ?? [],
     createdAt: row.created_at as string,
   }));
 }
@@ -749,7 +749,7 @@ export async function getScores(): Promise<Score[]> {
     .order('created_at', { ascending: true });
   if (error || !scores) return [];
 
-  const scoreIds = scores.map((s) => s.id as string);
+  const scoreIds = scores.map((s) => String(s.id));
   const { data: scoreCriteria } = await supabase
     .from('score_criteria')
     .select('*')
@@ -757,21 +757,21 @@ export async function getScores(): Promise<Score[]> {
 
   const criteriaMap = new Map<string, Array<{ criterionId: string; score: number }>>();
   for (const sc of scoreCriteria ?? []) {
-    const sid = sc.score_id as string;
+    const sid = String(sc.score_id);
     if (!criteriaMap.has(sid)) criteriaMap.set(sid, []);
     criteriaMap.get(sid)!.push({
-      criterionId: sc.criterion_id as string,
+      criterionId: String(sc.criterion_id),
       score: sc.score as number,
     });
   }
 
   return scores.map((row) => ({
-    id: row.id as string,
-    submissionId: row.submission_id as string,
-    judgeId: row.judge_id as string,
-    templateId: (row.template_id as string) ?? '',
+    id: String(row.id),
+    submissionId: String(row.submission_id),
+    judgeId: String(row.judge_id),
+    templateId: row.template_id ? String(row.template_id) : '',
     total: row.total as number,
-    criteriaScores: criteriaMap.get(row.id as string) ?? [],
+    criteriaScores: criteriaMap.get(String(row.id)) ?? [],
     comment: (row.comment as string) ?? undefined,
     createdAt: row.created_at as string,
   }));
@@ -846,8 +846,8 @@ export async function getGallerySubmissions(): Promise<GallerySubmission[]> {
     .eq('status', 'completed');
   if (!completedContests || completedContests.length === 0) return [];
 
-  const completedIds = completedContests.map((c) => c.id as string);
-  const contestTitleMap = new Map(completedContests.map((c) => [c.id as string, c.title as string]));
+  const completedIds = completedContests.map((c) => String(c.id));
+  const contestTitleMap = new Map(completedContests.map((c) => [String(c.id), c.title as string]));
 
   // 해당 공모전의 출품작 조회
   const { data: submissions } = await supabase
@@ -876,7 +876,7 @@ export async function getGallerySubmissions(): Promise<GallerySubmission[]> {
     .in('contest_id', completedIds);
   const resultMap = new Map(
     (results ?? []).map((r) => [
-      r.submission_id as string,
+      String(r.submission_id),
       { prizeLabel: r.prize_label as string, rank: r.rank as number },
     ]),
   );
@@ -908,8 +908,8 @@ export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
     .eq('status', 'completed');
   if (!completedContests || completedContests.length === 0) return [];
 
-  const completedIds = completedContests.map((c) => c.id as string);
-  const contestTitleMap = new Map(completedContests.map((c) => [c.id as string, c.title as string]));
+  const completedIds = completedContests.map((c) => String(c.id));
+  const contestTitleMap = new Map(completedContests.map((c) => [String(c.id), c.title as string]));
 
   // 수상 결과 조회
   const { data: results } = await supabase
@@ -920,14 +920,14 @@ export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
   if (!results || results.length === 0) return [];
 
   // 해당 submission 조회
-  const submissionIds = results.map((r) => r.submission_id as string);
+  const submissionIds = results.map((r) => String(r.submission_id));
   const { data: submissions } = await supabase
     .from('submissions')
     .select('*')
     .in('id', submissionIds);
 
   const submissionMap = new Map(
-    (submissions ?? []).map((s) => [s.id as string, s]),
+    (submissions ?? []).map((s) => [String(s.id), s]),
   );
 
   // 크리에이터 정보 조회
@@ -943,12 +943,12 @@ export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
   );
 
   return results.map((r) => {
-    const submissionRow = submissionMap.get(r.submission_id as string);
+    const submissionRow = submissionMap.get(String(r.submission_id));
     if (submissionRow) {
       const sub = toSubmission(submissionRow as Record<string, unknown>);
       return {
         ...sub,
-        contestTitle: contestTitleMap.get(r.contest_id as string) ?? '',
+        contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
         creatorName: profileMap.get(sub.userId) ?? '익명',
         prizeLabel: r.prize_label as string,
         rank: r.rank as number,
@@ -956,8 +956,8 @@ export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
     }
     // submission이 삭제된 경우 빈 껍데기
     return {
-      id: r.submission_id as string,
-      contestId: r.contest_id as string,
+      id: String(r.submission_id),
+      contestId: String(r.contest_id),
       userId: '',
       title: '수상작',
       description: '',
@@ -970,7 +970,7 @@ export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
       videoDuration: 180,
       avgWatchDuration: 90,
       tags: [],
-      contestTitle: contestTitleMap.get(r.contest_id as string) ?? '',
+      contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
       creatorName: '익명',
       prizeLabel: r.prize_label as string,
       rank: r.rank as number,
@@ -1246,7 +1246,6 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     host_user_id: user.id,
   };
 
-  console.log('[createContest] contestRow:', JSON.stringify(contestRow, null, 2));
 
   const { data: insertedContest, error: insertError } = await supabase
     .from('contests')
@@ -1262,7 +1261,7 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     throw new Error('contests insert 후 데이터 없음');
   }
 
-  const contestId = insertedContest.id as string;
+  const contestId = String(insertedContest.id);
 
   const awardRows = input.awardTiers
     .filter((tier) => tier.label.trim().length > 0)
@@ -1399,15 +1398,15 @@ export async function getContestsByHost(hostUserId: string): Promise<Contest[]> 
     .order('created_at', { ascending: false });
   if (error || !contestRows) return [];
 
-  const contestIds = contestRows.map((c) => c.id as string);
+  const contestIds = contestRows.map((c) => String(c.id));
   if (contestIds.length === 0) return [];
   const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
   return contestRows.map((row) =>
     toContest(
       row as Record<string, unknown>,
-      tiersMap.get(row.id as string) ?? [],
-      bonusMap.get(row.id as string) ?? [],
+      tiersMap.get(String(row.id)) ?? [],
+      bonusMap.get(String(row.id)) ?? [],
     ),
   );
 }
@@ -1450,7 +1449,7 @@ export async function getScoresByContest(contestId: string): Promise<Score[]> {
     .eq('contest_id', contestId);
   if (!submissions || submissions.length === 0) return [];
 
-  const submissionIds = submissions.map((s) => s.id as string);
+  const submissionIds = submissions.map((s) => String(s.id));
   const { data: scores, error } = await supabase
     .from('scores')
     .select('*')
@@ -1458,7 +1457,7 @@ export async function getScoresByContest(contestId: string): Promise<Score[]> {
     .order('created_at', { ascending: true });
   if (error || !scores) return [];
 
-  const scoreIds = scores.map((s) => s.id as string);
+  const scoreIds = scores.map((s) => String(s.id));
   const { data: scoreCriteria } = await supabase
     .from('score_criteria')
     .select('*')
@@ -1466,21 +1465,21 @@ export async function getScoresByContest(contestId: string): Promise<Score[]> {
 
   const criteriaMap = new Map<string, Array<{ criterionId: string; score: number }>>();
   for (const sc of scoreCriteria ?? []) {
-    const sid = sc.score_id as string;
+    const sid = String(sc.score_id);
     if (!criteriaMap.has(sid)) criteriaMap.set(sid, []);
     criteriaMap.get(sid)!.push({
-      criterionId: sc.criterion_id as string,
+      criterionId: String(sc.criterion_id),
       score: sc.score as number,
     });
   }
 
   return scores.map((row) => ({
-    id: row.id as string,
-    submissionId: row.submission_id as string,
-    judgeId: row.judge_id as string,
-    templateId: (row.template_id as string) ?? '',
+    id: String(row.id),
+    submissionId: String(row.submission_id),
+    judgeId: String(row.judge_id),
+    templateId: row.template_id ? String(row.template_id) : '',
     total: row.total as number,
-    criteriaScores: criteriaMap.get(row.id as string) ?? [],
+    criteriaScores: criteriaMap.get(String(row.id)) ?? [],
     comment: (row.comment as string) ?? undefined,
     createdAt: row.created_at as string,
   }));
