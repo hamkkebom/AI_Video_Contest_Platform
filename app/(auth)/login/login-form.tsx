@@ -26,7 +26,7 @@ export default function LoginForm() {
 
   /* URL에서 redirect 파라미터 읽기 (로그인 후 돌아갈 경로) */
   const searchParams = useSearchParams();
-  const redirectToParam = searchParams.get('redirect');
+  const redirectToParam = searchParams.get('redirectTo') || searchParams.get('redirect');
   const redirectTo = redirectToParam?.startsWith('/') ? redirectToParam : '/';
 
   /* 이미 로그인된 경우 redirect 경로 또는 홈으로 이동 */

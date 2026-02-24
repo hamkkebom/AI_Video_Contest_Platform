@@ -28,6 +28,7 @@ import {
   AlertCircle,
   Info,
   ChevronDown,
+  Shield,
 } from 'lucide-react';
 
 import type { Contest } from '@/lib/types';
@@ -227,17 +228,33 @@ export default function ContestSubmitPage() {
         throw new Error('Supabase 설정이 필요합니다.');
       }
 
+      /* 세션 유효성 확인 — 만료 시 즉시 에러 */
+      const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !currentUser) {
+        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
+      }
       const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
-      const { data: thumbnailData, error: thumbnailUploadError } = await supabase.storage
+      /* 썸네일 업로드 (60초 타임아웃) */
+      const thumbnailUploadPromise = supabase.storage
         .from('thumbnails')
         .upload(thumbnailPath, thumbnailFile, {
           contentType: thumbnailFile.type,
           upsert: false,
         });
 
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('썸네일 업로드 시간이 초과되었습니다. 네트워크 상태를 확인해 주세요.')), 60_000),
+      );
+
+      const { data: thumbnailData, error: thumbnailUploadError } = await Promise.race([
+        thumbnailUploadPromise,
+        timeoutPromise,
+      ]);
       if (thumbnailUploadError || !thumbnailData?.path) {
-        throw new Error(thumbnailUploadError?.message ?? '썸네일 업로드에 실패했습니다.');
+        const errMsg = thumbnailUploadError?.message ?? '썸네일 업로드에 실패했습니다.';
+        console.error('썸네일 업로드 실패:', thumbnailUploadError);
+        throw new Error(errMsg);
       }
 
       const { data: thumbnailPublicData } = supabase.storage
@@ -815,13 +832,75 @@ export default function ContestSubmitPage() {
                         유의사항 및 저작권 안내
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>유의사항 및 저작권 안내</DialogTitle>
-                        <DialogDescription className="text-sm text-muted-foreground">공모전 참가 전 반드시 확인해 주세요.</DialogDescription>
-                      </DialogHeader>
-                      <div className="mt-4 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                        {contest?.notes || '유의사항 정보가 아직 등록되지 않았습니다. 공모전 주최자에게 문의해 주세요.'}
+                    <DialogContent className="max-w-2xl max-h-[80vh] p-0 gap-0 overflow-hidden [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:z-20">
+                      {/* 스타일링된 헤더 */}
+                      <div className="relative overflow-hidden bg-zinc-950 px-6 pt-6 pb-5">
+                        <div className="absolute -top-16 -right-16 w-52 h-52 bg-violet-600/30 rounded-full blur-[60px] pointer-events-none" />
+                        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-orange-500/20 rounded-full blur-[60px] pointer-events-none" />
+                        <DialogHeader className="relative z-10">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)]">
+                              <Shield className="h-5 w-5 text-white/90" />
+                            </div>
+                            <div>
+                              <DialogTitle className="text-white text-lg font-bold">유의사항 및 저작권 안내</DialogTitle>
+                              <DialogDescription className="text-zinc-400 text-sm mt-0.5">공모전 참가 전 반드시 확인해 주세요.</DialogDescription>
+                            </div>
+                          </div>
+                        </DialogHeader>
+                      </div>
+                      {/* 본문 */}
+                      <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 100px)' }}>
+                        {contest?.notes ? (
+                          <div className="space-y-4">
+                            {contest.notes.split(/\n\s*\n/).map((section, idx) => {
+                              const lines = section.trim().split('\n').filter((l: string) => l.trim());
+                              if (lines.length === 0) return null;
+
+                              /* 숫자로 시작하는 줄은 섹션 제목으로 처리 */
+                              const isTitle = /^\d+[\.)\s]/.test(lines[0]);
+                              const titleLine = isTitle ? lines[0] : null;
+                              const bodyLines = isTitle ? lines.slice(1) : lines;
+
+                              return (
+                                <div key={idx} className={idx > 0 ? 'pt-4 border-t border-border/50' : ''}>
+                                  {titleLine && (
+                                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                      {titleLine}
+                                    </h3>
+                                  )}
+                                  <div className="space-y-1.5">
+                                    {bodyLines.map((line: string, lineIdx: number) => {
+                                      const isBullet = /^[\-·•※]\s/.test(line);
+                                      const content = isBullet ? line.replace(/^[\-·•※]\s/, '') : line;
+                                      return (
+                                        <p
+                                          key={lineIdx}
+                                          className={`text-sm leading-relaxed text-muted-foreground ${
+                                            isBullet
+                                              ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
+                                              : ''
+                                          }`}
+                                        >
+                                          {content}
+                                        </p>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center py-8 text-center">
+                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                              <Info className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm text-muted-foreground">유의사항 정보가 아직 등록되지 않았습니다.</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">공모전 주최자에게 문의해 주세요.</p>
+                          </div>
+                        )}
                       </div>
                     </DialogContent>
                   </Dialog>

@@ -9,6 +9,7 @@ import { AuthProvider } from '@/lib/supabase/auth-context';
 import { Suspense } from 'react';
 import { UtmTracker } from '@/components/tracking/utm-tracker';
 import { ActivityTracker } from '@/components/tracking/activity-tracker';
+import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 
 export const metadata: Metadata = {
   title: "꿈플 — AI로 꿈을 키우는 나무",
@@ -28,18 +29,20 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body>
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
           <AuthProvider>
-            <Header />
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Footer />
-            <FloatingButtons />
-            <Suspense fallback={null}>
-              <UtmTracker />
-            </Suspense>
-            <Suspense fallback={null}>
-              <ActivityTracker />
-            </Suspense>
+            <SessionTimeoutGuard>
+              <Header />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Footer />
+              <FloatingButtons />
+              <Suspense fallback={null}>
+                <UtmTracker />
+              </Suspense>
+              <Suspense fallback={null}>
+                <ActivityTracker />
+              </Suspense>
+            </SessionTimeoutGuard>
           </AuthProvider>
         </ThemeProvider>
       </body>

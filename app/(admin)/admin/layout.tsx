@@ -9,6 +9,7 @@ import {
   Users,
 } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { RoleGuard } from '@/components/auth/role-guard';
 
 const adminDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: '/admin/dashboard', label: '대시보드', icon: LayoutDashboard },
@@ -30,11 +31,13 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardSidebar items={adminDashboardNavItems} roleLabel="관리자" />
-      <div className="md:pl-60">
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+    <RoleGuard allowedRoles={['admin']}>
+      <div className="min-h-screen bg-background">
+        <DashboardSidebar items={adminDashboardNavItems} roleLabel="관리자" />
+        <div className="md:pl-60">
+          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+        </div>
       </div>
-    </div>
+    </RoleGuard>
   );
 }
