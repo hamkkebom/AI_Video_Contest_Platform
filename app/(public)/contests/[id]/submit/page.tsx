@@ -337,7 +337,7 @@ export default function ContestSubmitPage() {
             <p className="text-muted-foreground mb-6">
               이 공모전은 현재 {contest.status === 'draft' ? '접수 준비중' : contest.status === 'judging' ? '심사중' : '종료'}입니다.
             </p>
-            <Link href={`/contests/${contestId}`}>
+            <Link href={`/contests/${contestId}/landing`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>
             </Link>
           </div>
@@ -365,7 +365,7 @@ export default function ContestSubmitPage() {
               {hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Link href={`/contests/${contestId}`}>
+              <Link href={`/contests/${contestId}/landing`}>
                 <Button variant="outline" className="cursor-pointer">공모전 상세</Button>
               </Link>
               <Link href="/my/submissions">
@@ -388,12 +388,12 @@ export default function ContestSubmitPage() {
       <section className="relative pt-24 pb-10 px-4">
         <div className="container mx-auto max-w-3xl relative z-10">
           {/* Top navigation */}
-          <div className="mb-8">
+          <div className="mb-6">
             <Link
               href={`/contests/${contestId}`}
-              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 dark:bg-zinc-800/50 hover:bg-neutral-100 dark:hover:bg-zinc-800 border border-border/50 text-sm font-medium text-foreground transition-all backdrop-blur-md shadow-sm"
+              className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
               공모전으로 돌아가기
             </Link>
           </div>
@@ -419,7 +419,7 @@ export default function ContestSubmitPage() {
                   </span>
                   Submit Your Vision
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-sm leading-tight">
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-sm leading-tight">
                   영상 제출하기
                 </h1>
                 <p className="text-base md:text-[1.1rem] text-zinc-300 leading-relaxed font-light max-w-xl">
@@ -450,7 +450,7 @@ export default function ContestSubmitPage() {
                     <div>
                       <h2 className="font-bold text-foreground text-xl leading-tight mb-1">{contest.title}</h2>
                       <p className="text-[0.95rem] text-muted-foreground font-medium leading-relaxed">
-                        주제: <span className="text-foreground/90">{contest.description}</span>
+                        {contest.description}
                       </p>
                     </div>
 
