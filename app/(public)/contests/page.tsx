@@ -115,20 +115,6 @@ export default async function ContestsPage({
   const hasMore = sortedContests.length > displayedContests.length;
   const remainingCount = sortedContests.length - displayedContests.length;
 
-  /** 리스트뷰 상태 메시지 */
-  const getStatusMessage = (contestStatus: string) => {
-    if (contestStatus === 'open') return { text: '🔥 접수 진행 중!', className: 'text-green-400' };
-    if (contestStatus === 'judging') return { text: '⚖️ 심사가 진행 중입니다', className: 'text-yellow-400' };
-    return { text: '🏆 결과가 발표되었습니다', className: 'text-sky-400' };
-  };
-
-  /** 리스트뷰 안내 문구 */
-  const getStatusSubtext = (contestStatus: string) => {
-    if (contestStatus === 'open') return '지금 바로 작품을 제출하고 도전해보세요!';
-    if (contestStatus === 'judging') return '심사 결과를 기다려주세요.';
-    return '수상작을 확인해보세요.';
-  };
-
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
@@ -227,9 +213,6 @@ export default async function ContestsPage({
               <div className="space-y-6">
                 {displayedContests.map((contest, index) => {
                   const totalPrize = contest.prizeAmount || calculateTotalPrize(contest.awardTiers);
-                  const statusMsg = getStatusMessage(contest.status);
-                  const statusSub = getStatusSubtext(contest.status);
-                  const dday = calcDDay(contest.submissionEndAt);
 
                   return (
                     <div key={contest.id} className="group bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-0.5">
@@ -243,71 +226,48 @@ export default async function ContestsPage({
                                 {contest.title}
                               </h2>
                             </Link>
-
                             {/* 설명 */}
                             {contest.description && (
                               <p className="text-neutral-400 text-sm line-clamp-2">
                                 {contest.description}
                               </p>
                             )}
-
                             {/* 기간 */}
                             <p className="text-orange-500 font-semibold text-sm">
                               기간 : {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                             </p>
 
+                            {/* 카운트다운 (접수중만, 기간 바로 아래) */}
+                            {contest.status === 'open' && (
+                              <ContestCountdown deadline={contest.submissionEndAt} />
+                            )}
                             {/* 상금 */}
                             <p className="text-white font-bold text-lg pt-1">
                               총 상금 {totalPrize ?? '미정'}
                             </p>
-
-                            {/* 상태 메시지 */}
-                            <p className={`font-semibold text-sm ${statusMsg.className}`}>
-                              {statusMsg.text}
-                            </p>
-                            <p className="text-neutral-500 text-sm">
-                              {statusSub}
-                            </p>
                           </div>
 
-                          {/* 하단: 구분선 + 버튼 + 카운트다운 */}
-                          <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap items-center gap-3">
+                          {/* 하단: 구분선 + 버튼 (가운데 정렬) */}
+                          <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap justify-center gap-3">
                             {/* 접수중: 제출 버튼 */}
                             {contest.status === 'open' && (
-                              <Link href={`/contests/${contest.id}/submit` as any}>
-                                <span className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors cursor-pointer">
-                                  <Upload className="h-3.5 w-3.5" />
-                                  공모전 영상 제출하기
+                              <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
+                                <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                                  <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
+                                  <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
+                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">공모전 영상 제출하기</span>
                                 </span>
                               </Link>
                             )}
-
                             {/* 상세보기 버튼 */}
-                            <Link href={`/contests/${contest.id}` as any}>
-                              <span className="inline-flex items-center gap-2 px-6 py-2 rounded-lg border border-neutral-600 text-neutral-300 text-sm font-semibold hover:bg-neutral-800 hover:border-neutral-500 transition-colors cursor-pointer">
-                                상세요강 확인하기
+                            <Link href={`/contests/${contest.id}` as any} className="group/btn2">
+                              <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                                <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
+                                <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세요강 확인하기</span>
                               </span>
                             </Link>
-
-                            {/* 카운트다운 (접수중만) */}
-                            {contest.status === 'open' && (
-                              <div className="ml-auto">
-                                <ContestCountdown deadline={contest.submissionEndAt} />
-                              </div>
-                            )}
-
-                            {/* D-day 뱃지 (접수중 아닐 때) */}
-                            {contest.status !== 'open' && (
-                              <div className="ml-auto text-sm text-neutral-500">
-                                {contest.status === 'judging'
-                                  ? `심사기간 ${formatDateWithDay(contest.judgingStartAt)} ~ ${formatDateWithDay(contest.judgingEndAt)}`
-                                  : `결과 발표 ${formatDateWithDay(contest.resultAnnouncedAt)}`
-                                }
-                              </div>
-                            )}
                           </div>
                         </div>
-
                         {/* 오른쪽: 포스터 이미지 */}
                         <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
                           <div className="relative h-60 md:h-full min-h-[240px]">
@@ -316,26 +276,18 @@ export default async function ContestsPage({
                               alt={contest.title}
                               className="absolute inset-0 w-full h-full object-cover"
                             />
-                            {/* D-day 뱃지 (이미지 위 표시) */}
-                            {contest.status === 'open' && (
-                              <div className="absolute top-4 right-4">
-                                <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70'}`}>
-                                  {dday === 0 ? 'D-Day' : `D-${dday}`}
-                                </span>
-                              </div>
-                            )}
-                            {contest.status === 'judging' && (
-                              <div className="absolute top-4 right-4">
+                            {/* 상태 뱃지 (접수중/심사중/종료) */}
+                            <div className="absolute top-4 right-4">
+                              {contest.status === 'open' && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-green-500/70">접수중</span>
+                              )}
+                              {contest.status === 'judging' && (
                                 <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">심사중</span>
-                              </div>
-                            )}
-                            {(contest.status === 'completed' || contest.status === 'closed') && (
-                              <div className="absolute top-4 right-4">
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">
-                                  <Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표
-                                </span>
-                              </div>
-                            )}
+                              )}
+                              {(contest.status === 'completed' || contest.status === 'closed') && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">종료</span>
+                              )}
+                            </div>
                           </div>
                         </Link>
                       </div>
@@ -380,8 +332,8 @@ export default async function ContestsPage({
 
                       {/* 하단 그라데이션 오버레이 + 텍스트 */}
                       <div className="absolute inset-x-0 bottom-0 h-1/2 z-10 flex flex-col justify-end">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black from-50% to-transparent" />
-                        <div className="relative pb-7 px-4 flex flex-col gap-4">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 from-40% via-black/40 to-transparent" />
+                        <div className="relative pb-7 px-4 flex flex-col gap-2.5">
                           <AutoFitTitle
                             className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
                             maxFontSize={18}
@@ -390,8 +342,14 @@ export default async function ContestsPage({
                           >
                             {contest.title}
                           </AutoFitTitle>
+                          {/* 공모전 소개 (2줄) */}
+                          {contest.description && (
+                            <p className="text-white/60 text-xs line-clamp-2 leading-relaxed">
+                              {contest.description}
+                            </p>
+                          )}
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
+                            <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
                             <span className="text-sm text-white/60">
                               {contest.status === 'open'
                                 ? `마감 ${new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
