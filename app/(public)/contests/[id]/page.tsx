@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getContests, getSubmissions, getUsers } from '@/lib/data';
-import { Calendar, Users, Clock, Trophy, ArrowLeft, Search, Image, Upload } from 'lucide-react';
+import { Calendar, Users, Gavel, Trophy, ArrowLeft, Search, Upload } from 'lucide-react';
 import { SubmissionCarousel } from '@/components/contest/submission-carousel';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { MediaTabs } from '@/components/contest/media-tabs';
+import type { AwardTier } from '@/lib/types';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -33,13 +34,58 @@ function getJudgingTypeLabel(type: string) {
   return '내부 + 외부 심사';
 }
 
-
 function getResultFormatLabel(format?: string) {
   if (format === 'website') return '홈페이지 발표';
   if (format === 'email') return '이메일 개별 통보';
   if (format === 'sns') return 'SNS 발표';
   if (format === 'offline') return '오프라인 시상식';
   return format ?? '-';
+}
+
+/** 상금 문자열("300만원", "1,000만원" 등)을 숫자(원)로 변환 */
+function parsePrizeAmount(amount: string): number {
+  const cleaned = amount.replace(/[,\s]/g, '');
+  const match = cleaned.match(/(\d+)/);
+  if (!match) return 0;
+  const num = parseInt(match[1], 10);
+  if (cleaned.includes('만')) return num * 10000;
+  if (cleaned.includes('억')) return num * 100000000;
+  return num;
+}
+
+/** awardTiers에서 총 상금을 계산 (인원 × 개인 상금 합산) */
+function calculateTotalPrize(tiers: AwardTier[]): string | null {
+  let total = 0;
+  for (const tier of tiers) {
+    if (!tier.prizeAmount) continue;
+    total += parsePrizeAmount(tier.prizeAmount) * tier.count;
+  }
+  if (total === 0) return null;
+  if (total >= 100000000) {
+    const eok = Math.floor(total / 100000000);
+    const man = Math.floor((total % 100000000) / 10000);
+    if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
+    return `${eok}억원`;
+  }
+  if (total >= 10000) {
+    return `${(total / 10000).toLocaleString()}만원`;
+  }
+  return `${total.toLocaleString()}원`;
+}
+
+/** 수상 티어 라벨 기반 색상 클래스 */
+function getAwardColorClass(label: string, index: number): string {
+  const lower = label.toLowerCase();
+  if (lower.includes('대상')) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+  if (lower.includes('최우수') || lower.includes('금상')) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
+  if (lower.includes('우수') || lower.includes('은상')) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
+  if (lower.includes('장려') || lower.includes('입선') || lower.includes('동상')) return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
+  if (lower.includes('특별')) return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
+  // 라벨로 매칭 안 되면 인덱스 기반 폴백
+  if (index === 0) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+  if (index === 1) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
+  if (index === 2) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
+  return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
 }
 
 export default async function ContestDetailPage({ params, searchParams }: ContestDetailPageProps) {
@@ -81,6 +127,10 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
 
   const statusMeta = getStatusMeta(contest.status);
   const hostUser = allUsers.find((u) => u.id === contest.hostUserId);
+  const isAdminHost = hostUser?.roles?.includes('admin');
+
+  // 총 상금 계산: contest.prizeAmount가 있으면 사용, 없으면 awardTiers에서 합산
+  const totalPrize = contest.prizeAmount || calculateTotalPrize(contest.awardTiers);
 
   // 클라이언트 컴포넌트에 전달하기 위해 Map → 직렬화 가능한 객체로 변환
   const creatorsRecord: Record<string, (typeof allUsers)[number]> = {};
@@ -97,21 +147,14 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       {/* 페이지 헤더 */}
       <section className="py-12 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">
         <div className="container mx-auto max-w-6xl space-y-5">
-          {/* 상단 네비게이션 */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-muted-foreground">
-              <Link href="/contests" className="hover:text-foreground transition-colors">
-                공모전
-              </Link>
-              <span className="mx-2">&gt;</span>
-              <span className="text-foreground">{contest.title}</span>
-            </div>
+          {/* 돌아가기 네비게이션 */}
+          <div>
             <Link
-              href="/"
+              href="/contests"
               className="inline-flex items-center gap-2 text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
-              메인으로
+              돌아가기
             </Link>
           </div>
 
@@ -164,7 +207,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                     {formatDate(contest.judgingStartAt)} ~ {formatDate(contest.judgingEndAt)}
                   </p>
                 </div>
-                <Clock className="h-5 w-5 text-primary" />
+                <Gavel className="h-5 w-5 text-primary" />
               </div>
             </Card>
 
@@ -208,21 +251,32 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               />
             </Card>
 
-            {/* 공모전 소개 + 상세 이미지 영역 */}
+            {/* 상세 안내 */}
             <Card className="p-6 border border-border space-y-6">
               <div>
-                <h2 className="text-2xl font-bold mb-4">공모전 소개</h2>
-                <p className="text-muted-foreground leading-relaxed">{contest.description}</p>
+                <h2 className="text-2xl font-bold mb-4">상세 안내</h2>
+                {contest.detailContent ? (
+                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {contest.detailContent}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed">{contest.description}</p>
+                )}
               </div>
 
-              {/* 상세 내용 이미지 영역 (실서비스에서 HTML/이미지 삽입) */}
-              <div className="space-y-4">
-                <div className="rounded-lg bg-muted/50 border border-dashed border-border p-12 text-center">
-                  <Image className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">공모전 상세 안내 이미지</p>
-                  <p className="text-xs text-muted-foreground mt-1">주최자가 업로드한 상세 안내 이미지가 이 영역에 표시됩니다</p>
+              {/* 상세 안내 이미지 */}
+              {contest.detailImageUrls && contest.detailImageUrls.length > 0 ? (
+                <div className="space-y-4">
+                  {contest.detailImageUrls.map((url) => (
+                    <img
+                      key={url}
+                      src={url}
+                      alt={`${contest.title} 상세 안내`}
+                      className="w-full rounded-lg border border-border"
+                    />
+                  ))}
                 </div>
-              </div>
+              ) : null}
             </Card>
           </div>
 
@@ -237,11 +291,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 </h3>
                 <div className="space-y-2">
                   {contest.awardTiers.map((tier, index) => {
-                    const colorClass = index === 0
-                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                      : index === 1
-                        ? 'bg-slate-400/10 text-slate-500 border-slate-400/20'
-                        : 'bg-orange-600/10 text-orange-500 border-orange-600/20';
+                    const colorClass = getAwardColorClass(tier.label, index);
                     return (
                       <div key={tier.label} className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${colorClass}`}>
                         <div className="flex items-center gap-2">
@@ -257,9 +307,17 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                     );
                   })}
                 </div>
-                <div className="pt-2 border-t border-border/50 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">총 수상 인원</span>
-                  <span className="font-bold">{contest.awardTiers.reduce((sum, t) => sum + t.count, 0)}명</span>
+                <div className="pt-2 border-t border-border/50 space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">총 수상 인원</span>
+                    <span className="font-bold">{contest.awardTiers.reduce((sum, t) => sum + t.count, 0)}명</span>
+                  </div>
+                  {totalPrize && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">총 상금</span>
+                      <span className="font-bold text-amber-600">{totalPrize}</span>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
@@ -270,7 +328,9 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">주최</span>
-                  <span className="text-right font-medium">{hostUser?.name ?? '운영팀'}</span>
+                  <span className="text-right font-medium">
+                    {isAdminHost ? '함께봄 주식회사' : (hostUser?.name ?? '운영팀')}
+                  </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">심사 방식</span>
@@ -286,7 +346,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">총 상금</span>
-                  <span className="text-right font-medium">{contest.prizeAmount ?? '미정'}</span>
+                  <span className="text-right font-medium">{totalPrize ?? '미정'}</span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">접수작 수</span>
@@ -312,14 +372,14 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
             </Card>
 
             {/* 참가 규정 및 가이드라인 */}
-            <Card className="p-6 border border-border space-y-3">
-              <h3 className="text-lg font-bold">참가 규정 및 가이드라인</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                <li>공모전 주제에 맞는 독창적인 AI 영상 콘텐츠만 제출할 수 있습니다.</li>
-                <li>저작권 및 초상권 이슈가 없는 원본 또는 사용 허가된 소스만 활용해야 합니다.</li>
-                <li>심사 기준은 창의성, 완성도, 주제 적합성, 전달력을 중심으로 평가됩니다.</li>
-              </ul>
-            </Card>
+            {contest.guidelines && (
+              <Card className="p-6 border border-border space-y-3">
+                <h3 className="text-lg font-bold">참가 규정 및 가이드라인</h3>
+                <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {contest.guidelines}
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </section>

@@ -77,6 +77,7 @@ type ContestMutationPayload = {
   landingPageUrl?: string;
   detailContent?: string;
   detailImageUrls?: string[];
+  guidelines?: string;
 };
 
 /** 수상 등급/유형 옵션 */
@@ -238,6 +239,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [detailImageUrls, setDetailImageUrls] = useState<string[]>([]);
   const [detailImageUploading, setDetailImageUploading] = useState(false);
   const detailImageRef = useRef<HTMLInputElement>(null);
+  const [guidelines, setGuidelines] = useState('');
 
   /* 랜딩페이지: 토글 + URL */
   const [hasLandingPage, setHasLandingPage] = useState(false);
@@ -323,6 +325,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setLandingPageUrl(contest.landingPageUrl ?? '');
         setDetailContent(contest.detailContent ?? '');
         setDetailImageUrls(contest.detailImageUrls ?? []);
+        setGuidelines(contest.guidelines ?? '');
         setSubmissionStartDate(toDateInputValue(contest.submissionStartAt));
         setSubmissionEndDate(toDateInputValue(contest.submissionEndAt));
         setJudgingStartDate(toDateInputValue(contest.judgingStartAt));
@@ -592,6 +595,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       landingPageUrl: hasLandingPage ? (landingPageUrl.trim() || undefined) : undefined,
       detailContent: detailContent.trim() || undefined,
       detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
+      guidelines: guidelines.trim() || undefined,
       bonusPercentage: !Number.isNaN(bonusPct) && bonusPct > 0 ? bonusPct : undefined,
       judgeWeightPercent: (() => { const n = parseInt(judgeWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })(),
       onlineVoteWeightPercent: useOnlineVote ? (() => { const n = parseInt(onlineVoteWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })() : undefined,
@@ -1079,6 +1083,19 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* 참가 규정 및 가이드라인 */}
+            <div className="space-y-2">
+              <label htmlFor="admin-contest-guidelines" className="text-sm font-medium">참가 규정 및 가이드라인</label>
+              <textarea
+                id="admin-contest-guidelines"
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px]"
+                placeholder="공모전 참가 규정, 저작권 안내, 심사 기준 등 참가자가 알아야 할 규정을 작성하세요"
+                value={guidelines}
+                onChange={(e) => setGuidelines(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">공모전 상세페이지 우측에 표시됩니다. 입력하지 않으면 해당 섹션이 숨겨집니다.</p>
             </div>
           </CardContent>
         </Card>
