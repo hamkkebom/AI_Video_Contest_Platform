@@ -1246,13 +1246,21 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     host_user_id: user.id,
   };
 
+  console.log('[createContest] contestRow:', JSON.stringify(contestRow, null, 2));
+
   const { data: insertedContest, error: insertError } = await supabase
     .from('contests')
     .insert(contestRow)
     .select('id')
     .single();
 
-  if (insertError || !insertedContest) return null;
+  if (insertError) {
+    console.error('[createContest] insert 실패:', insertError.message, insertError.details, insertError.hint);
+    throw new Error(`contests insert 실패: ${insertError.message}`);
+  }
+  if (!insertedContest) {
+    throw new Error('contests insert 후 데이터 없음');
+  }
 
   const contestId = insertedContest.id as string;
 
@@ -1269,8 +1277,9 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
   if (awardRows.length > 0) {
     const { error: tierError } = await supabase.from('contest_award_tiers').insert(awardRows);
     if (tierError) {
+      console.error('[createContest] award_tiers insert 실패:', tierError.message, tierError.details);
       await supabase.from('contests').delete().eq('id', contestId);
-      return null;
+      throw new Error(`award_tiers insert 실패: ${tierError.message}`);
     }
   }
 
@@ -1289,9 +1298,10 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
   if (bonusRows.length > 0) {
     const { error: bonusError } = await supabase.from('contest_bonus_configs').insert(bonusRows);
     if (bonusError) {
+      console.error('[createContest] bonus_configs insert 실패:', bonusError.message, bonusError.details);
       await supabase.from('contest_award_tiers').delete().eq('contest_id', contestId);
       await supabase.from('contests').delete().eq('id', contestId);
-      return null;
+      throw new Error(`bonus_configs insert 실패: ${bonusError.message}`);
     }
   }
 

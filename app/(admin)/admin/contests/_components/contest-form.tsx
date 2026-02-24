@@ -634,6 +634,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
     try {
       const payload = buildPayload();
+      console.log('[contest-form] submit payload:', JSON.stringify(payload, null, 2));
       const url = mode === 'create' ? '/api/admin/contests' : `/api/admin/contests/${contestId}`;
       const method = mode === 'create' ? 'POST' : 'PUT';
 

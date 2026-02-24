@@ -20,12 +20,12 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as ContestMutationInput;
+    console.log('[POST /api/admin/contests] payload:', JSON.stringify(body, null, 2));
+
     const contest = await createContest(body);
-
     if (!contest) {
-      return NextResponse.json({ error: '공모전 생성에 실패했습니다.' }, { status: 500 });
+      return NextResponse.json({ error: '공모전 생성에 실패했습니다. (반환값 null)' }, { status: 500 });
     }
-
     // 활동 로그 기록
     await createActivityLog({
       userId: user.id,
@@ -34,10 +34,10 @@ export async function POST(request: Request) {
       targetId: contest.id,
       metadata: { title: contest.title, role: 'admin' },
     });
-
     return NextResponse.json({ contest }, { status: 201 });
   } catch (error) {
-    console.error('Failed to create contest:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+    const message = error instanceof Error ? error.message : '알 수 없는 오류';
+    console.error('[POST /api/admin/contests] 실패:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
