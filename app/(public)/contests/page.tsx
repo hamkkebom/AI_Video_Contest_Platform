@@ -153,7 +153,7 @@ export default async function ContestsPage({
 
                     {/* 포스터 이미지 (전체 배경) */}
                     <img
-                      src={`/images/contest-${(index % 5) + 1}.jpg`}
+                      src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
                       alt={contest.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />

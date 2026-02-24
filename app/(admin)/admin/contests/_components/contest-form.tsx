@@ -698,8 +698,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     return (
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">저장이 완료되었습니다</h1>
-          <p className="text-sm text-muted-foreground">입력한 정보가 정상적으로 저장되었습니다.</p>
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{mode === 'create' ? '등록이 완료되었습니다' : '수정이 완료되었습니다'}</h1>
+          <p className="text-sm text-muted-foreground">{mode === 'create' ? '공모전이 정상적으로 등록되었습니다.' : '공모전 정보가 정상적으로 수정되었습니다.'}</p>
         </header>
 
         <Card className="border-border">
@@ -709,7 +709,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
             </div>
             <div className="space-y-1">
               <p className="text-xl font-semibold text-foreground">{submittedTitle || title}</p>
-              <p className="text-sm text-muted-foreground">공모전 정보 저장이 완료되었습니다.</p>
+              <p className="text-sm text-muted-foreground">{mode === 'create' ? '공모전이 등록되었습니다.' : '공모전 정보가 수정되었습니다.'}</p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link href={detailPath}>
