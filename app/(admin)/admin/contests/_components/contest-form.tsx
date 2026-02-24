@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
 import { CheckCircle2, Plus, Search, Trophy, X, Star, Upload, ImagePlus, Globe } from 'lucide-react';
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type ContestFormMode = 'create' | 'edit';
 
@@ -150,18 +151,43 @@ function numericOnly(value: string): string {
 const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClass = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
-/** 파일 업로드 헬퍼 */
+/** 파일 업로드 헬퍼 — Supabase Storage 직접 업로드 (Vercel 4.5MB 제한 우회) */
 async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | 'detail-image'): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('type', type);
-  const res = await fetch('/api/upload/contest-asset', { method: 'POST', body: formData });
-  if (!res.ok) {
-    const data = (await res.json()) as { error?: string };
-    throw new Error(data.error ?? '파일 업로드에 실패했습니다.');
+  const supabase = createBrowserClient();
+  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다.');
+
+  /* 타입별 검증 */
+  const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+  if (type === 'poster' || type === 'detail-image') {
+    if (file.size > 10 * 1024 * 1024) throw new Error('이미지 파일은 10MB 이하여야 합니다.');
+    if (!imageTypes.includes(file.type)) throw new Error('지원하지 않는 이미지 형식입니다. (JPG, PNG, WebP, GIF)');
+  } else if (type === 'promo-video') {
+    if (file.size > 500 * 1024 * 1024) throw new Error('영상 파일은 500MB 이하여야 합니다.');
+    if (![...videoTypes, ...imageTypes].includes(file.type)) throw new Error('지원하지 않는 파일 형식입니다.');
   }
-  const data = (await res.json()) as { url: string };
-  return data.url;
+
+  /* 버킷 결정 + 파일 경로 생성 */
+  const bucket = type === 'poster' ? 'posters' : 'contest-assets';
+  const ext = file.name.split('.').pop() || 'bin';
+  const filePath = `${type}/${user.id}/${Date.now()}.${ext}`;
+
+  /* Supabase Storage에 직접 업로드 */
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    console.error('에셋 업로드 실패:', uploadError);
+    throw new Error('파일 업로드에 실패했습니다.');
+  }
+
+  /* 공개 URL 생성 */
+  const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(filePath);
+  return publicUrl.publicUrl;
 }
 
 /** 비디오 파일에서 스틸 이미지 추출 */
