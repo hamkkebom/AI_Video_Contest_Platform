@@ -145,8 +145,14 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   return (
     <div className="w-full min-h-screen bg-background">
       {/* 페이지 헤더 */}
-      <section className="py-12 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">
-        <div className="container mx-auto max-w-6xl space-y-5">
+      <section className="relative py-16 px-4 bg-gradient-to-b from-primary/8 via-primary/3 to-background border-b border-border overflow-hidden">
+        {/* 배경 장식 */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-orange-500/5 blur-3xl" />
+        </div>
+
+        <div className="relative container mx-auto max-w-6xl space-y-6">
           {/* 돌아가기 네비게이션 */}
           <div>
             <Link
@@ -157,14 +163,17 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               돌아가기
             </Link>
           </div>
-
           {/* 타이틀 및 설명 */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl font-bold tracking-tight">{contest.title}</h1>
+              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
               <Badge className={statusMeta.className}>{statusMeta.label}</Badge>
             </div>
-            <p className="max-w-3xl text-muted-foreground">{contest.description}</p>
+            {contest.description && (
+              <p className="max-w-3xl text-lg text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4">
+                {contest.description}
+              </p>
+            )}
             {/* 작품 제출 버튼 — 접수중일 때만 표시 */}
             {contest.status === 'open' && (
               <div className="pt-2">
@@ -253,30 +262,31 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
 
             {/* 상세 안내 */}
             <Card className="p-6 border border-border space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-4">상세 안내</h2>
-                {contest.detailContent ? (
-                  <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {contest.detailContent}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground leading-relaxed">{contest.description}</p>
-                )}
-              </div>
+              <h2 className="text-2xl font-bold">상세 안내</h2>
 
-              {/* 상세 안내 이미지 */}
-              {contest.detailImageUrls && contest.detailImageUrls.length > 0 ? (
-                <div className="space-y-4">
+              {/* 상세 안내 이미지 (포스터 크기) */}
+              {contest.detailImageUrls && contest.detailImageUrls.length > 0 && (
+                <div className="flex flex-col items-center gap-4">
                   {contest.detailImageUrls.map((url) => (
-                    <img
-                      key={url}
-                      src={url}
-                      alt={`${contest.title} 상세 안내`}
-                      className="w-full rounded-lg border border-border"
-                    />
+                    <div key={url} className="overflow-hidden rounded-lg bg-muted aspect-[3/4] max-w-sm w-full">
+                      <img
+                        src={url}
+                        alt={`${contest.title} 상세 안내`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   ))}
                 </div>
-              ) : null}
+              )}
+
+              {/* 상세 안내 텍스트 */}
+              {contest.detailContent ? (
+                <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {contest.detailContent}
+                </div>
+              ) : (
+                <p className="text-muted-foreground leading-relaxed">{contest.description}</p>
+              )}
             </Card>
           </div>
 
