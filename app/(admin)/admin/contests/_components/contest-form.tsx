@@ -711,25 +711,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               <p className="text-xl font-semibold text-foreground">{submittedTitle || title}</p>
               <p className="text-sm text-muted-foreground">{mode === 'create' ? '공모전이 등록되었습니다.' : '공모전 정보가 수정되었습니다.'}</p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button
-                onClick={() => {
-                  router.push(detailPath);
-                  router.refresh();
-                }}
-              >
-                {mode === 'create' ? '목록으로' : '상세 보기'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  router.push('/admin/contests');
-                  router.refresh();
-                }}
-              >
-                목록으로 이동
-              </Button>
-            </div>
+            <Button
+              onClick={() => {
+                router.push('/admin/contests');
+                router.refresh();
+              }}
+            >
+              공모전 관리로 이동
+            </Button>
           </CardContent>
         </Card>
       </div>
