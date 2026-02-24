@@ -422,7 +422,7 @@ export default function ContestSubmitPage() {
                   영상 제출하기
                 </h1>
                 <p className="text-base md:text-[1.1rem] text-zinc-300 leading-relaxed font-light max-w-xl">
-                  <strong className="font-semibold text-white">{contest.title}</strong>에 참가할 당신만의 창의적인 영상을 세상에 선보여 주세요.
+                  공모전에 참가할 당신만의 창의적인 영상을 세상에 선보여주세요.
                 </p>
               </div>
             </div>
@@ -435,27 +435,41 @@ export default function ContestSubmitPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* 공모전 정보 요약 배너 */}
-            <Card className="p-5 border border-border bg-gradient-to-r from-violet-500/5 to-orange-500/5">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
-                  <Info className="h-4.5 w-4.5 text-violet-500" />
-                </div>
-                <div className="space-y-1 text-sm">
-                  <p className="font-semibold text-foreground">{contest.title}</p>
-                  <p className="text-muted-foreground">
-                    마감: {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    {' \u00B7 '}
-                    허용 형식: {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
-                    {' \u00B7 '}
-                    최대 {contest.maxSubmissionsPerUser}편 제출 가능
-                  </p>
+            <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 p-6 shadow-lg mb-8">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center shrink-0 border border-violet-500/30">
+                    <Info className="h-6 w-6 text-violet-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-bold text-white text-lg leading-tight">{contest.title}</p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]"></span>
+                        마감: {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </span>
+                      <span className="hidden md:inline text-zinc-600">|</span>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]"></span>
+                        허용 형식: {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
+                      </span>
+                      <span className="hidden md:inline text-zinc-600">|</span>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                        최대 {contest.maxSubmissionsPerUser}편 제출
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* ===== STEP 1: 영상 정보 ===== */}
             <Card className="p-6 border border-border">
