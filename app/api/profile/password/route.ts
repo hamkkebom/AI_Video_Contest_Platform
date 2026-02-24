@@ -44,6 +44,14 @@ export async function PUT(request: Request) {
 
     if (error) {
       console.error('비밀번호 변경 실패:', error);
+      /* Supabase는 동일 비밀번호로 변경 시 에러 반환 */
+      const msg = error.message?.toLowerCase() ?? '';
+      if (msg.includes('same') || msg.includes('different') || msg.includes('identical')) {
+        return NextResponse.json(
+          { error: '현재 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.' },
+          { status: 400 },
+        );
+      }
       return NextResponse.json({ error: '비밀번호 변경에 실패했습니다.' }, { status: 500 });
     }
 

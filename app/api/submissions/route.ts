@@ -54,6 +54,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
     }
 
+    /* ====== 출품 수 제한 검증 ====== */
+    const { data: contestData, error: contestError } = await supabase
+      .from('contests')
+      .select('max_submissions_per_user')
+      .eq('id', contestId)
+      .single();
+
+    if (contestError || !contestData) {
+      return NextResponse.json({ error: '공모전 정보를 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    const maxSubmissions = contestData.max_submissions_per_user ?? 1;
+
+    const { count: existingCount, error: countError } = await supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('contest_id', contestId)
+      .eq('user_id', user.id);
+
+    if (countError) {
+      console.error('기존 출품작 수 조회 실패:', countError);
+      return NextResponse.json({ error: '출품작 확인에 실패했습니다.' }, { status: 500 });
+    }
+
+    if ((existingCount ?? 0) >= maxSubmissions) {
+      return NextResponse.json(
+        { error: `이 공모전의 최대 출품 가능 수(${maxSubmissions}개)를 초과했습니다.` },
+        { status: 409 },
+      );
+    }
+
     const { data, error } = await supabase
       .from('submissions')
       .insert({

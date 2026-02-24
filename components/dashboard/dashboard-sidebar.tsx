@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { ExternalLink, LogOut, Menu, TreePine, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,15 +57,13 @@ function SidebarNav({ items, pathname }: { items: DashboardSidebarItem[]; pathna
 
 /** 사이드바 하단 — 로그인 계정 정보 + 로그아웃 */
 function SidebarFooter({ roleLabel }: { roleLabel: string }) {
-  const router = useRouter();
   const { user, profile, signOut } = useAuth();
-
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const email = profile?.email || user?.email || '';
-
   const handleSignOut = async () => {
     await signOut();
-    router.push('/');
+    /* 하드 리디렉트 — RoleGuard 경쟁 방지 + 쿠키/상태 완전 초기화 */
+    window.location.href = '/';
   };
 
   return (

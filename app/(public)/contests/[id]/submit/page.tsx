@@ -69,6 +69,7 @@ export default function ContestSubmitPage() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
   /* 제출 폼 상태 */
@@ -98,9 +99,32 @@ export default function ContestSubmitPage() {
 
   useEffect(() => {
     const load = async () => {
+      /* 공모전 정보 조회 */
       const res = await fetch('/api/contests'); const contests: Contest[] = await res.json();
       const found = contests.find((c) => c.id === contestId);
       setContest(found ?? null);
+      /* 기존 출품 수 확인 — 최대 출품 수 초과 시 폼 비활성화 */
+      if (found) {
+        try {
+          const supabase = createBrowserClient();
+          if (supabase) {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (currentUser) {
+              const { count } = await supabase
+                .from('submissions')
+                .select('id', { count: 'exact', head: true })
+                .eq('contest_id', contestId)
+                .eq('user_id', currentUser.id);
+              const maxSub = found.maxSubmissionsPerUser ?? 1;
+              if ((count ?? 0) >= maxSub) {
+                setAlreadySubmitted(true);
+              }
+            }
+          }
+        } catch {
+          /* 조회 실패는 무시 — 서버 API에서도 검증함 */
+        }
+      }
       setLoading(false);
     };
     load();
@@ -424,6 +448,35 @@ export default function ContestSubmitPage() {
             <Link href={`/contests/${contestId}/landing`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>
             </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+
+  /* 최대 출품 수 초과 — 이미 제출한 경우 */
+  if (alreadySubmitted) {
+    return (
+      <div className="w-full min-h-screen bg-background">
+        <section className="py-20 px-4">
+          <div className="container mx-auto max-w-3xl text-center">
+            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">이미 제출한 공모전입니다</h1>
+            <p className="text-muted-foreground mb-6">
+              이 공모전의 최대 출품 가능 수({contest?.maxSubmissionsPerUser ?? 1}개)를 초과하여
+              더 이상 제출할 수 없습니다.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href={`/contests/${contestId}/landing`}>
+                <Button variant="outline" className="cursor-pointer">공모전 상세</Button>
+              </Link>
+              <Link href="/my/submissions">
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer">
+                  내 출품작 보기
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       </div>

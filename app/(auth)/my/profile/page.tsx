@@ -13,7 +13,15 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 import { Camera, Check, X, Loader2, AlertTriangle, Plus } from 'lucide-react';
 
-/** AI 도구 칩 선택 컴포넌트 (접이식) */
+/** 전화번호 포맷팅 — 숫자만 추출 후 하이픈 자동 삽입 */
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+/** AI 도구 칩 선택 컴포넌트 (기본 리스트 + 커스텀 입력) */
 function AiToolChips({
   label,
   tools,
@@ -25,10 +33,10 @@ function AiToolChips({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
-  // 선택된 게 없으면 접힌 상태로 시작
   const [expanded, setExpanded] = useState(selected.length > 0);
+  const [customInput, setCustomInput] = useState('');
 
-  // 외부에서 selected가 바뀌면 expanded 동기화
+  /* 외부에서 selected가 바뀌면 expanded 동기화 */
   useEffect(() => {
     if (selected.length > 0) setExpanded(true);
   }, [selected.length]);
@@ -41,7 +49,22 @@ function AiToolChips({
     );
   };
 
-  // 접힌 상태: 선택된 도구가 없으면 "추가하기" 버튼만 표시
+  /* 커스텀 도구 추가 */
+  const addCustom = () => {
+    const trimmed = customInput.trim();
+    if (!trimmed) return;
+    if (selected.includes(trimmed)) {
+      setCustomInput('');
+      return;
+    }
+    onChange([...selected, trimmed]);
+    setCustomInput('');
+  };
+
+  /* 기본 리스트에 없는 커스텀 도구들 */
+  const customTools = selected.filter((t) => !(tools as readonly string[]).includes(t));
+
+  /* 접힌 상태: 선택된 도구가 없으면 "추가하기" 버튼만 표시 */
   if (!expanded && selected.length === 0) {
     return (
       <div className="space-y-2">
@@ -61,6 +84,7 @@ function AiToolChips({
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">{label}</p>
+      {/* 기본 리스트 칩 */}
       <div className="flex flex-wrap gap-2">
         {tools.map((tool) => {
           const isActive = selected.includes(tool);
@@ -80,8 +104,49 @@ function AiToolChips({
           );
         })}
       </div>
+      {/* 커스텀 도구 칩 (제거 가능) */}
+      {customTools.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {customTools.map((tool) => (
+            <span
+              key={tool}
+              className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+            >
+              {tool}
+              <button
+                type="button"
+                onClick={() => onChange(selected.filter((t) => t !== tool))}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {/* 커스텀 도구 직접 입력 */}
+      <div className="flex gap-2">
+        <Input
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
+          placeholder="기타 도구 직접 입력"
+          className="h-8 text-xs"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 h-8 text-xs"
+          onClick={addCustom}
+          disabled={!customInput.trim()}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          추가
+        </Button>
+      </div>
       {selected.length === 0 && (
-        <p className="text-xs text-muted-foreground">사용하는 도구를 선택해주세요</p>
+        <p className="text-xs text-muted-foreground">사용하는 도구를 선택하거나 직접 입력해주세요</p>
       )}
     </div>
   );
@@ -97,12 +162,15 @@ interface FormData {
   preferredVideoAi: string[];
 }
 
+/** 비밀번호 검증 패턴: 8~20자, 영문+숫자+특수문자 */
+const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,20}$/;
+
 export default function ProfileEditPage() {
   const { user, profile, loading, refreshProfile, signOut } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 폼 상태 (이름은 수정 불가이므로 폼에 포함하지 않음)
+  /* 폼 상태 (이름은 수정 불가이므로 폼에 포함하지 않음) */
   const [formData, setFormData] = useState<FormData>({
     nickname: '',
     phone: '',
@@ -115,25 +183,27 @@ export default function ProfileEditPage() {
   const [initialData, setInitialData] = useState<FormData | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
 
-  // UI 상태
+  /* 프로필 사진 — 저장 버튼 클릭 시 업로드 */
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  /* UI 상태 */
   const [saving, setSaving] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
   const [nicknameStatus, setNicknameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 비밀번호 변경
+  /* 비밀번호 변경 — 저장 버튼에 통합 */
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [passwordSaving, setPasswordSaving] = useState(false);
 
-  // 회원탈퇴
+  /* 회원탈퇴 */
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
 
-  // 프로필 데이터 로드
+  /* 프로필 데이터 로드 */
   useEffect(() => {
     if (!profile) return;
 
@@ -157,23 +227,24 @@ export default function ProfileEditPage() {
     setAvatarUrl(profile.avatar_url ?? undefined);
   }, [profile]);
 
-  // isDirty 계산 — initialData가 없으면 항상 false (저장 버튼 비활성화)
+  /* isDirty 계산 — 프로필 데이터, 사진, 비밀번호 모두 고려 */
+  const hasPasswordInput = showPasswordSection && newPassword.length > 0;
   const isDirty = useMemo(() => {
     if (!initialData) return false;
-    return JSON.stringify(formData) !== JSON.stringify(initialData);
-  }, [formData, initialData]);
+    const formChanged = JSON.stringify(formData) !== JSON.stringify(initialData);
+    return formChanged || !!avatarFile || hasPasswordInput;
+  }, [formData, initialData, avatarFile, hasPasswordInput]);
 
   const displayName = profile?.name || user?.email?.split('@')[0] || '사용자';
   const fallbackInitial = displayName.charAt(0).toUpperCase();
 
-  // 닉네임 중복 확인
+  /* 닉네임 중복 확인 */
   const checkNickname = useCallback(async () => {
     const nickname = formData.nickname.trim();
     if (!nickname || nickname.length < 2) {
       setNicknameStatus('idle');
       return;
     }
-    // 원래 닉네임과 같으면 확인 불필요
     if (nickname === (initialData?.nickname ?? '')) {
       setNicknameStatus('idle');
       return;
@@ -189,41 +260,79 @@ export default function ProfileEditPage() {
     }
   }, [formData.nickname, initialData?.nickname]);
 
-  // 아바타 업로드
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* 아바타 파일 선택 — 업로드는 저장 시 수행 */
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setAvatarUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (res.ok) {
-        setAvatarUrl(data.avatarUrl);
-        await refreshProfile();
-      } else {
-        setSaveMessage({ type: 'error', text: data.error || '아바타 업로드 실패' });
-      }
-    } catch {
-      setSaveMessage({ type: 'error', text: '아바타 업로드 중 오류가 발생했습니다.' });
-    } finally {
-      setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    /* 미리보기 URL 생성 */
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    const preview = URL.createObjectURL(file);
+    setAvatarFile(file);
+    setAvatarPreview(preview);
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 프로필 저장
+  /* 통합 저장 — 프로필 + 사진 + 비밀번호 */
   const handleSave = async () => {
     if (nicknameStatus === 'taken') {
       setSaveMessage({ type: 'error', text: '이미 사용 중인 닉네임입니다.' });
       return;
     }
 
+    /* 비밀번호 유효성 검사 (입력된 경우만) */
+    if (hasPasswordInput) {
+      setPasswordError('');
+      if (newPassword.length < 8 || newPassword.length > 20) {
+        setPasswordError('비밀번호는 8~20자여야 합니다.');
+        return;
+      }
+      if (!PASSWORD_REGEX.test(newPassword)) {
+        setPasswordError('영문, 숫자, 특수문자를 모두 포함해야 합니다.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPasswordError('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+    }
+
     setSaving(true);
     setSaveMessage(null);
+    setPasswordError('');
+
     try {
+      /* 1) 비밀번호 변경 (입력된 경우) — 실패 시 전체 중단 */
+      if (hasPasswordInput) {
+        const pwRes = await fetch('/api/profile/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword, confirmPassword }),
+        });
+        const pwData = await pwRes.json();
+        if (!pwRes.ok) {
+          setPasswordError(pwData.error || '비밀번호 변경 실패');
+          setSaving(false);
+          return;
+        }
+      }
+
+      /* 2) 프로필 사진 업로드 (선택된 경우) */
+      if (avatarFile) {
+        const fd = new window.FormData();
+        fd.append('file', avatarFile);
+        const avatarRes = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+        const avatarData = await avatarRes.json();
+        if (!avatarRes.ok) {
+          setSaveMessage({ type: 'error', text: avatarData.error || '프로필 사진 업로드 실패' });
+          setSaving(false);
+          return;
+        }
+        setAvatarUrl(avatarData.avatarUrl);
+      }
+
+      /* 3) 프로필 정보 저장 */
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -239,9 +348,24 @@ export default function ProfileEditPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSaveMessage({ type: 'success', text: '프로필이 저장되었습니다.' });
+        const messages: string[] = [];
+        messages.push('프로필이 저장되었습니다.');
+        if (hasPasswordInput) messages.push('비밀번호가 변경되었습니다.');
+        if (avatarFile) messages.push('프로필 사진이 변경되었습니다.');
+
+        setSaveMessage({ type: 'success', text: messages.join(' ') });
         await refreshProfile();
         setInitialData({ ...formData });
+
+        /* 사진/비밀번호 상태 초기화 */
+        if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        if (hasPasswordInput) {
+          setShowPasswordSection(false);
+          setNewPassword('');
+          setConfirmPassword('');
+        }
       } else {
         setSaveMessage({ type: 'error', text: data.error || '저장에 실패했습니다.' });
       }
@@ -252,47 +376,7 @@ export default function ProfileEditPage() {
     }
   };
 
-  // 비밀번호 변경
-  const handlePasswordChange = async () => {
-    setPasswordError('');
-    if (newPassword.length < 8 || newPassword.length > 20) {
-      setPasswordError('비밀번호는 8~20자여야 합니다.');
-      return;
-    }
-    const regex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,20}$/;
-    if (!regex.test(newPassword)) {
-      setPasswordError('영문, 숫자, 특수문자를 모두 포함해야 합니다.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    setPasswordSaving(true);
-    try {
-      const res = await fetch('/api/profile/password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword, confirmPassword }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setShowPasswordSection(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setSaveMessage({ type: 'success', text: '비밀번호가 변경되었습니다.' });
-      } else {
-        setPasswordError(data.error || '비밀번호 변경 실패');
-      }
-    } catch {
-      setPasswordError('서버 오류가 발생했습니다.');
-    } finally {
-      setPasswordSaving(false);
-    }
-  };
-
-  // 회원 탈퇴
+  /* 회원 탈퇴 */
   const handleWithdraw = async () => {
     if (!withdrawReason.trim()) return;
     setWithdrawing(true);
@@ -366,12 +450,12 @@ export default function ProfileEditPage() {
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
                   <Avatar className="h-24 w-24 border border-border">
-                    <AvatarImage src={avatarUrl} alt={displayName} />
+                    <AvatarImage src={avatarPreview ?? avatarUrl} alt={displayName} />
                     <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{fallbackInitial}</AvatarFallback>
                   </Avatar>
-                  {avatarUploading && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
-                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  {avatarFile && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                      <span className="text-[10px] text-white font-bold">!</span>
                     </div>
                   )}
                 </div>
@@ -380,7 +464,7 @@ export default function ProfileEditPage() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
-                  onChange={handleAvatarUpload}
+                  onChange={handleAvatarSelect}
                 />
                 <Button
                   type="button"
@@ -388,12 +472,16 @@ export default function ProfileEditPage() {
                   size="sm"
                   className="w-full gap-1"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarUploading}
+                  disabled={saving}
                 >
                   <Camera className="h-4 w-4" />
                   사진 변경
                 </Button>
-                <p className="text-xs text-muted-foreground">JPG, PNG, WebP, GIF · 최대 2MB</p>
+                {avatarFile ? (
+                  <p className="text-xs text-orange-500 font-medium">저장 버튼을 눌러 반영해주세요</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">JPG, PNG, WebP, GIF · 최대 2MB</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -402,7 +490,7 @@ export default function ProfileEditPage() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle>AI 도구 설정</CardTitle>
-              <CardDescription>주로 사용하는 AI 도구를 선택해주세요.</CardDescription>
+              <CardDescription>주로 사용하는 AI 도구를 선택하거나 직접 입력해주세요.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <AiToolChips
@@ -433,7 +521,7 @@ export default function ProfileEditPage() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle>기본 정보</CardTitle>
-              <CardDescription>변경사항은 저장 버튼을 눌러 반영할 수 있습니다.</CardDescription>
+              <CardDescription>변경사항은 하단 저장 버튼을 눌러 반영할 수 있습니다.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {/* 이름 (readOnly) + 비밀번호 변경 */}
@@ -484,25 +572,22 @@ export default function ProfileEditPage() {
                         />
                       </div>
                       {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={handlePasswordChange} disabled={passwordSaving}>
-                          {passwordSaving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                          변경
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setShowPasswordSection(false);
-                            setNewPassword('');
-                            setConfirmPassword('');
-                            setPasswordError('');
-                          }}
-                        >
-                          취소
-                        </Button>
-                      </div>
+                      {newPassword && !passwordError && (
+                        <p className="text-xs text-orange-500">저장 버튼을 눌러 반영해주세요</p>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowPasswordSection(false);
+                          setNewPassword('');
+                          setConfirmPassword('');
+                          setPasswordError('');
+                        }}
+                      >
+                        취소
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -554,10 +639,16 @@ export default function ProfileEditPage() {
                   <Input
                     id="phone"
                     type="tel"
+                    inputMode="numeric"
                     value={formData.phone}
-                    onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value);
+                      setFormData((p) => ({ ...p, phone: formatted }));
+                    }}
                     placeholder="010-0000-0000"
+                    maxLength={13}
                   />
+                  <p className="text-xs text-muted-foreground">숫자만 입력하면 자동으로 형식이 맞춰집니다.</p>
                 </div>
               </div>
 

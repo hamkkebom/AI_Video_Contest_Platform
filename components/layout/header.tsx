@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -104,7 +104,7 @@ function getInitial(name: string | undefined | null): string {
 export function Header() {
   const { user, profile, loading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
+
   const pathname = usePathname();
 
   useEffect(() => setMounted(true), []);
@@ -143,10 +143,10 @@ export function Header() {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
-  /* 로그아웃 후 현재 페이지 유지 */
+  /* 로그아웃 후 홈으로 하드 리디렉트 */
   const handleSignOut = async () => {
     await signOut();
-    router.refresh();
+    window.location.href = '/';
   };
 
   /**

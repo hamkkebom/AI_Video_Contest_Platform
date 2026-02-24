@@ -65,7 +65,7 @@ export default async function MyContestsPage() {
     return (
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">내 공모전</h1>
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">내 출품작</h1>
           <p className="text-sm text-muted-foreground">
             참가한 공모전 {groups.length}개 · 총 {totalSubmissions}개 작품
           </p>
@@ -79,7 +79,7 @@ export default async function MyContestsPage() {
                 <Trophy className="h-6 w-6" />
               </div>
               <div className="space-y-1">
-                <p className="text-lg font-semibold">참가한 공모전이 없습니다</p>
+                <p className="text-lg font-semibold">출품작이 없습니다</p>
                 <p className="text-sm text-muted-foreground">
                   공모전에 참가하고 작품을 등록해보세요.
                 </p>
@@ -126,8 +126,9 @@ export default async function MyContestsPage() {
                         const sStatus = statusMeta[submission.status];
 
                         return (
-                          <div
+                          <Link
                             key={submission.id}
+                            href={`/gallery/${submission.id}`}
                             className="flex items-center gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
                           >
                             {/* 썸네일 */}
@@ -144,7 +145,6 @@ export default async function MyContestsPage() {
                                 </div>
                               )}
                             </div>
-
                             {/* 제목 + 상태 + 지표 */}
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center gap-2">
@@ -168,10 +168,9 @@ export default async function MyContestsPage() {
                                 </span>
                               </div>
                             </div>
-
                             {/* 상세보기 화살표 */}
                             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          </div>
+                          </Link>
                         );
                       })}
                     </div>

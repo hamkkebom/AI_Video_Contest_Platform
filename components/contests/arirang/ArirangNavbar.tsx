@@ -40,11 +40,11 @@ export function ArirangNavbar() {
   };
 
 
-  /** 로그아웃 후 현재 페이지 유지 */
+  /** 로그아웃 후 홈으로 하드 리디렉트 */
   const handleSignOut = useCallback(async () => {
     await signOut();
-    router.refresh();
-  }, [signOut, router]);
+    window.location.href = '/';
+  }, [signOut]);
 
   /** 역할별 대시보드 경로 */
   const getDashboardPath = useCallback(() => {
