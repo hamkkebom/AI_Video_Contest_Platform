@@ -21,11 +21,20 @@ const statusMeta: Record<SubmissionStatus, { label: string; className: string }>
 /** 공모전 상태 한글 매핑 */
 const contestStatusLabel: Record<string, { label: string; className: string }> = {
   draft: { label: '준비 중', className: 'bg-muted text-muted-foreground' },
+  before_open: { label: '접수전', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   open: { label: '접수 중', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   closed: { label: '접수 마감', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
   judging: { label: '심사 중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
   completed: { label: '완료', className: 'bg-primary/10 text-primary' },
 };
+
+/** 표시용 상태 계산: open이지만 submissionStartAt이 미래면 '접수전' */
+function getDisplayStatus(contest: Contest): string {
+  if (contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > Date.now()) {
+    return 'before_open';
+  }
+  return contest.status;
+}
 
 /** 공모전별 출품작 그룹 */
 interface ContestGroup {
@@ -93,7 +102,7 @@ export default async function MyContestsPage() {
           /* 공모전 카드 목록 */
           <div className="space-y-4">
             {groups.map(({ contest, submissions }) => {
-              const cStatus = contestStatusLabel[contest.status] ?? contestStatusLabel.draft;
+              const ds = getDisplayStatus(contest);
 
               return (
                 <Card key={contest.id} className="overflow-hidden border-border">
@@ -102,7 +111,7 @@ export default async function MyContestsPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={cStatus.className}>{cStatus.label}</Badge>
+                          <Badge className={(contestStatusLabel[ds] ?? contestStatusLabel.draft).className}>{(contestStatusLabel[ds] ?? contestStatusLabel.draft).label}</Badge>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <CalendarDays className="h-3 w-3" />
                             {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
@@ -172,8 +181,8 @@ export default async function MyContestsPage() {
                       })}
                     </div>
 
-                    {/* 공모전에 추가 출품 (접수 중일 때만) */}
-                    {contest.status === 'open' && submissions.length < contest.maxSubmissionsPerUser && (
+                    {/* 공모전에 추가 출품 (실제 접수 가능할 때만 — 접수전이면 숨김) */}
+                    {ds === 'open' && submissions.length < contest.maxSubmissionsPerUser && (
                       <div className="mt-3 pt-3 border-t border-border">
                         <Link href={`/contests/${contest.id}/submit`}>
                           <Button variant="outline" size="sm" className="gap-1.5">

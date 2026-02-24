@@ -455,6 +455,27 @@ export default function ContestSubmitPage() {
   }
 
 
+
+  /* 접수중이지만 접수시작일 전인 경우 (접수전) */
+  if (contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > Date.now()) {
+    return (
+      <div className="w-full min-h-screen bg-background">
+        <section className="py-20 px-4">
+          <div className="container mx-auto max-w-3xl text-center">
+            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">접수 시작 전입니다</h1>
+            <p className="text-muted-foreground mb-6">
+              이 공모전의 접수는 {formatDate(contest.submissionStartAt, { year: 'numeric', month: 'long', day: 'numeric' })}부터 시작됩니다.
+            </p>
+            <Link href={`/contests/${contestId}/landing`}>
+              <Button variant="outline">공모전 상세로 돌아가기</Button>
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   /* 최대 출품 수 초과 — 이미 제출한 경우 */
   if (alreadySubmitted) {
     return (

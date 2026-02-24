@@ -125,7 +125,11 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     );
   }
 
-  const statusMeta = getStatusMeta(contest.status);
+  // 표시용 상태: open이지만 submissionStartAt이 미래면 '접수전'으로 취급
+  const displayStatus = (contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > Date.now())
+    ? 'draft'
+    : contest.status;
+  const statusMeta = getStatusMeta(displayStatus);
   const hostUser = allUsers.find((u) => u.id === contest.hostUserId);
   const isAdminHost = hostUser?.roles?.includes('admin');
 
@@ -174,8 +178,8 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 {contest.description}
               </p>
             )}
-            {/* 작품 제출 버튼 — 접수중일 때만 표시 */}
-            {contest.status === 'open' && (
+            {/* 작품 제출 버튼 — 실제 접수 가능할 때만 표시 (접수전이면 숨김) */}
+            {displayStatus === 'open' && (
               <div className="flex justify-end py-3">
                 <AuthSubmitButton contestId={contest.id} />
               </div>

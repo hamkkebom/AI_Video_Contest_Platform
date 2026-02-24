@@ -120,8 +120,11 @@ export default async function ContestsPage({
     }
   });
 
-  // 접수중 공모전 수 (헤더 고정 표시용 — 실제 접수 가능한 것만)
-  const openContestsCount = contests.filter((c) => getDisplayStatus(c) === 'open').length;
+  // 접수전 + 접수중 공모전 수 (헤더 고정 표시용)
+  const activeContestsCount = contests.filter((c) => {
+    const ds = getDisplayStatus(c);
+    return ds === 'open' || ds === 'draft';
+  }).length;
 
   // 페이지네이션
   const displayedContests = sortedContests.slice(0, currentPage * ITEMS_PER_PAGE);
@@ -143,7 +146,7 @@ export default async function ContestsPage({
               Explore Contests
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              총 <span className="text-[#EA580C] font-bold">{openContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.
+              총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.
             </p>
           </div>
         </div>
