@@ -923,7 +923,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 <div className="space-y-1.5">
                   {promotionVideoUrls.map((url, idx) => (
                     <div key={url} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm">
-                      <span className="truncate flex-1 text-muted-foreground">{url}</span>
+                      <span className="shrink-0 font-medium text-foreground">홍보영상 {idx + 1}</span>
+                      <span className="truncate flex-1 text-xs text-muted-foreground">{url}</span>
                       <button
                         type="button"
                         className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
@@ -984,14 +985,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     onClick={() => promoFileRef.current?.click()}
                   >
                     <Upload className="h-4 w-4" />
-                    {promoUploading
-                      ? (promoUploadProgress || '업로드 중...')
-                      : (promoUploadProgress || '영상 선택 (MP4, WebM, MOV, AVI · 복수 선택 가능)')}
+                    {promoUploading ? '업로드 중...' : '영상 선택 (MP4, WebM, MOV, AVI · 복수 선택 가능)'}
                   </Button>
-                  {promoThumbnailUrl && (
-                    renderPreviewImage(promoThumbnailUrl, '홍보영상 스틸 미리보기', () => {
-                      setPromoThumbnailUrl('');
-                    })
+                  {promoUploadProgress && (
+                    <p className="text-xs text-muted-foreground animate-pulse">{promoUploadProgress}</p>
                   )}
                 </div>
               )}
