@@ -652,7 +652,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
       setSubmittedTitle(data.contest.title);
       setSaved(true);
-      router.refresh();
+
     } catch (error) {
       console.error('Failed to submit contest form:', error);
       setErrorMessage(error instanceof Error ? error.message : '요청 처리에 실패했습니다.');
