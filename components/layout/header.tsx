@@ -27,7 +27,7 @@ interface MenuItem {
 }
 
 const commonMenuItems: MenuItem[] = [
-  // { label: '공모전', href: '/contests?status=open' }, // 미완성 — 배포 시 숨김
+  { label: '공모전', href: '/contests?status=open' },
 ];
 
 /**
