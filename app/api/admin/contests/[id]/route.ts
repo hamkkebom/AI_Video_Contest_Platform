@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { deleteContest, getContestById, updateContest, createActivityLog, type ContestMutationInput } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
 
@@ -71,6 +72,7 @@ export async function PUT(
       });
     }
 
+    revalidatePath('/admin/contests');
     return NextResponse.json({ contest });
   } catch (err) {
     console.error('Failed to update contest:', err);
@@ -105,6 +107,7 @@ export async function DELETE(
       });
     }
 
+    revalidatePath('/admin/contests');
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to delete contest:', err);
