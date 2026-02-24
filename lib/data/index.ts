@@ -541,11 +541,8 @@ export async function getContests(filters?: ContestFilters): Promise<Contest[]> 
     .select('*')
     .order('created_at', { ascending: true });
 
-  // 초안(draft) 상태는 명시적으로 요청하지 않으면 목록에서 제외
   if (filters?.status) {
     query = query.eq('status', filters.status);
-  } else {
-    query = query.neq('status', 'draft');
   }
   if (filters?.region) {
     query = query.eq('region', filters.region);

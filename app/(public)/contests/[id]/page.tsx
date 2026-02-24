@@ -16,6 +16,9 @@ type ContestDetailPageProps = {
 };
 
 function getStatusMeta(status: string) {
+  if (status === 'draft') {
+    return { label: '접수전', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300' };
+  }
   if (status === 'open') {
     return { label: '접수중', className: 'bg-accent text-accent-foreground' };
   }

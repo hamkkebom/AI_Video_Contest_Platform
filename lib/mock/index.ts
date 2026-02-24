@@ -725,10 +725,6 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
 
 export async function getContests(filters?: ContestFilters): Promise<Contest[]> {
   const filtered = contestsStore.filter((contest) => {
-    // 초안(draft) 상태는 명시적으로 요청하지 않으면 목록에서 제외
-    if (contest.status === 'draft' && filters?.status !== 'draft') {
-      return false;
-    }
     if (filters?.status && contest.status !== filters.status) {
       return false;
     }

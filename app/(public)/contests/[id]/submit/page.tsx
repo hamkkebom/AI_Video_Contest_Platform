@@ -335,7 +335,7 @@ export default function ContestSubmitPage() {
             <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">제출 기간이 아닙니다</h1>
             <p className="text-muted-foreground mb-6">
-              이 공모전은 현재 {contest.status === 'judging' ? '심사중' : '종료'}입니다.
+              이 공모전은 현재 {contest.status === 'draft' ? '접수 준비중' : contest.status === 'judging' ? '심사중' : '종료'}입니다.
             </p>
             <Link href={`/contests/${contestId}`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>

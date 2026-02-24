@@ -144,6 +144,7 @@ export default async function ContestsPage({
             {/* 상태 필터 */}
             <div className="flex gap-1">
               {[
+                { id: 'draft', label: '접수전' },
                 { id: 'open', label: '접수중' },
                 { id: 'judging', label: '심사중' },
                 { id: 'completed', label: '종료' }
@@ -279,6 +280,9 @@ export default async function ContestsPage({
                             />
                             {/* 상태 뱃지 (접수중/심사중/종료) */}
                             <div className="absolute top-4 right-4">
+                              {contest.status === 'draft' && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-blue-500/70">접수전</span>
+                              )}
                               {contest.status === 'open' && (
                                 <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-green-500/70">접수중</span>
                               )}
@@ -315,7 +319,9 @@ export default async function ContestsPage({
 
                       {/* 상태 뱃지 */}
                       <div className="absolute top-[18px] right-3 z-10">
-                        {contest.status === 'open' ? (() => {
+                        {contest.status === 'draft' ? (
+                          <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-blue-500/70">접수전</span>
+                        ) : contest.status === 'open' ? (() => {
                           const dday = calcDDay(contest.submissionEndAt);
                           const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
                           return (
@@ -352,9 +358,11 @@ export default async function ContestsPage({
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
                             <span className="text-sm text-white/60">
-                              {contest.status === 'open'
-                                ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
-                                : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
+                              {contest.status === 'draft'
+                                ? `접수시작 ${formatDate(contest.submissionStartAt, { month: '2-digit', day: '2-digit' })}`
+                                : contest.status === 'open'
+                                  ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
+                                  : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
                               }
                             </span>
                           </div>
