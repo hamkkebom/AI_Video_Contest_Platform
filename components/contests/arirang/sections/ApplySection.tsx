@@ -86,7 +86,7 @@ export function ApplySection() {
           <button
             type="button"
             onClick={() => {
-              router.push(`/contests/${contestId}`);
+              router.push(`/contests/${contestId}/submit`);
             }}
             className="w-full py-4 font-bold text-lg rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             style={{

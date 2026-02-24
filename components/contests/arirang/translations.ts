@@ -11,7 +11,7 @@ export function t(dict: Record<string, Translation>, key: string, lang: Lang): s
 
 export const translations = {
   navbar: {
-    brand: { ko: '꿈꾸는 아리랑', en: 'Dreaming Arirang' },
+    brand: { ko: '꿈플', en: '꿈플' },
     navAbout: { ko: '공모전 소개', en: 'About' },
     navOverview: { ko: '공모 개요', en: 'Overview' },
     navSchedule: { ko: '일정', en: 'Schedule' },

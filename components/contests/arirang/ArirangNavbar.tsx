@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -66,15 +67,14 @@ export function ArirangNavbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* 로고 */}
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="font-bold text-lg md:text-xl tracking-tight cursor-pointer"
+          {/* 로고 */
+          <Link
+            href="/contests"
+            className="font-bold text-lg md:text-xl tracking-tight"
             style={{ color: 'var(--ar-accent)' }}
           >
             {t(navbarTranslations, 'brand', lang)}
-          </button>
+          </Link>
 
           {/* 데스크톱 네비게이션 */}
           <div className="hidden md:flex items-center gap-1">
