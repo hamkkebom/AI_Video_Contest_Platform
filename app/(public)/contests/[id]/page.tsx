@@ -9,6 +9,7 @@ import { MediaTabs } from '@/components/contest/media-tabs';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
 function formatDate(dateStr: string) {
@@ -41,8 +42,9 @@ function getResultFormatLabel(format?: string) {
   return format ?? '-';
 }
 
-export default async function ContestDetailPage({ params }: ContestDetailPageProps) {
+export default async function ContestDetailPage({ params, searchParams }: ContestDetailPageProps) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const [allContests, allSubmissions, allUsers] = await Promise.all([
     getContests(),
     getSubmissions({ contestId: id }),
@@ -202,6 +204,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
                 posterUrl={contest.posterUrl}
                 promotionVideoUrl={contest.promotionVideoUrl}
                 title={contest.title}
+                defaultTab={tab === 'video' ? 'video' : undefined}
               />
             </Card>
 

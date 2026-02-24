@@ -7,14 +7,15 @@ interface MediaTabsProps {
     posterUrl?: string;
     promotionVideoUrl?: string;
     title: string;
+    defaultTab?: 'poster' | 'video';
 }
 
-export function MediaTabs({ posterUrl, promotionVideoUrl, title }: MediaTabsProps) {
+export function MediaTabs({ posterUrl, promotionVideoUrl, title, defaultTab }: MediaTabsProps) {
     const hasPoster = Boolean(posterUrl);
     const hasVideo = Boolean(promotionVideoUrl);
 
     type TabType = 'poster' | 'video';
-    const [activeTab, setActiveTab] = useState<TabType>(hasPoster ? 'poster' : 'video');
+    const [activeTab, setActiveTab] = useState<TabType>(defaultTab === 'video' && hasVideo ? 'video' : hasPoster ? 'poster' : 'video');
 
     if (!hasPoster && !hasVideo) {
         return (

@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter, useParams } from 'next/navigation';
+
 import { Palette, Monitor, Clock, FileVideo, Globe, Wand2, Play, Check } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
@@ -21,6 +23,8 @@ const methodDetails = [
 /** 공모 개요 섹션 */
 export function OverviewSection() {
   const { lang } = useLang();
+  const router = useRouter();
+  const params = useParams();
   const overviewTranslations = translations.overview;
 
   return (
@@ -84,6 +88,10 @@ export function OverviewSection() {
           <div className="mt-8">
             <button
               type="button"
+              onClick={() => {
+                const contestId = params.id as string;
+                router.push(`/contests/${contestId}?tab=video`);
+              }}
               className="inline-flex items-center gap-2 px-8 py-3 rounded-full transition-colors cursor-pointer"
               style={{ border: '2px solid rgba(212,168,67,0.5)', color: 'var(--ar-accent)' }}
             >

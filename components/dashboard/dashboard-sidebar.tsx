@@ -109,7 +109,7 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
             <TreePine className="h-5 w-5 text-primary" />
             <span>꿈플</span>
           </Link>
-          <Link href="/">
+          <Link href="/contests">
             <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" />
               공모전 보기
@@ -136,7 +136,7 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
                 <TreePine className="h-5 w-5 text-primary" />
                 <span>꿈플</span>
               </Link>
-              <Link href="/">
+              <Link href="/contests">
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
                   <ExternalLink className="h-3.5 w-3.5" />
                   공모전 보기
