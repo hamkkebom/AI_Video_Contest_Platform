@@ -428,9 +428,6 @@ export default async function ContestsPage({
               <p className="text-muted-foreground mb-8 max-w-md">
                 필터 조건을 변경하거나, 새로운 공모전이 등록될 때까지 잠시만 기다려주세요.
               </p>
-              <Link href="/contests?status=open">
-                <Button variant="outline" className="rounded-full px-8">부활시키기 (전체보기)</Button>
-              </Link>
             </div>
           )}
 
