@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { AiToolChips } from '@/components/common/ai-tool-chips';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ import {
 
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
@@ -40,9 +41,10 @@ const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
 interface FormState {
   title: string;
   description: string;
-  aiTools: string;
+  chatAi: string[];
+  imageAi: string[];
+  videoAi: string[];
   productionProcess: string;
-  tags: string;
   agree: boolean;
 }
 
@@ -53,7 +55,7 @@ interface BonusFormEntry {
 }
 
 /**
- * 공모전 작품 제출 페이지
+ * 공모전 영상 제출 페이지
  * ApplySection 기준으로 통합된 접수 폼
  */
 export default function ContestSubmitPage() {
@@ -69,9 +71,10 @@ export default function ContestSubmitPage() {
   const [form, setForm] = useState<FormState>({
     title: '',
     description: '',
-    aiTools: '',
+    chatAi: [],
+    imageAi: [],
+    videoAi: [],
     productionProcess: '',
-    tags: '',
     agree: false,
   });
 
@@ -245,11 +248,7 @@ export default function ContestSubmitPage() {
       }
 
       setUploadStep('submission');
-      const tags = form.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-
+      const aiToolsList = [...form.chatAi, ...form.imageAi, ...form.videoAi];
       const submissionResponse = await fetch('/api/submissions', {
         method: 'POST',
         headers: {
@@ -261,8 +260,8 @@ export default function ContestSubmitPage() {
           description: form.description,
           videoUrl: uploadUrlResult.uid,
           thumbnailUrl: thumbnailPublicData.publicUrl,
-          tags,
-          aiTools: form.aiTools,
+          tags: [],
+          aiTools: aiToolsList.join(', '),
           productionProcess: form.productionProcess,
         }),
       });
@@ -277,7 +276,7 @@ export default function ContestSubmitPage() {
 
       setSubmitted(true);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '작품 제출 중 오류가 발생했습니다.';
+      const message = error instanceof Error ? error.message : '영상 제출 중 오류가 발생했습니다.';
       setSubmitError(message);
       alert(message);
     } finally {
@@ -356,9 +355,9 @@ export default function ContestSubmitPage() {
             <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="h-10 w-10 text-green-500" />
             </div>
-            <h1 className="text-3xl font-bold mb-3">작품이 제출되었습니다!</h1>
+            <h1 className="text-3xl font-bold mb-3">영상이 제출되었습니다!</h1>
             <p className="text-muted-foreground mb-2">
-              &quot;{form.title}&quot; 작품이 성공적으로 접수되었습니다.
+              &quot;{form.title}&quot; 영상이 성공적으로 접수되었습니다.
             </p>
             <p className="text-sm text-muted-foreground mb-8">
               검수 완료 후 공모전 출품작 목록에 표시됩니다.
@@ -385,20 +384,25 @@ export default function ContestSubmitPage() {
       {/* 배경 장식 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <section className="relative pt-24 pb-6 px-4">
+      <section className="relative pt-24 pb-8 px-4">
         <div className="container mx-auto max-w-3xl relative z-10">
           <Link
             href={`/contests/${contestId}`}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-violet-500 transition-all mb-6"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            공모전 상세로
+            <ArrowLeft className="h-4 w-4" />
+            공모전 상세로 돌아가기
           </Link>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-            작품 제출하기
-          </h1>
-          <p className="text-muted-foreground">
-            <span className="font-semibold text-foreground">{contest.title}</span>에 참가할 작품을 제출해 주세요.
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/25">
+              <Film className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+              영상 제출하기
+            </h1>
+        </div>
+          <p className="text-muted-foreground text-base leading-relaxed pl-16">
+            <span className="font-semibold text-foreground">{contest.title}</span>에 참가할 영상을 제출해 주세요.
           </p>
         </div>
       </section>
@@ -424,26 +428,26 @@ export default function ContestSubmitPage() {
                     {' \u00B7 '}
                     허용 형식: {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
                     {' \u00B7 '}
-                    최대 {contest.maxSubmissionsPerUser}작품 제출 가능
+                    최대 {contest.maxSubmissionsPerUser}편 제출 가능
                   </p>
                 </div>
               </div>
             </Card>
 
-            {/* ===== STEP 1: 작품 정보 ===== */}
+            {/* ===== STEP 1: 영상 정보 ===== */}
             <Card className="p-6 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
                 <div>
-                  <h2 className="text-lg font-bold">작품 정보</h2>
-                  <p className="text-xs text-muted-foreground">작품의 기본 정보를 입력해 주세요</p>
+                  <h2 className="text-lg font-bold">영상 정보</h2>
+                  <p className="text-xs text-muted-foreground">영상의 기본 정보를 입력해 주세요</p>
                 </div>
               </div>
               <div className="space-y-5">
-                {/* 작품 제목 */}
+                {/* 영상 제목 */}
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-sm font-semibold">
-                    작품 제목 <span className="text-red-500">*</span>
+                    영상 제목 <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -452,15 +456,15 @@ export default function ContestSubmitPage() {
                     maxLength={100}
                     value={form.title}
                     onChange={(e) => updateField('title', e.target.value)}
-                    placeholder="작품 제목을 입력하세요 (최대 100자)"
+                    placeholder="영상 제목을 입력하세요 (최대 100자)"
                     className="bg-background/50 border-border"
                   />
                   <p className="text-xs text-muted-foreground text-right">{form.title.length}/100</p>
                 </div>
-            {/* 작품 설명 */}
+            {/* 영상 설명 */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-semibold">
-                    작품 설명 <span className="text-red-500">*</span>
+                    영상 설명 <span className="text-red-500">*</span>
                   </Label>
                   <Textarea
                     id="description"
@@ -468,7 +472,7 @@ export default function ContestSubmitPage() {
                     maxLength={1000}
                     value={form.description}
                     onChange={(e) => updateField('description', e.target.value)}
-                    placeholder="작품에 대한 설명을 입력하세요. 제작 의도, 주제 해석 등을 포함해 주세요."
+                    placeholder="영상에 대한 설명을 입력하세요. 제작 의도, 주제 해석 등을 포함해 주세요."
                     className="min-h-32 bg-background/50 border-border"
                   />
                   <p className="text-xs text-muted-foreground text-right">
@@ -476,17 +480,30 @@ export default function ContestSubmitPage() {
                   </p>
                 </div>
             {/* 사용한 AI 도구 */}
-                <div className="space-y-2">
-                  <Label htmlFor="aiTools" className="text-sm font-semibold">
+                <div className="space-y-4">
+                  <Label className="text-sm font-semibold">
                     사용한 AI 도구 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
                   </Label>
-                  <Input
-                    id="aiTools"
-                    type="text"
-                    value={form.aiTools}
-                    onChange={(e) => updateField('aiTools', e.target.value)}
-                    placeholder="예: Sora, Runway, Midjourney 등"
-                    className="bg-background/50 border-border"
+                  <AiToolChips
+                    label="💬 채팅 AI"
+                    tools={CHAT_AI_TOOLS}
+                    selected={form.chatAi}
+                    onChange={(v) => setForm((p) => ({ ...p, chatAi: v }))}
+                    allowCustom
+                  />
+                  <AiToolChips
+                    label="🖼️ 이미지 AI"
+                    tools={IMAGE_AI_TOOLS}
+                    selected={form.imageAi}
+                    onChange={(v) => setForm((p) => ({ ...p, imageAi: v }))}
+                    allowCustom
+                  />
+                  <AiToolChips
+                    label="🎬 영상 AI"
+                    tools={VIDEO_AI_TOOLS}
+                    selected={form.videoAi}
+                    onChange={(v) => setForm((p) => ({ ...p, videoAi: v }))}
+                    allowCustom
                   />
                 </div>
             {/* 제작과정 설명 */}
@@ -500,39 +517,12 @@ export default function ContestSubmitPage() {
                     maxLength={3000}
                     value={form.productionProcess}
                     onChange={(e) => updateField('productionProcess', e.target.value)}
-                    placeholder="작품의 기획 \u2192 제작 \u2192 편집 과정을 상세히 설명해 주세요. 어떤 AI 도구를 어떤 단계에서 활용했는지, 제작 기간, 특별한 기법 등을 포함하면 좋습니다."
+                    placeholder="영상의 기획 → 제작 → 편집 과정을 상세히 설명해 주세요. 어떤 AI 도구를 어떤 단계에서 활용했는지, 제작 기간, 특별한 기법 등을 포함하면 좋습니다."
                     className="min-h-48 bg-background/50 border-border"
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     {form.productionProcess.length}/3000
                   </p>
-                </div>
-            {/* 태그 */}
-                <div className="space-y-2">
-                  <Label htmlFor="tags" className="text-sm font-semibold">
-                    태그 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
-                  </Label>
-                  <Input
-                    id="tags"
-                    type="text"
-                    value={form.tags}
-                    onChange={(e) => updateField('tags', e.target.value)}
-                    placeholder="쉴표로 구분 (예: AI영상, 단편, 실험적)"
-                    className="bg-background/50 border-border"
-                  />
-                  {form.tags && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {form.tags
-                        .split(',')
-                        .map((t) => t.trim())
-                        .filter(Boolean)
-                        .map((tag) => (
-                          <Badge key={tag} variant="secondary" className="rounded-full text-xs">
-                            #{tag}
-                          </Badge>
-                        ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </Card>
@@ -697,7 +687,6 @@ export default function ContestSubmitPage() {
                               <p className="text-xs text-muted-foreground">{config.description}</p>
                             )}
                             {/* SNS URL 입력 */}
-                            {config.requiresUrl && (
                               <Input
                                 type="url"
                                 value={entry.snsUrl}
@@ -705,9 +694,7 @@ export default function ContestSubmitPage() {
                                 placeholder="SNS 게시물 URL (예: https://instagram.com/p/...)"
                                 className="bg-background/50 border-border text-sm"
                               />
-                            )}
                             {/* 인증 이미지 업로드 (목업) */}
-                            {config.requiresImage && (
                               <button
                                 type="button"
                                 onClick={() => updateBonusForm(config.id, 'hasProofImage', !entry.hasProofImage)}
@@ -715,10 +702,13 @@ export default function ContestSubmitPage() {
                               >
                                 <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">
-                                  {entry.hasProofImage ? '\u2713 캕처 이미지 선택됨 (클릭하여 제거)' : '캕처 이미지 업로드'}
+                                  {entry.hasProofImage ? '✓ 캡처 이미지 선택됨 (클릭하여 제거)' : '캡처 이미지 업로드'}
                                 </span>
                               </button>
-                            )}
+                            {/* URL + 이미지 모두 필요 안내 */}
+                              <p className="text-xs text-orange-500">
+                                ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
+                              </p>
                           </div>
                         </div>
                       </Card>
@@ -736,7 +726,7 @@ export default function ContestSubmitPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold">확인 및 제출</h2>
-                  <p className="text-xs text-muted-foreground">안내사항을 확인하고 작품을 제출해 주세요</p>
+                  <p className="text-xs text-muted-foreground">안내사항을 확인하고 영상을 제출해 주세요</p>
                 </div>
               </div>
             {/* 안내 사항 */}
@@ -749,7 +739,7 @@ export default function ContestSubmitPage() {
                   <li>공모전 주제에 맞는 AI 영상만 제출할 수 있습니다.</li>
                   <li>저작권/초상권 문제가 없는 콘텐츠만 허용됩니다.</li>
                   <li>제출 후 영상 파일과 썸네일은 수정이 불가합니다.</li>
-                  <li>가산점 인증, 작품 설명, 제작과정 등은 마감 전까지 수정 가능합니다.</li>
+                  <li>가산점 인증, 영상 설명, 제작과정 등은 마감 전까지 수정 가능합니다.</li>
                   <li>마감일 이후에는 모든 수정이 불가합니다.</li>
                 </ul>
               </div>
@@ -818,7 +808,7 @@ export default function ContestSubmitPage() {
                   disabled={!canSubmit}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {isSubmitting ? '업로드 중...' : '작품 제출하기'}
+                  {isSubmitting ? '업로드 중...' : '제출하기'}
                 </Button>
               </div>
             </Card>
