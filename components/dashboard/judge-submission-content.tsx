@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 interface JudgeSubmissionContentData {
   contest: Contest;
@@ -107,7 +108,7 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
             </div>
             <div>
               <p className="text-muted-foreground">제출일</p>
-              <p className="font-semibold text-foreground">{new Date(data.submission.submittedAt).toLocaleDateString('ko-KR')}</p>
+              <p className="font-semibold text-foreground">{formatDate(data.submission.submittedAt)}</p>
             </div>
           </CardContent>
         </Card>
@@ -217,7 +218,7 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
                     {data.currentJudgeScore.total} <span className="text-base text-muted-foreground">/ {maxTotalScore}</span>
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    최근 작성: {new Date(data.currentJudgeScore.createdAt).toLocaleString('ko-KR')}
+                    최근 작성: {formatDateTime(data.currentJudgeScore.createdAt)}
                   </p>
                 </div>
 

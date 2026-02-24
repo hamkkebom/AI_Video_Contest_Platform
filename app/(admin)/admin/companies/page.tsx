@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { getCompanies, getCompanyMembers } from '@/lib/data';
 import type { CompanyStatus } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 
 /** 기업 승인 상태 라벨 */
 const STATUS_LABEL_MAP: Record<CompanyStatus, { label: string; color: string }> = {
@@ -167,7 +168,7 @@ export default async function AdminCompaniesPage() {
                         <Badge className={`${statusInfo.color} border-0 text-xs`}>{statusInfo.label}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(company.createdAt).toLocaleDateString('ko-KR')}
+                        {formatDate(company.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/admin/companies/${company.id}` as Route}>

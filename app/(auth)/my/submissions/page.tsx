@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDateCompact } from '@/lib/utils';
 
 /** 출품작 상태 메타 정보 */
 const statusMeta: Record<SubmissionStatus, { label: string; className: string }> = {
@@ -25,16 +26,6 @@ const contestStatusLabel: Record<string, { label: string; className: string }> =
   judging: { label: '심사 중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
   completed: { label: '완료', className: 'bg-primary/10 text-primary' },
 };
-
-/** 날짜 포맷 (yyyy.MM.dd) */
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-  } catch {
-    return dateStr;
-  }
-}
 
 /** 공모전별 출품작 그룹 */
 interface ContestGroup {
@@ -114,7 +105,7 @@ export default async function MyContestsPage() {
                           <Badge className={cStatus.className}>{cStatus.label}</Badge>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <CalendarDays className="h-3 w-3" />
-                            {formatDate(contest.submissionStartAt)} ~ {formatDate(contest.submissionEndAt)}
+                            {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
                           </span>
                         </div>
                         <CardTitle className="text-lg leading-snug line-clamp-2">
@@ -173,7 +164,7 @@ export default async function MyContestsPage() {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {formatDate(submission.submittedAt)}
+                                  {formatDateCompact(submission.submittedAt)}
                                 </span>
                               </div>
                             </div>

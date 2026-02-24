@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getAllArticles, getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 export default async function AdminArticlesPage() {
   try {
@@ -176,7 +177,7 @@ export default async function AdminArticlesPage() {
                       </TableCell>
                       <TableCell className="text-sm">{author?.name ?? '알 수 없음'}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(article.publishedAt).toLocaleDateString('ko-KR')}
+                        {formatDate(article.publishedAt)}
                       </TableCell>
                       <TableCell>
                         <Badge

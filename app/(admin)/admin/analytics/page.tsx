@@ -1,5 +1,6 @@
 import { AdminAnalyticsContent } from '@/components/dashboard/admin-analytics-content';
 import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 export default async function AdminAnalyticsPage() {
   try {
@@ -13,7 +14,7 @@ export default async function AdminAnalyticsPage() {
 
     const monthlyActivityMap = new Map<string, number>();
     for (const activity of activityLogs) {
-      const month = new Date(activity.createdAt).toLocaleDateString('ko-KR', { month: 'numeric' });
+      const month = formatDate(activity.createdAt, { month: 'numeric' });
       const monthLabel = `${month.replace('.', '').trim()}월`;
       monthlyActivityMap.set(monthLabel, (monthlyActivityMap.get(monthLabel) ?? 0) + 1);
     }
@@ -22,7 +23,7 @@ export default async function AdminAnalyticsPage() {
 
     const monthlySignupMap = new Map<string, number>();
     for (const user of users) {
-      const month = new Date(user.createdAt).toLocaleDateString('ko-KR', { month: 'numeric' });
+      const month = formatDate(user.createdAt, { month: 'numeric' });
       const monthLabel = `${month.replace('.', '').trim()}월`;
       monthlySignupMap.set(monthLabel, (monthlySignupMap.get(monthLabel) ?? 0) + 1);
     }

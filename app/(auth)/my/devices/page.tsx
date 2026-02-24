@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Device } from '@/lib/types';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { formatDate } from '@/lib/utils';
 
 import {
   Apple,
@@ -55,7 +56,7 @@ function formatLastActive(dateString: string): string {
   if (diffDays < 7) {
     return `${diffDays}일 전`;
   }
-  return date.toLocaleDateString('ko-KR');
+  return formatDate(date);
 }
 
 export default function MyDevicesPage() {

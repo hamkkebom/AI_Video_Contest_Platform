@@ -33,6 +33,7 @@ import {
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
+import { formatDate } from '@/lib/utils';
 
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
@@ -390,9 +391,9 @@ export default function ContestSubmitPage() {
           <div className="mb-8">
             <Link
               href={`/contests/${contestId}`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/40 hover:bg-muted border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-all backdrop-blur-sm shadow-sm"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900/50 hover:bg-zinc-800 border border-white/10 text-sm font-medium text-zinc-400 hover:text-white transition-all backdrop-blur-md shadow-lg"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
               공모전으로 돌아가기
             </Link>
           </div>
@@ -435,35 +436,45 @@ export default function ContestSubmitPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* 공모전 정보 요약 배너 */}
-            <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 p-6 shadow-lg mb-8">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 p-6 md:p-8 shadow-sm backdrop-blur-xl mb-8">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center shrink-0 border border-violet-500/30">
-                    <Info className="h-6 w-6 text-violet-400" />
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+                    <Info className="h-6 w-6 text-zinc-100" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="font-bold text-white text-lg leading-tight">{contest.title}</p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
+                  <div className="space-y-2.5">
+                    {/* 공모전 제목과 주제 */}
+                    <div>
+                      <h2 className="font-bold text-white text-xl leading-tight mb-1">{contest.title}</h2>
+                      <p className="text-[0.95rem] text-zinc-300 font-medium leading-relaxed">
+                        주제: <span className="text-white/90">{contest.description}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400 pt-1">
                       <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]"></span>
-                        마감: {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        <span className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]"></span>
+                        마감: <strong className="text-zinc-200 font-medium">
+                          {formatDate(contest.submissionEndAt, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </strong>
                       </span>
                       <span className="hidden md:inline text-zinc-600">|</span>
                       <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]"></span>
-                        허용 형식: {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
+                        <span className="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"></span>
+                        형식: <strong className="text-zinc-200 font-medium">
+                          {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
+                        </strong>
                       </span>
                       <span className="hidden md:inline text-zinc-600">|</span>
                       <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
-                        최대 {contest.maxSubmissionsPerUser}편 제출
+                        <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
+                        최대 <strong className="text-zinc-200 font-medium">{contest.maxSubmissionsPerUser}편</strong> 제출
                       </span>
                     </div>
                   </div>

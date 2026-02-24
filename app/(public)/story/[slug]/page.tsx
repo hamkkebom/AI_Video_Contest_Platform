@@ -3,6 +3,7 @@ import { Calendar, Tag } from 'lucide-react';
 import { getArticles } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
+import { formatDate } from '@/lib/utils';
 
 type NewsDetailPageProps = {
   params: Promise<{
@@ -63,17 +64,7 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
           return 'bg-muted-foreground text-background';
       }
     };
-
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    };
-
-    return (
+return (
       <div className="w-full">
         {/* Back Button */}
         <div className="py-4 px-4 bg-background border-b border-border">

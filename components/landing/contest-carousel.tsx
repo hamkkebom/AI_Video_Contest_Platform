@@ -10,16 +10,12 @@ import {
 } from '@/components/ui/carousel';
 import { Film, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Contest } from '@/lib/types';
+import { formatDateCompact } from '@/lib/utils';
 
 
 
 interface ContestCarouselProps {
   contests: Contest[];
-}
-
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function ContestCarousel({ contests }: ContestCarouselProps) {
@@ -119,7 +115,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
                             {contest.status === 'open' ? '접수중' : contest.status === 'judging' ? '심사중' : '결과발표'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            ~{formatDate(contest.submissionEndAt)}
+                            ~{formatDateCompact(contest.submissionEndAt)}
                           </span>
                         </div>
                       </div>

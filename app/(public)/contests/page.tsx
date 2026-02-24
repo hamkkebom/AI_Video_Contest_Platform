@@ -7,6 +7,7 @@ import { SortSelect } from '@/components/ui/sort-select';
 import { SearchInput } from '@/components/ui/search-input';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import type { AwardTier } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 
 /**
  * 공모전 목록 페이지
@@ -352,8 +353,8 @@ export default async function ContestsPage({
                             <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
                             <span className="text-sm text-white/60">
                               {contest.status === 'open'
-                                ? `마감 ${new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
-                                : `발표 ${new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                                ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
+                                : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
                               }
                             </span>
                           </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getContests, getJudges, getSubmissions, getUsers } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { ExternalLink, Inbox, Search, SquarePen, UserCheck } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -129,19 +130,19 @@ export default async function HostContestDetailPage({ params }: ContestDetailPag
               <div className="rounded-lg bg-muted/40 p-4">
                 <p className="text-xs text-muted-foreground">제출 기간</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {new Date(contest.submissionStartAt).toLocaleDateString('ko-KR')} - {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}
+                  {formatDate(contest.submissionStartAt)} - {formatDate(contest.submissionEndAt)}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/40 p-4">
                 <p className="text-xs text-muted-foreground">심사 기간</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {new Date(contest.judgingStartAt).toLocaleDateString('ko-KR')} - {new Date(contest.judgingEndAt).toLocaleDateString('ko-KR')}
+                  {formatDate(contest.judgingStartAt)} - {formatDate(contest.judgingEndAt)}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/40 p-4">
                 <p className="text-xs text-muted-foreground">결과 발표일</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR')}
+                  {formatDate(contest.resultAnnouncedAt)}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/40 p-4">

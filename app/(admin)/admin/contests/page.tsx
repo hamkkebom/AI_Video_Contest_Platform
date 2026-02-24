@@ -8,6 +8,7 @@ import { getContests, getSubmissions } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import ContestRowActions from './contest-row-actions';
+import { formatDate } from '@/lib/utils';
 
 /** 공모전 상태 라벨 */
 const statusLabelMap: Record<Contest['status'], string> = {
@@ -146,8 +147,8 @@ export default async function AdminContestsPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(contest.submissionStartAt).toLocaleDateString('ko-KR')} ~{' '}
-                          {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}
+                          {formatDate(contest.submissionStartAt)} ~{' '}
+                          {formatDate(contest.submissionEndAt)}
                         </TableCell>
                         <TableCell>
                           <ContestRowActions contestId={contest.id} />

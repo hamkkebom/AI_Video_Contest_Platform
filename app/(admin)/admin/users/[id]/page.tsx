@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getAllActivityLogs, getAllIpLogs, getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
   participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
@@ -123,7 +124,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
             </div>
             <div>
               <p className="text-xs text-muted-foreground">가입일</p>
-              <p className="font-medium">{new Date(user.createdAt).toLocaleDateString('ko-KR')}</p>
+              <p className="font-medium">{formatDate(user.createdAt)}</p>
             </div>
           </CardContent>
         </Card>
@@ -197,7 +198,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{log.targetId}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(log.createdAt).toLocaleDateString('ko-KR', {
+                        {formatDate(log.createdAt, {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
@@ -248,7 +249,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
                           <Badge className={`${riskInfo.color} border-0 text-xs`}>{riskInfo.label}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleDateString('ko-KR', {
+                          {formatDate(log.createdAt, {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

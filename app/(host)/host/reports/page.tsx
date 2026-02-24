@@ -10,6 +10,7 @@ import {
 } from '@/lib/data';
 import { Download, FileText, History, Trophy } from 'lucide-react';
 import { redirect } from 'next/navigation';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default async function HostReportsPage() {
   const profile = await getAuthProfile();
@@ -108,7 +109,7 @@ export default async function HostReportsPage() {
                             {actor?.name ?? '알 수 없음'} · {log.action}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(log.createdAt).toLocaleString('ko-KR')} · 대상: {log.targetType} ({log.targetId})
+                            {formatDateTime(log.createdAt)} · 대상: {log.targetType} ({log.targetId})
                           </p>
                         </div>
                         <Badge className="bg-primary/10 text-primary">{log.targetType}</Badge>

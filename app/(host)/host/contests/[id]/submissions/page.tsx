@@ -8,6 +8,7 @@ import { REVIEW_TABS } from '@/config/constants';
 import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
@@ -136,7 +137,7 @@ export default async function HostContestSubmissionsPage({ params, searchParams 
                             <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {new Date(submission.submittedAt).toLocaleDateString('ko-KR')}
+                            {formatDate(submission.submittedAt)}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             조회 {submission.views} · 좋아요 {submission.likeCount}

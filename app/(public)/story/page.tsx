@@ -9,6 +9,7 @@ import { ARTICLE_TYPES } from '@/config/constants';
 import { Button } from '@/components/ui/button';
 import { SortSelect } from '@/components/ui/sort-select';
 import { SearchInput } from '@/components/ui/search-input';
+import { formatDate } from '@/lib/utils';
 
 /**
  * 뉴스 목록 페이지
@@ -83,17 +84,7 @@ function NewsContent() {
         return 'bg-gray-500/90 text-white';
     }
   };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  return (
+return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
       {/* 배경 장식 */}

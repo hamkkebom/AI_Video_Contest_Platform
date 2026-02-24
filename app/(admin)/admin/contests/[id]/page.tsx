@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Contest } from '@/lib/types';
 import { ArrowLeft, Search } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 type AdminContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -265,18 +266,18 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-xs text-muted-foreground">제출 기간</p>
             <p className="text-sm font-semibold text-foreground">
-              {new Date(contest.submissionStartAt).toLocaleDateString('ko-KR')} - {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}
+              {formatDate(contest.submissionStartAt)} - {formatDate(contest.submissionEndAt)}
             </p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-xs text-muted-foreground">심사 기간</p>
             <p className="text-sm font-semibold text-foreground">
-              {new Date(contest.judgingStartAt).toLocaleDateString('ko-KR')} - {new Date(contest.judgingEndAt).toLocaleDateString('ko-KR')}
+              {formatDate(contest.judgingStartAt)} - {formatDate(contest.judgingEndAt)}
             </p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-xs text-muted-foreground">결과 발표일</p>
-            <p className="text-sm font-semibold text-foreground">{new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR')}</p>
+            <p className="text-sm font-semibold text-foreground">{formatDate(contest.resultAnnouncedAt)}</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-xs text-muted-foreground">심사 설정</p>

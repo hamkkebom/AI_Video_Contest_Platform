@@ -1,6 +1,7 @@
 import { HostDashboardContent } from '@/components/dashboard/host-dashboard-content';
 import { getAuthProfile, getContestsByHost, getSubmissions, getJudges } from '@/lib/data';
 import { redirect } from 'next/navigation';
+import { formatDate } from '@/lib/utils';
 
 export default async function HostDashboardPage() {
   const profile = await getAuthProfile();
@@ -30,7 +31,7 @@ export default async function HostDashboardPage() {
           submissions: hostSubmissions,
           judges: hostJudges,
           acceptanceRate,
-          todayLabel: new Date().toLocaleDateString('ko-KR', {
+          todayLabel: formatDate(new Date(), {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

@@ -12,14 +12,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import type { Contest } from '@/lib/types';
+import { formatDateCompact } from '@/lib/utils';
 
 interface RelatedContestCarouselProps {
   contests: Contest[];
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function getStatusMeta(status: string) {
@@ -75,8 +71,8 @@ export function RelatedContestCarousel({ contests }: RelatedContestCarouselProps
             // 접수중 → 제출마감일, 심사중/결과발표 → 결과발표일
             const dateLabel = contest.status === 'open' ? '마감' : '발표';
             const dateValue = contest.status === 'open'
-              ? formatDate(contest.submissionEndAt)
-              : formatDate(contest.resultAnnouncedAt);
+              ? formatDateCompact(contest.submissionEndAt)
+              : formatDateCompact(contest.resultAnnouncedAt);
 
             return (
               <CarouselItem

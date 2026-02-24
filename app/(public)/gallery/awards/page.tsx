@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getCompletedContests } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 /**
  * 수상작 갤러리 메인 페이지
@@ -79,7 +80,7 @@ export default async function GalleryAwardsPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
                           <span className="text-sm text-white/60">
-                            발표 {new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                            발표 {formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}
                           </span>
                         </div>
                       </div>

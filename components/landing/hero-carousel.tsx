@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatDateCompact } from '@/lib/utils';
 
 export type HeroSlide = {
   id: string;
@@ -63,11 +64,6 @@ function FallbackHero() {
       </div>
     </section>
   );
-}
-
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export function HeroCarousel({ slides }: HeroCarouselProps) {
@@ -168,7 +164,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
                       {slide.description}
                     </p>
                     <p className="text-base text-white/60 font-medium">
-                      {slide.type === 'contest' ? `~${formatDate(slide.date)}` : formatDate(slide.date)}
+                      {slide.type === 'contest' ? `~${formatDateCompact(slide.date)}` : formatDateCompact(slide.date)}
                     </p>
                     <div className="flex gap-4 justify-center pt-2">
                       <Link href={slide.href as any}>

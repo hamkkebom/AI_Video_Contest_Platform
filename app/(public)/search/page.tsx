@@ -12,6 +12,7 @@ import { Search, Trophy, Award, Upload, Eye, Heart, ChevronLeft, ChevronRight, A
 
 import type { SearchResult } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
+import { formatDate } from '@/lib/utils';
 
 /** 캐러셀 스크롤 네비게이션 훅 */
 function useCarouselNav() {
@@ -145,13 +146,7 @@ function SearchContent() {
         return 'bg-gray-500/90 text-white';
     }
   };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-  };
-
-  const totalResults =
+const totalResults =
     results.contests.length + results.submissions.length + results.articles.length;
   const encodedQuery = encodeURIComponent(searchQuery);
 
@@ -341,8 +336,8 @@ function SearchContent() {
                                     <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
                                     <span className="text-xs text-white/60">
                                       {contest.status === 'open'
-                                        ? `마감 ${new Date(contest.submissionEndAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
-                                        : `발표 ${new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                                        ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
+                                        : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
                                       }
                                     </span>
                                   </div>

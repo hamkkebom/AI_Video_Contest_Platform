@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Eye, Heart, Trophy, ArrowLeft } from 'lucide-react';
 import { getAwardedSubmissions, getCompletedContests } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 /**
  * 공모전별 수상작 상세 갤러리
@@ -59,7 +60,7 @@ export default async function ContestAwardsPage({
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">{contest.prizeAmount ?? '상금 미정'}</span>
-              <span>발표일 {new Date(contest.resultAnnouncedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
+              <span>발표일 {formatDate(contest.resultAnnouncedAt, { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
             </div>
           </div>
         </div>

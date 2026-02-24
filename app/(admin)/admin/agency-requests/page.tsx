@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getAllAgencyRequests } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 export default async function AdminAgencyRequestsPage() {
   try {
@@ -159,7 +160,7 @@ export default async function AdminAgencyRequestsPage() {
                         <Badge className={`${statusInfo.color} border-0 text-xs`}>{statusInfo.label}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(request.createdAt).toLocaleDateString('ko-KR')}
+                        {formatDate(request.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

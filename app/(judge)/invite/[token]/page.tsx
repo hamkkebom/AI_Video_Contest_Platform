@@ -7,6 +7,7 @@ import { CheckCircle2, HandMetal, LogIn, ShieldCheck, Sparkles } from 'lucide-re
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/lib/utils';
 
 interface InvitationData {
   contestTitle: string;
@@ -123,7 +124,7 @@ export default function JudgeInvitePage() {
                <div className="rounded-lg border border-border bg-background p-4">
                  <p className="text-xs uppercase tracking-wide text-muted-foreground">초대 일시</p>
                  <p className="mt-1 text-sm font-semibold text-foreground">
-                   {new Date(invitationData.invitedAt).toLocaleDateString('ko-KR', {
+                   {formatDate(invitationData.invitedAt, {
                      year: 'numeric',
                      month: 'long',
                      day: 'numeric',

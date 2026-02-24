@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
   participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
@@ -188,7 +189,7 @@ export default async function AdminUsersPage() {
                         <Badge className={`${statusInfo.color} border-0 text-xs`}>{statusInfo.label}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(user.createdAt).toLocaleDateString('ko-KR')}
+                        {formatDate(user.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

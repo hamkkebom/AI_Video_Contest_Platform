@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Company, CompanyMember, CompanyStatus, User } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 
 /** 기업 승인 상태 라벨 */
 const STATUS_LABEL_MAP: Record<CompanyStatus, { label: string; color: string }> = {
@@ -171,8 +172,8 @@ export default function AdminCompanyDetailPage() {
               )}
             </div>
             <div className="flex gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
-              <span>등록일: {new Date(company.createdAt).toLocaleDateString('ko-KR')}</span>
-              <span>수정일: {new Date(company.updatedAt).toLocaleDateString('ko-KR')}</span>
+              <span>등록일: {formatDate(company.createdAt)}</span>
+              <span>수정일: {formatDate(company.updatedAt)}</span>
             </div>
           </CardContent>
         </Card>
@@ -254,7 +255,7 @@ export default function AdminCompanyDetailPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(member.joinedAt).toLocaleDateString('ko-KR')}
+                      {formatDate(member.joinedAt)}
                     </TableCell>
                   </TableRow>
                 ))}

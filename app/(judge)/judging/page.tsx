@@ -8,6 +8,7 @@ import {
   getSubmissions,
 } from '@/lib/data';
 import { redirect } from 'next/navigation';
+import { formatDate } from '@/lib/utils';
 
 export default async function JudgeContestsPage() {
   const profile = await getAuthProfile();
@@ -152,7 +153,7 @@ export default async function JudgeContestsPage() {
     return (
       <JudgeDashboardContent
         data={{
-          todayLabel: now.toLocaleDateString('ko-KR', {
+          todayLabel: formatDate(now, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

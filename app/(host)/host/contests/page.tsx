@@ -7,6 +7,7 @@ import { getAuthProfile, getContestsByHost, getJudges, getSubmissions } from '@/
 import type { Contest } from '@/lib/types';
 import { ClipboardList, Plus, UserCheck } from 'lucide-react';
 import { redirect } from 'next/navigation';
+import { formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,7 +196,7 @@ export default async function HostContestsPage({ searchParams }: ContestListPage
 
                       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
                         <div className="space-y-1 text-muted-foreground">
-                          <p>접수 마감 {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}</p>
+                          <p>접수 마감 {formatDate(contest.submissionEndAt)}</p>
                           <p>{contest.region}</p>
                         </div>
                         <div className="flex items-center gap-2">

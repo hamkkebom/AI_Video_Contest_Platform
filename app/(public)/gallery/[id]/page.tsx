@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Play, Search, Trophy, Calendar, User } from 'lucide-react';
 import { getSubmissionById, getGallerySubmissions } from '@/lib/data';
+import { formatDateCompact } from '@/lib/utils';
 
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -11,11 +12,6 @@ type SubmissionDetailPageProps = {
 /**
  * 날짜 포맷 (YYYY.MM.DD)
  */
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-}
-
 /**
  * 영상 상세 페이지
  * 갤러리에서 영상 클릭 시 이동하는 상세 보기
@@ -128,7 +124,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  {formatDate(submission.submittedAt)}
+                  {formatDateCompact(submission.submittedAt)}
                 </span>
               </div>
 
@@ -170,7 +166,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">출품일</span>
-                  <span className="text-right font-medium">{formatDate(submission.submittedAt)}</span>
+                  <span className="text-right font-medium">{formatDateCompact(submission.submittedAt)}</span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">조회수</span>

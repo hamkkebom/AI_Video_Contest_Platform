@@ -1,5 +1,6 @@
 import { AdminDashboardContent } from '@/components/dashboard/admin-dashboard-content';
 import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 const actionLabelMap: Record<string, string> = {
   create_submission: '출품작을 등록했습니다',
@@ -57,7 +58,7 @@ export default async function AdminDashboardPage() {
           userName,
           userInitial,
           description: `${actionLabel} (${targetLabel} ${activity.targetId})`,
-          timestamp: new Date(activity.createdAt).toLocaleDateString('ko-KR', {
+          timestamp: formatDate(activity.createdAt, {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -69,7 +70,7 @@ export default async function AdminDashboardPage() {
     return (
       <AdminDashboardContent
         data={{
-          todayLabel: new Date().toLocaleDateString('ko-KR', {
+          todayLabel: formatDate(new Date(), {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

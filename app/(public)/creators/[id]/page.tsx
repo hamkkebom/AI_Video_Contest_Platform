@@ -4,17 +4,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getUsers, getSubmissions, getContests } from '@/lib/data';
 import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
+import { formatDateCompact } from '@/lib/utils';
 
 type CreatorDetailPageProps = {
   params: Promise<{ id: string }>;
 };
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate()
-  ).padStart(2, '0')}`;
-}
 
 function getRoleLabel(role: string) {
   switch (role) {
@@ -145,7 +139,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
-                    {formatDate(user.createdAt)} 가입
+                    {formatDateCompact(user.createdAt)} 가입
                   </span>
                 </div>
               </div>
@@ -192,7 +186,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">가입일</span>
-                <span>{formatDate(user.createdAt)}</span>
+                <span>{formatDateCompact(user.createdAt)}</span>
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">역할</span>
@@ -279,7 +273,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
                     <div>
                       <p className="font-semibold">{contest.title}</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {formatDate(contest.submissionStartAt)} - {formatDate(contest.resultAnnouncedAt)}
+                        {formatDateCompact(contest.submissionStartAt)} - {formatDateCompact(contest.resultAnnouncedAt)}
                       </p>
                     </div>
                     <Badge className={getContestStatusClassName(contest.status)}>

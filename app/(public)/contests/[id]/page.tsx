@@ -8,16 +8,12 @@ import { RelatedContestCarousel } from '@/components/contest/related-contest-car
 import { MediaTabs } from '@/components/contest/media-tabs';
 import type { AwardTier } from '@/lib/types';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
+import { formatDateCompact } from '@/lib/utils';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 };
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function getStatusMeta(status: string) {
   if (status === 'open') {
@@ -195,7 +191,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <div>
                   <p className="text-sm font-bold text-muted-foreground mb-1">제출기간</p>
                   <p className="font-semibold text-[15px] leading-relaxed">
-                    {formatDate(contest.submissionStartAt)} ~ {formatDate(contest.submissionEndAt)}
+                    {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
                   </p>
                 </div>
                 <Calendar className="h-5 w-5 text-orange-500" />
@@ -208,7 +204,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <div>
                   <p className="text-sm font-bold text-muted-foreground mb-1">심사기간</p>
                   <p className="font-semibold text-[15px] leading-relaxed">
-                    {formatDate(contest.judgingStartAt)} ~ {formatDate(contest.judgingEndAt)}
+                    {formatDateCompact(contest.judgingStartAt)} ~ {formatDateCompact(contest.judgingEndAt)}
                   </p>
                 </div>
                 <Gavel className="h-5 w-5 text-primary" />
@@ -220,7 +216,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-muted-foreground mb-1">결과 발표일</p>
-                  <p className="font-semibold text-[15px]">{formatDate(contest.resultAnnouncedAt)}</p>
+                  <p className="font-semibold text-[15px]">{formatDateCompact(contest.resultAnnouncedAt)}</p>
                 </div>
                 <Trophy className="h-5 w-5 text-violet-600" />
               </div>

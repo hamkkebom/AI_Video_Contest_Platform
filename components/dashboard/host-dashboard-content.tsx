@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/lib/utils';
 
 interface HostDashboardData {
   contests: Contest[];
@@ -315,7 +316,7 @@ export function HostDashboardContent({ data }: HostDashboardContentProps) {
                         <p className="truncate text-base font-semibold">{contest.title}</p>
                         <div className="flex items-center gap-2">
                           <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
-                          <span className="text-xs text-muted-foreground">마감 {new Date(contest.submissionEndAt).toLocaleDateString('ko-KR')}</span>
+                          <span className="text-xs text-muted-foreground">마감 {formatDate(contest.submissionEndAt)}</span>
                         </div>
                       </div>
 

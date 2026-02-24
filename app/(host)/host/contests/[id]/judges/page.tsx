@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getContests, getJudges, getUsers } from '@/lib/data';
 import { Lightbulb, MailPlus, UserCheck } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 type ContestJudgesPageProps = {
   params: Promise<{ id: string }>;
@@ -141,7 +142,7 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {new Date(judge.invitedAt).toLocaleDateString('ko-KR')}
+                            {formatDate(judge.invitedAt)}
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">

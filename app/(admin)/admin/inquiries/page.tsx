@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getAllInquiries, getUsers } from '@/lib/data';
+import { formatDate } from '@/lib/utils';
 
 export default async function AdminInquiriesPage() {
   try {
@@ -171,10 +172,10 @@ export default async function AdminInquiriesPage() {
                         <Badge className={`${statusInfo.color} border-0 text-xs`}>{statusInfo.label}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(inquiry.createdAt).toLocaleDateString('ko-KR')}
+                        {formatDate(inquiry.createdAt)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(inquiry.updatedAt).toLocaleDateString('ko-KR')}
+                        {formatDate(inquiry.updatedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
