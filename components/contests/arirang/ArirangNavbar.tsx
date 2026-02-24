@@ -67,7 +67,7 @@ export function ArirangNavbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* 로고 */
+          {/* 로고 */}
           <Link
             href="/contests"
             className="font-bold text-lg md:text-xl tracking-tight"
