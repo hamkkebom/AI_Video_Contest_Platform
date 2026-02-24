@@ -212,7 +212,7 @@ export default function ContestSubmitPage() {
       videoUploadFormData.append('file', videoFile);
 
       const videoUploadResponse = await fetch(uploadUrlResult.uploadURL, {
-        method: 'PUT',
+        method: 'POST',
         body: videoUploadFormData,
       });
 
@@ -384,26 +384,49 @@ export default function ContestSubmitPage() {
       {/* 배경 장식 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <section className="relative pt-24 pb-8 px-4">
+      <section className="relative pt-24 pb-10 px-4">
         <div className="container mx-auto max-w-3xl relative z-10">
-          <Link
-            href={`/contests/${contestId}`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            공모전 상세로 돌아가기
-          </Link>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/25">
-              <Film className="h-6 w-6 text-white" />
+          {/* Top navigation */}
+          <div className="mb-8">
+            <Link
+              href={`/contests/${contestId}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/40 hover:bg-muted border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-all backdrop-blur-sm shadow-sm"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              공모전으로 돌아가기
+            </Link>
+          </div>
+
+          {/* New Header Design */}
+          <div className="relative overflow-hidden rounded-[2rem] bg-zinc-950 border border-white/10 p-8 md:p-10 shadow-2xl">
+            {/* Inner background glow */}
+            <div className="absolute -top-24 -right-24 w-80 h-80 bg-violet-600/30 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-orange-500/20 rounded-full blur-[80px] pointer-events-none" />
+
+            <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 relative z-10">
+              {/* Icon Container */}
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-[1.5rem] bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
+                <Film className="h-10 w-10 md:h-12 md:w-12 text-white/90 drop-shadow-md" />
+              </div>
+
+              {/* Text Content */}
+              <div className="flex-1 space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-bold tracking-wider uppercase mb-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                  </span>
+                  Submit Your Vision
+                </div>
+                <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-sm leading-tight">
+                  영상 제출하기
+                </h1>
+                <p className="text-base md:text-[1.1rem] text-zinc-300 leading-relaxed font-light max-w-xl">
+                  <strong className="font-semibold text-white">{contest.title}</strong>에 참가할 당신만의 창의적인 영상을 세상에 선보여 주세요.
+                </p>
+              </div>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
-              영상 제출하기
-            </h1>
-        </div>
-          <p className="text-muted-foreground text-base leading-relaxed pl-16">
-            <span className="font-semibold text-foreground">{contest.title}</span>에 참가할 영상을 제출해 주세요.
-          </p>
+          </div>
         </div>
       </section>
       {/* 제출 폼 */}
@@ -461,7 +484,7 @@ export default function ContestSubmitPage() {
                   />
                   <p className="text-xs text-muted-foreground text-right">{form.title.length}/100</p>
                 </div>
-            {/* 영상 설명 */}
+                {/* 영상 설명 */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-semibold">
                     영상 설명 <span className="text-red-500">*</span>
@@ -479,7 +502,7 @@ export default function ContestSubmitPage() {
                     {form.description.length}/1000
                   </p>
                 </div>
-            {/* 사용한 AI 도구 */}
+                {/* 사용한 AI 도구 */}
                 <div className="space-y-4">
                   <Label className="text-sm font-semibold">
                     사용한 AI 도구 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
@@ -506,7 +529,7 @@ export default function ContestSubmitPage() {
                     allowCustom
                   />
                 </div>
-            {/* 제작과정 설명 */}
+                {/* 제작과정 설명 */}
                 <div className="space-y-2">
                   <Label htmlFor="productionProcess" className="text-sm font-semibold">
                     제작과정 설명 <span className="text-red-500">*</span>
@@ -589,7 +612,7 @@ export default function ContestSubmitPage() {
                     </button>
                   )}
                 </div>
-              {/* 영상 파일 업로드 */}
+                {/* 영상 파일 업로드 */}
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">
                     영상 파일 <span className="text-red-500">*</span>
@@ -687,28 +710,28 @@ export default function ContestSubmitPage() {
                               <p className="text-xs text-muted-foreground">{config.description}</p>
                             )}
                             {/* SNS URL 입력 */}
-                              <Input
-                                type="url"
-                                value={entry.snsUrl}
-                                onChange={(e) => updateBonusForm(config.id, 'snsUrl', e.target.value)}
-                                placeholder="SNS 게시물 URL (예: https://instagram.com/p/...)"
-                                className="bg-background/50 border-border text-sm"
-                              />
+                            <Input
+                              type="url"
+                              value={entry.snsUrl}
+                              onChange={(e) => updateBonusForm(config.id, 'snsUrl', e.target.value)}
+                              placeholder="SNS 게시물 URL (예: https://instagram.com/p/...)"
+                              className="bg-background/50 border-border text-sm"
+                            />
                             {/* 인증 이미지 업로드 (목업) */}
-                              <button
-                                type="button"
-                                onClick={() => updateBonusForm(config.id, 'hasProofImage', !entry.hasProofImage)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border hover:border-violet-500/50 cursor-pointer transition-colors text-left"
-                              >
-                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">
-                                  {entry.hasProofImage ? '✓ 캡처 이미지 선택됨 (클릭하여 제거)' : '캡처 이미지 업로드'}
-                                </span>
-                              </button>
+                            <button
+                              type="button"
+                              onClick={() => updateBonusForm(config.id, 'hasProofImage', !entry.hasProofImage)}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border hover:border-violet-500/50 cursor-pointer transition-colors text-left"
+                            >
+                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {entry.hasProofImage ? '✓ 캡처 이미지 선택됨 (클릭하여 제거)' : '캡처 이미지 업로드'}
+                              </span>
+                            </button>
                             {/* URL + 이미지 모두 필요 안내 */}
-                              <p className="text-xs text-orange-500">
-                                ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
-                              </p>
+                            <p className="text-xs text-orange-500">
+                              ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
+                            </p>
                           </div>
                         </div>
                       </Card>
@@ -729,7 +752,7 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground">안내사항을 확인하고 영상을 제출해 주세요</p>
                 </div>
               </div>
-            {/* 안내 사항 */}
+              {/* 안내 사항 */}
               <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10 mb-5">
                 <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
                   <Film className="h-4 w-4 text-orange-500" />
@@ -743,7 +766,7 @@ export default function ContestSubmitPage() {
                   <li>마감일 이후에는 모든 수정이 불가합니다.</li>
                 </ul>
               </div>
-            {/* 동의 체크박스 */}
+              {/* 동의 체크박스 */}
               <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-muted/20">
                 <input
                   id="agree"
@@ -779,7 +802,7 @@ export default function ContestSubmitPage() {
                   에 동의합니다 <span className="text-red-500">*</span>
                 </label>
               </div>
-            {/* 제출 버튼 */}
+              {/* 제출 버튼 */}
               {submitError && (
                 <p className="text-sm text-red-500 mt-4">{submitError}</p>
               )}
