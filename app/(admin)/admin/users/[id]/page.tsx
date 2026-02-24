@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getAllActivityLogs, getAllIpLogs, getUsers } from '@/lib/data';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
   participant: { label: '참가자', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
@@ -123,8 +123,8 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
               <p className="font-medium">{user.region ?? '미설정'}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">가입일</p>
-              <p className="font-medium">{formatDate(user.createdAt)}</p>
+              <p className="text-xs text-muted-foreground">가입일시</p>
+              <p className="font-medium">{formatDateTime(user.createdAt)}</p>
             </div>
           </CardContent>
         </Card>
