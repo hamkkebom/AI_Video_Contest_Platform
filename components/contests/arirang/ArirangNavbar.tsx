@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Menu, X, Globe, LogOut } from 'lucide-react';
@@ -24,6 +24,8 @@ export function ArirangNavbar() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const params = useParams();
+  const contestId = params.id as string;
   const { lang, setLang } = useLang();
   const { user, profile, signOut } = useAuth();
   const navbarTranslations = translations.navbar;
@@ -128,7 +130,7 @@ export function ArirangNavbar() {
             ) : (
               <button
                 type="button"
-                onClick={() => router.push('/login')}
+                onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/landing`)}
                 className="hidden md:block px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer"
                 style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
               >
@@ -188,7 +190,7 @@ export function ArirangNavbar() {
           ) : (
             <button
               type="button"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/landing`)}
               className="block w-full mt-2 px-4 py-3 font-semibold rounded-lg text-center cursor-pointer"
               style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
             >

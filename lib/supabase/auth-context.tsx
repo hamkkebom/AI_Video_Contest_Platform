@@ -209,17 +209,22 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   useEffect(() => {
     /* 초기 세션 확인 */
     const initAuth = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
-      if (currentSession?.user) {
-        const p = await fetchProfile(currentSession.user.id);
-        setProfile(p);
-        // 세션 복원 — 로그인 로그 기록하지 않음 (이미 로그인한 상태)
-        lastLoggedEventRef.current = currentSession.user.id;
+        if (currentSession?.user) {
+          const p = await fetchProfile(currentSession.user.id);
+          setProfile(p);
+          // 세션 복원 — 로그인 로그 기록하지 않음 (이미 로그인한 상태)
+          lastLoggedEventRef.current = currentSession.user.id;
+        }
+      } catch (error) {
+        console.error('초기 인증 확인 실패:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
