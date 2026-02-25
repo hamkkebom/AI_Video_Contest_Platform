@@ -532,15 +532,18 @@ CREATE POLICY "ip_logs: 본인만 조회" ON ip_logs FOR SELECT USING (auth.uid(
 -- ============================================================
 -- Storage 버킷
 -- ============================================================
-INSERT INTO storage.buckets (id, name, public) VALUES ('thumbnails', 'thumbnails', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('proof-images', 'proof-images', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('posters', 'posters', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('company-assets', 'company-assets', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('thumbnails', 'thumbnails', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('proof-images', 'proof-images', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('posters', 'posters', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('company-assets', 'company-assets', true) ON CONFLICT (id) DO NOTHING;
 
 -- Storage 정책: 인증 사용자 업로드, 누구나 조회
+DROP POLICY IF EXISTS "storage: 누구나 조회" ON storage.objects;
 CREATE POLICY "storage: 누구나 조회" ON storage.objects FOR SELECT USING (true);
+DROP POLICY IF EXISTS "storage: 인증 사용자 업로드" ON storage.objects;
 CREATE POLICY "storage: 인증 사용자 업로드" ON storage.objects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "storage: 본인 파일 삭제" ON storage.objects;
 CREATE POLICY "storage: 본인 파일 삭제" ON storage.objects FOR DELETE USING (auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================================
