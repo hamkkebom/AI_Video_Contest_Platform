@@ -17,6 +17,19 @@ export const metadata: Metadata = {
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
   },
+  openGraph: {
+    title: "꿈플 — AI로 꿈을 키우는 나무",
+    description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
+    siteName: "꿈플",
+    type: "website",
+    images: [],
+  },
+  twitter: {
+    card: "summary",
+    title: "꿈플 — AI로 꿈을 키우는 나무",
+    description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
+    images: [],
+  },
   verification: {
     google: "MmZsrGVkf7dm_tQpqGUq77hOgYrmVrvH9BUomSafY3M",
   },
