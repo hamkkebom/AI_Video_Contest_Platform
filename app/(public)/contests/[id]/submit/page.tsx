@@ -548,7 +548,7 @@ export default function ContestSubmitPage() {
           {/* Top navigation */}
           <div className="mb-6">
             <Link
-              href={`/contests/${contestId}`}
+              href={`/contests/${contestId}/landing`}
               className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -1046,11 +1046,10 @@ export default function ContestSubmitPage() {
                                       return (
                                         <p
                                           key={lineIdx}
-                                          className={`text-sm leading-relaxed text-muted-foreground ${
-                                            isBullet
+                                          className={`text-sm leading-relaxed text-muted-foreground ${isBullet
                                               ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
                                               : ''
-                                          }`}
+                                            }`}
                                         >
                                           {content}
                                         </p>

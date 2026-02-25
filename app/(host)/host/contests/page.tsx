@@ -43,7 +43,7 @@ const tabItems: Array<{ value: ContestTabStatus; label: string }> = [
 
 export default async function HostContestsPage({ searchParams }: ContestListPageProps) {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/host/contests');
 
   try {
     const { status } = await searchParams;

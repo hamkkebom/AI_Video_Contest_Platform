@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 export default async function HostAnalyticsPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/host/analytics');
 
   try {
     const [hostContests, allSubmissions] = await Promise.all([

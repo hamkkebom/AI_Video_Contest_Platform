@@ -12,7 +12,7 @@ import { formatDate } from '@/lib/utils';
 
 export default async function JudgeContestsPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/judging');
 
   try {
     const [allContests, judgeAssignments, allSubmissions, allScores, templates] = await Promise.all([

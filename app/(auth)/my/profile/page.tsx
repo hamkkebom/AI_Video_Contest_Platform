@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
-import { Camera, Check, X, Loader2, AlertTriangle, Plus } from 'lucide-react';
+import { Camera, Check, X, Loader2, AlertTriangle, Plus, ChevronDown } from 'lucide-react';
 
 /** 전화번호 포맷팅 — 숫자만 추출 후 하이픈 자동 삽입 */
 function formatPhoneNumber(value: string): string {
@@ -33,13 +33,7 @@ function AiToolChips({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
-  const [expanded, setExpanded] = useState(selected.length > 0);
   const [customInput, setCustomInput] = useState('');
-
-  /* 외부에서 selected가 바뀌면 expanded 동기화 */
-  useEffect(() => {
-    if (selected.length > 0) setExpanded(true);
-  }, [selected.length]);
 
   const toggle = (tool: string) => {
     onChange(
@@ -64,22 +58,6 @@ function AiToolChips({
   /* 기본 리스트에 없는 커스텀 도구들 */
   const customTools = selected.filter((t) => !(tools as readonly string[]).includes(t));
 
-  /* 접힌 상태: 선택된 도구가 없으면 "추가하기" 버튼만 표시 */
-  if (!expanded && selected.length === 0) {
-    return (
-      <div className="space-y-2">
-        <p className="text-sm font-medium">{label}</p>
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          추가하기
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-2">
@@ -202,6 +180,7 @@ export default function ProfileEditPage() {
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
+  const [showToolSettings, setShowToolSettings] = useState(false);
 
   /* 프로필 데이터 로드 */
   useEffect(() => {
@@ -412,7 +391,7 @@ export default function ProfileEditPage() {
       <Card className="border-border">
         <CardContent className="space-y-4 py-16 text-center">
           <p className="text-sm text-muted-foreground">로그인이 필요합니다.</p>
-          <Link href="/login">
+          <Link href="/login?redirect=/my/profile">
             <Button size="sm">로그인하러 가기</Button>
           </Link>
         </CardContent>
@@ -486,31 +465,101 @@ export default function ProfileEditPage() {
             </CardContent>
           </Card>
 
-          {/* AI 도구 설정 — 좌측에 배치 */}
+          {/* AI 도구 — 주 사용 도구 + 드롭다운 설정 */}
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>AI 도구 설정</CardTitle>
-              <CardDescription>주로 사용하는 AI 도구를 선택하거나 직접 입력해주세요.</CardDescription>
+              <CardTitle>AI 도구</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
-              <AiToolChips
-                label="💬 채팅 AI"
-                tools={CHAT_AI_TOOLS}
-                selected={formData.preferredChatAi}
-                onChange={(v) => setFormData((p) => ({ ...p, preferredChatAi: v }))}
-              />
-              <AiToolChips
-                label="🖼️ 이미지 AI"
-                tools={IMAGE_AI_TOOLS}
-                selected={formData.preferredImageAi}
-                onChange={(v) => setFormData((p) => ({ ...p, preferredImageAi: v }))}
-              />
-              <AiToolChips
-                label="🎬 영상 AI"
-                tools={VIDEO_AI_TOOLS}
-                selected={formData.preferredVideoAi}
-                onChange={(v) => setFormData((p) => ({ ...p, preferredVideoAi: v }))}
-              />
+            <CardContent className="space-y-4">
+              {/* 주 사용 도구 — 항상 표시 */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">주 사용 도구</p>
+                {(formData.preferredChatAi.length > 0 || formData.preferredImageAi.length > 0 || formData.preferredVideoAi.length > 0) ? (
+                  <div className="space-y-2.5">
+                    {formData.preferredChatAi.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-muted-foreground">💬 채팅</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {formData.preferredChatAi.map((tool) => (
+                            <span key={tool} className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary">
+                              {tool}
+                              <button type="button" onClick={() => setFormData((p) => ({ ...p, preferredChatAi: p.preferredChatAi.filter((t) => t !== tool) }))} className="rounded-full p-0.5 hover:bg-primary/20 transition-colors">
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {formData.preferredImageAi.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-muted-foreground">🖼️ 이미지</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {formData.preferredImageAi.map((tool) => (
+                            <span key={tool} className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary">
+                              {tool}
+                              <button type="button" onClick={() => setFormData((p) => ({ ...p, preferredImageAi: p.preferredImageAi.filter((t) => t !== tool) }))} className="rounded-full p-0.5 hover:bg-primary/20 transition-colors">
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {formData.preferredVideoAi.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-muted-foreground">🎬 영상</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {formData.preferredVideoAi.map((tool) => (
+                            <span key={tool} className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-primary">
+                              {tool}
+                              <button type="button" onClick={() => setFormData((p) => ({ ...p, preferredVideoAi: p.preferredVideoAi.filter((t) => t !== tool) }))} className="rounded-full p-0.5 hover:bg-primary/20 transition-colors">
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">선택된 도구가 없습니다. 아래에서 설정해주세요.</p>
+                )}
+              </div>
+
+              {/* 도구 설정 토글 */}
+              <button
+                type="button"
+                onClick={() => setShowToolSettings((v) => !v)}
+                className="flex w-full items-center justify-between rounded-lg border border-dashed border-border px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                <span>도구 설정</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showToolSettings ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* 도구 선택 패널 — 토글 시에만 표시 */}
+              {showToolSettings && (
+                <div className="space-y-5 rounded-lg border border-border bg-muted/30 p-4">
+                  <AiToolChips
+                    label="💬 채팅 AI"
+                    tools={CHAT_AI_TOOLS}
+                    selected={formData.preferredChatAi}
+                    onChange={(v) => setFormData((p) => ({ ...p, preferredChatAi: v }))}
+                  />
+                  <AiToolChips
+                    label="🖼️ 이미지 AI"
+                    tools={IMAGE_AI_TOOLS}
+                    selected={formData.preferredImageAi}
+                    onChange={(v) => setFormData((p) => ({ ...p, preferredImageAi: v }))}
+                  />
+                  <AiToolChips
+                    label="🎬 영상 AI"
+                    tools={VIDEO_AI_TOOLS}
+                    selected={formData.preferredVideoAi}
+                    onChange={(v) => setFormData((p) => ({ ...p, preferredVideoAi: v }))}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

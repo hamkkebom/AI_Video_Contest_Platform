@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default async function ParticipantAnalyticsPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/my/analytics');
 
   try {
     const allSubmissions = await getSubmissions();

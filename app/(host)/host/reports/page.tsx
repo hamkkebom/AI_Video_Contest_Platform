@@ -14,7 +14,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default async function HostReportsPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/host/reports');
 
   try {
     const [hostContests, allSubmissions, allActivityLogs, allUsers] = await Promise.all([

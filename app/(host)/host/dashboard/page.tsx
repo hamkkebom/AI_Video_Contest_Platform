@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/utils';
 
 export default async function HostDashboardPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/host/dashboard');
 
   try {
     const [hostContests, allSubmissions, allJudges] = await Promise.all([

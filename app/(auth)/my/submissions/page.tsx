@@ -44,7 +44,7 @@ interface ContestGroup {
 
 export default async function MyContestsPage() {
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/login?redirect=/my/submissions');
 
   try {
     /* 내 출품작 조회 */

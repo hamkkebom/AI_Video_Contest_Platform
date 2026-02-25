@@ -119,7 +119,7 @@ export default function MyDevicesPage() {
       <Card className="border-border">
         <CardContent className="space-y-4 py-16 text-center">
           <p className="text-sm text-muted-foreground">로그인이 필요합니다.</p>
-          <Link href="/login">
+          <Link href="/login?redirect=/my/devices">
             <Button size="sm">로그인하러 가기</Button>
           </Link>
         </CardContent>

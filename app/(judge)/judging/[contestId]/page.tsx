@@ -14,11 +14,11 @@ type JudgeContestPageProps = {
 };
 
 export default async function JudgeContestPage({ params }: JudgeContestPageProps) {
+  const { contestId } = await params;
   const profile = await getAuthProfile();
-  if (!profile) redirect('/login');
+  if (!profile) redirect(`/login?redirect=/judging/${contestId}`);
 
   try {
-    const { contestId } = await params;
 
     const [allContests, allSubmissions, allScores, templates, judgeAssignments] = await Promise.all([
       getContests(),
