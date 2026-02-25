@@ -46,9 +46,15 @@ export async function updateSession(request: NextRequest) {
           }
           supabaseResponse = NextResponse.next({ request });
           for (const { name, value, options } of cookiesToSet) {
+            /**
+             * 삭제 쿠키(code verifier 등)는 원본 옵션 유지
+             */
+            const isDeleteCookie = options?.maxAge === 0;
             supabaseResponse.cookies.set(name, value, {
               ...options,
-              ...COOKIE_OPTIONS,
+              ...(isDeleteCookie
+                ? {}
+                : COOKIE_OPTIONS),
             });
           }
         },

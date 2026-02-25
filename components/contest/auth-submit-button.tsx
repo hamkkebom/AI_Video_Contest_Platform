@@ -24,7 +24,7 @@ export function AuthSubmitButton({ contestId }: AuthSubmitButtonProps) {
       }
     }
     // 미로그인 → 로그인 페이지 (접수 페이지로 리다이렉트)
-    router.push(`/login?redirect=/contests/${contestId}/submit`);
+    router.push(`/login?redirectTo=/contests/${contestId}/submit`);
   };
 
   return (

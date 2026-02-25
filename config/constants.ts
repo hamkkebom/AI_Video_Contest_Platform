@@ -97,18 +97,35 @@ export const CHAT_AI_TOOLS = [
   "DeepSeek",
   "Grok",
   "HyperCLOVA X",
+  "뤼튼",
+  "Llama",
+  "Mistral",
+  "Qwen",
+  "Pi",
+  "Cohere",
+  "Le Chat",
 ] as const;
 
 /** AI 이미지 생성 도구 */
 export const IMAGE_AI_TOOLS = [
+  "나노바나나",
   "Midjourney",
-  "DALL\u00b7E 3",
+  "DALL·E 3",
   "Stable Diffusion",
   "Adobe Firefly",
   "Leonardo.Ai",
   "Ideogram",
   "Flux",
   "Playground",
+  "Google Whisk",
+  "Krea AI",
+  "Canva AI",
+  "Recraft",
+  "Tensor.Art",
+  "NightCafe",
+  "Magnific",
+  "Bing Image Creator",
+  "Imagine Art",
 ] as const;
 
 /** AI 영상 생성 도구 */
@@ -119,10 +136,19 @@ export const VIDEO_AI_TOOLS = [
   "Pika",
   "Luma Dream Machine",
   "Veo 2",
-  "HaiLuo",
+  "Hailuo AI",
   "Synthesia",
   "Wan",
-  "Hailuo AI",
+  "Google Flow",
+  "PixVerse",
+  "Haiper",
+  "Viggle",
+  "D-ID",
+  "Fliki",
+  "InVideo AI",
+  "Domo AI",
+  "Genmo",
+  "Morph Studio",
 ] as const;
 
 

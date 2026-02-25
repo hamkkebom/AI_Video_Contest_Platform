@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { ShieldAlert } from 'lucide-react';
 
@@ -19,6 +19,7 @@ interface RoleGuardProps {
 export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const hasRole = profile?.roles?.some((r) => allowedRoles.includes(r)) ?? false;
 
@@ -28,7 +29,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
 
     /* 비로그인 — 미들웨어가 리다이렉트 못했을 때의 폴백 */
     if (!user) {
-      router.replace('/login');
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 

@@ -29,6 +29,27 @@ export default function LoginForm() {
   const redirectToParam = searchParams.get('redirectTo') || searchParams.get('redirect');
   const redirectTo = redirectToParam?.startsWith('/') ? redirectToParam : '/';
 
+  /* URL 에러 파라미터 감지 (auth callback 실패 등) */
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+
+    /* 해시 fragment에서 Supabase 에러 감지 (예: #error=server_error&error_description=...) */
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashError = hashParams.get('error_description');
+      if (hashError) {
+        setErrorMsg(decodeURIComponent(hashError));
+        /* 해시 정리 (유령 세션 방지) */
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        return;
+      }
+    }
+
+    if (urlError === 'auth_callback_failed') {
+      setErrorMsg('로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  }, [searchParams]);
+
   /* 이미 로그인된 경우 redirect 경로 또는 홈으로 이동 */
   useEffect(() => {
     if (!loading && user && profile) {
@@ -41,7 +62,7 @@ export default function LoginForm() {
     setIsSigningIn(true);
     setErrorMsg('');
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(redirectTo);
     } catch {
       setIsSigningIn(false);
     }

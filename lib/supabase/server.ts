@@ -29,12 +29,22 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             for (const { name, value, options } of cookiesToSet) {
+              /**
+               * Supabase가 삭제하려는 쿠키(code verifier 등)는
+               * maxAge가 0이므로 원본 옵션을 유지해야 합니다.
+               * 세션 쿠키에만 커스텀 옵션을 적용합니다.
+               */
+              const isDeleteCookie = options?.maxAge === 0;
               cookieStore.set(name, value, {
                 ...options,
-                maxAge: SESSION_MAX_AGE,
-                path: '/',
-                sameSite: 'lax',
-                secure: process.env.NODE_ENV === 'production',
+                ...(isDeleteCookie
+                  ? {} // 삭제 쿠키는 Supabase 원본 옵션 유지
+                  : {
+                    maxAge: SESSION_MAX_AGE,
+                    path: '/',
+                    sameSite: 'lax',
+                    secure: process.env.NODE_ENV === 'production',
+                  }),
               });
             }
           } catch {

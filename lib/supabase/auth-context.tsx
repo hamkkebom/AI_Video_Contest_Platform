@@ -35,7 +35,7 @@ interface AuthContextValue {
   /** Supabase 연결 여부 */
   isConfigured: boolean;
   /** Google 로그인 */
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (redirectTo?: string) => Promise<void>;
   /** 이메일/비밀번호 로그인 */
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   /** 이메일/비밀번호 회원가입 */
@@ -57,13 +57,13 @@ const UNCONFIGURED_VALUE: AuthContextValue = {
   session: null,
   loading: false,
   isConfigured: false,
-  signInWithGoogle: async () => {
+  signInWithGoogle: async (_redirectTo?: string) => {
     console.warn('Supabase가 설정되지 않았습니다. .env.local 파일을 확인하세요.');
   },
   signInWithEmail: async () => ({ error: 'Supabase가 설정되지 않았습니다.' }),
   signUpWithEmail: async () => ({ error: 'Supabase가 설정되지 않았습니다.' }),
-  signOut: async () => {},
-  refreshProfile: async () => {},
+  signOut: async () => { },
+  refreshProfile: async () => { },
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -136,15 +136,22 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, [user, fetchProfile]);
 
   /** Google OAuth 로그인 */
-  const signInWithGoogle = useCallback(async () => {
-    const redirectUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
-      : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+  const signInWithGoogle = useCallback(async (redirectTo?: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
+    const callbackUrl = `${origin}/auth/callback`;
+
+    /* OAuth 완료 후 돌아갈 경로를 쿠키에 저장 (콜백 라우트에서 읽음) */
+    if (redirectTo && redirectTo !== '/' && typeof document !== 'undefined') {
+      document.cookie = `sb_redirect_to=${encodeURIComponent(redirectTo)};path=/;max-age=600;samesite=lax`;
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: callbackUrl,
+        queryParams: {
+          prompt: 'select_account',  // 항상 계정 선택 화면 표시
+        },
       },
     });
     if (error) {
