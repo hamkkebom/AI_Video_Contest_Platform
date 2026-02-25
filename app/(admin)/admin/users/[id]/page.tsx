@@ -161,7 +161,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">관리 액션</p>
-                  <p className="text-3xl font-bold tracking-tight">데모</p>
+                  <p className="text-3xl font-bold tracking-tight">-</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300">
                   <UserCog className="h-5 w-5" />

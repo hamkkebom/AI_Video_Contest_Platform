@@ -557,15 +557,15 @@ export default function ContestSubmitPage() {
           </div>
 
           {/* New Header Design */}
-          <div className="relative overflow-hidden rounded-[2rem] bg-zinc-950 border border-white/10 p-8 md:p-10 shadow-2xl">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-zinc-950 border border-white/10 p-5 sm:p-8 md:p-10 shadow-2xl">
             {/* Inner background glow */}
             <div className="absolute -top-24 -right-24 w-80 h-80 bg-violet-600/30 rounded-full blur-[80px] pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-orange-500/20 rounded-full blur-[80px] pointer-events-none" />
 
             <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 relative z-10">
               {/* Icon Container */}
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-[1.5rem] bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
-                <Film className="h-10 w-10 md:h-12 md:w-12 text-white/90 drop-shadow-md" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl md:rounded-[1.5rem] bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
+                <Film className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-white/90 drop-shadow-md" />
               </div>
 
               {/* Text Content */}
@@ -594,7 +594,7 @@ export default function ContestSubmitPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* 공모전 정보 요약 배너 */}
-            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-border/50 p-6 md:p-8 shadow-sm backdrop-blur-xl mb-8 transition-colors">
+            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-border/50 p-4 sm:p-6 md:p-8 shadow-sm backdrop-blur-xl mb-6 sm:mb-8 transition-colors">
               <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -784,7 +784,7 @@ export default function ContestSubmitPage() {
                     <button
                       type="button"
                       onClick={() => thumbnailInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer"
+                      className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer"
                     >
                       <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
                         <ImageIcon className="h-6 w-6 text-violet-500" />
@@ -838,7 +838,7 @@ export default function ContestSubmitPage() {
                     <button
                       type="button"
                       onClick={() => videoInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer"
+                      className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer"
                     >
                       <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
                         <Upload className="h-6 w-6 text-orange-500" />
@@ -1047,8 +1047,8 @@ export default function ContestSubmitPage() {
                                         <p
                                           key={lineIdx}
                                           className={`text-sm leading-relaxed text-muted-foreground ${isBullet
-                                              ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
-                                              : ''
+                                            ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
+                                            : ''
                                             }`}
                                         >
                                           {content}

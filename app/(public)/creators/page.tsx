@@ -21,7 +21,7 @@ export default async function CreatorsPage() {
       <section className="relative pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               Creators
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
@@ -34,8 +34,8 @@ export default async function CreatorsPage() {
       {/* 필터 (Glassmorphism) */}
       <section className="sticky top-16 z-40 px-4 pb-8">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex gap-1">
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+            <div className="flex gap-1 overflow-x-auto w-full md:w-auto">
               {[
                 { id: 'all', label: '전체' },
                 { id: 'follow', label: '팔로우순' },
@@ -45,7 +45,7 @@ export default async function CreatorsPage() {
                 <button
                   type="button"
                   key={tab.id}
-                  className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${tab.id === 'all'
+                  className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${tab.id === 'all'
                     ? 'text-violet-500 font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
                     }`}
@@ -66,7 +66,7 @@ export default async function CreatorsPage() {
               <span className="text-[#EA580C] font-semibold">{creators.length}</span>명의 크리에이터
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {creators.map((creator) => (
               <Link key={creator.id} href={`/creators/${creator.id}` as any}>
                 <div className="group rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
@@ -93,15 +93,15 @@ export default async function CreatorsPage() {
                     {/* 통계 */}
                     <div className="flex justify-around text-sm">
                       <div>
-                        <div className="font-semibold text-orange-400">{Math.floor(Math.random() * 20) + 1}</div>
+                        <div className="font-semibold text-orange-400">0</div>
                         <div className="text-xs text-muted-foreground">작품</div>
                       </div>
                       <div>
-                        <div className="font-semibold text-violet-400">{Math.floor(Math.random() * 500) + 50}</div>
+                        <div className="font-semibold text-violet-400">0</div>
                         <div className="text-xs text-muted-foreground">좋아요</div>
                       </div>
                       <div>
-                        <div className="font-semibold text-amber-400">{Math.floor(Math.random() * 100) + 10}</div>
+                        <div className="font-semibold text-amber-400">0</div>
                         <div className="text-xs text-muted-foreground">팔로워</div>
                       </div>
                     </div>

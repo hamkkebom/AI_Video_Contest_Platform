@@ -104,7 +104,7 @@ export default async function AdminInquiriesPage() {
           <CardHeader className="flex flex-row items-center justify-between gap-3">
             <div>
               <CardTitle>상태 필터</CardTitle>
-              <CardDescription>필터 UI 데모입니다. 상태별 문의 건수를 바로 확인합니다.</CardDescription>
+              <CardDescription>상태별 문의 건수를 바로 확인합니다.</CardDescription>
             </div>
             <Link href="/admin/dashboard">
               <Button variant="outline">대시보드</Button>

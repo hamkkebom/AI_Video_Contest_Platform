@@ -15,15 +15,16 @@ import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
  * 회원가입 페이지
- * 2단계 플로우: Step 1 (계정 유형 선택) → Step 2 (폼 입력)
+ * 기업가입은 임시 비활성화 — 개인 회원가입만 노출
  * 프리미엄 SaaS 스타일 — CSS 변수 기반 테마 적용
  */
 export default function SignupPage() {
   const { signInWithGoogle, signUpWithEmail } = useAuth();
   const router = useRouter();
   /* 단계 및 계정 유형 */
-  const [step, setStep] = useState<1 | 2>(1);
-  const [accountType, setAccountType] = useState<'individual' | 'business' | null>(null);
+  const [step, setStep] = useState<1 | 2>(2);
+  /* 기업가입 임시 비활성화: 'individual' 고정 */
+  const [accountType, setAccountType] = useState<'individual' | 'business' | null>('individual');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -112,85 +113,17 @@ export default function SignupPage() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight">회원가입</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {step === 1 ? '가입 유형을 선택해주세요' : accountType === 'business' ? '기업 회원 정보를 입력하세요' : '개인 회원 정보를 입력하세요'}
+              회원 정보를 입력하세요
             </p>
-            {/* 단계 표시 */}
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <div className={`h-1.5 w-12 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-1.5 w-12 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
-            </div>
           </CardHeader>
 
           <CardContent className="pt-4">
-            {/* ===== Step 1: 계정 유형 선택 ===== */}
-            {step === 1 && (
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => handleSelectType('individual')}
-                  className="w-full group cursor-pointer"
-                >
-                  <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-semibold text-foreground">개인 회원</p>
-                      <p className="text-sm text-muted-foreground">개인 창작자로 참여하기</p>
-                    </div>
-                  </div>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSelectType('business')}
-                  className="w-full group cursor-pointer"
-                >
-                  <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <Building2 className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-semibold text-foreground">기업 회원</p>
-                      <p className="text-sm text-muted-foreground">기업·단체로 참여하기</p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* 로그인 링크 */}
-                <div className="mt-6 text-center text-sm">
-                  <span className="text-muted-foreground">이미 계정이 있으신가요? </span>
-                  <Link href="/login" className="text-primary hover:text-primary/80 font-semibold">
-                    로그인
-                  </Link>
-                </div>
-              </div>
-            )}
 
             {/* ===== Step 2: 폼 입력 ===== */}
             {step === 2 && (
               <>
-                {/* 뒤로가기 버튼 */}
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4 cursor-pointer"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  유형 다시 선택
-                </button>
 
-                {/* 선택된 유형 배지 */}
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20">
-                  {accountType === 'business' ? (
-                    <Building2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <User className="h-4 w-4 text-primary" />
-                  )}
-                  <span className="text-sm font-medium text-primary">
-                    {accountType === 'business' ? '기업 회원' : '개인 회원'}
-                  </span>
-                </div>
 
                 {/* 소셜 가입 버튼 */}
                 <Button variant="outline" className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200" onClick={() => signInWithGoogle()}>

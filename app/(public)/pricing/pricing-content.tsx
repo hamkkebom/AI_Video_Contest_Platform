@@ -71,7 +71,7 @@ export function PricingContent({ plans }: PricingContentProps) {
       <section className="py-16 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">
         <div className="container mx-auto max-w-6xl text-center">
           <Badge className="bg-accent text-accent-foreground border-0 mb-4">Pricing</Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">역할에 맞는 요금제를 선택하세요</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">역할에 맞는 요금제를 선택하세요</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             참가자, 주최자, 심사위원 — 각 역할에 최적화된 기능을 제공합니다
           </p>
@@ -91,11 +91,10 @@ export function PricingContent({ plans }: PricingContentProps) {
                     type="button"
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-5 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 text-sm ${
-                      activeTab === tab.id
+                    className={`px-5 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 text-sm ${activeTab === tab.id
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                      }`}
                   >
                     <TabIcon className="h-4 w-4" />
                     {tab.label}
@@ -132,7 +131,7 @@ export function PricingContent({ plans }: PricingContentProps) {
               {/* 가격 */}
               <div className="mb-8 pb-6 border-b border-border">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold">
+                  <span className="text-4xl sm:text-5xl font-bold">
                     {activeTab === 'judge' ? '무료' : currentPlanData.monthlyPrice.toLocaleString()}
                   </span>
                   {activeTab !== 'judge' && (
@@ -165,8 +164,8 @@ export function PricingContent({ plans }: PricingContentProps) {
               </div>
 
               {/* CTA 버튼 */}
-              <Button disabled className="w-full font-semibold py-6 text-lg cursor-not-allowed bg-accent-foreground text-white hover:bg-accent-foreground/90">
-                {activeTab === 'judge' ? '시작하기 (데모)' : '결제 (데모)'}
+              <Button disabled className="w-full font-semibold py-6 text-lg cursor-not-allowed bg-muted text-muted-foreground">
+                서비스 준비 중
               </Button>
             </CardContent>
           </Card>

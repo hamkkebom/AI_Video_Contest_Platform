@@ -84,7 +84,7 @@ function NewsContent() {
         return 'bg-gray-500/90 text-white';
     }
   };
-return (
+  return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
       {/* 배경 장식 */}
@@ -95,7 +95,7 @@ return (
       <section className="relative pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-1 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-1 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               Story
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
@@ -108,13 +108,13 @@ return (
       {/* 필터 & 정렬 (Glassmorphism) */}
       <section className="sticky top-16 z-40 px-4 pb-8">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             {/* 타입 필터 */}
-            <div className="flex gap-1">
+            <div className="flex gap-1 overflow-x-auto w-full md:w-auto">
               <button
                 type="button"
                 onClick={() => setFilterType(null)}
-                className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${filterType === null
+                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${filterType === null
                   ? 'text-violet-500 font-bold bg-violet-500/10'
                   : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                   }`}
@@ -126,7 +126,7 @@ return (
                   type="button"
                   key={type.value}
                   onClick={() => setFilterType(type.value)}
-                  className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${filterType === type.value
+                  className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${filterType === type.value
                     ? 'text-violet-500 font-bold bg-violet-500/10'
                     : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                     }`}
@@ -137,7 +137,7 @@ return (
             </div>
 
             {/* 검색 & 정렬 */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
               <SortSelect
                 options={[
                   { value: 'newest', label: '최신순' },

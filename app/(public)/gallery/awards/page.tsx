@@ -22,7 +22,7 @@ export default async function GalleryAwardsPage() {
       <section className="relative pt-24 pb-4 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               Awards Gallery
             </h1>
             <p className="text-lg text-muted-foreground">

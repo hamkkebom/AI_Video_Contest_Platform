@@ -90,12 +90,12 @@ export default function LoginForm() {
         <Card className="backdrop-blur-xl bg-background/80 border border-border shadow-2xl">
           <CardHeader className="text-center pb-2">
             {/* 브랜드 로고 */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            <Link href="/" className="flex items-center justify-center gap-2 mb-6 hover:opacity-80 transition-opacity">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <TreePine className="h-5 w-5 text-primary" />
               </div>
               <span className="text-xl font-bold">꿈플</span>
-            </div>
+            </Link>
             <h1 className="text-2xl font-bold tracking-tight" aria-label="로그인">로그인</h1>
             <p className="text-sm text-muted-foreground mt-1">계정에 로그인하여 서비스를 이용하세요</p>
           </CardHeader>

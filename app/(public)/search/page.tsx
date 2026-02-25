@@ -146,7 +146,7 @@ function SearchContent() {
         return 'bg-gray-500/90 text-white';
     }
   };
-const totalResults =
+  const totalResults =
     results.contests.length + results.submissions.length + results.articles.length;
   const encodedQuery = encodeURIComponent(searchQuery);
 
@@ -161,7 +161,7 @@ const totalResults =
       <section className="relative pt-24 pb-4 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               Search
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -244,7 +244,7 @@ const totalResults =
               <p className="text-muted-foreground max-w-md mb-8">
                 다른 검색어로 다시 시도하거나, 아래 카테고리를 둘러보세요.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap justify-center gap-3">
                 <Link href="/contests?status=open">
                   <Button variant="outline" className="rounded-full px-6 cursor-pointer">공모전 보기</Button>
                 </Link>
@@ -276,199 +276,199 @@ const totalResults =
 
           <div className="space-y-16">
 
-          {/* ── 공모전 캐러셀 ── */}
-          {results.contests.length > 0 && (
-            <section className="px-4">
-              <div className="container mx-auto max-w-6xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">
-                    공모전 <span className="text-primary text-lg font-semibold ml-1">{results.contests.length}</span>
-                  </h2>
-                  <Link
-                    href={`/contests?search=${encodedQuery}` as any}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    더보기
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+            {/* ── 공모전 캐러셀 ── */}
+            {results.contests.length > 0 && (
+              <section className="px-4">
+                <div className="container mx-auto max-w-6xl">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">
+                      공모전 <span className="text-primary text-lg font-semibold ml-1">{results.contests.length}</span>
+                    </h2>
+                    <Link
+                      href={`/contests?search=${encodedQuery}` as any}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      더보기
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
 
-                <div className="relative">
-                  <Carousel setApi={contestNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
-                    <CarouselContent className="-ml-4 py-2">
-                      {results.contests.map((contest, index) => (
-                        <CarouselItem key={contest.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                          <Link href={`/contests/${contest.id}` as any} className="group relative block">
-                            <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
-                              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
-                              <img
-                                src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
-                                alt={contest.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                              <div className="absolute top-[18px] right-3 z-10">
-                                {contest.status === 'open' ? (() => {
-                                  const dday = calcDDay(contest.submissionEndAt);
-                                   const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
-                                  return (
-                                    <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
-                                      {dday === 0 ? 'D-Day' : `D-${dday}`}
+                  <div className="relative">
+                    <Carousel setApi={contestNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
+                      <CarouselContent className="-ml-4 py-2">
+                        {results.contests.map((contest, index) => (
+                          <CarouselItem key={contest.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Link href={`/contests/${contest.id}` as any} className="group relative block">
+                              <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
+                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
+                                <img
+                                  src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                                  alt={contest.title}
+                                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute top-[18px] right-3 z-10">
+                                  {contest.status === 'open' ? (() => {
+                                    const dday = calcDDay(contest.submissionEndAt);
+                                    const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
+                                    return (
+                                      <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
+                                        {dday === 0 ? 'D-Day' : `D-${dday}`}
+                                      </span>
+                                    );
+                                  })() : (
+                                    <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'}`}>
+                                      {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
                                     </span>
-                                  );
-                                })() : (
-                                   <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'}`}>
-                                    {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
-                                  </span>
-                                )}
+                                  )}
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 h-1/2 z-10 flex flex-col justify-end">
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black from-50% to-transparent" />
+                                  <div className="relative pb-4 px-4 flex flex-col gap-3">
+                                    <AutoFitTitle
+                                      className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
+                                      maxFontSize={18}
+                                      minFontSize={13}
+                                      maxLines={2}
+                                    >
+                                      {contest.title}
+                                    </AutoFitTitle>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
+                                      <span className="text-xs text-white/60">
+                                        {contest.status === 'open'
+                                          ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
+                                          : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="absolute inset-x-0 bottom-0 h-1/2 z-10 flex flex-col justify-end">
-                                <div className="absolute inset-0 bg-gradient-to-t from-black from-50% to-transparent" />
-                                <div className="relative pb-4 px-4 flex flex-col gap-3">
-                                  <AutoFitTitle
-                                    className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
-                                    maxFontSize={18}
-                                    minFontSize={13}
-                                    maxLines={2}
-                                  >
-                                    {contest.title}
-                                  </AutoFitTitle>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
-                                    <span className="text-xs text-white/60">
-                                      {contest.status === 'open'
-                                        ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
-                                        : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
-                                      }
+                            </Link>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                    <CarouselArrows api={contestNav.api} canPrev={contestNav.canPrev} canNext={contestNav.canNext} />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ── 영상 캐러셀 ── */}
+            {results.submissions.length > 0 && (
+              <section className="px-4">
+                <div className="container mx-auto max-w-6xl">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">
+                      영상 <span className="text-primary text-lg font-semibold ml-1">{results.submissions.length}</span>
+                    </h2>
+                    <Link
+                      href={`/gallery/all?search=${encodedQuery}` as any}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      더보기
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+
+                  <div className="relative">
+                    <Carousel setApi={submissionNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
+                      <CarouselContent className="-ml-4 py-2">
+                        {results.submissions.map((submission, index) => (
+                          <CarouselItem key={submission.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Link href={`/gallery/${submission.id}` as any} className="group block">
+                              <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
+                                <div className="aspect-video overflow-hidden">
+                                  <img
+                                    src={submission.thumbnailUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                                    alt={submission.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+                                <div className="p-4 space-y-2">
+                                  <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-accent-foreground transition-colors">
+                                    {submission.title}
+                                  </h3>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Eye className="h-3.5 w-3.5" />
+                                      {submission.views.toLocaleString()}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Heart className="h-3.5 w-3.5" />
+                                      {submission.likeCount.toLocaleString()}
                                     </span>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          </Link>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                  <CarouselArrows api={contestNav.api} canPrev={contestNav.canPrev} canNext={contestNav.canNext} />
+                            </Link>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                    <CarouselArrows api={submissionNav.api} canPrev={submissionNav.canPrev} canNext={submissionNav.canNext} />
+                  </div>
                 </div>
-              </div>
-            </section>
-          )}
+              </section>
+            )}
 
-          {/* ── 영상 캐러셀 ── */}
-          {results.submissions.length > 0 && (
-            <section className="px-4">
-              <div className="container mx-auto max-w-6xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">
-                    영상 <span className="text-primary text-lg font-semibold ml-1">{results.submissions.length}</span>
-                  </h2>
-                  <Link
-                    href={`/gallery/all?search=${encodedQuery}` as any}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    더보기
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+            {/* ── 스토리 캐러셀 ── */}
+            {results.articles.length > 0 && (
+              <section className="px-4">
+                <div className="container mx-auto max-w-6xl">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">
+                      스토리 <span className="text-primary text-lg font-semibold ml-1">{results.articles.length}</span>
+                    </h2>
+                    <Link
+                      href={`/story?search=${encodedQuery}` as any}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      더보기
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
 
-                <div className="relative">
-                  <Carousel setApi={submissionNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
-                    <CarouselContent className="-ml-4 py-2">
-                      {results.submissions.map((submission, index) => (
-                        <CarouselItem key={submission.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                          <Link href={`/gallery/${submission.id}` as any} className="group block">
-                            <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
-                              <div className="aspect-video overflow-hidden">
-                                <img
-                                  src={submission.thumbnailUrl || `/images/contest-${(index % 5) + 1}.jpg`}
-                                  alt={submission.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                              <div className="p-4 space-y-2">
-                                <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-accent-foreground transition-colors">
-                                  {submission.title}
-                                </h3>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3.5 w-3.5" />
-                                    {submission.views.toLocaleString()}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3.5 w-3.5" />
-                                    {submission.likeCount.toLocaleString()}
-                                  </span>
+                  <div className="relative">
+                    <Carousel setApi={articleNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
+                      <CarouselContent className="-ml-4 py-2">
+                        {results.articles.map((article, index) => (
+                          <CarouselItem key={article.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Link href={`/story/${article.slug}` as any} className="group block">
+                              <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80 h-full flex flex-col">
+                                <div className="aspect-[16/9] relative overflow-hidden">
+                                  <img
+                                    src={article.thumbnailUrl || `/images/hero-${(index % 6) + 1}.jpg`}
+                                    alt={article.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-[0.65rem] font-bold backdrop-blur-md border border-white/20 shadow-lg ${getTypeColor(article.type)}`}>
+                                    {getTypeLabel(article.type)}
+                                  </div>
+                                </div>
+                                <div className="p-4 flex-1 flex flex-col">
+                                  <h3 className="font-bold text-sm text-foreground line-clamp-2 mb-1.5 group-hover:text-orange-400 transition-colors min-h-[2.5rem]">
+                                    {article.title}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-1">
+                                    {article.excerpt}
+                                  </p>
+                                  <div className="text-xs text-muted-foreground pt-1.5 border-t border-border">
+                                    {formatDate(article.publishedAt)}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </Link>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                  <CarouselArrows api={submissionNav.api} canPrev={submissionNav.canPrev} canNext={submissionNav.canNext} />
+                            </Link>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                    <CarouselArrows api={articleNav.api} canPrev={articleNav.canPrev} canNext={articleNav.canNext} />
+                  </div>
                 </div>
-              </div>
-            </section>
-          )}
-
-          {/* ── 스토리 캐러셀 ── */}
-          {results.articles.length > 0 && (
-            <section className="px-4">
-              <div className="container mx-auto max-w-6xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">
-                    스토리 <span className="text-primary text-lg font-semibold ml-1">{results.articles.length}</span>
-                  </h2>
-                  <Link
-                    href={`/story?search=${encodedQuery}` as any}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    더보기
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-
-                <div className="relative">
-                  <Carousel setApi={articleNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
-                    <CarouselContent className="-ml-4 py-2">
-                      {results.articles.map((article, index) => (
-                        <CarouselItem key={article.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
-                          <Link href={`/story/${article.slug}` as any} className="group block">
-                            <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80 h-full flex flex-col">
-                              <div className="aspect-[16/9] relative overflow-hidden">
-                                <img
-                                  src={article.thumbnailUrl || `/images/hero-${(index % 6) + 1}.jpg`}
-                                  alt={article.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-[0.65rem] font-bold backdrop-blur-md border border-white/20 shadow-lg ${getTypeColor(article.type)}`}>
-                                  {getTypeLabel(article.type)}
-                                </div>
-                              </div>
-                              <div className="p-4 flex-1 flex flex-col">
-                                <h3 className="font-bold text-sm text-foreground line-clamp-2 mb-1.5 group-hover:text-orange-400 transition-colors min-h-[2.5rem]">
-                                  {article.title}
-                                </h3>
-                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-1">
-                                  {article.excerpt}
-                                </p>
-                                <div className="text-xs text-muted-foreground pt-1.5 border-t border-border">
-                                  {formatDate(article.publishedAt)}
-                                </div>
-                              </div>
-                            </div>
-                          </Link>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                  <CarouselArrows api={articleNav.api} canPrev={articleNav.canPrev} canNext={articleNav.canNext} />
-                </div>
-              </div>
-            </section>
-          )}
+              </section>
+            )}
 
           </div>
         </div>

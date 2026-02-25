@@ -98,7 +98,7 @@ export default async function AdminAgencyRequestsPage() {
         <Card className="border-border">
           <CardHeader>
             <CardTitle>상태 필터</CardTitle>
-            <CardDescription>필터 UI 데모입니다. 의뢰 우선순위를 빠르게 파악할 수 있습니다.</CardDescription>
+            <CardDescription>의뢰 우선순위를 빠르게 파악할 수 있습니다.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <button type="button" className="rounded-md border border-border bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">

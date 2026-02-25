@@ -88,17 +88,16 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             <div className="space-y-4">
               {/* 수상 뱃지 */}
               {submission.prizeLabel && (
-                <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold shadow-sm ${
-                  submission.rank === 1 ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30' :
-                  submission.rank === 2 ? 'bg-slate-400/10 text-slate-500 border border-slate-400/30' :
-                  'bg-orange-600/10 text-orange-600 border border-orange-600/30'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold shadow-sm ${submission.rank === 1 ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30' :
+                    submission.rank === 2 ? 'bg-slate-400/10 text-slate-500 border border-slate-400/30' :
+                      'bg-orange-600/10 text-orange-600 border border-orange-600/30'
+                  }`}>
                   <Trophy className="h-4 w-4" />
                   {submission.prizeLabel}
                 </span>
               )}
 
-              <h1 className="text-2xl font-bold tracking-tight">{submission.title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{submission.title}</h1>
 
               {/* 메타 정보 (한 줄) */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
@@ -162,7 +161,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
         <section className="pb-16 px-4">
           <div className="container mx-auto max-w-6xl space-y-5">
             <h2 className="text-2xl font-bold">같은 공모전의 다른 작품</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {relatedSubmissions.map((sub) => (
                 <Link key={sub.id} href={`/gallery/${sub.id}` as any} className="group">
                   <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-border">
@@ -181,11 +180,10 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                       {/* 수상 뱃지 */}
                       {sub.prizeLabel && (
                         <div className="absolute top-3 left-3 z-10">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg ${
-                            sub.rank === 1 ? 'bg-amber-500/90 text-white' :
-                            sub.rank === 2 ? 'bg-slate-400/90 text-white' :
-                            'bg-orange-600/90 text-white'
-                          }`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg ${sub.rank === 1 ? 'bg-amber-500/90 text-white' :
+                              sub.rank === 2 ? 'bg-slate-400/90 text-white' :
+                                'bg-orange-600/90 text-white'
+                            }`}>
                             {sub.prizeLabel}
                           </span>
                         </div>

@@ -73,6 +73,23 @@ export default async function ContestsPage({
     return `${total.toLocaleString()}원`;
   };
 
+  /** 상금 표시 포맷: 순수 숫자면 한국 원 단위로 변환 */
+  const formatPrizeDisplay = (amount: string): string => {
+    if (/[만억원]/.test(amount)) return amount;
+    const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
+    if (isNaN(num) || num === 0) return amount;
+    if (num >= 100000000) {
+      const eok = Math.floor(num / 100000000);
+      const man = Math.floor((num % 100000000) / 10000);
+      if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
+      return `${eok}억원`;
+    }
+    if (num >= 10000) {
+      return `${(num / 10000).toLocaleString()}만원`;
+    }
+    return `${num.toLocaleString()}원`;
+  };
+
   /** 공통 URL 파라미터 생성 (view, sort, search 보존) */
   const buildParams = (overrides: Record<string, string> = {}) => {
     const params = new URLSearchParams();
@@ -142,8 +159,8 @@ export default async function ContestsPage({
       <section className="relative pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
-              Explore Contests
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+              Contests
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
               총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.
@@ -155,19 +172,19 @@ export default async function ContestsPage({
       {/* 필터 & 정렬 & 검색 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-8">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* 상태 필터 */}
-            <div className="flex gap-1">
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 sm:p-3 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+            {/* 상태 필터 (가로 스크롤 가능하게) */}
+            <div className="flex gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
               {[
                 { id: 'draft', label: '접수전' },
                 { id: 'open', label: '접수중' },
                 { id: 'judging', label: '심사중' },
                 { id: 'completed', label: '종료' }
               ].map((tab) => (
-                <Link key={tab.id} href={`/contests?${buildParams({ status: tab.id }).toString()}`} scroll={false}>
+                <Link key={tab.id} href={`/contests?${buildParams({ status: tab.id }).toString()}`} scroll={false} className="shrink-0">
                   <button
                     type="button"
-                    className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentStatus === tab.id
+                    className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap w-full ${currentStatus === tab.id
                       ? 'text-violet-500 font-bold bg-violet-500/10'
                       : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                       }`}
@@ -178,10 +195,10 @@ export default async function ContestsPage({
               ))}
             </div>
 
-            {/* 뷰 토글 + 정렬 + 검색 */}
-            <div className="flex items-center gap-3">
-              {/* 리스트/카드 뷰 토글 */}
-              <div className="flex items-center rounded-lg border border-white/10 overflow-hidden">
+            {/* 뷰 토글 + 정렬 + 검색 (모바일에서 한 줄로 예쁘게 배치) */}
+            <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end">
+              {/* 리스트/카드 뷰 토글 (모바일에서도 유지) */}
+              <div className="flex shrink-0 items-center rounded-lg border border-white/10 overflow-hidden">
                 {[
                   { id: 'list', icon: LayoutList, label: '리스트' },
                   { id: 'card', icon: LayoutGrid, label: '카드' },
@@ -201,13 +218,15 @@ export default async function ContestsPage({
                 ))}
               </div>
               <SortSelect />
-              <SearchInput basePath="/contests" currentSearch={search} extraParams={{ status: currentStatus, sort: currentSort, view: currentView }} placeholder="공모전 검색..." />
+              <div className="w-full sm:w-auto ml-auto sm:ml-0 max-w-[180px] sm:max-w-none">
+                <SearchInput basePath="/contests" currentSearch={search} extraParams={{ status: currentStatus, sort: currentSort, view: currentView }} placeholder="공모전 검색..." />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-       {/* 공모전 목록 */}
+      {/* 공모전 목록 */}
       <section className="pb-24 px-4">
         <div className="container mx-auto max-w-6xl">
           {/* 필터 결과 건수 & 검색어 표시 */}
@@ -229,7 +248,7 @@ export default async function ContestsPage({
               /* ────────────── 리스트 뷰 ────────────── */
               <div className="space-y-6">
                 {displayedContests.map((contest, index) => {
-                  const totalPrize = contest.prizeAmount || calculateTotalPrize(contest.awardTiers);
+                  const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
                   const displayStatus = getDisplayStatus(contest);
                   const isBeforeStart = displayStatus === 'draft' && contest.status === 'open';
                   return (
@@ -240,7 +259,7 @@ export default async function ContestsPage({
                           <div className="space-y-3">
                             {/* 제목 */}
                             <Link href={`/contests/${contest.id}` as any}>
-                              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">
+                              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">
                                 {contest.title}
                               </h2>
                             </Link>
@@ -252,12 +271,12 @@ export default async function ContestsPage({
                             )}
 
                             {/* 기간 */}
-                            <p className="text-orange-500 font-bold text-base md:text-lg">
+                            <p className="text-orange-500 font-bold text-sm sm:text-base md:text-lg">
                               {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                             </p>
 
                             {/* 카운트다운 + 총상금 (같은 라인: 카운트다운 왼쪽, 총상금 오른쪽) */}
-                            <div className="flex items-end justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
                               <div>
                                 {displayStatus === 'open' && (
                                   <ContestCountdown
@@ -283,21 +302,21 @@ export default async function ContestsPage({
                             </div>
                           </div>
 
-                          {/* 하단: 버튼 (중앙 정렬) */}
-                          <div className="mt-6 pt-4 border-t border-neutral-700 flex flex-wrap justify-center gap-3">
+                          {/* 하단: 버튼 (나란히 배치) */}
+                          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-neutral-700 flex justify-center gap-2 sm:gap-3">
                             {/* 접수중(실제 접수 가능)일 때만 제출 버튼 표시 */}
                             {displayStatus === 'open' && (
                               <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
-                                <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                                <span className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                   <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                                  <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
+                                  <Upload className="relative z-10 h-3 w-3 sm:h-3.5 sm:w-3.5 group-hover/btn:text-white transition-colors" />
                                   <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
                                 </span>
                               </Link>
                             )}
                             {/* 상세보기 버튼 */}
                             <Link href={`/contests/${contest.id}` as any} className="group/btn2">
-                              <span className="relative inline-flex items-center gap-2 px-6 py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
+                              <span className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                 <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
                                 <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세안내 확인하기</span>
                               </span>
@@ -336,85 +355,85 @@ export default async function ContestsPage({
               </div>
             ) : (
               /* ────────────── 카드 뷰 (기존) ────────────── */
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayedContests.map((contest, index) => {
                   const displayStatusCard = getDisplayStatus(contest);
                   return (
-                  <Link key={contest.id} href={`/contests/${contest.id}` as any} className="group relative block">
-                    <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
-                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
-                      <img
-                        src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
-                        alt={contest.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      {/* 상태 뱃지 */}
-                      <div className="absolute top-[18px] right-3 z-10">
-                        {displayStatusCard === 'draft' ? (
-                          <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
-                        ) : contest.status === 'open' ? (() => {
-                          const dday = calcDDay(contest.submissionEndAt);
-                          const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
-                          return (
-                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
-                              {dday === 0 ? 'D-Day' : `D-${dday}`}
-                            </span>
-                          );
-                        })() : (
-                          <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'
-                            }`}>
-                            {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 하단 그라데이션 오버레이 + 텍스트 (더 진하게) */}
-                      <div className="absolute inset-x-0 bottom-0 h-2/3 z-10 flex flex-col justify-end">
-                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 from-35% via-neutral-900/70 via-60% to-transparent" />
-                        <div className="relative pb-7 px-4 flex flex-col gap-2.5">
-                          <AutoFitTitle
-                            className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
-                            maxFontSize={18}
-                            minFontSize={13}
-                            maxLines={2}
-                          >
-                            {contest.title}
-                          </AutoFitTitle>
-                          {/* 공모전 소개 (2줄) */}
-                          {contest.description && (
-                            <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
-                              {contest.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-white"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
-                            <span className="text-sm text-white/70">
-                              {(displayStatusCard === 'draft')
-                                ? `접수시작 ${formatDate(contest.submissionStartAt, { month: '2-digit', day: '2-digit' })}`
-                                : displayStatusCard === 'open'
-                                  ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
-                                  : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
-                              }
-                            </span>
-                          </div>
-                          {/* 접수중(실제 접수 가능) 공모전만 제출 버튼 */}
-                          {displayStatusCard === 'open' && (
-                            <Link
-                              href={`/contests/${contest.id}/submit` as any}
-                              className="block group/btn"
-                            >
-                              <span className="relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer">
-                                <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                                <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
-                                <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출</span>
+                    <Link key={contest.id} href={`/contests/${contest.id}` as any} className="group relative block">
+                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
+                        <img
+                          src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                          alt={contest.title}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        {/* 상태 뱃지 */}
+                        <div className="absolute top-[18px] right-3 z-10">
+                          {displayStatusCard === 'draft' ? (
+                            <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
+                          ) : contest.status === 'open' ? (() => {
+                            const dday = calcDDay(contest.submissionEndAt);
+                            const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
+                            return (
+                              <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
+                                {dday === 0 ? 'D-Day' : `D-${dday}`}
                               </span>
-                            </Link>
+                            );
+                          })() : (
+                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'
+                              }`}>
+                              {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
+                            </span>
                           )}
                         </div>
-                      </div>
 
-                    </div>
-                  </Link>
+                        {/* 하단 그라데이션 오버레이 + 텍스트 (더 진하게) */}
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 z-10 flex flex-col justify-end">
+                          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 from-35% via-neutral-900/70 via-60% to-transparent" />
+                          <div className="relative pb-7 px-4 flex flex-col gap-2.5">
+                            <AutoFitTitle
+                              className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
+                              maxFontSize={18}
+                              minFontSize={13}
+                              maxLines={2}
+                            >
+                              {contest.title}
+                            </AutoFitTitle>
+                            {/* 공모전 소개 (2줄) */}
+                            {contest.description && (
+                              <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
+                                {contest.description}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold text-white"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {(contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
+                              <span className="text-sm text-white/70">
+                                {(displayStatusCard === 'draft')
+                                  ? `접수시작 ${formatDate(contest.submissionStartAt, { month: '2-digit', day: '2-digit' })}`
+                                  : displayStatusCard === 'open'
+                                    ? `마감 ${formatDate(contest.submissionEndAt, { month: '2-digit', day: '2-digit' })}`
+                                    : `발표 ${formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}`
+                                }
+                              </span>
+                            </div>
+                            {/* 접수중(실제 접수 가능) 공모전만 제출 버튼 */}
+                            {displayStatusCard === 'open' && (
+                              <Link
+                                href={`/contests/${contest.id}/submit` as any}
+                                className="block group/btn"
+                              >
+                                <span className="relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer">
+                                  <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
+                                  <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
+                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출</span>
+                                </span>
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+                    </Link>
                   );
                 })}
               </div>

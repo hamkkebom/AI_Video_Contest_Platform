@@ -32,14 +32,14 @@ export function SearchInput({ basePath, currentSearch, extraParams = {}, placeho
   };
 
   return (
-    <form onSubmit={handleSearch} className="flex items-center gap-2">
-      <div className="relative flex items-center">
+    <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="relative flex items-center w-full">
         <input
           type="text"
           placeholder={placeholder}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="pl-4 pr-10 py-2 rounded-lg bg-background/80 border border-border text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-transparent transition-all"
+          className="w-full pl-4 pr-10 py-2 rounded-lg bg-background/80 border border-border text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-transparent transition-all"
         />
         <button
           type="submit"

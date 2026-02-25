@@ -125,13 +125,13 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
           </Link>
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground text-4xl font-bold border-4 border-background/80">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground text-3xl sm:text-4xl font-bold border-4 border-background/80">
                 {displayName.charAt(0)}
               </div>
 
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{displayName}</h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center sm:text-left">{displayName}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
@@ -145,17 +145,17 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 w-full lg:w-auto">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full lg:w-auto">
               <Card className="p-4 text-center min-w-24">
-                <p className="text-2xl font-bold text-primary">{allSubmissions.length}</p>
+                <p className="text-lg sm:text-2xl font-bold text-primary">{allSubmissions.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">작품 수</p>
               </Card>
               <Card className="p-4 text-center min-w-24">
-                <p className="text-2xl font-bold text-primary">{totalViews.toLocaleString()}</p>
+                <p className="text-lg sm:text-2xl font-bold text-primary">{totalViews.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground mt-1">총 조회수</p>
               </Card>
               <Card className="p-4 text-center min-w-24">
-                <p className="text-2xl font-bold text-primary">{totalLikes.toLocaleString()}</p>
+                <p className="text-lg sm:text-2xl font-bold text-primary">{totalLikes.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground mt-1">총 좋아요</p>
               </Card>
             </div>

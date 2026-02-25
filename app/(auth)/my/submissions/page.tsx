@@ -74,7 +74,9 @@ export default async function MyContestsPage() {
     return (
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">내 출품작</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight shrink-0">
+            My Submissions
+          </h1>
           <p className="text-sm text-muted-foreground">
             참가한 공모전 {groups.length}개 · 총 {totalSubmissions}개 작품
           </p>
@@ -137,10 +139,10 @@ export default async function MyContestsPage() {
                         return (
                           <div
                             key={submission.id}
-                            className="flex items-center gap-4 rounded-lg border border-border p-3"
+                            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3"
                           >
                             {/* 썸네일 */}
-                            <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-md bg-muted">
+                            <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
                               {submission.thumbnailUrl ? (
                                 <img
                                   src={submission.thumbnailUrl}
@@ -155,7 +157,7 @@ export default async function MyContestsPage() {
                             </div>
                             {/* 제목 + 상태 + 지표 */}
                             <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <p className="truncate text-sm font-medium">{submission.title}</p>
                                 <Badge className={`shrink-0 text-[10px] px-1.5 py-0 ${sStatus.className}`}>
                                   {sStatus.label}

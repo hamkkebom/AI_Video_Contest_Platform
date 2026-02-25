@@ -154,8 +154,8 @@ export default function AgencyRequestPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Button type="submit" disabled className="flex-1 cursor-not-allowed font-semibold">
-                    의뢰서 제출 (데모)
+                  <Button type="submit" disabled className="flex-1 cursor-not-allowed font-semibold bg-muted text-muted-foreground">
+                    서비스 준비 중
                   </Button>
                   <Badge variant="outline" className="shrink-0">무료 견적</Badge>
                 </div>

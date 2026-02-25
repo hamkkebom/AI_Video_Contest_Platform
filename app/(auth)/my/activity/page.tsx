@@ -63,7 +63,7 @@ export default function MyActivityPage() {
     <div className="space-y-8">
       {/* 페이지 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">내 활동</h1>
+        <h1 className="text-2xl font-bold tracking-tight">My Activity</h1>
         <p className="text-muted-foreground mt-1">참여 중인 활동을 한눈에 확인하세요</p>
       </div>
 

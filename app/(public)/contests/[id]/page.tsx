@@ -73,6 +73,25 @@ function calculateTotalPrize(tiers: AwardTier[]): string | null {
   return `${total.toLocaleString()}원`;
 }
 
+/** 상금 표시 포맷: 순수 숫자면 한국 원 단위로 변환, 이미 포맷된 문자열이면 그대로 반환 */
+function formatPrizeDisplay(amount: string): string {
+  // 이미 "만원", "억원" 등이 포함되어 있으면 그대로 반환
+  if (/[만억원]/.test(amount)) return amount;
+  // 순수 숫자인 경우 포맷팅
+  const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
+  if (isNaN(num) || num === 0) return amount;
+  if (num >= 100000000) {
+    const eok = Math.floor(num / 100000000);
+    const man = Math.floor((num % 100000000) / 10000);
+    if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
+    return `${eok}억원`;
+  }
+  if (num >= 10000) {
+    return `${(num / 10000).toLocaleString()}만원`;
+  }
+  return `${num.toLocaleString()}원`;
+}
+
 /** 수상 티어 라벨 기반 색상 클래스 */
 function getAwardColorClass(label: string, index: number): string {
   const lower = label.toLowerCase();
@@ -134,7 +153,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   const isAdminHost = hostUser?.roles?.includes('admin');
 
   // 총 상금 계산: contest.prizeAmount가 있으면 사용, 없으면 awardTiers에서 합산
-  const totalPrize = contest.prizeAmount || calculateTotalPrize(contest.awardTiers);
+  const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
 
   // 클라이언트 컴포넌트에 전달하기 위해 Map → 직렬화 가능한 객체로 변환
   const creatorsRecord: Record<string, (typeof allUsers)[number]> = {};
@@ -170,7 +189,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           {/* 타이틀 및 설명 */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
               <Badge className={`${statusMeta.className} text-base px-4 py-1`}>{statusMeta.label}</Badge>
             </div>
             {contest.description && (
@@ -191,7 +210,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       {/* 공모전 핵심 지표 — 제출기간 / 심사기간 / 결과 발표일 / 참가자 */}
       <section className="py-8 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* 제출기간 */}
             <Card className="p-5 border border-border">
               <div className="flex items-start justify-between gap-3">
@@ -332,7 +351,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
 
             {/* Quick Info */}
             <Card className="p-6 border border-border space-y-4">
-              <h3 className="text-lg font-bold">Quick Info</h3>
+              <h3 className="text-lg font-bold">요약 정보</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">주최</span>

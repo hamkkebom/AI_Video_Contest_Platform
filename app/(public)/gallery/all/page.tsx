@@ -31,10 +31,10 @@ export default async function GalleryAllPage({
   // 검색 필터링
   const searchFiltered = search
     ? allSubmissions.filter(s =>
-        s.title.toLowerCase().includes(search.toLowerCase()) ||
-        s.description.toLowerCase().includes(search.toLowerCase()) ||
-        s.creatorName.toLowerCase().includes(search.toLowerCase())
-      )
+      s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase()) ||
+      s.creatorName.toLowerCase().includes(search.toLowerCase())
+    )
     : allSubmissions;
 
   // 정렬
@@ -65,7 +65,7 @@ export default async function GalleryAllPage({
       <section className="relative pt-24 pb-4 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               Gallery
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -81,7 +81,7 @@ export default async function GalleryAllPage({
       {/* 필터 바 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-8 pt-12">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             <div className="flex gap-1">
               {[
                 { id: 'latest', label: '최신순' },
@@ -129,7 +129,7 @@ export default async function GalleryAllPage({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {displayedSubmissions.map((submission, index) => (
               <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
                 <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">

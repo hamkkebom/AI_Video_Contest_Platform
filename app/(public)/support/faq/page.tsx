@@ -81,7 +81,7 @@ export default function FaqPage() {
               <ChevronRight className="h-3 w-3" />
               <span className="text-foreground font-medium">FAQ</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
               FAQ
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -94,15 +94,14 @@ export default function FaqPage() {
       {/* 역할 필터 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 inline-flex gap-1 flex-wrap">
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 inline-flex gap-1 flex-wrap overflow-x-auto">
             <button
               type="button"
               onClick={() => { setSelectedRole(null); setSelectedTopic(null); }}
-              className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${
-                selectedRole === null
+              className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${selectedRole === null
                   ? 'text-violet-500 font-bold'
                   : 'text-muted-foreground font-medium hover:text-foreground'
-              }`}
+                }`}
             >
               전체
             </button>
@@ -111,11 +110,10 @@ export default function FaqPage() {
                 type="button"
                 key={cat.value}
                 onClick={() => { setSelectedRole(cat.value); setSelectedTopic(null); }}
-                className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${
-                  selectedRole === cat.value
+                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${selectedRole === cat.value
                     ? 'text-violet-500 font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
-                }`}
+                  }`}
               >
                 {cat.label}
               </button>
@@ -131,11 +129,10 @@ export default function FaqPage() {
             <button
               type="button"
               onClick={() => setSelectedTopic(null)}
-              className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${
-                selectedTopic === null
+              className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${selectedTopic === null
                   ? 'text-orange-500 font-bold'
                   : 'text-muted-foreground font-medium hover:text-foreground'
-              }`}
+                }`}
             >
               전체 주제
             </button>
@@ -144,11 +141,10 @@ export default function FaqPage() {
                 type="button"
                 key={topic.value}
                 onClick={() => setSelectedTopic(topic.value)}
-                className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${
-                  selectedTopic === topic.value
+                className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${selectedTopic === topic.value
                     ? 'text-orange-500 font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
-                }`}
+                  }`}
               >
                 {topic.label}
               </button>
@@ -205,13 +201,12 @@ export default function FaqPage() {
                     <button
                       type="button"
                       onClick={() => setExpandedFaqId(expandedFaqId === faq.id ? null : faq.id)}
-                      className={`flex w-full items-center justify-between px-5 py-5 text-left transition-colors cursor-pointer ${
-                        expandedFaqId === faq.id
+                      className={`flex w-full items-center justify-between px-5 py-5 text-left transition-colors cursor-pointer ${expandedFaqId === faq.id
                           ? 'bg-orange-500/10'
                           : 'hover:bg-muted/40'
-                      }`}
+                        }`}
                     >
-                      <div className="flex items-center gap-3 pr-4">
+                      <div className="flex flex-wrap items-start sm:items-center gap-2 sm:gap-3 pr-4">
                         {/* 역할 뱃지 */}
                         <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${roleBadgeClass}`}>
                           {roleLabel}
@@ -220,14 +215,13 @@ export default function FaqPage() {
                         <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                           {topicLabel}
                         </span>
-                        <span className="text-base font-semibold text-foreground">
+                        <span className="text-sm sm:text-base font-semibold text-foreground">
                           {faq.question}
                         </span>
                       </div>
                       <span
-                        className={`shrink-0 text-sm text-orange-400 transition-transform duration-200 ${
-                          expandedFaqId === faq.id ? 'rotate-180' : 'rotate-0'
-                        }`}
+                        className={`shrink-0 text-sm text-orange-400 transition-transform duration-200 ${expandedFaqId === faq.id ? 'rotate-180' : 'rotate-0'
+                          }`}
                       >
                         ▼
                       </span>

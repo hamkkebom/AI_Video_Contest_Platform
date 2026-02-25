@@ -37,7 +37,7 @@ export default function InquiryPage() {
             <ChevronRight className="h-3 w-3" />
             <span className="text-foreground font-medium">1:1 문의</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2">1:1 문의</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Contact Us</h1>
           <p className="text-muted-foreground">궁금한 점이나 불편한 점을 남겨주세요. 빠르게 답변드리겠습니다.</p>
         </div>
       </section>
@@ -101,8 +101,8 @@ export default function InquiryPage() {
                       />
                     </div>
 
-                    <Button type="submit" disabled className="w-full cursor-not-allowed font-semibold">
-                      문의 접수 (데모)
+                    <Button type="submit" disabled className="w-full cursor-not-allowed font-semibold bg-muted text-muted-foreground">
+                      서비스 준비 중
                     </Button>
                   </form>
                 </CardContent>

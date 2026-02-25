@@ -108,7 +108,7 @@ export default async function AdminArticlesPage() {
           <CardHeader className="flex flex-row items-center justify-between gap-3">
             <div>
               <CardTitle>유형/상태 필터</CardTitle>
-              <CardDescription>필터 UI 데모입니다. 유형별 콘텐츠 비중을 확인할 수 있습니다.</CardDescription>
+              <CardDescription>유형별 콘텐츠 비중을 확인할 수 있습니다.</CardDescription>
             </div>
             <div className="flex gap-2">
               <Link href="/admin/dashboard">

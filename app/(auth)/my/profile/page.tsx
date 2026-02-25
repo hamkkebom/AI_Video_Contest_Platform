@@ -71,11 +71,10 @@ function AiToolChips({
               key={tool}
               type="button"
               onClick={() => toggle(tool)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                isActive
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/40'
-              }`}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${isActive
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                }`}
             >
               {tool}
             </button>
@@ -402,17 +401,16 @@ export default function ProfileEditPage() {
   return (
     <div className="space-y-6 pb-10">
       <header className="space-y-1">
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">프로필 편집</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">프로필 편집</h1>
         <p className="text-sm text-muted-foreground">프로필 정보와 포트폴리오 링크를 최신 상태로 유지해보세요.</p>
       </header>
 
       {/* 저장 결과 메시지 */}
       {saveMessage && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${
-          saveMessage.type === 'success'
-            ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300'
-            : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300'
-        }`}>
+        <div className={`rounded-lg border px-4 py-3 text-sm ${saveMessage.type === 'success'
+          ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300'
+          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300'
+          }`}>
           {saveMessage.text}
         </div>
       )}

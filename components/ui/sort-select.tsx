@@ -87,12 +87,12 @@ export function SortSelect({
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer shrink-0
                            bg-white/5 border border-white/10 backdrop-blur-sm
                            hover:bg-white/10 hover:border-violet-500/30
                            transition-all duration-200"
             >
-                <span className="text-muted-foreground mr-0.5">정렬</span>
+                <span className="text-muted-foreground mr-0.5 inline">정렬</span>
                 <span className="relative text-violet-500 font-semibold">
                     {/* 가장 긴 옵션에 맞춰 너비 고정 */}
                     <span className="invisible block h-0 leading-none" aria-hidden="true">
