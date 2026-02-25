@@ -38,12 +38,12 @@ export function OverviewSection() {
 
         {/* 카드 5개 */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            {cards.map((card) => (
-              <div
-                key={card.titleKey}
-                className="arirang-animate group p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
-                style={{ backgroundColor: 'rgba(13,11,26,0.6)', border: '1px solid rgba(245,240,232,0.08)' }}
-              >
+          {cards.map((card) => (
+            <div
+              key={card.titleKey}
+              className="arirang-animate group p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
+              style={{ backgroundColor: 'rgba(13,11,26,0.6)', border: '1px solid rgba(245,240,232,0.08)' }}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center transition-colors" style={{ backgroundColor: 'rgba(212,168,67,0.1)', color: 'var(--ar-accent)' }}>
                   <card.icon className="w-5 h-5" />

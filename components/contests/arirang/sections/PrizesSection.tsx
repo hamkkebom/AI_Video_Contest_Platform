@@ -191,30 +191,33 @@ export function PrizesSection() {
             {t(prizesTranslations, 'criteriaTitle', lang)}
           </h3>
           <div className="flex items-center gap-1 h-11 rounded-full overflow-hidden">
+            {/* 80% 세그먼트 */}
             <div
               className="h-full flex items-center justify-center text-sm font-bold"
-              style={{ width: '80%', backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
+              style={{ flex: '80', minWidth: '3rem', backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
             >
               80%
             </div>
+            {/* 17% 세그먼트 */}
             <div
               className="h-full flex items-center justify-center text-sm font-bold"
-              style={{ width: '17%', backgroundColor: 'var(--ar-pine-light)', color: 'var(--ar-primary-dark)' }}
+              style={{ flex: '17', minWidth: '3rem', backgroundColor: 'var(--ar-pine-light)', color: 'var(--ar-primary-dark)' }}
             >
               17%
             </div>
+            {/* 3% 세그먼트 - 모바일에서 텍스트가 보이도록 minWidth 설정 */}
             <div
               className="h-full flex items-center justify-center text-xs font-bold"
-              style={{ width: '3%', backgroundColor: 'var(--ar-point)', color: 'var(--ar-primary-dark)' }}
+              style={{ flex: '3', minWidth: '2.5rem', backgroundColor: 'var(--ar-point)', color: 'var(--ar-primary-dark)' }}
             >
               3%
             </div>
           </div>
           {/* 바 하단 라벨 */}
           <div className="flex mt-2 text-sm" style={{ color: 'rgba(245,240,232,0.5)' }}>
-            <span className="text-center" style={{ width: '80%' }}>{t(prizesTranslations, 'criteriaJudge', lang)}</span>
-            <span className="text-center" style={{ width: '17%' }}>{t(prizesTranslations, 'criteriaVote', lang)}</span>
-            <span className="text-center whitespace-nowrap" style={{ width: '3%' }}>{t(prizesTranslations, 'criteriaBonus', lang)}</span>
+            <span className="text-center" style={{ flex: '80', minWidth: '3rem' }}>{t(prizesTranslations, 'criteriaJudge', lang)}</span>
+            <span className="text-center" style={{ flex: '17', minWidth: '3rem' }}>{t(prizesTranslations, 'criteriaVote', lang)}</span>
+            <span className="text-center" style={{ flex: '3', minWidth: '2.5rem' }}>{t(prizesTranslations, 'criteriaBonus', lang)}</span>
           </div>
         </div>
 

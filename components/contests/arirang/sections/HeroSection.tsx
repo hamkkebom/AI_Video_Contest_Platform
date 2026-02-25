@@ -29,7 +29,7 @@ export function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16 md:pt-20"
     >
       {/* 배경 그라데이션 */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, var(--ar-primary-dark), var(--ar-primary), var(--ar-primary-dark))' }} />

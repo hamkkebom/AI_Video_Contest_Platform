@@ -58,11 +58,10 @@ export function ArirangNavbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
           ? 'shadow-lg shadow-black/20'
           : 'bg-transparent'
-      }`}
+        }`}
       style={scrolled ? { backgroundColor: 'rgba(13,11,26,0.95)', backdropFilter: 'blur(12px)' } : undefined}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -152,9 +151,8 @@ export function ArirangNavbar() {
 
       {/* 모바일 메뉴 */}
       <div
-        className={`md:hidden transition-all duration-300 overflow-hidden ${
-          menuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}
+        className={`md:hidden transition-all duration-300 overflow-hidden ${menuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
       >
         <div className="px-4 pb-4 space-y-1" style={{ backgroundColor: 'rgba(13,11,26,0.98)', backdropFilter: 'blur(12px)' }}>
           {NAV_ITEMS.map((item) => (
