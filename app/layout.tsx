@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
   },
   verification: {
-    google: "GmdzYkOhfANE8IQ3JXMd_BOqtXcAuykFU1CjDd3Wa1M",
+    google: "MmZsrGVkf7dm_tQpqGUq77hOgYrmVrvH9BUomSafY3M",
   },
 };
 
