@@ -327,7 +327,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                         <div className="flex items-center gap-3 text-sm">
                           <span className="font-medium">{tier.count}명</span>
                           {tier.prizeAmount && (
-                            <span className="font-bold">{tier.prizeAmount}</span>
+                            <span className="font-bold">{formatPrizeDisplay(tier.prizeAmount)}</span>
                           )}
                         </div>
                       </div>

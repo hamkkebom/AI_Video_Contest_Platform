@@ -320,7 +320,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                       className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
                     >
                       {tier.label} {tier.count}명
-                      {tier.prizeAmount ? <span className="text-amber-500/70">({tier.prizeAmount})</span> : null}
+                      {tier.prizeAmount ? <span className="text-amber-500/70">({Number(tier.prizeAmount).toLocaleString('ko-KR')}원)</span> : null}
                     </span>
                   ))
                 : <span className="text-xs text-muted-foreground">수상 정보가 없습니다.</span>}

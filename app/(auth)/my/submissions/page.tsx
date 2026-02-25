@@ -75,7 +75,7 @@ export default async function MyContestsPage() {
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight shrink-0">
-            My Submissions
+            내 출품작
           </h1>
           <p className="text-sm text-muted-foreground">
             참가한 공모전 {groups.length}개 · 총 {totalSubmissions}개 작품
