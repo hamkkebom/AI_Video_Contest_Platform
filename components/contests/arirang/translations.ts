@@ -67,7 +67,7 @@ export const translations = {
     cardTopicTitle: { ko: '주제', en: 'Theme' },
     cardTopicDesc: { ko: '자신의 꿈을 담은 나만의 아리랑', en: 'Your own Arirang that reflects your dream' },
     cardFormatTitle: { ko: '콘텐츠 형태', en: 'Content Format' },
-    cardFormatDesc: { ko: '가로 영상', en: 'Horizontal video' },
+    cardFormatDesc: { ko: '가로 (1920*1080)', en: 'Horizontal (1920×1080)' },
     cardLengthTitle: { ko: '분량', en: 'Length' },
     cardLengthDesc: { ko: '30초 ~ 90초 내외', en: 'Around 30 to 90 seconds' },
     cardFileTypeTitle: { ko: '파일 형식', en: 'File Type' },

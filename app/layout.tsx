@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 import { UtmTracker } from '@/components/tracking/utm-tracker';
 import { ActivityTracker } from '@/components/tracking/activity-tracker';
 import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: "꿈플 — AI로 꿈을 키우는 나무",
@@ -39,12 +40,38 @@ type RootLayoutProps = {
   children: ReactNode;
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  // 서버에서 인증 상태 미리 조회 (클라이언트 더블-페치 방지)
+  // 미들웨어가 이미 JWT 검증 완료 → getSession()으로 쿠키에서 읽기 (네트워크 호출 없음)
+  let serverUser: Parameters<typeof AuthProvider>[0]['serverUser'];
+  let serverProfile: Parameters<typeof AuthProvider>[0]['serverProfile'];
+
+  try {
+    const supabase = await createClient();
+    if (supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        serverUser = session.user;
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        serverProfile = data ?? null;
+      } else {
+        serverUser = null;
+        serverProfile = null;
+      }
+    }
+  } catch {
+    // 서버 인증 조회 실패 — 클라이언트에서 재시도 (serverUser=undefined)
+  }
+
   return (
     <html lang="ko" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
-          <AuthProvider>
+          <AuthProvider serverUser={serverUser} serverProfile={serverProfile}>
             <SessionTimeoutGuard>
               <Header />
               <main className="min-h-screen">

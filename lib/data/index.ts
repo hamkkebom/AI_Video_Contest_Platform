@@ -4,7 +4,11 @@
  * Supabase에서 실제 데이터를 쿼리합니다.
  *
  * snake_case(DB) → camelCase(TypeScript) 변환을 포함합니다.
+ *
+ * React.cache()로 래핑된 함수들은 같은 요청 내에서
+ * 동일 인자로 중복 호출 시 DB 쿼리를 1회만 실행합니다.
  */
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type {
   Article,
@@ -471,7 +475,7 @@ function toIpLog(row: Record<string, unknown>): IpLog {
 // 공개 API 함수 — mock과 동일한 시그니처
 // ============================================================
 
-export async function getUsers(): Promise<User[]> {
+export const getUsers = cache(async function getUsers(): Promise<User[]> {
   const supabase = await createClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -480,7 +484,7 @@ export async function getUsers(): Promise<User[]> {
     .order('created_at', { ascending: true });
   if (error || !data) return [];
   return data.map((row) => toUser(row as Record<string, unknown>));
-}
+});
 
 export async function getCompanies(): Promise<Company[]> {
   const supabase = await createClient();
@@ -531,7 +535,7 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
  * 공모전 목록 조회 (award_tiers, bonus_configs 포함)
  * 필터 지원: status, region, search
  */
-export async function getContests(filters?: ContestFilters): Promise<Contest[]> {
+export const getContests = cache(async function getContests(filters?: ContestFilters): Promise<Contest[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
@@ -567,16 +571,16 @@ export async function getContests(filters?: ContestFilters): Promise<Contest[]> 
       bonusMap.get(String(row.id)) ?? [],
     ),
   );
-}
+});
 
 /** 공모전 단건 조회 (award_tiers, bonus_configs 포함) */
-export async function getContestById(id: string): Promise<Contest | null> {
+export const getContestById = cache(async function getContestById(id: string): Promise<Contest | null> {
   const supabase = await createClient();
   if (!supabase) return null;
   return getContestByIdInternal(supabase, id);
-}
+});
 
-export async function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
+export const getSubmissions = cache(async function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
@@ -603,7 +607,7 @@ export async function getSubmissions(filters?: SubmissionFilters): Promise<Submi
   const { data, error } = await query;
   if (error || !data) return [];
   return data.map((row) => toSubmission(row as Record<string, unknown>));
-}
+});
 
 export async function getLikes(): Promise<Like[]> {
   const supabase = await createClient();
@@ -1142,7 +1146,7 @@ export async function getDataCounts(): Promise<Record<string, number>> {
 // ============================================================
 
 /** 현재 로그인 사용자의 profile 정보 (서버 컴포넌트용) */
-export async function getAuthProfile(): Promise<User | null> {
+export const getAuthProfile = cache(async function getAuthProfile(): Promise<User | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
@@ -1156,7 +1160,7 @@ export async function getAuthProfile(): Promise<User | null> {
     .single();
   if (!data) return null;
   return toUser(data as Record<string, unknown>);
-}
+});
 
 // ============================================================
 // Admin 전용 함수 (is_admin() RLS 정책 적용됨)

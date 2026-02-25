@@ -23,7 +23,7 @@ export default function InquiryPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Inquiry submitted:', { name, email, category, title, content });
+    // TODO: 실제 문의 API 연동 시 구현
   };
 
   return (
@@ -60,7 +60,7 @@ export default function InquiryPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="inquiry-name">이름</Label>
-                        <Input id="inquiry-name" placeholder="홍길동" value={name} onChange={(e) => setName(e.target.value)} />
+                        <Input id="inquiry-name" placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="inquiry-email">이메일</Label>

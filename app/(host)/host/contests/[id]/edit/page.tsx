@@ -79,20 +79,7 @@ export default function HostContestEditPage({ params }: ContestEditPageProps) {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Update contest (demo):', {
-      id,
-      title,
-      description,
-      submissionStartDate,
-      submissionEndDate,
-      judgingStartDate,
-      judgingEndDate,
-      resultDate,
-      judgingType,
-      reviewPolicy,
-      maxSubmissions,
-      selectedExtensions,
-    });
+    // TODO: 실제 공모전 수정 API 연동 시 구현
     setSaved(true);
   };
 

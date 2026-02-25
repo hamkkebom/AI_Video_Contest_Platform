@@ -422,8 +422,8 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         </div>
       </section>
 
-      {/* 출품작 섹션 — 캐러셀 */}
-      {allSubmissions.length > 0 && (
+      {/* 출품작 섹션 — 캐러셀 (숨김 처리) */}
+      {/* {allSubmissions.length > 0 && (
         <section className="pb-10 px-4">
           <div className="container mx-auto max-w-6xl space-y-5">
             <div className="flex items-center justify-between gap-4">
@@ -438,7 +438,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
             />
           </div>
         </section>
-      )}
+      )} */}
 
       {/* 관련 공모전 섹션 — 캐러셀 (3개씩) */}
       {relatedContests.length > 0 && (

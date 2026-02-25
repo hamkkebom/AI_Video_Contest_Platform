@@ -132,7 +132,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         <CarouselContent className="ml-0">
           {slides.map((slide, index) => (
             <CarouselItem key={slide.id} className="pl-0">
-              <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
+              <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden">
                 {/* 히어로 배경 이미지 (Ken Burns 영상 효과) */}
                 <div className="absolute inset-0 overflow-hidden">
                   <Image
@@ -155,7 +155,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
                       {typeLabels[slide.type] || slide.type}
                     </span>
                     <h1
-                      className="keep-all-title text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight"
+                      className="keep-all-title text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight"
                       style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
                     >
                       {slide.title}

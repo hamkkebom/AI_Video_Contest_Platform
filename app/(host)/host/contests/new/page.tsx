@@ -51,19 +51,7 @@ export default function HostContestCreatePage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Create contest (demo):', {
-      title,
-      description,
-      submissionStartDate,
-      submissionEndDate,
-      judgingStartDate,
-      judgingEndDate,
-      resultDate,
-      judgingType,
-      reviewPolicy,
-      maxSubmissions,
-      selectedExtensions,
-    });
+    // TODO: 실제 공모전 생성 API 연동 시 구현
     setSubmitted(true);
   };
 

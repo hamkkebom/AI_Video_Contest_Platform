@@ -79,7 +79,7 @@ export function PrizesSection() {
 
         {/* 총 상금 배너 */}
         <div className="arirang-animate text-center mb-14">
-          <p className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: 'var(--ar-accent)' }}>
+          <p className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" style={{ color: 'var(--ar-accent)' }}>
             {t(prizesTranslations, 'totalPrize', lang)}
           </p>
         </div>
@@ -355,7 +355,7 @@ export function PrizesSection() {
               {hashtagList.map((tagKey) => (
                 <span
                   key={tagKey}
-                  className="inline-block px-5 py-2 rounded-full text-base font-semibold"
+                  className="inline-block px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-sm sm:text-base font-semibold"
                   style={{
                     backgroundColor: 'rgba(194,59,34,0.15)',
                     color: 'var(--ar-cream)',

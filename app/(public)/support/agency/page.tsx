@@ -25,7 +25,7 @@ export default function AgencyRequestPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Agency request:', { companyName, email, phone, productionType, budget, deadline, details });
+    // TODO: 실제 의뢰 API 연동 시 구현
   };
 
   const features = [

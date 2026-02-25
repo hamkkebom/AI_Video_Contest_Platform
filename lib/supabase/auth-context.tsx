@@ -66,7 +66,20 @@ const UNCONFIGURED_VALUE: AuthContextValue = {
   refreshProfile: async () => { },
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/**
+ * AuthProvider props
+ * serverUser/serverProfile: 서버에서 미리 조회한 인증 상태 (layout.tsx에서 전달)
+ * - undefined: 서버에서 조회하지 않음 → 클라이언트에서 초기화 (기존 동작)
+ * - null: 서버에서 조회했으나 비로그인 → loading 없이 즉시 렌더링
+ * - User/Profile: 서버에서 조회 성공 → loading 없이 즉시 렌더링
+ */
+interface AuthProviderProps {
+  children: ReactNode;
+  serverUser?: User | null;
+  serverProfile?: Profile | null;
+}
+
+export function AuthProvider({ children, serverUser, serverProfile }: AuthProviderProps) {
   /* Supabase 환경변수가 없으면 즉시 fallback 반환 */
   if (!isSupabaseConfigured()) {
     return (
@@ -76,7 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <AuthProviderInner>{children}</AuthProviderInner>;
+  return (
+    <AuthProviderInner serverUser={serverUser} serverProfile={serverProfile}>
+      {children}
+    </AuthProviderInner>
+  );
 }
 
 /** 로그 기록 헬퍼 (fire-and-forget) */
@@ -100,16 +117,33 @@ function sendBeaconLog(action: string, metadata?: Record<string, unknown>) {
 
 /**
  * 실제 Supabase 연동 Provider (환경변수 확인 후 렌더링)
+ * serverUser/serverProfile가 제공되면 초기 로딩 없이 즉시 렌더링
  */
-function AuthProviderInner({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+function AuthProviderInner({
+  children,
+  serverUser,
+  serverProfile,
+}: {
+  children: ReactNode;
+  serverUser?: User | null;
+  serverProfile?: Profile | null;
+}) {
+  // 서버에서 인증 상태를 미리 조회했는지 여부
+  const hasServerState = serverUser !== undefined;
+
+  const [user, setUser] = useState<User | null>(hasServerState ? (serverUser ?? null) : null);
+  const [profile, setProfile] = useState<Profile | null>(hasServerState ? (serverProfile ?? null) : null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // 서버 상태가 있으면 로딩 없이 즉시 렌더링
+  const [loading, setLoading] = useState(!hasServerState);
   const supabase = useMemo(() => createClient()!, []);
 
+  // 서버 제공 여부 ref (useEffect 내에서 안정적으로 참조)
+  const hasServerStateRef = useRef(hasServerState);
   // 로그인 로그 중복 방지용 ref
-  const lastLoggedEventRef = useRef<string | null>(null);
+  const lastLoggedEventRef = useRef<string | null>(
+    hasServerState && serverUser ? serverUser.id : null,
+  );
   // 본인 의지 로그아웃 플래그
   const manualSignOutRef = useRef(false);
 
@@ -207,18 +241,24 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
-    /* 초기 세션 확인 */
+    /* 초기 세션 동기화 */
     const initAuth = async () => {
       try {
+        // getSession()은 쿠키에서 읽기 — 세션 객체 동기화용
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
-        setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user) {
-          const p = await fetchProfile(currentSession.user.id);
-          setProfile(p);
-          // 세션 복원 — 로그인 로그 기록하지 않음 (이미 로그인한 상태)
-          lastLoggedEventRef.current = currentSession.user.id;
+        if (hasServerStateRef.current) {
+          // 서버에서 이미 인증 상태 제공 — 프로필 재조회 불필요
+          // lastLoggedEventRef는 생성자에서 이미 설정됨
+        } else {
+          // 서버 상태 없음 — 클라이언트에서 초기화 (기존 동작)
+          setUser(currentSession?.user ?? null);
+          if (currentSession?.user) {
+            const p = await fetchProfile(currentSession.user.id);
+            setProfile(p);
+            lastLoggedEventRef.current = currentSession.user.id;
+          }
         }
       } catch (error) {
         console.error('초기 인증 확인 실패:', error);
