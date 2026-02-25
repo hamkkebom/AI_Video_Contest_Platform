@@ -36,7 +36,7 @@ import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 import { formatDate } from '@/lib/utils';
 
-const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_PROOF_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -191,7 +191,7 @@ export default function ContestSubmitPage() {
     if (!selectedFile) return;
 
     if (selectedFile.size > MAX_VIDEO_SIZE_BYTES) {
-      const message = '영상 파일은 최대 500MB까지 업로드할 수 있습니다.';
+      const message = '영상 파일은 최대 200MB까지 업로드할 수 있습니다. 파일이 큰 경우 해상도를 낮추거나 압축 후 다시 시도해 주세요.';
       setSubmitError(message);
       alert(message);
       event.target.value = '';
@@ -802,7 +802,7 @@ export default function ContestSubmitPage() {
                     영상 파일 <span className="text-red-500">*</span>
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 500MB
+                    {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 200MB
                   </p>
                   <input
                     ref={videoInputRef}
