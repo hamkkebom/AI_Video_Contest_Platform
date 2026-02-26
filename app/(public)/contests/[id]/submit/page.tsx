@@ -255,14 +255,17 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* 업로드 시작 전 세션 갱신 - 장시간 폼 작성 후에도 토큰 유효 보장 */
+      /* 세션 갱신 - 3초 타임아웃 (hang 방지) */
       try {
         const supabaseForRefresh = createBrowserClient();
         if (supabaseForRefresh) {
-          await supabaseForRefresh.auth.refreshSession();
+          await Promise.race([
+            supabaseForRefresh.auth.refreshSession(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('refresh timeout')), 3000)),
+          ]);
         }
       } catch {
-        /* 갱신 실패해도 진행 - 이후 단계에서 다시 시도 */
+        /* 갱신 실패/타임아웃 무시 - 이후 단계에서 재시도 */
       }
 
       /* Cloudflare Stream 업로드 URL 발급 */
