@@ -37,6 +37,7 @@ import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 import { formatDate, cn } from '@/lib/utils';
+import { useAuth } from '@/lib/supabase/auth-context';
 
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
@@ -68,6 +69,7 @@ export default function ContestSubmitPage() {
   const params = useParams();
   const contestId = params.id as string;
   const router = useRouter();
+  const { session: authSession } = useAuth();
 
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -257,29 +259,27 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* ── 1단계: 인증 사전 확보 (pre-fetch) ──
-         getSession()은 로컬 스토리지에서 읽기만 하므로 네트워크 호출 없이 즉시 반환.
-         getUser()는 Supabase Auth 서버에 HTTP 요청을 보내 hang 위험이 있으므로 사용하지 않는다.
-         session.user에서 동일한 유저 정보를 얻을 수 있다. */
-      const supabase = createBrowserClient();
-      if (!supabase) {
-        throw new Error('Supabase 설정이 필요합니다.');
-      }
-
-      console.log('[제출] 세션 확인 시작');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const accessToken = currentSession?.access_token;
-      const currentUser = currentSession?.user;
+      /* ── 1단계: AuthContext의 세션 사용 (네트워크 호출 없음) ──
+         Supabase 클라이언트의 getSession()/getUser() 호출 없이
+         AuthProvider가 이미 확보한 session을 직접 사용한다.
+         어떤 Supabase Auth HTTP 요청도 발생하지 않으므로 hang 불가. */
+      const accessToken = authSession?.access_token;
+      const currentUser = authSession?.user;
       if (!accessToken || !currentUser) {
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
       }
-      console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
+      console.log('[제출] AuthContext 세션 확인 완료, userId:', currentUser.id);
 
+      /* fetch에 10초 타임아웃 — 미들웨어 hang 방지 */
+      const uploadUrlController = new AbortController();
+      const uploadUrlTimeout = setTimeout(() => uploadUrlController.abort(), 10_000);
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxDurationSeconds: 600 }),
+        signal: uploadUrlController.signal,
       });
+      clearTimeout(uploadUrlTimeout);
 
       const uploadUrlResult = (await uploadUrlResponse.json()) as {
         uploadURL?: string;
@@ -371,6 +371,9 @@ export default function ContestSubmitPage() {
         xhr.send(thumbnailFile);
       });
       console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
+
+      /* Storage SDK용 클라이언트 (인증 호출 없이 클라이언트만 생성) */
+      const supabase = createBrowserClient()!;
 
       const { data: thumbnailPublicData } = supabase.storage
         .from('thumbnails')
