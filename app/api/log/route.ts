@@ -39,16 +39,17 @@ export async function POST(request: NextRequest) {
 
     // 인증된 사용자가 있으면 정상 기록
     if (user) {
+      console.log('[/api/log] 활동 로그 기록:', user.email, action, targetType ?? '(none)');
       const { error: logError } = await supabase.from('activity_logs').insert({
         user_id: user.id,
         action: action as string,
-        target_type: (targetType as string) ?? '',
-        target_id: (targetId as string) ?? '',
+        target_type: (targetType as string) || null,
+        target_id: (targetId as string) || null,
         metadata: (metadata as Record<string, unknown>) ?? null,
       });
 
       if (logError) {
-        console.error('활동 로그 기록 실패:', logError.message);
+        console.error('[/api/log] 활동 로그 기록 실패:', logError.message, logError.details, logError.hint);
       }
 
       // IP 로그도 함께 기록
@@ -77,24 +78,29 @@ export async function POST(request: NextRequest) {
         ?? 'unknown';
       const userAgent = request.headers.get('user-agent') ?? '';
 
-      await supabase.from('activity_logs').insert({
+      const { error: sessionLogError } = await supabase.from('activity_logs').insert({
         user_id: null,
         action: 'session_out',
-        target_type: '',
-        target_id: '',
+        target_type: null,
+        target_id: null,
         metadata: {
           ...(metadata as Record<string, unknown> ?? {}),
           ip_address: ip,
           user_agent: userAgent,
         },
       });
+      if (sessionLogError) {
+        console.error('[/api/log] session_out 기록 실패:', sessionLogError.message);
+      }
 
       return NextResponse.json({ success: true });
     }
 
     // 그 외 비인증 요청은 거부
+    console.warn('[/api/log] 비인증 요청 거부:', action);
     return NextResponse.json({ error: '인증 필요' }, { status: 401 });
-  } catch {
+  } catch (err) {
+    console.error('[/api/log] 예외 발생:', err instanceof Error ? err.message : err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
   }
 }
