@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
+import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, Loader2, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -104,6 +104,7 @@ function getInitial(name: string | undefined | null): string {
 export function Header() {
   const { user, profile, loading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const pathname = usePathname();
 
@@ -145,8 +146,14 @@ export function Header() {
 
   /* 로그아웃 후 홈으로 하드 리디렉트 */
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = '/';
+    if (isSigningOut) return; // 중복 클릭 방지
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      window.location.href = '/';
+    } catch {
+      setIsSigningOut(false);
+    }
   };
 
   /**
@@ -195,10 +202,11 @@ export function Header() {
         {/* 로그아웃 */}
         <DropdownMenuItem
           onClick={handleSignOut}
+          disabled={isSigningOut}
           className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
         >
-          <LogOut className="h-4 w-4" />
-          로그아웃
+          {isSigningOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+          {isSigningOut ? '로그아웃 중...' : '로그아웃'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

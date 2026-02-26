@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Upload } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/supabase/auth-context';
 
 interface AuthSubmitButtonProps {
   contestId: string;
@@ -10,21 +10,22 @@ interface AuthSubmitButtonProps {
 
 /**
  * 로그인 여부 확인 후 접수 페이지 또는 로그인 페이지로 이동
+ * AuthContext의 인메모리 상태를 사용하여 네트워크 호출 없이 즉시 라우팅
  */
 export function AuthSubmitButton({ contestId }: AuthSubmitButtonProps) {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
-  const handleClick = async () => {
-    const supabase = createClient();
-    if (supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push(`/contests/${contestId}/submit`);
-        return;
-      }
+  const handleClick = () => {
+    // 인증 상태 로딩 중이면 무시 (초기 렌더 직후 극히 짧은 구간)
+    if (loading) return;
+
+    if (user) {
+      router.push(`/contests/${contestId}/submit`);
+    } else {
+      // 미로그인 → 로그인 페이지 (접수 페이지로 리다이렉트)
+      router.push(`/login?redirectTo=/contests/${contestId}/submit`);
     }
-    // 미로그인 → 로그인 페이지 (접수 페이지로 리다이렉트)
-    router.push(`/login?redirectTo=/contests/${contestId}/submit`);
   };
 
   return (
