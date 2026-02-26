@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getUsers, getSubmissions, getContests } from '@/lib/data';
+import { getUserById, getSubmissions, getContests } from '@/lib/data';
 import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
 
@@ -61,12 +61,12 @@ function getContestStatusClassName(status: string) {
 
 export default async function CreatorDetailPage({ params }: CreatorDetailPageProps) {
   const { id } = await params;
-  const [allUsers, allSubmissions, allContests] = await Promise.all([
-    getUsers(),
+  // 단건 유저 조회로 최적화 (전체 유저 목록 조회 제거)
+  const [user, allSubmissions, allContests] = await Promise.all([
+    getUserById(id),
     getSubmissions({ userId: id }),
     getContests(),
   ]);
-  const user = allUsers.find(u => u.id === id);
 
   // 크리에이터가 없는 경우의 상태 UI
   if (!user) {

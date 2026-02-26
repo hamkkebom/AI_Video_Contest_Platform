@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { createContest, createActivityLog, type ContestMutationInput } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       targetId: contest.id,
       metadata: { title: contest.title, role: 'admin' },
     });
-    revalidatePath('/admin/contests');
+    revalidateTag('contests');
     return NextResponse.json({ contest }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : '알 수 없는 오류';

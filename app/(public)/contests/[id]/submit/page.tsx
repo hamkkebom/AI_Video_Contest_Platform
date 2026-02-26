@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   ArrowLeft,
@@ -29,12 +30,13 @@ import {
   Info,
   ChevronDown,
   Shield,
+  Loader2,
 } from 'lucide-react';
 
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
-import { formatDate } from '@/lib/utils';
+import { formatDate, cn } from '@/lib/utils';
 
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
@@ -65,6 +67,7 @@ interface BonusFormEntry {
 export default function ContestSubmitPage() {
   const params = useParams();
   const contestId = params.id as string;
+  const router = useRouter();
 
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +92,7 @@ export default function ContestSubmitPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadStep, setUploadStep] = useState<'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -248,11 +252,10 @@ export default function ContestSubmitPage() {
       setIsSubmitting(true);
 
       setUploadStep('video');
+      setUploadProgress(0);
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxDurationSeconds: 600 }),
       });
 
@@ -266,41 +269,68 @@ export default function ContestSubmitPage() {
         throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
       }
 
-      const videoUploadFormData = new FormData();
-      videoUploadFormData.append('file', videoFile);
-
-      const videoUploadResponse = await fetch(uploadUrlResult.uploadURL, {
-        method: 'POST',
-        body: videoUploadFormData,
+      /* 영상 업로드 — XMLHttpRequest로 진행률 추적 */
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', uploadUrlResult.uploadURL!);
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
+          else reject(new Error('영상 파일 업로드에 실패했습니다.'));
+        };
+        xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+        xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+        const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
 
-      if (!videoUploadResponse.ok) {
-        throw new Error('영상 파일 업로드에 실패했습니다.');
-      }
-
       setUploadStep('thumbnail');
+      setUploadProgress(0);
+      console.log('[제출] 썸네일 업로드 시작');
       const supabase = createBrowserClient();
       if (!supabase) {
         throw new Error('Supabase 설정이 필요합니다.');
       }
 
-      /* 세션 유효성 확인 — 만료 시 즉시 에러 */
+      /* 세션 유효성 확인 — 영상 업로드에 시간이 걸렸을 수 있으므로 토큰 갱신 */
+      console.log('[제출] 세션 갱신 시도...');
+      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr) {
+        console.warn('[제출] 세션 갱신 실패 (계속 시도):', refreshErr.message);
+      } else if (refreshData.session) {
+        console.log('[제출] 세션 갱신 성공, 만료:', new Date(refreshData.session.expires_at! * 1000).toISOString());
+      }
+
+      console.log('[제출] 세션 확인 중...');
       const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
       if (authErr || !currentUser) {
+        console.error('[제출] 세션 만료:', authErr);
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
       }
+      console.log('[제출] 세션 유효:', currentUser.id);
+
       const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
-      /* 썸네일 업로드 (60초 타임아웃) */
+      console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', thumbnailFile.size, 'bytes', '타입:', thumbnailFile.type);
+
+      /* 썸네일 업로드 (30초 타임아웃) */
       const thumbnailUploadPromise = supabase.storage
         .from('thumbnails')
         .upload(thumbnailPath, thumbnailFile, {
           contentType: thumbnailFile.type,
           upsert: false,
+        })
+        .then((result) => {
+          console.log('[제출] 썸네일 Storage 응답:', JSON.stringify({ data: result.data, error: result.error?.message }));
+          return result;
         });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('썸네일 업로드 시간이 초과되었습니다. 네트워크 상태를 확인해 주세요.')), 60_000),
+        setTimeout(() => {
+          console.error('[제출] 썸네일 업로드 30초 타임아웃!');
+          reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초). 파일 크기를 줄이거나 네트워크 상태를 확인해 주세요.'));
+        }, 30_000),
       );
 
       const { data: thumbnailData, error: thumbnailUploadError } = await Promise.race([
@@ -309,9 +339,14 @@ export default function ContestSubmitPage() {
       ]);
       if (thumbnailUploadError || !thumbnailData?.path) {
         const errMsg = thumbnailUploadError?.message ?? '썸네일 업로드에 실패했습니다.';
-        console.error('썸네일 업로드 실패:', thumbnailUploadError);
+        console.error('[제출] 썸네일 업로드 실패:', JSON.stringify(thumbnailUploadError));
+        // RLS 정책 위반 가능성 안내
+        if (errMsg.includes('security') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
+          throw new Error('썸네일 업로드 권한이 없습니다. 세션이 만료되었을 수 있으니 페이지를 새로고침 후 다시 시도해 주세요.');
+        }
         throw new Error(errMsg);
       }
+      console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
 
       const { data: thumbnailPublicData } = supabase.storage
         .from('thumbnails')
@@ -329,6 +364,7 @@ export default function ContestSubmitPage() {
 
       if (bonusFormEntries.length > 0) {
         setUploadStep('proof-images');
+        setUploadProgress(0);
         for (const [configId, entry] of bonusFormEntries) {
           let proofImageUrl: string | undefined;
           if (entry.proofImageFile) {
@@ -356,6 +392,7 @@ export default function ContestSubmitPage() {
       }
 
       setUploadStep('submission');
+      setUploadProgress(0);
       const aiToolsList = [...form.chatAi, ...form.imageAi, ...form.videoAi];
       const submissionResponse = await fetch('/api/submissions', {
         method: 'POST',
@@ -387,9 +424,7 @@ export default function ContestSubmitPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : '영상 제출 중 오류가 발생했습니다.';
       setSubmitError(message);
-      alert(message);
     } finally {
-      setUploadStep(null);
       setIsSubmitting(false);
     }
   };
@@ -1112,6 +1147,154 @@ export default function ContestSubmitPage() {
           </form>
         </div>
       </section>
+
+      {/* ===== 업로드 진행 / 성공 / 실패 통합 Dialog ===== */}
+      <Dialog
+        open={uploadStep !== null || submitted}
+        onOpenChange={(open) => {
+          if (!open && !isSubmitting) {
+            setUploadStep(null);
+            setSubmitError(null);
+            setUploadProgress(0);
+            if (submitted) router.push(`/contests/${contestId}`);
+          }
+        }}
+      >
+        <DialogContent
+          className={cn('sm:max-w-md', isSubmitting && '[&>button]:hidden')}
+          onPointerDownOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
+        >
+          {submitted ? (
+            <>
+              <DialogHeader>
+                <div className="mx-auto mb-2 w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-green-500" />
+                </div>
+                <DialogTitle className="text-center">영상이 제출되었습니다!</DialogTitle>
+                <DialogDescription className="text-center">
+                  &quot;{form.title}&quot; 영상이 성공적으로 접수되었습니다.
+                  검수 완료 후 공모전 출품작 목록에 표시됩니다.
+                  {hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 py-2">
+                {['영상 업로드', '썸네일 업로드', '출품작 등록'].map((label) => (
+                  <div key={label} className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{label} 완료</span>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>완료</Button>
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-center text-lg">
+                  {submitError ? '제출 실패' : '영상 제출 중'}
+                </DialogTitle>
+                <DialogDescription className="text-center text-sm text-muted-foreground">
+                  {submitError ? '아래 단계에서 오류가 발생했습니다.' : '창을 닫지 마세요. 영상 크기에 따라 수 분이 걸릴 수 있습니다.'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {([
+                  { key: 'video', label: '영상 업로드', icon: FileVideo, showProgress: true, file: videoFile },
+                  { key: 'thumbnail', label: '썸네일 업로드', icon: ImageIcon, showProgress: false, file: thumbnailFile },
+                  { key: 'proof-images', label: '인증 이미지 업로드', icon: Shield, showProgress: false, file: null },
+                  { key: 'submission', label: '출품작 등록', icon: CheckCircle2, showProgress: false, file: null },
+                ] as const).map((step) => {
+                  const steps = ['video', 'thumbnail', 'proof-images', 'submission'] as const;
+                  const currentIdx = uploadStep ? steps.indexOf(uploadStep) : -1;
+                  const stepIdx = steps.indexOf(step.key);
+                  const isActive = uploadStep === step.key;
+                  const isCompleted = currentIdx > stepIdx;
+                  const isPending = currentIdx < stepIdx;
+                  const isFailed = isActive && !!submitError;
+                  const Icon = step.icon;
+                  return (
+                    <div key={step.key} className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
+                          isCompleted && 'bg-green-500/10 text-green-500',
+                          isActive && !isFailed && 'bg-violet-500/10 text-violet-500',
+                          isFailed && 'bg-red-500/10 text-red-500',
+                          isPending && 'bg-muted text-muted-foreground',
+                        )}>
+                          {isCompleted ? <CheckCircle2 className="h-5 w-5" />
+                            : isFailed ? <AlertCircle className="h-5 w-5" />
+                              : isActive ? <Loader2 className="h-5 w-5 animate-spin" />
+                                : <Icon className="h-4 w-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            'text-sm font-medium transition-colors',
+                            isCompleted && 'text-green-600 dark:text-green-400',
+                            isActive && !isFailed && 'text-foreground',
+                            isFailed && 'text-red-600 dark:text-red-400',
+                            isPending && 'text-muted-foreground',
+                          )}>
+                            {step.label}{isCompleted && ' ✓'}{isFailed && ' ✕'}
+                          </p>
+                          {isActive && step.file && !isFailed && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {step.file.name} ({(step.file.size / 1024 / 1024).toFixed(1)}MB)
+                            </p>
+                          )}
+                        </div>
+                        {isActive && step.showProgress && !isFailed && (
+                          <span className="text-sm font-mono font-semibold text-violet-600 dark:text-violet-400 tabular-nums">{uploadProgress}%</span>
+                        )}
+                      </div>
+                      {isActive && step.showProgress && !isFailed && (
+                        <div className="ml-11 h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {submitError && (
+                <>
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>{submitError}</p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); }}>닫기</Button>
+                  </DialogFooter>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 이미 제출한 경우 안내 Dialog */}
+      <Dialog open={alreadySubmitted} onOpenChange={(open) => { if (!open) router.push(`/contests/${contestId}`); }}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
+            </div>
+            <DialogTitle className="text-center">이미 제출한 공모전입니다</DialogTitle>
+            <DialogDescription className="text-center">
+              이 공모전의 최대 출품 가능 수({contest?.maxSubmissionsPerUser ?? 1}개)를 초과하여
+              더 이상 제출할 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+            <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
+            <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

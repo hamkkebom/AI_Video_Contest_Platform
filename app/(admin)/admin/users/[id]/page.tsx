@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAllActivityLogs, getAllIpLogs, getUsers } from '@/lib/data';
+import { getAllActivityLogs, getAllIpLogs, getUserById } from '@/lib/data';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 const ROLE_LABEL_MAP: Record<string, { label: string; color: string }> = {
@@ -31,9 +31,8 @@ type AdminUserDetailPageProps = {
 export default async function AdminUserDetailPage({ params }: AdminUserDetailPageProps) {
   try {
     const { id } = await params;
-    const [users, allActivityLogs, allIpLogs] = await Promise.all([getUsers(), getAllActivityLogs(), getAllIpLogs()]);
-
-    const user = users.find((item) => item.id === id);
+    // 단건 유저 조회 + 로그 병렬 조회 (전체 유저 목록 대신 단건)
+    const [user, allActivityLogs, allIpLogs] = await Promise.all([getUserById(id), getAllActivityLogs(), getAllIpLogs()]);
 
     if (!user) {
       return (

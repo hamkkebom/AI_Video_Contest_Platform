@@ -67,6 +67,28 @@ export async function updateSession(request: NextRequest) {
   /* ====== 라우트 가드: 보호 경로 미인증 시 /login 리다이렉트 ====== */
   const { pathname } = request.nextUrl;
 
+  /* ====== 슬러그 리다이렉트: /contests/contest-1/* → /contests/3/* ====== */
+  const slugMatch = pathname.match(/^\/contests\/([^/]+)(\/.+)?$/);
+  if (slugMatch) {
+    const contestIdOrSlug = slugMatch[1];
+    const rest = slugMatch[2] ?? '';
+    /* 숫자가 아닌 경우 슬러그로 판단 → DB에서 실제 ID 조회 */
+    if (!/^\d+$/.test(contestIdOrSlug)) {
+      /* 디코딩된 slug로 조회 (한글 URL 지원) */
+      const decodedSlug = decodeURIComponent(contestIdOrSlug);
+      const { data } = await supabase
+        .from('contests')
+        .select('id')
+        .eq('slug', decodedSlug)
+        .maybeSingle();
+      if (data) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = `/contests/${data.id}${rest}`;
+        return NextResponse.redirect(redirectUrl, 301);
+      }
+    }
+  }
+
   const isProtectedRoute =
     pathname.startsWith('/my') ||
     pathname.startsWith('/admin') ||

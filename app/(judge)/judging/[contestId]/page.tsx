@@ -2,9 +2,9 @@ import { JudgeContestContent } from '@/components/dashboard/judge-contest-conten
 import {
   getAuthProfile,
   getJudgeAssignments,
-  getContests,
+  getContestById,
   getJudgingTemplates,
-  getScores,
+  getScoresByContest,
   getSubmissions,
 } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -20,15 +20,15 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
 
   try {
 
-    const [allContests, allSubmissions, allScores, templates, judgeAssignments] = await Promise.all([
-      getContests(),
-      getSubmissions(),
-      getScores(),
+    // 단건/필터 조회로 최적화 (전체 조회 제거)
+    const [contest, contestSubmissions, contestScores, templates, judgeAssignments] = await Promise.all([
+      getContestById(contestId),
+      getSubmissions({ contestId }),
+      getScoresByContest(contestId),
       getJudgingTemplates(),
       getJudgeAssignments(profile.id),
     ]);
 
-    const contest = allContests.find((item) => item.id === contestId);
     if (!contest) {
       return (
         <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center">
@@ -37,13 +37,11 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
       );
     }
 
-    const contestSubmissions = allSubmissions.filter((submission) => submission.contestId === contest.id);
     const submissionIdSet = new Set(contestSubmissions.map((submission) => submission.id));
 
     const currentJudgeAssignments = judgeAssignments.filter((judge) => judge.contestId === contest.id);
     const currentJudgeIdSet = new Set(currentJudgeAssignments.map((judge) => judge.id));
 
-    const contestScores = allScores.filter((score) => submissionIdSet.has(score.submissionId));
     const currentJudgeScores = contestScores.filter((score) => currentJudgeIdSet.has(score.judgeId));
 
     const templateById = templates.reduce<Record<string, (typeof templates)[number]>>((acc, template) => {

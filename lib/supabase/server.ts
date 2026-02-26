@@ -55,3 +55,30 @@ export async function createClient() {
     },
   );
 }
+
+
+/**
+ * 공개 데이터 조회용 Supabase 클라이언트 (쿠키 없음)
+ * unstable_cache 내부에서 사용 — cookies() 호출이 불가능한 환경용
+ * RLS가 anon 역할로 허용된 테이블만 조회 가능
+ */
+export function createPublicClient() {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co'
+  ) {
+    return null;
+  }
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll: () => [],
+        setAll: () => {},
+      },
+    },
+  );
+}

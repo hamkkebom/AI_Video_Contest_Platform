@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Trophy, Award, Upload, Search, LayoutList, LayoutGrid } from 'lucide-react';
+import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getContests } from '@/lib/data';
@@ -8,6 +8,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import type { AwardTier } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
+import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 
 /**
  * 공모전 목록 페이지
@@ -306,13 +307,7 @@ export default async function ContestsPage({
                           <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-neutral-700 flex justify-center gap-2 sm:gap-3">
                             {/* 접수중(실제 접수 가능)일 때만 제출 버튼 표시 */}
                             {displayStatus === 'open' && (
-                              <Link href={`/contests/${contest.id}/submit` as any} className="group/btn">
-                                <span className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
-                                  <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                                  <Upload className="relative z-10 h-3 w-3 sm:h-3.5 sm:w-3.5 group-hover/btn:text-white transition-colors" />
-                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출하기</span>
-                                </span>
-                              </Link>
+                              <AuthSubmitButton contestId={contest.id} variant="sm" />
                             )}
                             {/* 상세보기 버튼 */}
                             <Link href={`/contests/${contest.id}` as any} className="group/btn2">
@@ -418,16 +413,7 @@ export default async function ContestsPage({
                             </div>
                             {/* 접수중(실제 접수 가능) 공모전만 제출 버튼 */}
                             {displayStatusCard === 'open' && (
-                              <Link
-                                href={`/contests/${contest.id}/submit` as any}
-                                className="block group/btn"
-                              >
-                                <span className="relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer">
-                                  <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />
-                                  <Upload className="relative z-10 h-3.5 w-3.5 group-hover/btn:text-white transition-colors" />
-                                  <span className="relative z-10 group-hover/btn:text-white transition-colors">영상 제출</span>
-                                </span>
-                              </Link>
+                              <AuthSubmitButton contestId={contest.id} variant="card" />
                             )}
                           </div>
                         </div>

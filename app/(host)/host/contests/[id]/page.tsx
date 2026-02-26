@@ -3,7 +3,7 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getContests, getJudges, getSubmissions, getUsers } from '@/lib/data';
+import { getContestById, getJudgesByContest, getSubmissions, getUserById } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { ExternalLink, Inbox, Search, SquarePen, UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -31,14 +31,12 @@ const statusBadgeClassMap: Record<Contest['status'], string> = {
 export default async function HostContestDetailPage({ params }: ContestDetailPageProps) {
   try {
     const { id } = await params;
-    const [allContests, allSubmissions, allJudges, allUsers] = await Promise.all([
-      getContests(),
-      getSubmissions(),
-      getJudges(),
-      getUsers(),
+    // 1단계: 공모전 + 출품작 + 심사위원 병렬 조회 (단건/필터 조회로 최적화)
+    const [contest, submissions, judges] = await Promise.all([
+      getContestById(id),
+      getSubmissions({ contestId: id }),
+      getJudgesByContest(id),
     ]);
-
-    const contest = allContests.find((item) => item.id === id);
 
     if (!contest) {
       return (
@@ -53,9 +51,8 @@ export default async function HostContestDetailPage({ params }: ContestDetailPag
       );
     }
 
-    const submissions = allSubmissions.filter((submission) => submission.contestId === id);
-    const judges = allJudges.filter((judge) => judge.contestId === id);
-    const host = allUsers.find((user) => user.id === contest.hostUserId);
+    // 2단계: 주최자 정보 조회
+    const host = await getUserById(contest.hostUserId);
 
     const subsByStatus = {
       pendingReview: submissions.filter((submission) => submission.status === 'pending_review').length,

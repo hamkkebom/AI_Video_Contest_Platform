@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
-import { getContests, getSubmissions, getUsers } from '@/lib/data';
+import { getContestById, getSubmissions, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -30,14 +30,15 @@ export default async function HostContestSubmissionsPage({ params, searchParams 
     const { tab } = await searchParams;
     const activeTab = REVIEW_TABS.some((item) => item.value === tab) ? (tab as SubmissionStatus) : 'pending_review';
 
-    const [allSubmissions, allContests, allUsers] = await Promise.all([
+    // 제출물 조회 (필터링) + 공모전 단건 조회로 최적화
+    const [allSubmissions, contest] = await Promise.all([
       getSubmissions({ contestId: id }),
-      getContests(),
-      getUsers(),
+      getContestById(id),
     ]);
-
-    const contest = allContests.find((item) => item.id === id);
-    const usersMap = new Map(allUsers.map((user) => [user.id, user]));
+    // 제출자 유저 정보만 별도 조회
+    const userIds = [...new Set(allSubmissions.map((s) => s.userId))];
+    const users = await getUsersByIds(userIds);
+    const usersMap = new Map(users.map((user) => [user.id, user]));
 
     const countByStatus = REVIEW_TABS.reduce<Record<string, number>>((acc, item) => {
       acc[item.value] = allSubmissions.filter((submission) => submission.status === item.value).length;

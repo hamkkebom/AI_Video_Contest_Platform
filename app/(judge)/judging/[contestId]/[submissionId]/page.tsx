@@ -2,9 +2,9 @@ import { JudgeSubmissionContent } from '@/components/dashboard/judge-submission-
 import {
   getAuthProfile,
   getJudgeAssignments,
-  getContests,
+  getContestById,
   getJudgingTemplates,
-  getScores,
+  getScoresByContest,
   getSubmissions,
 } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -20,16 +20,16 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
 
   try {
 
-    const [allContests, allSubmissions, allScores, templates, judgeAssignments] = await Promise.all([
-      getContests(),
-      getSubmissions(),
-      getScores(),
+    // 단건/필터 조회로 최적화
+    const [contest, contestSubmissions, contestScores, templates, judgeAssignments] = await Promise.all([
+      getContestById(contestId),
+      getSubmissions({ contestId }),
+      getScoresByContest(contestId),
       getJudgingTemplates(),
       getJudgeAssignments(profile.id),
     ]);
 
-    const contest = allContests.find((item) => item.id === contestId);
-    const submission = allSubmissions.find((item) => item.id === submissionId && item.contestId === contestId);
+    const submission = contestSubmissions.find((item) => item.id === submissionId);
 
     if (!contest || !submission) {
       return (
@@ -42,7 +42,7 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
     const currentJudgeAssignments = judgeAssignments.filter((judge) => judge.contestId === contestId);
     const currentJudgeIdSet = new Set(currentJudgeAssignments.map((judge) => judge.id));
 
-    const submissionScores = allScores.filter((score) => score.submissionId === submission.id);
+    const submissionScores = contestScores.filter((score) => score.submissionId === submission.id);
     const currentJudgeScore = submissionScores
       .filter((score) => currentJudgeIdSet.has(score.judgeId))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];

@@ -191,16 +191,14 @@ function AuthProviderInner({
   /** 로그아웃 (본인 의지) */
   const signOut = useCallback(async () => {
     manualSignOutRef.current = true;
-    // 로그아웃 전에 로그 기록 (인증 토큰이 필요하므로 signOut 전에 호출)
-    try {
-      await fetch('/api/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'logout' }),
-      });
-    } catch {
+    // 로그아웃 로그: fire-and-forget (signOut 전에 발사해야 인증 토큰 유효)
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' }),
+    }).catch(() => {
       // 로그 기록 실패는 무시
-    }
+    });
     try {
       await supabase.auth.signOut();
     } catch {

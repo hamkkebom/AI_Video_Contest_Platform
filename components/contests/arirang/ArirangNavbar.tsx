@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Menu, X, Globe, LogOut } from 'lucide-react';
+import { Menu, X, Globe, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
@@ -24,6 +24,7 @@ export function ArirangNavbar() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const params = useParams();
   const contestId = params.id as string;
   const { lang, setLang } = useLang();
@@ -43,11 +44,16 @@ export function ArirangNavbar() {
   };
 
 
-  /** 로그아웃 후 홈으로 하드 리디렉트 */
+  /** 로그아웃 후 현재 랜딩페이지 리로드 (홈 경유 없이 직접) */
   const handleSignOut = useCallback(async () => {
-    await signOut();
-    window.location.href = '/';
-  }, [signOut]);
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      window.location.reload();
+    }
+  }, [signOut, isSigningOut]);
 
   /** 역할별 대시보드 경로 */
   const getDashboardPath = useCallback(() => {
@@ -120,11 +126,12 @@ export function ArirangNavbar() {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="hidden md:flex items-center gap-1 px-3 py-1.5 text-sm rounded-full transition-colors cursor-pointer"
+                  disabled={isSigningOut}
+                  className="hidden md:flex items-center gap-1 px-3 py-1.5 text-sm rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                   style={{ color: 'rgba(245,240,232,0.7)', border: '1px solid rgba(245,240,232,0.2)' }}
                 >
-                  <LogOut className="w-4 h-4" />
-                  {t(navbarTranslations, 'signOut', lang)}
+                  {isSigningOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                  {isSigningOut ? '로그아웃 중...' : t(navbarTranslations, 'signOut', lang)}
                 </button>
               </>
             ) : (
@@ -181,10 +188,11 @@ export function ArirangNavbar() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="block w-full mt-1 px-4 py-3 rounded-lg text-center cursor-pointer"
+                disabled={isSigningOut}
+                className="block w-full mt-1 px-4 py-3 rounded-lg text-center cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                 style={{ color: 'rgba(245,240,232,0.8)', border: '1px solid rgba(245,240,232,0.2)' }}
               >
-                {t(navbarTranslations, 'signOut', lang)}
+                {isSigningOut ? '로그아웃 중...' : t(navbarTranslations, 'signOut', lang)}
               </button>
             </>
           ) : (

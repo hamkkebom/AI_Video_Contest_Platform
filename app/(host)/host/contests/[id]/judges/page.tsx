@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getContests, getJudges, getUsers } from '@/lib/data';
+import { getContestById, getJudgesByContest, getUsersByIds } from '@/lib/data';
 import { Lightbulb, MailPlus, UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -16,11 +16,15 @@ type ContestJudgesPageProps = {
 export default async function HostContestJudgesPage({ params }: ContestJudgesPageProps) {
   try {
     const { id } = await params;
-    const [allJudges, allContests, allUsers] = await Promise.all([getJudges(), getContests(), getUsers()]);
-
-    const contest = allContests.find((item) => item.id === id);
-    const contestJudges = allJudges.filter((judge) => judge.contestId === id);
-    const usersMap = new Map(allUsers.map((user) => [user.id, user]));
+    // 단건/필터 조회로 최적화
+    const [contestJudges, contest] = await Promise.all([
+      getJudgesByContest(id),
+      getContestById(id),
+    ]);
+    // 심사위원 유저 정보만 별도 조회
+    const judgeUserIds = [...new Set(contestJudges.map((j) => j.userId))];
+    const users = await getUsersByIds(judgeUserIds);
+    const usersMap = new Map(users.map((user) => [user.id, user]));
 
     const acceptedCount = contestJudges.filter((judge) => judge.acceptedAt).length;
     const pendingCount = contestJudges.length - acceptedCount;
