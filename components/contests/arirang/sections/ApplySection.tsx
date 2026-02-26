@@ -1,10 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
-import { Send, CheckCircle2, Film, Clock } from 'lucide-react';
+import { Send, CheckCircle2, Film, Clock, AlertCircle } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
+import { useSubmissionStatus } from '@/hooks/useSubmissionStatus';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 /** 공모전 접수 안내 섹션 (폼은 /contests/contest-1/submit 으로 이동) */
 export function ApplySection() {
@@ -14,6 +25,19 @@ export function ApplySection() {
   const { lang } = useLang();
   const applyTranslations = translations.apply;
 
+  const { hasSubmitted, loading: statusLoading } = useSubmissionStatus(contestId);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  /** 접수 버튼 클릭 핸들러 */
+  const handleApplyClick = () => {
+    /* 제출 여부 쿼리 완료 + 이미 제출 → Dialog 표시 */
+    if (!statusLoading && hasSubmitted) {
+      setDialogOpen(true);
+      return;
+    }
+    /* 쿼리 미완료면 그냥 이동 — submit 페이지에서 이중 체크 */
+    router.push(`/contests/${contestId}/submit`);
+  };
   return (
     <section id="apply" className="relative py-24 md:py-32">
       <div
@@ -85,9 +109,7 @@ export function ApplySection() {
           {/* CTA 버튼 */}
           <button
             type="button"
-            onClick={() => {
-              router.push(`/contests/${contestId}/submit`);
-            }}
+            onClick={handleApplyClick}
             className="w-full py-4 font-bold text-lg rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             style={{
               backgroundColor: 'var(--ar-accent)',
@@ -104,6 +126,36 @@ export function ApplySection() {
             {t(applyTranslations, 'ctaHint', lang)}
           </p>
         </div>
+
+      {/* 이미 제출한 경우 안내 Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
+            </div>
+            <DialogTitle className="text-center">이미 제출한 공모전입니다</DialogTitle>
+            <DialogDescription className="text-center">
+              이 공모전에는 이미 영상을 제출하셨습니다. 추가 제출은 불가합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              className="cursor-pointer flex-1"
+              onClick={() => setDialogOpen(false)}
+            >
+              확인
+            </Button>
+            <Button
+              className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1"
+              onClick={() => { setDialogOpen(false); router.push('/my/submissions'); }}
+            >
+              내 출품작 보기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </section>
   );
