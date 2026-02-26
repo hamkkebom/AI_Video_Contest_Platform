@@ -108,7 +108,9 @@ export default function ContestSubmitPage() {
       const res = await fetch('/api/contests'); const contests: Contest[] = await res.json();
       const found = contests.find((c) => c.id === contestId);
       setContest(found ?? null);
-      /* 기존 출품 수 확인 — 최대 출품 수 초과 시 폼 비활성화 */
+      setLoading(false);
+
+      /* 기존 출품 수 확인 — 로딩 차단하지 않고 비동기로 처리 */
       if (found) {
         try {
           const supabase = createBrowserClient();
@@ -127,10 +129,9 @@ export default function ContestSubmitPage() {
             }
           }
         } catch {
-          /* 조회 실패는 무시 — 서버 API에서도 검증함 */
+          /* 조회 실패은 무시 — 서버 API에서도 검증함 */
         }
       }
-      setLoading(false);
     };
     load();
   }, [contestId]);
