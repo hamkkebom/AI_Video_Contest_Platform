@@ -11,6 +11,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { SESSION_MAX_AGE } from './client';
+import { getSupabaseEnv } from '@/lib/env';
 
 /** 쿠키 옵션 (모든 auth 쿠키에 동일 적용) */
 const COOKIE_OPTIONS = {
@@ -21,20 +22,13 @@ const COOKIE_OPTIONS = {
 };
 
 export async function updateSession(request: NextRequest) {
-  /* Supabase 미설정 시 미들웨어 건너뛰기 */
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co'
-  ) {
-    return NextResponse.next({ request });
-  }
+  const { url, anonKey } = getSupabaseEnv();
 
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {

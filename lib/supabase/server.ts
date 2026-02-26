@@ -1,26 +1,21 @@
 /**
  * 서버(Server Component / Route Handler / Server Action)용 Supabase 클라이언트
  * 쿠키 기반 세션 관리
- * 환경변수 미설정 시 null 반환
+ * 환경변수 미설정 시 명확한 에러를 던진다 (silent failure 방지)
  */
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { SESSION_MAX_AGE } from './client';
+import { getSupabaseEnv } from '@/lib/env';
 
 export async function createClient() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co'
-  ) {
-    return null;
-  }
+  const { url, anonKey } = getSupabaseEnv();
 
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
@@ -63,17 +58,11 @@ export async function createClient() {
  * RLS가 anon 역할로 허용된 테이블만 조회 가능
  */
 export function createPublicClient() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co'
-  ) {
-    return null;
-  }
+  const { url, anonKey } = getSupabaseEnv();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url,
+    anonKey,
     {
       cookies: {
         getAll: () => [],
