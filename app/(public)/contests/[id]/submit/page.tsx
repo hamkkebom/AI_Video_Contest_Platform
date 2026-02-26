@@ -112,23 +112,19 @@ export default function ContestSubmitPage() {
       setContest(found ?? null);
       setLoading(false);
 
-      /* 기존 출품 수 확인 — 로딩 차단하지 않고 비동기로 처리 */
-      if (found) {
+      /* 기존 출품 수 확인 — AuthContext 세션 사용 (Supabase auth 호출 없음) */
+      if (found && authSession?.user) {
         try {
           const supabase = createBrowserClient();
           if (supabase) {
-            const { data: { session } } = await supabase.auth.getSession();
-            const currentUser = session?.user;
-            if (currentUser) {
-              const { count } = await supabase
-                .from('submissions')
-                .select('id', { count: 'exact', head: true })
-                .eq('contest_id', contestId)
-                .eq('user_id', currentUser.id);
-              const maxSub = found.maxSubmissionsPerUser ?? 1;
-              if ((count ?? 0) >= maxSub) {
-                setAlreadySubmitted(true);
-              }
+            const { count } = await supabase
+              .from('submissions')
+              .select('id', { count: 'exact', head: true })
+              .eq('contest_id', contestId)
+              .eq('user_id', authSession.user.id);
+            const maxSub = found.maxSubmissionsPerUser ?? 1;
+            if ((count ?? 0) >= maxSub) {
+              setAlreadySubmitted(true);
             }
           }
         } catch {
@@ -397,17 +393,26 @@ export default function ContestSubmitPage() {
           if (entry.proofImageFile) {
             const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
-            const { data: proofData, error: proofError } = await supabase.storage
-              .from('proof-images')
-              .upload(proofPath, entry.proofImageFile, {
-                contentType: entry.proofImageFile.type,
-                upsert: false,
-              });
-            if (proofError) {
-              console.error('인증 이미지 업로드 실패:', proofError);
-              throw new Error(`인증 이미지 업로드에 실패했습니다: ${proofError.message}`);
-            }
-            const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofData.path);
+            /* SDK 대신 raw XHR + AuthContext 토큰 사용 (SDK 내부 auth 호출 hang 방지) */
+            const proofUploadUrl = `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`;
+            await new Promise<void>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('POST', proofUploadUrl);
+              xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+              xhr.setRequestHeader('x-upsert', 'false');
+              xhr.timeout = 30_000;
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
+                else {
+                  console.error('인증 이미지 업로드 실패:', xhr.status, xhr.responseText);
+                  reject(new Error(`인증 이미지 업로드에 실패했습니다. (${xhr.status})`));
+                }
+              };
+              xhr.onerror = () => reject(new Error('네트워크 오류로 인증 이미지 업로드에 실패했습니다.'));
+              xhr.ontimeout = () => reject(new Error('인증 이미지 업로드 시간이 초과되었습니다(30초).'));
+              xhr.send(entry.proofImageFile);
+            });
+            const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofPath);
             proofImageUrl = proofPublicData.publicUrl;
           }
           bonusEntries.push({
