@@ -69,19 +69,23 @@ export async function updateSession(request: NextRequest) {
 
   /* ====== 슬러그 리다이렉트: /contests/contest-1/* → /contests/3/* ====== */
   const slugMatch = pathname.match(/^\/contests\/([^/]+)(\/.+)?$/);
+  console.log('[MW] pathname:', pathname, 'slugMatch:', slugMatch);
   if (slugMatch) {
     const contestIdOrSlug = slugMatch[1];
     const rest = slugMatch[2] ?? '';
     /* 숫자가 아닌 경우 슬러그로 판단 → DB에서 실제 ID 조회 */
+    console.log('[MW] contestIdOrSlug:', contestIdOrSlug, 'isNumeric:', /^\d+$/.test(contestIdOrSlug));
     if (!/^\d+$/.test(contestIdOrSlug)) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('contests')
         .select('id')
         .eq('slug', contestIdOrSlug)
         .maybeSingle();
+      console.log('[MW] slug query result:', { data, error, slug: contestIdOrSlug });
       if (data) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = `/contests/${data.id}${rest}`;
+        console.log('[MW] Redirecting to:', redirectUrl.pathname);
         return NextResponse.redirect(redirectUrl, 301);
       }
     }

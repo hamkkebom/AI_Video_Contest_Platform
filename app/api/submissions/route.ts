@@ -23,8 +23,10 @@ interface CreateSubmissionBody {
 
 /** 출품작 생성 API */
 export async function POST(request: Request) {
+  console.log('[submissions API] POST 요청 수신');
   const supabase = await createClient();
   if (!supabase) {
+    console.error('[submissions API] Supabase 미설정');
     return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
   }
 
@@ -34,8 +36,10 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
+    console.error('[submissions API] 인증 실패:', authError?.message);
     return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
   }
+  console.log('[submissions API] 인증 성공:', user.id, user.email);
 
   try {
     const body = (await request.json()) as CreateSubmissionBody;
@@ -51,7 +55,9 @@ export async function POST(request: Request) {
       ? body.tags.map((tag) => tag.trim()).filter(Boolean)
       : [];
 
+    console.log('[submissions API] 입력값:', { contestId, title: title?.substring(0, 20), videoUrl: videoUrl?.substring(0, 20), thumbnailUrl: thumbnailUrl?.substring(0, 30), hasProductionProcess: !!productionProcess });
     if (!contestId || !title || !description || !videoUrl || !thumbnailUrl || !productionProcess) {
+      console.error('[submissions API] 필수값 누락:', { contestId: !!contestId, title: !!title, description: !!description, videoUrl: !!videoUrl, thumbnailUrl: !!thumbnailUrl, productionProcess: !!productionProcess });
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
     }
 
@@ -109,9 +115,10 @@ export async function POST(request: Request) {
       .single();
 
     if (error || !data) {
-      console.error('출품작 생성 실패:', error);
-      return NextResponse.json({ error: '출품작 생성에 실패했습니다.' }, { status: 500 });
+      console.error('[submissions API] 출품작 INSERT 실패:', error?.message, error?.details, error?.hint);
+      return NextResponse.json({ error: `출품작 생성에 실패했습니다: ${error?.message ?? '알 수 없는 오류'}` }, { status: 500 });
     }
+    console.log('[submissions API] 출품작 생성 성공! ID:', data.id);
 
     /* 가산점 인증 저장 */
     if (Array.isArray(body.bonusEntries) && body.bonusEntries.length > 0) {
@@ -148,9 +155,10 @@ export async function POST(request: Request) {
     // 캐시 무효화
     revalidateTag('submissions');
 
+    console.log('[submissions API] 전체 완료, ID:', data.id);
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });
   } catch (error) {
-    console.error('출품작 API 오류:', error);
+    console.error('[submissions API] 예외 발생:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
   }
 }
