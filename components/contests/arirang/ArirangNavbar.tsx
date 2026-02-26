@@ -44,15 +44,14 @@ export function ArirangNavbar() {
   };
 
 
-  /** 로그아웃 후 홈으로 하드 리디렉트 */
+  /** 로그아웃 후 현재 랜딩페이지 리로드 (홈 경유 없이 직접) */
   const handleSignOut = useCallback(async () => {
-    if (isSigningOut) return; // 중복 클릭 방지
+    if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await signOut();
-      window.location.href = '/';
-    } catch {
-      setIsSigningOut(false);
+    } finally {
+      window.location.reload();
     }
   }, [signOut, isSigningOut]);
 

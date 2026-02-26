@@ -144,15 +144,14 @@ export function Header() {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
-  /* 로그아웃 후 홈으로 하드 리디렉트 */
+  /* 로그아웃 후 랜딩페이지로 직접 이동 (홈 경유 없이) */
   const handleSignOut = async () => {
-    if (isSigningOut) return; // 중복 클릭 방지
+    if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await signOut();
-      window.location.href = '/';
-    } catch {
-      setIsSigningOut(false);
+    } finally {
+      window.location.href = '/contests/3/landing';
     }
   };
 

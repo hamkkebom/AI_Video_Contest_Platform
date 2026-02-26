@@ -279,28 +279,50 @@ export default function ContestSubmitPage() {
       }
 
       setUploadStep('thumbnail');
+      console.log('[제출] 썸네일 업로드 시작');
       const supabase = createBrowserClient();
       if (!supabase) {
         throw new Error('Supabase 설정이 필요합니다.');
       }
 
-      /* 세션 유효성 확인 — 만료 시 즉시 에러 */
+      /* 세션 유효성 확인 — 영상 업로드에 시간이 걸렸을 수 있으므로 토큰 갱신 */
+      console.log('[제출] 세션 갱신 시도...');
+      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr) {
+        console.warn('[제출] 세션 갱신 실패 (계속 시도):', refreshErr.message);
+      } else if (refreshData.session) {
+        console.log('[제출] 세션 갱신 성공, 만료:', new Date(refreshData.session.expires_at! * 1000).toISOString());
+      }
+
+      console.log('[제출] 세션 확인 중...');
       const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
       if (authErr || !currentUser) {
+        console.error('[제출] 세션 만료:', authErr);
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
       }
+      console.log('[제출] 세션 유효:', currentUser.id);
+
       const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
-      /* 썸네일 업로드 (60초 타임아웃) */
+      console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', thumbnailFile.size, 'bytes', '타입:', thumbnailFile.type);
+
+      /* 썸네일 업로드 (30초 타임아웃) */
       const thumbnailUploadPromise = supabase.storage
         .from('thumbnails')
         .upload(thumbnailPath, thumbnailFile, {
           contentType: thumbnailFile.type,
           upsert: false,
+        })
+        .then((result) => {
+          console.log('[제출] 썸네일 Storage 응답:', JSON.stringify({ data: result.data, error: result.error?.message }));
+          return result;
         });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('썸네일 업로드 시간이 초과되었습니다. 네트워크 상태를 확인해 주세요.')), 60_000),
+        setTimeout(() => {
+          console.error('[제출] 썸네일 업로드 30초 타임아웃!');
+          reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초). 파일 크기를 줄이거나 네트워크 상태를 확인해 주세요.'));
+        }, 30_000),
       );
 
       const { data: thumbnailData, error: thumbnailUploadError } = await Promise.race([
@@ -309,9 +331,14 @@ export default function ContestSubmitPage() {
       ]);
       if (thumbnailUploadError || !thumbnailData?.path) {
         const errMsg = thumbnailUploadError?.message ?? '썸네일 업로드에 실패했습니다.';
-        console.error('썸네일 업로드 실패:', thumbnailUploadError);
+        console.error('[제출] 썸네일 업로드 실패:', JSON.stringify(thumbnailUploadError));
+        // RLS 정책 위반 가능성 안내
+        if (errMsg.includes('security') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
+          throw new Error('썸네일 업로드 권한이 없습니다. 세션이 만료되었을 수 있으니 페이지를 새로고침 후 다시 시도해 주세요.');
+        }
         throw new Error(errMsg);
       }
+      console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
 
       const { data: thumbnailPublicData } = supabase.storage
         .from('thumbnails')

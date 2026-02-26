@@ -627,6 +627,19 @@ export function getContestById(id: string): Promise<Contest | null> {
   )();
 }
 
+/** 슬러그로 공모전 ID 조회 (슬러그 → 숫자 ID 리다이렉트용) */
+export async function getContestIdBySlug(slug: string): Promise<string | null> {
+  const supabase = createPublicClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('contests')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error || !data) return null;
+  return String(data.id);
+}
+
 /**
  * 관련 공모전 조회 (경량 버전)
  * 동일 지역 우선, 부족하면 다른 지역으로 채움. 최대 limit개.

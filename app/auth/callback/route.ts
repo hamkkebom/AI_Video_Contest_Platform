@@ -8,8 +8,13 @@ import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const { searchParams, origin } = requestUrl;
+  const { searchParams } = requestUrl;
   const code = searchParams.get('code');
+
+  /* Host 헤더 기반 origin 결정 (--hostname 0.0.0.0 환경에서 request.url이 0.0.0.0이 되는 문제 방지) */
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || requestUrl.host;
+  const protocol = request.headers.get('x-forwarded-proto') || (requestUrl.protocol === 'https:' ? 'https' : 'http');
+  const origin = `${protocol}://${host}`;
 
   /* 리다이렉트 경로 */
   const cookieStore = await cookies();

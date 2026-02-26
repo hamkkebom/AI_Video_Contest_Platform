@@ -35,7 +35,7 @@ export function UtmTracker() {
     // 고유 세션 ID 생성 (없으면 새로 만듦)
     let sessionId = sessionStorage.getItem('utm_session_id');
     if (!sessionId) {
-      sessionId = crypto.randomUUID();
+      sessionId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
       sessionStorage.setItem('utm_session_id', sessionId);
     }
 

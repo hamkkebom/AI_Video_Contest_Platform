@@ -62,8 +62,8 @@ function SidebarFooter({ roleLabel }: { roleLabel: string }) {
   const email = profile?.email || user?.email || '';
   const handleSignOut = async () => {
     await signOut();
-    /* 하드 리디렉트 — RoleGuard 경쟁 방지 + 쿠키/상태 완전 초기화 */
-    window.location.href = '/';
+    /* 랜딩페이지로 직접 이동 (홈 경유 없이) */
+    window.location.href = '/contests/3/landing';
   };
 
   return (
