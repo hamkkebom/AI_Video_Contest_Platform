@@ -257,27 +257,22 @@ export default function ContestSubmitPage() {
       setUploadProgress(0);
 
       /* ── 1단계: 인증 사전 확보 (pre-fetch) ──
-         영상 업로드(5분+) 전에 인증을 미리 확보해둔다.
-         Supabase JWT 유효기간(1시간) > 업로드 시간이므로
-         업로드 완료 후에도 토큰이 유효하다. */
+         getSession()은 로컬 스토리지에서 읽기만 하므로 네트워크 호출 없이 즉시 반환.
+         getUser()는 Supabase Auth 서버에 HTTP 요청을 보내 hang 위험이 있으므로 사용하지 않는다.
+         session.user에서 동일한 유저 정보를 얻을 수 있다. */
       const supabase = createBrowserClient();
       if (!supabase) {
         throw new Error('Supabase 설정이 필요합니다.');
       }
 
-      console.log('[제출] 인증 사전 확보 시작 (영상 업로드 전)');
-      const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !currentUser) {
-        console.error('[제출] 인증 실패:', authErr);
-        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
-      }
-
+      console.log('[제출] 세션 확인 시작');
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const accessToken = currentSession?.access_token;
-      if (!accessToken) {
+      const currentUser = currentSession?.user;
+      if (!accessToken || !currentUser) {
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
       }
-      console.log('[제출] 인증 사전 확보 완료, userId:', currentUser.id);
+      console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
 
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
