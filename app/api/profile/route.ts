@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
@@ -64,6 +65,9 @@ export async function PUT(request: Request) {
       targetId: user.id,
       metadata: { updatedFields: Object.keys(updateData).filter(k => k !== 'updated_at') },
     });
+
+    // 캐시 무효화
+    revalidateTag('users');
 
     return NextResponse.json({ success: true });
   } catch (error) {

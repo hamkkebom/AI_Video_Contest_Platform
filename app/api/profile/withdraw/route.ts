@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
@@ -58,6 +59,9 @@ export async function POST(request: Request) {
 
     // 로그아웃 처리
     await supabase.auth.signOut();
+
+    // 캐시 무효화
+    revalidateTag('users');
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
@@ -143,6 +144,9 @@ export async function POST(request: Request) {
       targetId: data.id,
       metadata: { contestId, title: title ?? '', role: 'participant' },
     });
+
+    // 캐시 무효화
+    revalidateTag('submissions');
 
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });
   } catch (error) {

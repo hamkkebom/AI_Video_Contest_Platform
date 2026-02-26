@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
       targetType: 'profile',
       targetId: user.id,
     });
+
+    // 캐시 무효화
+    revalidateTag('users');
 
     return NextResponse.json({ avatarUrl });
   } catch (error) {

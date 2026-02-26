@@ -1,15 +1,17 @@
 /**
  * Supabase 데이터 레이어
- * lib/mock/index.ts 와 동일한 함수 시그니처를 유지하면서
+ * lib/mock/index.ts 와 동일한 함수 시그니쳐를 유지하면서
  * Supabase에서 실제 데이터를 쿼리합니다.
  *
  * snake_case(DB) → camelCase(TypeScript) 변환을 포함합니다.
  *
- * React.cache()로 래핑된 함수들은 같은 요청 내에서
- * 동일 인자로 중복 호출 시 DB 쿼리를 1회만 실행합니다.
+ * unstable_cache로 래핑된 함수들은 요청 간 캐시를 제공하며,
+ * revalidateTag()로 데이터 변경 시 캐시를 즉시 무효화합니다.
+ * React.cache()는 인증 필수 함수(getAuthProfile)에만 유지합니다.
  */
 import { cache } from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { unstable_cache } from 'next/cache';
+import { createClient, createPublicClient } from '@/lib/supabase/server';
 import type {
   Article,
   Company,
@@ -475,16 +477,52 @@ function toIpLog(row: Record<string, unknown>): IpLog {
 // 공개 API 함수 — mock과 동일한 시그니처
 // ============================================================
 
-export const getUsers = cache(async function getUsers(): Promise<User[]> {
+export const getUsers = unstable_cache(
+  async (): Promise<User[]> => {
+    const supabase = createPublicClient();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toUser(row as Record<string, unknown>));
+  },
+  ['users'],
+  { tags: ['users'], revalidate: 120 },
+);
+
+/** 단건 유저 조회 (profiles 테이블) */
+export function getUserById(id: string): Promise<User | null> {
+  return unstable_cache(
+    async (): Promise<User | null> => {
+      const supabase = createPublicClient();
+      if (!supabase) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (error || !data) return null;
+      return toUser(data as Record<string, unknown>);
+    },
+    [`user-${id}`],
+    { tags: ['users'], revalidate: 120 },
+  )();
+}
+
+/** 여러 유저 ID로 벌크 조회 (usersMap 생성용) */
+export async function getUsersByIds(ids: string[]): Promise<User[]> {
+  if (ids.length === 0) return [];
   const supabase = await createClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .order('created_at', { ascending: true });
+    .in('id', ids);
   if (error || !data) return [];
   return data.map((row) => toUser(row as Record<string, unknown>));
-});
+}
 
 export async function getCompanies(): Promise<Company[]> {
   const supabase = await createClient();
@@ -534,80 +572,142 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
 /**
  * 공모전 목록 조회 (award_tiers, bonus_configs 포함)
  * 필터 지원: status, region, search
+ * 60초 캐시 — 데이터 변경 시 revalidateTag('contests')로 무효화
  */
-export const getContests = cache(async function getContests(filters?: ContestFilters): Promise<Contest[]> {
+export const getContests = unstable_cache(
+  async (filters?: ContestFilters): Promise<Contest[]> => {
+    const supabase = createPublicClient();
+    if (!supabase) return [];
+
+    let query = supabase
+      .from('contests')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+    if (filters?.region) {
+      query = query.eq('region', filters.region);
+    }
+    if (filters?.search) {
+      query = query.or(
+        `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
+      );
+    }
+
+    const { data: contestRows, error } = await query;
+    if (error || !contestRows || contestRows.length === 0) return [];
+
+    const contestIds = contestRows.map((c) => String(c.id));
+    const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
+
+    return contestRows.map((row) =>
+      toContest(
+        row as Record<string, unknown>,
+        tiersMap.get(String(row.id)) ?? [],
+        bonusMap.get(String(row.id)) ?? [],
+      ),
+    );
+  },
+  ['contests'],
+  { tags: ['contests'], revalidate: 60 },
+);
+
+/** 공모전 단건 조회 (award_tiers, bonus_configs 포함) — 120초 캐시 */
+export function getContestById(id: string): Promise<Contest | null> {
+  return unstable_cache(
+    async (): Promise<Contest | null> => {
+      const supabase = createPublicClient();
+      if (!supabase) return null;
+      return getContestByIdInternal(supabase, id);
+    },
+    [`contest-${id}`],
+    { tags: ['contests'], revalidate: 120 },
+  )();
+}
+
+/**
+ * 관련 공모전 조회 (경량 버전)
+ * 동일 지역 우선, 부족하면 다른 지역으로 채움. 최대 limit개.
+ */
+export async function getRelatedContests(excludeId: string, region: string, limit = 6): Promise<Contest[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  // 기본 쿼리
-  let query = supabase
+  // 동일 지역 공모전 먼저 조회
+  const { data: sameRegion } = await supabase
     .from('contests')
     .select('*')
-    .order('created_at', { ascending: true });
+    .neq('id', excludeId)
+    .eq('region', region)
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-  if (filters?.region) {
-    query = query.eq('region', filters.region);
-  }
-  if (filters?.search) {
-    // ilike 전문검색 (title, description)
-    query = query.or(
-      `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-    );
+  const sameRegionRows = sameRegion ?? [];
+
+  // 부족하면 다른 지역에서 추가 조회
+  let otherRows: typeof sameRegionRows = [];
+  if (sameRegionRows.length < limit) {
+    const remaining = limit - sameRegionRows.length;
+    const { data: others } = await supabase
+      .from('contests')
+      .select('*')
+      .neq('id', excludeId)
+      .neq('region', region)
+      .order('created_at', { ascending: false })
+      .limit(remaining);
+    otherRows = others ?? [];
   }
 
-  const { data: contestRows, error } = await query;
-  if (error || !contestRows || contestRows.length === 0) return [];
+  const allRows = [...sameRegionRows, ...otherRows];
+  if (allRows.length === 0) return [];
 
-  const contestIds = contestRows.map((c) => String(c.id));
+  const contestIds = allRows.map((c) => String(c.id));
   const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
-  return contestRows.map((row) =>
+  return allRows.map((row) =>
     toContest(
       row as Record<string, unknown>,
       tiersMap.get(String(row.id)) ?? [],
       bonusMap.get(String(row.id)) ?? [],
     ),
   );
-});
+}
 
-/** 공모전 단건 조회 (award_tiers, bonus_configs 포함) */
-export const getContestById = cache(async function getContestById(id: string): Promise<Contest | null> {
-  const supabase = await createClient();
-  if (!supabase) return null;
-  return getContestByIdInternal(supabase, id);
-});
+/** 출품작 목록 조회 — 30초 캐시, 필터 지원 */
+export const getSubmissions = unstable_cache(
+  async (filters?: SubmissionFilters): Promise<Submission[]> => {
+    const supabase = createPublicClient();
+    if (!supabase) return [];
 
-export const getSubmissions = cache(async function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
+    let query = supabase
+      .from('submissions')
+      .select('*')
+      .order('submitted_at', { ascending: true });
 
-  let query = supabase
-    .from('submissions')
-    .select('*')
-    .order('submitted_at', { ascending: true });
+    if (filters?.contestId) {
+      query = query.eq('contest_id', filters.contestId);
+    }
+    if (filters?.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+    if (filters?.search) {
+      query = query.or(
+        `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
+      );
+    }
 
-  if (filters?.contestId) {
-    query = query.eq('contest_id', filters.contestId);
-  }
-  if (filters?.userId) {
-    query = query.eq('user_id', filters.userId);
-  }
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-  if (filters?.search) {
-    query = query.or(
-      `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-    );
-  }
-
-  const { data, error } = await query;
-  if (error || !data) return [];
-  return data.map((row) => toSubmission(row as Record<string, unknown>));
-});
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map((row) => toSubmission(row as Record<string, unknown>));
+  },
+  ['submissions'],
+  { tags: ['submissions'], revalidate: 30 },
+);
 
 export async function getLikes(): Promise<Like[]> {
   const supabase = await createClient();
@@ -649,6 +749,9 @@ export async function toggleLike(
     .select('*', { count: 'exact', head: true })
     .eq('submission_id', submissionId);
 
+  // 캐시 무효화: 좋아요 수 변경으로 submissions 캐시 갱신
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('submissions');
   return { liked: !existing, totalLikes: count ?? 0 };
 }
 
@@ -1311,7 +1414,11 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     }
   }
 
-  return getContestByIdInternal(supabase, contestId);
+  const result = await getContestByIdInternal(supabase, contestId);
+  // 캐시 무효화: 공모전 데이터 변경
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('contests');
+  return result;
 }
 
 /** admin 전용: 공모전 수정 */
@@ -1370,7 +1477,11 @@ export async function updateContest(id: string, input: ContestMutationInput): Pr
     if (insertBonusError) return null;
   }
 
-  return getContestByIdInternal(supabase, id);
+  const result = await getContestByIdInternal(supabase, id);
+  // 캐시 무효화: 공모전 데이터 변경
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('contests');
+  return result;
 }
 
 /** admin 전용: 공모전 삭제 */
@@ -1386,6 +1497,9 @@ export async function deleteContest(id: string): Promise<boolean> {
     .delete()
     .eq('id', id);
 
+  // 캐시 무효화: 공모전 데이터 변경
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('contests');
   return !error;
 }
 
