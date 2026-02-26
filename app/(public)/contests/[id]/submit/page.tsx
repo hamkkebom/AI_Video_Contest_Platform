@@ -256,11 +256,28 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* 세션 갱신은 여기서 하지 않음:
-         - Supabase JS 클라이언트가 토큰을 자동 갱신
-         - /api/upload/video 서버 API가 자체 인증
-         - Cloudflare 업로드는 인증 불필요 (URL 자체가 토큰)
-         - 썸네일 전에 별도 refreshSession() 호출 있음 (333줄) */
+      /* ── 1단계: 인증 사전 확보 (pre-fetch) ──
+         영상 업로드(5분+) 전에 인증을 미리 확보해둔다.
+         Supabase JWT 유효기간(1시간) > 업로드 시간이므로
+         업로드 완료 후에도 토큰이 유효하다. */
+      const supabase = createBrowserClient();
+      if (!supabase) {
+        throw new Error('Supabase 설정이 필요합니다.');
+      }
+
+      console.log('[제출] 인증 사전 확보 시작 (영상 업로드 전)');
+      const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !currentUser) {
+        console.error('[제출] 인증 실패:', authErr);
+        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
+      }
+
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+      if (!accessToken) {
+        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
+      }
+      console.log('[제출] 인증 사전 확보 완료, userId:', currentUser.id);
 
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
@@ -313,32 +330,16 @@ export default function ContestSubmitPage() {
         const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
 
+      /* ── 3단계: 썸네일 업로드 (사전 확보한 인증 사용) ── */
       setUploadStep('thumbnail');
       setUploadProgress(0);
-      console.log('[제출] 썸네일 업로드 시작');
-      const supabase = createBrowserClient();
-      if (!supabase) {
-        throw new Error('Supabase 설정이 필요합니다.');
-      }
-
-      /* getUser()가 내부적으로 토큰 자동 갱신 — 별도 refreshSession() 불필요 */
-      const { data: { user: currentUser }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !currentUser) {
-        console.error('[제출] 세션 만료:', authErr);
-        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
-      }
+      console.log('[제출] 썸네일 업로드 시작 (사전 확보 토큰 사용)');
 
       const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
       console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', thumbnailFile.size, 'bytes');
 
-      /* 썸네일 업로드 — XHR로 진행률 추적 */
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const accessToken = currentSession?.access_token;
-      if (!accessToken) {
-        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
-      }
 
       const thumbnailData = await new Promise<{ path: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
