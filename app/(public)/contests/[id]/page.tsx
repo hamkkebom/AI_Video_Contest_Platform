@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContests, getSubmissions, getUsers } from '@/lib/data';
+import { getContestById, getSubmissions, getUserById, getRelatedContests } from '@/lib/data';
 import { Calendar, Users, Gavel, Trophy, ArrowLeft, Search } from 'lucide-react';
-import { SubmissionCarousel } from '@/components/contest/submission-carousel';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { MediaTabs } from '@/components/contest/media-tabs';
 import type { AwardTier } from '@/lib/types';
@@ -110,12 +109,11 @@ function getAwardColorClass(label: string, index: number): string {
 export default async function ContestDetailPage({ params, searchParams }: ContestDetailPageProps) {
   const { id } = await params;
   const { tab } = await searchParams;
-  const [allContests, allSubmissions, allUsers] = await Promise.all([
-    getContests(),
+  // 1단계: 공모전 + 출품작 병렬 조회 (단건 조회로 최적화)
+  const [contest, allSubmissions] = await Promise.all([
+    getContestById(id),
     getSubmissions({ contestId: id }),
-    getUsers(),
   ]);
-  const contest = allContests.find((c) => c.id === id);
 
   // 공모전 미존재 상태
   if (!contest) {
@@ -149,21 +147,14 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     ? 'draft'
     : contest.status;
   const statusMeta = getStatusMeta(displayStatus);
-  const hostUser = allUsers.find((u) => u.id === contest.hostUserId);
+  // 2단계: 주최자 + 관련 공모전 병렬 조회 (필요한 데이터만)
+  const [hostUser, relatedContests] = await Promise.all([
+    getUserById(contest.hostUserId),
+    getRelatedContests(contest.id, contest.region ?? '', 6),
+  ]);
   const isAdminHost = hostUser?.roles?.includes('admin');
-
-  // 총 상금 계산: contest.prizeAmount가 있으면 사용, 없으면 awardTiers에서 합산
+  // 총 상금 계산 (contest.prizeAmount 우선, 없으면 awardTiers에서 합산)
   const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
-
-  // 클라이언트 컴포넌트에 전달하기 위해 Map → 직렬화 가능한 객체로 변환
-  const creatorsRecord: Record<string, (typeof allUsers)[number]> = {};
-  for (const u of allUsers) {
-    creatorsRecord[u.id] = u;
-  }
-
-  const sameRegionContests = allContests.filter((c) => c.id !== contest.id && c.region === contest.region);
-  const fallbackContests = allContests.filter((c) => c.id !== contest.id && c.region !== contest.region);
-  const relatedContests = [...sameRegionContests, ...fallbackContests].slice(0, 6);
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -422,23 +413,6 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         </div>
       </section>
 
-      {/* 출품작 섹션 — 캐러셀 (숨김 처리) */}
-      {/* {allSubmissions.length > 0 && (
-        <section className="pb-10 px-4">
-          <div className="container mx-auto max-w-6xl space-y-5">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold">출품작 ({allSubmissions.length})</h2>
-              <span className="text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all cursor-pointer">
-                더보기 →
-              </span>
-            </div>
-            <SubmissionCarousel
-              submissions={allSubmissions}
-              creators={creatorsRecord}
-            />
-          </div>
-        </section>
-      )} */}
 
       {/* 관련 공모전 섹션 — 캐러셀 (3개씩) */}
       {relatedContests.length > 0 && (
