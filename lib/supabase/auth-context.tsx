@@ -217,6 +217,16 @@ function AuthProviderInner({
     } catch {
       // Supabase signOut 실패해도 이미 클라이언트 상태는 초기화됨
     }
+    // signOut() hang 시 쿠키가 안 지워져서 새로고침 시 재로그인되는 문제 방지
+    // → Supabase auth 쿠키(sb-*) 수동 삭제
+    if (typeof document !== 'undefined') {
+      document.cookie.split(';').forEach(cookie => {
+        const name = cookie.split('=')[0].trim();
+        if (name.startsWith('sb-')) {
+          document.cookie = `${name}=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+      });
+    }
   }, [supabase]);
 
   useEffect(() => {
