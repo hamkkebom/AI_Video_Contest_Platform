@@ -255,20 +255,12 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* 세션 갱신 - 3초 타임아웃 (hang 방지) */
-      try {
-        const supabaseForRefresh = createBrowserClient();
-        if (supabaseForRefresh) {
-          await Promise.race([
-            supabaseForRefresh.auth.refreshSession(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('refresh timeout')), 3000)),
-          ]);
-        }
-      } catch {
-        /* 갱신 실패/타임아웃 무시 - 이후 단계에서 재시도 */
-      }
+      /* 세션 갱신은 여기서 하지 않음:
+         - Supabase JS 클라이언트가 토큰을 자동 갱신
+         - /api/upload/video 서버 API가 자체 인증
+         - Cloudflare 업로드는 인증 불필요 (URL 자체가 토큰)
+         - 썸네일 전에 별도 refreshSession() 호출 있음 (333줄) */
 
-      /* Cloudflare Stream 업로드 URL 발급 */
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -330,11 +322,20 @@ export default function ContestSubmitPage() {
 
       /* 세션 유효성 확인 — 영상 업로드에 시간이 걸렸을 수 있으므로 토큰 갱신 */
       console.log('[제출] 세션 갱신 시도...');
-      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
-      if (refreshErr) {
-        console.warn('[제출] 세션 갱신 실패 (계속 시도):', refreshErr.message);
-      } else if (refreshData.session) {
-        console.log('[제출] 세션 갱신 성공, 만료:', new Date(refreshData.session.expires_at! * 1000).toISOString());
+      try {
+        const refreshResult = await Promise.race([
+          supabase.auth.refreshSession(),
+          new Promise<{ data: { session: null }; error: Error }>((_, reject) =>
+            setTimeout(() => reject(new Error('refresh timeout')), 5000),
+          ),
+        ]);
+        if (refreshResult.error) {
+          console.warn('[제출] 세션 갱신 실패 (계속 진행):', refreshResult.error.message);
+        } else if (refreshResult.data.session) {
+          console.log('[제출] 세션 갱신 성공');
+        }
+      } catch {
+        console.warn('[제출] 세션 갱신 타임아웃 (계속 진행)');
       }
 
       console.log('[제출] 세션 확인 중...');
