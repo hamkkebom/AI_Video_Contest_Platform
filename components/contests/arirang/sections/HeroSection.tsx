@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/lib/supabase/auth-context';
+
 
 import { useCountdown } from '@/hooks/useCountdown';
 import { ChevronDown } from 'lucide-react';
@@ -17,11 +17,9 @@ export function HeroSection() {
   const router = useRouter();
   const params = useParams();
   const contestId = params.id as string;
-  const { user, loading } = useAuth();
+  /** 공모전 상세페이지로 이동 (로그인 체크 없음) */
   const goToContestDetail = () => {
-    // 인증 로딩 중이면 무시
-    if (loading) return;
-    router.push(user ? `/contests/${contestId}` : '/login');
+    router.push(`/contests/${contestId}`);
   };
 
   return (

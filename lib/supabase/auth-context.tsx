@@ -147,7 +147,7 @@ function AuthProviderInner({
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('프로필 조회 실패:', error.message);
@@ -167,6 +167,11 @@ function AuthProviderInner({
   const signInWithGoogle = useCallback(async (redirectTo?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
     const callbackUrl = `${origin}/auth/callback`;
+
+    /* 현재 origin을 쿠키에 저장 (다른 PC에서 IP로 접속 시 OAuth 후 올바른 origin으로 복귀) */
+    if (typeof document !== 'undefined') {
+      document.cookie = `sb_origin=${encodeURIComponent(origin || '')};path=/;max-age=600;samesite=lax`;
+    }
 
     /* OAuth 완료 후 돌아갈 경로를 쿠키에 저장 (콜백 라우트에서 읽음) */
     if (redirectTo && redirectTo !== '/' && typeof document !== 'undefined') {

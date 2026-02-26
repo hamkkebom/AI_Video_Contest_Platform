@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContestById, getSubmissions, getUserById, getRelatedContests } from '@/lib/data';
-import { Calendar, Users, Gavel, Trophy, ArrowLeft, Search } from 'lucide-react';
+import { getContestById, getUserById, getRelatedContests } from '@/lib/data';
+import { Calendar, Gavel, Trophy, ArrowLeft, Search } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { MediaTabs } from '@/components/contest/media-tabs';
 import type { AwardTier } from '@/lib/types';
@@ -109,11 +109,8 @@ function getAwardColorClass(label: string, index: number): string {
 export default async function ContestDetailPage({ params, searchParams }: ContestDetailPageProps) {
   const { id } = await params;
   const { tab } = await searchParams;
-  // 1단계: 공모전 + 출품작 병렬 조회 (단건 조회로 최적화)
-  const [contest, allSubmissions] = await Promise.all([
-    getContestById(id),
-    getSubmissions({ contestId: id }),
-  ]);
+  // 공모전 조회 (단건 조회로 최적화)
+  const contest = await getContestById(id);
 
   // 공모전 미존재 상태
   if (!contest) {
@@ -238,17 +235,6 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <Trophy className="h-5 w-5 text-violet-600" />
               </div>
             </Card>
-
-            {/* 참가자 */}
-            <Card className="p-5 border border-border">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground mb-1">참가자</p>
-                  <p className="font-semibold text-[15px]">{allSubmissions.length}명</p>
-                </div>
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-            </Card>
           </div>
         </div>
       </section>
@@ -365,10 +351,6 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">총 상금</span>
                   <span className="text-right font-medium">{totalPrize ?? '미정'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">접수작 수</span>
-                  <span className="text-right font-medium">{allSubmissions.length}개</span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">결과 발표 형태</span>

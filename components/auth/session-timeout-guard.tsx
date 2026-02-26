@@ -119,7 +119,7 @@ export function SessionTimeoutGuard({ children }: { children: React.ReactNode })
         if (prev <= 1) {
           clearInterval(interval);
           setShowModal(false);
-          router.push('/');
+          router.push('/contests/3/landing');
           return 0;
         }
         return prev - 1;
@@ -151,7 +151,7 @@ export function SessionTimeoutGuard({ children }: { children: React.ReactNode })
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/5 border-2 border-orange-500/20">
               <span className="text-3xl font-bold text-orange-500 tabular-nums">{countdown}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-3">홈 화면으로 이동합니다</p>
+            <p className="text-xs text-muted-foreground mt-3">랜딩 페이지로 이동합니다</p>
           </div>
         </DialogContent>
       </Dialog>

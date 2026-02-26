@@ -66,6 +66,11 @@ export function createClient() {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
       },
+      storage: {
+        /* 직접 스토리지 호스트명 사용 — request buffering 비활성화로 업로드 성능 향상 */
+        /* *.supabase.co → *.storage.supabase.co */
+        useNewHostname: true,
+      },
     },
   );
 }

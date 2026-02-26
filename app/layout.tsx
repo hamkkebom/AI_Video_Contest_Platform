@@ -49,6 +49,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   try {
     const supabase = await createClient();
     if (supabase) {
+      // 미들웨어에서 getUser()로 JWT 검증 완료 — getSession() 보안 경고 억제
+      // (session.user 접근 시 Proxy가 경고를 발생시키므로 전체 블록에 적용)
+      const _warn = console.warn;
+      console.warn = (...args: unknown[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('Using the user object as returned from supabase.auth.getSession')) return;
+        _warn.apply(console, args);
+      };
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         serverUser = session.user;
@@ -56,12 +64,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
         serverProfile = data ?? null;
       } else {
         serverUser = null;
         serverProfile = null;
       }
+
+      console.warn = _warn;
     }
   } catch {
     // 서버 인증 조회 실패 — 클라이언트에서 재시도 (serverUser=undefined)

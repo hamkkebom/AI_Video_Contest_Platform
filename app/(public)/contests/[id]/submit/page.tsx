@@ -73,6 +73,7 @@ export default function ContestSubmitPage() {
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [errorType, setErrorType] = useState<'duplicate' | 'contest_closed' | 'deadline_passed' | 'auth_expired' | 'general' | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
   /* 제출 폼 상태 */
@@ -249,7 +250,18 @@ export default function ContestSubmitPage() {
 
     try {
       setSubmitError(null);
+      setErrorType(null);
       setIsSubmitting(true);
+
+      /* 업로드 시작 전 세션 갱신 - 장시간 폼 작성 후에도 토큰 유효 보장 */
+      try {
+        const supabaseForRefresh = createBrowserClient();
+        if (supabaseForRefresh) {
+          await supabaseForRefresh.auth.refreshSession();
+        }
+      } catch {
+        /* 갱신 실패해도 진행 - 이후 단계에서 다시 시도 */
+      }
 
       setUploadStep('video');
       setUploadProgress(0);
@@ -414,16 +426,41 @@ export default function ContestSubmitPage() {
 
       const submissionResult = (await submissionResponse.json()) as {
         error?: string;
+        code?: string;
       };
 
       if (!submissionResponse.ok) {
-        throw new Error(submissionResult.error ?? '출품작 저장에 실패했습니다.');
+        const serverError = submissionResult.error ?? '출품작 저장에 실패했습니다.';
+        const serverCode = submissionResult.code;
+
+        if (submissionResponse.status === 409 || serverCode === 'QUOTA_EXCEEDED') {
+          setErrorType('duplicate');
+          setSubmitError(serverError);
+          return;
+        }
+        if (submissionResponse.status === 410 || serverCode === 'CONTEST_NOT_OPEN') {
+          setErrorType('contest_closed');
+          setSubmitError(serverError);
+          return;
+        }
+        if (submissionResponse.status === 403 || serverCode === 'DEADLINE_PASSED') {
+          setErrorType('deadline_passed');
+          setSubmitError(serverError);
+          return;
+        }
+        if (submissionResponse.status === 401 || serverCode === 'AUTH_REQUIRED') {
+          setErrorType('auth_expired');
+          setSubmitError(serverError);
+          return;
+        }
+        throw new Error(serverError);
       }
 
       setSubmitted(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : '영상 제출 중 오류가 발생했습니다.';
       setSubmitError(message);
+      setErrorType('general');
     } finally {
       setIsSubmitting(false);
     }
@@ -505,68 +542,6 @@ export default function ContestSubmitPage() {
             <Link href={`/contests/${contestId}/landing`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>
             </Link>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  /* 최대 출품 수 초과 — 이미 제출한 경우 */
-  if (alreadySubmitted) {
-    return (
-      <div className="w-full min-h-screen bg-background">
-        <section className="py-20 px-4">
-          <div className="container mx-auto max-w-3xl text-center">
-            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">이미 제출한 공모전입니다</h1>
-            <p className="text-muted-foreground mb-6">
-              이 공모전의 최대 출품 가능 수({contest?.maxSubmissionsPerUser ?? 1}개)를 초과하여
-              더 이상 제출할 수 없습니다.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Link href={`/contests/${contestId}/landing`}>
-                <Button variant="outline" className="cursor-pointer">공모전 상세</Button>
-              </Link>
-              <Link href="/my/submissions">
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer">
-                  내 출품작 보기
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  /* 제출 완료 상태 */
-  if (submitted) {
-    return (
-      <div className="w-full min-h-screen bg-background relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-        <section className="py-20 px-4 relative z-10">
-          <div className="container mx-auto max-w-3xl text-center">
-            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="h-10 w-10 text-green-500" />
-            </div>
-            <h1 className="text-3xl font-bold mb-3">영상이 제출되었습니다!</h1>
-            <p className="text-muted-foreground mb-2">
-              &quot;{form.title}&quot; 영상이 성공적으로 접수되었습니다.
-            </p>
-            <p className="text-sm text-muted-foreground mb-8">
-              검수 완료 후 공모전 출품작 목록에 표시됩니다.
-              {hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Link href={`/contests/${contestId}/landing`}>
-                <Button variant="outline" className="cursor-pointer">공모전 상세</Button>
-              </Link>
-              <Link href="/my/submissions">
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer">
-                  내 출품작
-                </Button>
-              </Link>
-            </div>
           </div>
         </section>
       </div>
@@ -1057,7 +1032,7 @@ export default function ContestSubmitPage() {
                       <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 100px)' }}>
                         {contest?.notes ? (
                           <div className="space-y-4">
-                            {contest.notes.split(/\n\s*\n/).map((section, idx) => {
+                            {contest.notes.split(/\n\s*\n/).map((section, sectionIndex) => {
                               const lines = section.trim().split('\n').filter((l: string) => l.trim());
                               if (lines.length === 0) return null;
 
@@ -1067,7 +1042,7 @@ export default function ContestSubmitPage() {
                               const bodyLines = isTitle ? lines.slice(1) : lines;
 
                               return (
-                                <div key={idx} className={idx > 0 ? 'pt-4 border-t border-border/50' : ''}>
+                                <div key={`section-${sectionIndex}`} className={sectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}>
                                   {titleLine && (
                                     <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                                       <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
@@ -1075,12 +1050,12 @@ export default function ContestSubmitPage() {
                                     </h3>
                                   )}
                                   <div className="space-y-1.5">
-                                    {bodyLines.map((line: string, lineIdx: number) => {
+                                    {bodyLines.map((line: string) => {
                                       const isBullet = /^[\-·•※]\s/.test(line);
                                       const content = isBullet ? line.replace(/^[\-·•※]\s/, '') : line;
                                       return (
                                         <p
-                                          key={lineIdx}
+                                          key={`line-${line}`}
                                           className={`text-sm leading-relaxed text-muted-foreground ${isBullet
                                             ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
                                             : ''
@@ -1156,6 +1131,7 @@ export default function ContestSubmitPage() {
             setUploadStep(null);
             setSubmitError(null);
             setUploadProgress(0);
+            setErrorType(null);
             if (submitted) router.push(`/contests/${contestId}`);
           }
         }}
@@ -1262,13 +1238,67 @@ export default function ContestSubmitPage() {
               </div>
               {submitError && (
                 <>
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
-                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <p>{submitError}</p>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); }}>닫기</Button>
-                  </DialogFooter>
+                  {errorType === 'duplicate' ? (
+                    /* 중복 제출 */
+                    <>
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-orange-500" />
+                      </div>
+                      <p className="text-center font-semibold">이미 제출한 공모전입니다</p>
+                      <p className="text-center text-sm text-muted-foreground">이 공모전에는 이미 영상을 제출하셨습니다. 추가 제출은 불가합니다.</p>
+                      <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+                        <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
+                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+                      </DialogFooter>
+                    </>
+                  ) : errorType === 'contest_closed' ? (
+                    /* 공모전 취소/종료 */
+                    <>
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
+                      </div>
+                      <p className="text-center font-semibold">공모전이 종료되었습니다</p>
+                      <p className="text-center text-sm text-muted-foreground">이 공모전은 현재 접수 기간이 아닙니다.</p>
+                      <DialogFooter>
+                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => router.push(`/contests/${contestId}`)}>공모전으로 돌아가기</Button>
+                      </DialogFooter>
+                    </>
+                  ) : errorType === 'deadline_passed' ? (
+                    /* 마감 초과 */
+                    <>
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
+                      </div>
+                      <p className="text-center font-semibold">접수 마감일이 지났습니다</p>
+                      <p className="text-center text-sm text-muted-foreground">공모전 접수 마감일이 지나 제출이 완료되지 않았습니다.</p>
+                      <DialogFooter>
+                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => router.push(`/contests/${contestId}`)}>공모전으로 돌아가기</Button>
+                      </DialogFooter>
+                    </>
+                  ) : errorType === 'auth_expired' ? (
+                    /* 세션 만료 */
+                    <>
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-orange-500" />
+                      </div>
+                      <p className="text-center font-semibold">로그인이 필요합니다</p>
+                      <p className="text-center text-sm text-muted-foreground">세션이 만료되었습니다. 다시 로그인해 주세요.</p>
+                      <DialogFooter>
+                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/submit`)}>로그인하기</Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    /* 일반 오류 (기존 동작) */
+                    <>
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
+                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>{submitError}</p>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
+                      </DialogFooter>
+                    </>
+                  )}
                 </>
               )}
             </>

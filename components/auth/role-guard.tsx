@@ -35,7 +35,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
 
     /* 프로필 로드됨 + 권한 없음 */
     if (profile && !hasRole) {
-      router.replace('/');
+      router.replace('/contests/3/landing');
     }
   }, [loading, user, profile, hasRole, router]);
 

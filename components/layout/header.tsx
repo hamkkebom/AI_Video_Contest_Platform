@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, Loader2, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -107,6 +107,7 @@ export function Header() {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => setMounted(true), []);
 
@@ -144,14 +145,15 @@ export function Header() {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
-  /* 로그아웃 후 랜딩페이지로 직접 이동 (홈 경유 없이) */
+  /* 로그아웃 후 랜딩페이지로 이동 (클라이언트 사이드 내비게이션) */
   const handleSignOut = async () => {
     if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await signOut();
     } finally {
-      window.location.href = '/contests/3/landing';
+      router.refresh();
+      router.replace('/contests/3/landing');
     }
   };
 
@@ -219,7 +221,7 @@ export function Header() {
         <div className="container mx-auto max-w-6xl flex h-16 items-center px-4">
           {/* 왼쪽 — 로고 (데스크톱) */}
           <div className="hidden md:flex flex-shrink-0 items-center mr-8">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+            <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
               <span>꿈플</span>
             </Link>
@@ -227,7 +229,7 @@ export function Header() {
 
           {/* 모바일 로고 */}
           <div className="flex md:hidden flex-shrink-0 items-center">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+            <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
               <span>꿈플</span>
             </Link>

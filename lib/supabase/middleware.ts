@@ -103,6 +103,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+
   /**
    * 슬라이딩 만료: 유저가 인증된 상태면
    * 매 요청마다 모든 sb-* 쿠키의 maxAge를 1시간으로 재설정

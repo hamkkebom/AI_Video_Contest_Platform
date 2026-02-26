@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     console.error('[submissions API] 인증 실패:', authError?.message);
-    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+    return NextResponse.json({ error: '인증이 필요합니다.', code: 'AUTH_REQUIRED' }, { status: 401 });
   }
   console.log('[submissions API] 인증 성공:', user.id, user.email);
 
@@ -64,12 +64,28 @@ export async function POST(request: Request) {
     /* ====== 출품 수 제한 검증 ====== */
     const { data: contestData, error: contestError } = await supabase
       .from('contests')
-      .select('max_submissions_per_user')
+      .select('max_submissions_per_user, status, submission_end_at')
       .eq('id', contestId)
       .single();
 
     if (contestError || !contestData) {
       return NextResponse.json({ error: '공모전 정보를 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    /* 공모전 상태 검증 */
+    if (contestData.status !== 'open') {
+      return NextResponse.json(
+        { error: '이 공모전은 현재 접수 기간이 아닙니다.', code: 'CONTEST_NOT_OPEN' },
+        { status: 410 },
+      );
+    }
+
+    /* 마감일 검증 */
+    if (contestData.submission_end_at && new Date(contestData.submission_end_at) < new Date()) {
+      return NextResponse.json(
+        { error: '공모전 접수 마감일이 지났습니다.', code: 'DEADLINE_PASSED' },
+        { status: 403 },
+      );
     }
 
     const maxSubmissions = contestData.max_submissions_per_user ?? 1;
@@ -87,7 +103,7 @@ export async function POST(request: Request) {
 
     if ((existingCount ?? 0) >= maxSubmissions) {
       return NextResponse.json(
-        { error: `이 공모전의 최대 출품 가능 수(${maxSubmissions}개)를 초과했습니다.` },
+        { error: `이 공모전의 최대 출품 가능 수(${maxSubmissions}개)를 초과했습니다.`, code: 'QUOTA_EXCEEDED' },
         { status: 409 },
       );
     }
