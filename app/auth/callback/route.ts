@@ -79,6 +79,14 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      /* 비밀번호 재설정 콜백인 경우 재설정 페이지로 이동 */
+      const type = searchParams.get('type');
+      if (type === 'recovery') {
+        const recoveryResponse = NextResponse.redirect(`${origin}/reset-password`);
+        recoveryResponse.cookies.delete('sb_redirect_to');
+        recoveryResponse.cookies.delete('sb_origin');
+        return recoveryResponse;
+      }
       successResponse.cookies.delete('sb_redirect_to');
       successResponse.cookies.delete('sb_origin');
       return successResponse;

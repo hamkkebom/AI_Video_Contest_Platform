@@ -5,24 +5,32 @@ import type { Route } from 'next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
-import { TreePine, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useEffect, useState, type FormEvent } from 'react';
+import { TreePine, Loader2, Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
  * 로그인 폼 클라이언트 컴포넌트
- * Google OAuth 전용 — useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링되어야 함
+ * 이메일/비밀번호 + Google OAuth — useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링
  */
 export default function LoginForm() {
-  const { user, profile, loading, signInWithGoogle } = useAuth();
+  const { user, profile, loading, signInWithGoogle, signInWithPassword } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const router = useRouter();
 
   /* URL에서 redirect 파라미터 읽기 (로그인 후 돌아갈 경로) */
   const searchParams = useSearchParams();
   const redirectToParam = searchParams.get('redirectTo') || searchParams.get('redirect');
   const redirectTo = redirectToParam?.startsWith('/') ? redirectToParam : '/';
+
+  /* URL 파라미터 메시지 표시 (비밀번호 변경 완료 등) */
+  const successMessage = searchParams.get('message');
 
   /* URL 에러 파라미터 감지 (auth callback 실패 등) */
   useEffect(() => {
@@ -54,16 +62,37 @@ export default function LoginForm() {
     }
   }, [loading, user, profile, router, redirectTo]);
 
+  /* 이메일/비밀번호 로그인 */
+  const handleEmailLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setIsSigningIn(true);
+    setErrorMsg('');
+    try {
+      const result = await signInWithPassword(email.trim(), password);
+      if (result.error) {
+        setErrorMsg(result.error);
+        setIsSigningIn(false);
+      }
+      /* 성공 시 onAuthStateChange가 user를 세팅 → useEffect가 리다이렉트 처리 */
+    } catch {
+      setErrorMsg('로그인 중 오류가 발생했습니다.');
+      setIsSigningIn(false);
+    }
+  };
+
   /* Google 로그인 */
   const handleGoogleLogin = async () => {
-    setIsSigningIn(true);
+    setIsGoogleSigningIn(true);
     setErrorMsg('');
     try {
       await signInWithGoogle(redirectTo);
     } catch {
-      setIsSigningIn(false);
+      setIsGoogleSigningIn(false);
     }
   };
+
+  const isAnyLoading = isSigningIn || isGoogleSigningIn || loading;
 
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center px-4">
@@ -82,23 +111,86 @@ export default function LoginForm() {
               <span className="text-xl font-bold">꿈플</span>
             </Link>
             <h1 className="text-2xl font-bold tracking-tight" aria-label="로그인">로그인</h1>
-            <p className="text-sm text-muted-foreground mt-1">Google 계정으로 간편하게 시작하세요</p>
+            <p className="text-sm text-muted-foreground mt-1">꿈플에 로그인하세요</p>
           </CardHeader>
 
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 space-y-4">
+            {/* 성공 메시지 (비밀번호 변경 완료 등) */}
+            {successMessage && (
+              <p className="text-sm text-green-600 text-center mb-2">{decodeURIComponent(successMessage)}</p>
+            )}
+
             {/* 에러 메시지 */}
             {errorMsg && (
-              <p className="text-sm text-destructive text-center mb-4">{errorMsg}</p>
+              <p className="text-sm text-destructive text-center">{errorMsg}</p>
             )}
+
+            {/* 이메일/비밀번호 로그인 폼 */}
+            <form onSubmit={handleEmailLogin} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm">이메일</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="이메일을 입력하세요"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-11"
+                    required
+                    disabled={isAnyLoading}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm">비밀번호</Label>
+                  <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                    비밀번호를 잊으셨나요?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="비밀번호를 입력하세요"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-11"
+                    required
+                    disabled={isAnyLoading}
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-11 text-base cursor-pointer"
+                disabled={isAnyLoading || !email.trim() || !password}
+              >
+                {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : '로그인'}
+              </Button>
+            </form>
+
+            {/* 구분선 */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">또는</span>
+              </div>
+            </div>
 
             {/* Google 로그인 버튼 */}
             <Button
               variant="outline"
-              className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 h-12 text-base"
+              className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 h-11 text-base"
               onClick={handleGoogleLogin}
-              disabled={isSigningIn || loading}
+              disabled={isAnyLoading}
             >
-              {isSigningIn ? (
+              {isGoogleSigningIn ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -111,9 +203,13 @@ export default function LoginForm() {
               Google로 로그인
             </Button>
 
-            <p className="mt-4 text-xs text-center text-muted-foreground">
-              계정이 없으시면 Google 로그인 시 자동으로 가입됩니다
-            </p>
+            {/* 회원가입 링크 */}
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">계정이 없으신가요? </span>
+              <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold">
+                회원가입
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

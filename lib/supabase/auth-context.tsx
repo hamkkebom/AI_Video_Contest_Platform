@@ -40,6 +40,12 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   /** 프로필 갱신 */
   refreshProfile: () => Promise<void>;
+  /** 이메일/비밀번호 로그인 */
+  signInWithPassword: (email: string, password: string) => Promise<{ error?: string }>;
+  /** 이메일 회원가입 */
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+  /** 비밀번호 재설정 이메일 발송 */
+  resetPasswordForEmail: (email: string) => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -58,6 +64,9 @@ const UNCONFIGURED_VALUE: AuthContextValue = {
   },
   signOut: async () => { },
   refreshProfile: async () => { },
+  signInWithPassword: async () => ({ error: 'Supabase 미설정' }),
+  signUpWithEmail: async () => ({ error: 'Supabase 미설정' }),
+  resetPasswordForEmail: async () => ({ error: 'Supabase 미설정' }),
 };
 
 /**
@@ -229,6 +238,59 @@ function AuthProviderInner({
     }
   }, [supabase]);
 
+  /** 이메일/비밀번호 로그인 */
+  const signInWithPassword = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('invalid login credentials')) {
+        return { error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+      }
+      if (msg.includes('email not confirmed')) {
+        return { error: '이메일 인증을 완료해주세요. 받은 편지함을 확인하세요.' };
+      }
+      return { error: error.message };
+    }
+    return {};
+  }, [supabase]);
+
+  /** 이메일 회원가입 */
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string): Promise<{ error?: string; needsConfirmation?: boolean }> => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback`,
+        data: { full_name: name, name },
+      },
+    });
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        return { error: '이미 가입된 이메일입니다. 로그인해주세요.' };
+      }
+      return { error: error.message };
+    }
+    /* session이 null이면 이메일 확인 대기 중 */
+    if (data.user && !data.session) {
+      return { needsConfirmation: true };
+    }
+    return {};
+  }, [supabase]);
+
+  /** 비밀번호 재설정 이메일 발송 */
+  const resetPasswordForEmail = useCallback(async (email: string): Promise<{ error?: string }> => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    });
+    if (error) {
+      return { error: error.message };
+    }
+    return {};
+  }, [supabase]);
+
   useEffect(() => {
     /* 초기 세션 동기화 */
     const initAuth = async () => {
@@ -316,7 +378,8 @@ function AuthProviderInner({
   const value = useMemo<AuthContextValue>(() => ({
     user, profile, session, loading, isConfigured: true,
     signInWithGoogle, signOut, refreshProfile,
-  }), [user, profile, session, loading, signInWithGoogle, signOut, refreshProfile]);
+    signInWithPassword, signUpWithEmail, resetPasswordForEmail,
+  }), [user, profile, session, loading, signInWithGoogle, signOut, refreshProfile, signInWithPassword, signUpWithEmail, resetPasswordForEmail]);
 
   return (
     <AuthContext.Provider value={value}>
