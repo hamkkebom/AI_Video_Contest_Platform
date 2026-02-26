@@ -204,14 +204,19 @@ function AuthProviderInner({
     }).catch(() => {
       // 로그 기록 실패는 무시
     });
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // Supabase signOut 실패해도 클라이언트 상태는 반드시 초기화
-    }
+    // 클라이언트 상태 먼저 초기화 (UI 즉시 반영 — 서버 응답 hang 방지)
     setUser(null);
     setProfile(null);
     setSession(null);
+    // 서버 사이드 로그아웃은 best-effort (3초 타임아웃)
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ]);
+    } catch {
+      // Supabase signOut 실패해도 이미 클라이언트 상태는 초기화됨
+    }
   }, [supabase]);
 
   useEffect(() => {
