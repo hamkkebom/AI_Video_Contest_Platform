@@ -156,7 +156,9 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
-  const { data: { user } } = await supabase.auth.getUser();
+  /* getUser()는 Supabase Auth 서버에 HTTP 요청 → 프로덕션 hang 위험. getSession()은 쿠키 기반 */
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) throw new Error('인증이 필요합니다.');
 
   /* 타입별 검증 */
