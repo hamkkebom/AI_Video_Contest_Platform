@@ -36,10 +36,6 @@ interface AuthContextValue {
   isConfigured: boolean;
   /** Google 로그인 */
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
-  /** 이메일/비밀번호 로그인 */
-  signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
-  /** 이메일/비밀번호 회원가입 */
-  signUpWithEmail: (email: string, password: string, metadata?: { name?: string; phone?: string }) => Promise<{ error?: string }>;
   /** 로그아웃 */
   signOut: () => Promise<void>;
   /** 프로필 갱신 */
@@ -60,8 +56,6 @@ const UNCONFIGURED_VALUE: AuthContextValue = {
   signInWithGoogle: async (_redirectTo?: string) => {
     console.warn('Supabase가 설정되지 않았습니다. .env.local 파일을 확인하세요.');
   },
-  signInWithEmail: async () => ({ error: 'Supabase가 설정되지 않았습니다.' }),
-  signUpWithEmail: async () => ({ error: 'Supabase가 설정되지 않았습니다.' }),
   signOut: async () => { },
   refreshProfile: async () => { },
 };
@@ -193,29 +187,6 @@ function AuthProviderInner({
     }
   }, [supabase]);
 
-  /** 이메일/비밀번호 로그인 */
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error('이메일 로그인 실패:', error.message);
-      return { error: error.message };
-    }
-    return {};
-  }, [supabase]);
-
-  /** 이메일/비밀번호 회원가입 */
-  const signUpWithEmail = useCallback(async (email: string, password: string, metadata?: { name?: string; phone?: string }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: metadata },
-    });
-    if (error) {
-      console.error('회원가입 실패:', error.message);
-      return { error: error.message };
-    }
-    return {};
-  }, [supabase]);
 
   /** 로그아웃 (본인 의지) */
   const signOut = useCallback(async () => {
@@ -326,8 +297,8 @@ function AuthProviderInner({
 
   const value = useMemo<AuthContextValue>(() => ({
     user, profile, session, loading, isConfigured: true,
-    signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, refreshProfile,
-  }), [user, profile, session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, refreshProfile]);
+    signInWithGoogle, signOut, refreshProfile,
+  }), [user, profile, session, loading, signInWithGoogle, signOut, refreshProfile]);
 
   return (
     <AuthContext.Provider value={value}>

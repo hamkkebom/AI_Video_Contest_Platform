@@ -4,22 +4,17 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
-import { TreePine, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { TreePine, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
  * 로그인 폼 클라이언트 컴포넌트
- * useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링되어야 함
+ * Google OAuth 전용 — useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링되어야 함
  */
 export default function LoginForm() {
-  const { user, profile, loading, signInWithGoogle, signInWithEmail } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const { user, profile, loading, signInWithGoogle } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
@@ -68,18 +63,6 @@ export default function LoginForm() {
     }
   };
 
-  /* 이메일/비밀번호 로그인 */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSigningIn(true);
-    setErrorMsg('');
-    const result = await signInWithEmail(email, password);
-    if (result.error) {
-      setErrorMsg(result.error);
-      setIsSigningIn(false);
-    }
-  };
-
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center px-4">
       {/* 배경 장식 — CSS 변수 기반 */}
@@ -97,21 +80,26 @@ export default function LoginForm() {
               <span className="text-xl font-bold">꿈플</span>
             </Link>
             <h1 className="text-2xl font-bold tracking-tight" aria-label="로그인">로그인</h1>
-            <p className="text-sm text-muted-foreground mt-1">계정에 로그인하여 서비스를 이용하세요</p>
+            <p className="text-sm text-muted-foreground mt-1">Google 계정으로 간편하게 시작하세요</p>
           </CardHeader>
 
           <CardContent className="pt-4">
+            {/* 에러 메시지 */}
+            {errorMsg && (
+              <p className="text-sm text-destructive text-center mb-4">{errorMsg}</p>
+            )}
+
             {/* Google 로그인 버튼 */}
             <Button
               variant="outline"
-              className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 h-11 text-base"
+              className="w-full gap-2 cursor-pointer hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 h-12 text-base"
               onClick={handleGoogleLogin}
               disabled={isSigningIn || loading}
             >
               {isSigningIn ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -121,78 +109,9 @@ export default function LoginForm() {
               Google로 로그인
             </Button>
 
-            {/* 구분선 */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">또는</span>
-              </div>
-            </div>
-
-            {/* 이메일/비밀번호 폼 */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">이메일</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="user@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="login-password">비밀번호</Label>
-                  <Link href="#" className="text-xs text-primary hover:text-primary/80 font-medium">
-                    비밀번호 찾기
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* 에러 메시지 */}
-              {errorMsg && (
-                <p className="text-sm text-destructive">{errorMsg}</p>
-              )}
-
-              <Button type="submit" className="w-full cursor-pointer font-semibold" disabled={isSigningIn || loading}>
-                {isSigningIn ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                로그인
-              </Button>
-            </form>
-
-            {/* 회원가입 링크 */}
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">계정이 없으신가요? </span>
-              <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold">
-                회원가입
-              </Link>
-            </div>
+            <p className="mt-4 text-xs text-center text-muted-foreground">
+              계정이 없으시면 Google 로그인 시 자동으로 가입됩니다
+            </p>
           </CardContent>
         </Card>
       </div>
