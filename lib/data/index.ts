@@ -211,7 +211,7 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
 }
 
 async function getContestRelationsByIds(
-  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   contestIds: string[],
 ) {
   if (contestIds.length === 0) {
@@ -252,7 +252,7 @@ async function getContestRelationsByIds(
 }
 
 async function getContestByIdInternal(
-  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   id: string,
 ): Promise<Contest | null> {
   const { data: contestRow, error } = await supabase
@@ -480,7 +480,6 @@ function toIpLog(row: Record<string, unknown>): IpLog {
 export const getUsers = unstable_cache(
   async (): Promise<User[]> => {
     const supabase = createPublicClient();
-    if (!supabase) return [];
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -497,7 +496,6 @@ export function getUserById(id: string): Promise<User | null> {
   return unstable_cache(
     async (): Promise<User | null> => {
       const supabase = createPublicClient();
-      if (!supabase) return null;
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -515,7 +513,6 @@ export function getUserById(id: string): Promise<User | null> {
 export async function getUsersByIds(ids: string[]): Promise<User[]> {
   if (ids.length === 0) return [];
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -526,7 +523,6 @@ export async function getUsersByIds(ids: string[]): Promise<User[]> {
 
 export async function getCompanies(): Promise<Company[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('companies')
     .select('*')
@@ -537,7 +533,6 @@ export async function getCompanies(): Promise<Company[]> {
 
 export async function getCompanyMembers(): Promise<CompanyMember[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('company_members')
     .select('*')
@@ -548,7 +543,6 @@ export async function getCompanyMembers(): Promise<CompanyMember[]> {
 
 export async function getDevices(): Promise<Device[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('devices')
     .select('*')
@@ -559,7 +553,6 @@ export async function getDevices(): Promise<Device[]> {
 
 export async function getDevicesByUser(userId: string): Promise<Device[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('devices')
     .select('*')
@@ -577,7 +570,6 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
 export const getContests = unstable_cache(
   async (filters?: ContestFilters): Promise<Contest[]> => {
     const supabase = createPublicClient();
-    if (!supabase) return [];
 
     let query = supabase
       .from('contests')
@@ -619,7 +611,6 @@ export function getContestById(id: string): Promise<Contest | null> {
   return unstable_cache(
     async (): Promise<Contest | null> => {
       const supabase = createPublicClient();
-      if (!supabase) return null;
       return getContestByIdInternal(supabase, id);
     },
     [`contest-${id}`],
@@ -630,7 +621,6 @@ export function getContestById(id: string): Promise<Contest | null> {
 /** 슬러그로 공모전 ID 조회 (슬러그 → 숫자 ID 리다이렉트용) */
 export async function getContestIdBySlug(slug: string): Promise<string | null> {
   const supabase = createPublicClient();
-  if (!supabase) return null;
   const { data, error } = await supabase
     .from('contests')
     .select('id')
@@ -646,7 +636,6 @@ export async function getContestIdBySlug(slug: string): Promise<string | null> {
  */
 export async function getRelatedContests(excludeId: string, region: string, limit = 6): Promise<Contest[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   // 동일 지역 공모전 먼저 조회
   const { data: sameRegion } = await supabase
@@ -692,7 +681,6 @@ export async function getRelatedContests(excludeId: string, region: string, limi
 export const getSubmissions = unstable_cache(
   async (filters?: SubmissionFilters): Promise<Submission[]> => {
     const supabase = createPublicClient();
-    if (!supabase) return [];
 
     let query = supabase
       .from('submissions')
@@ -724,7 +712,6 @@ export const getSubmissions = unstable_cache(
 
 export async function getLikes(): Promise<Like[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('likes')
     .select('*')
@@ -738,7 +725,6 @@ export async function toggleLike(
   submissionId: string,
 ): Promise<{ liked: boolean; totalLikes: number }> {
   const supabase = await createClient();
-  if (!supabase) return { liked: false, totalLikes: 0 };
 
   // 기존 좋아요 확인
   const { data: existing } = await supabase
@@ -770,7 +756,6 @@ export async function toggleLike(
 
 export async function getArticles(): Promise<Article[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('articles')
     .select('*')
@@ -782,7 +767,6 @@ export async function getArticles(): Promise<Article[]> {
 
 export async function getFaqs(): Promise<FAQ[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('faqs')
     .select('*')
@@ -793,7 +777,6 @@ export async function getFaqs(): Promise<FAQ[]> {
 
 export async function getInquiries(): Promise<Inquiry[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('inquiries')
     .select('*')
@@ -804,7 +787,6 @@ export async function getInquiries(): Promise<Inquiry[]> {
 
 export async function getAgencyRequests(): Promise<AgencyRequest[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('agency_requests')
     .select('*')
@@ -815,7 +797,6 @@ export async function getAgencyRequests(): Promise<AgencyRequest[]> {
 
 export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   const { data: templates, error } = await supabase
     .from('judging_templates')
@@ -853,7 +834,6 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
 
 export async function getJudges(): Promise<Judge[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('judges')
     .select('*')
@@ -864,7 +844,6 @@ export async function getJudges(): Promise<Judge[]> {
 
 export async function getScores(): Promise<Score[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   const { data: scores, error } = await supabase
     .from('scores')
@@ -902,7 +881,6 @@ export async function getScores(): Promise<Score[]> {
 
 export async function getContestResults(): Promise<ContestResult[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('contest_results')
     .select('*')
@@ -913,7 +891,6 @@ export async function getContestResults(): Promise<ContestResult[]> {
 
 export async function getPricingPlans(): Promise<PricingPlan[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('pricing_plans')
     .select('*');
@@ -923,7 +900,6 @@ export async function getPricingPlans(): Promise<PricingPlan[]> {
 
 export async function getActivityLogs(): Promise<ActivityLog[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('activity_logs')
     .select('*')
@@ -934,7 +910,6 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
 
 export async function getIpLogs(): Promise<IpLog[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('ip_logs')
     .select('*')
@@ -960,7 +935,6 @@ export interface GallerySubmission extends Submission {
  */
 export async function getGallerySubmissions(): Promise<GallerySubmission[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   // completed 상태 공모전 조회
   const { data: completedContests } = await supabase
@@ -1022,7 +996,6 @@ export async function getGallerySubmissions(): Promise<GallerySubmission[]> {
  */
 export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   // completed 공모전
   const { data: completedContests } = await supabase
@@ -1122,7 +1095,6 @@ export async function getFeaturedSubmissions(limit = 12): Promise<GallerySubmiss
  */
 export async function getSubmissionById(id: string): Promise<GallerySubmission | null> {
   const supabase = await createClient();
-  if (!supabase) return null;
 
   const { data: submissionRow } = await supabase
     .from('submissions')
@@ -1180,7 +1152,6 @@ export async function searchData(filters: SearchFilters): Promise<SearchResult> 
   }
 
   const supabase = await createClient();
-  if (!supabase) return { contests: [], submissions: [], users: [], articles: [] };
 
   // 탭별 필터링 (all이면 모두 조회)
   const tab = filters.tab ?? 'all';
@@ -1235,7 +1206,6 @@ export async function searchData(filters: SearchFilters): Promise<SearchResult> 
  */
 export async function getDataCounts(): Promise<Record<string, number>> {
   const supabase = await createClient();
-  if (!supabase) return {};
 
   const tables = [
     'contests', 'submissions', 'profiles', 'companies',
@@ -1264,7 +1234,6 @@ export async function getDataCounts(): Promise<Record<string, number>> {
 /** 현재 로그인 사용자의 profile 정보 (서버 컴포넌트용) */
 export const getAuthProfile = cache(async function getAuthProfile(): Promise<User | null> {
   const supabase = await createClient();
-  if (!supabase) return null;
 
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) return null;
@@ -1285,7 +1254,6 @@ export const getAuthProfile = cache(async function getAuthProfile(): Promise<Use
 /** admin 전용: 모든 아티클 조회 (비공개 포함) */
 export async function getAllArticles(): Promise<Article[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('articles')
     .select('*')
@@ -1297,7 +1265,6 @@ export async function getAllArticles(): Promise<Article[]> {
 /** admin 전용: 모든 문의 조회 */
 export async function getAllInquiries(): Promise<Inquiry[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('inquiries')
     .select('*')
@@ -1309,7 +1276,6 @@ export async function getAllInquiries(): Promise<Inquiry[]> {
 /** admin 전용: 모든 활동로그 조회 */
 export async function getAllActivityLogs(): Promise<ActivityLog[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('activity_logs')
     .select('*')
@@ -1321,7 +1287,6 @@ export async function getAllActivityLogs(): Promise<ActivityLog[]> {
 /** admin 전용: 모든 IP 로그 조회 */
 export async function getAllIpLogs(): Promise<IpLog[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('ip_logs')
     .select('*')
@@ -1333,7 +1298,6 @@ export async function getAllIpLogs(): Promise<IpLog[]> {
 /** admin 전용: 모든 대행의뢰 조회 */
 export async function getAllAgencyRequests(): Promise<AgencyRequest[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('agency_requests')
     .select('*')
@@ -1345,7 +1309,6 @@ export async function getAllAgencyRequests(): Promise<AgencyRequest[]> {
 /** admin 전용: 공모전 생성 */
 export async function createContest(input: ContestMutationInput): Promise<Contest | null> {
   const supabase = await createClient();
-  if (!supabase) return null;
 
   const {
     data: { user },
@@ -1437,7 +1400,6 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
 /** admin 전용: 공모전 수정 */
 export async function updateContest(id: string, input: ContestMutationInput): Promise<Contest | null> {
   const supabase = await createClient();
-  if (!supabase) return null;
 
   const { error: updateError } = await supabase
     .from('contests')
@@ -1500,7 +1462,6 @@ export async function updateContest(id: string, input: ContestMutationInput): Pr
 /** admin 전용: 공모전 삭제 */
 export async function deleteContest(id: string): Promise<boolean> {
   const supabase = await createClient();
-  if (!supabase) return false;
 
   await supabase.from('contest_bonus_configs').delete().eq('contest_id', id);
   await supabase.from('contest_award_tiers').delete().eq('contest_id', id);
@@ -1523,7 +1484,6 @@ export async function deleteContest(id: string): Promise<boolean> {
 /** 특정 주최자(host)의 공모전만 조회 */
 export async function getContestsByHost(hostUserId: string): Promise<Contest[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   const { data: contestRows, error } = await supabase
     .from('contests')
@@ -1548,7 +1508,6 @@ export async function getContestsByHost(hostUserId: string): Promise<Contest[]> 
 /** 특정 심사위원(judge user)에게 배정된 공모전 ID 목록 조회 */
 export async function getJudgeAssignments(judgeUserId: string): Promise<Judge[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('judges')
     .select('*')
@@ -1561,7 +1520,6 @@ export async function getJudgeAssignments(judgeUserId: string): Promise<Judge[]>
 /** 특정 공모전의 심사위원 목록 조회 */
 export async function getJudgesByContest(contestId: string): Promise<Judge[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
   const { data, error } = await supabase
     .from('judges')
     .select('*')
@@ -1574,7 +1532,6 @@ export async function getJudgesByContest(contestId: string): Promise<Judge[]> {
 /** 특정 공모전의 점수 목록 조회 */
 export async function getScoresByContest(contestId: string): Promise<Score[]> {
   const supabase = await createClient();
-  if (!supabase) return [];
 
   // 해당 공모전의 submission ID 목록 먼저 조회
   const { data: submissions } = await supabase
@@ -1632,7 +1589,6 @@ export async function createActivityLog(params: {
   metadata?: Record<string, unknown>;
 }) {
   const supabase = await createClient();
-  if (!supabase) return;
   const { error } = await supabase.from('activity_logs').insert({
     user_id: params.userId,
     action: params.action,
@@ -1652,7 +1608,6 @@ export async function createIpLog(params: {
   userAgent?: string;
 }) {
   const supabase = await createClient();
-  if (!supabase) return;
   const { error } = await supabase.from('ip_logs').insert({
     user_id: params.userId,
     ip_address: params.ipAddress,
@@ -1681,7 +1636,6 @@ export async function createUtmVisit(params: {
   userAgent?: string;
 }) {
   const supabase = await createClient();
-  if (!supabase) return;
   const { error } = await supabase.from('utm_visits').insert({
     session_id: params.sessionId ?? null,
     user_id: params.userId ?? null,
