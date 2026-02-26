@@ -145,15 +145,20 @@ export function Header() {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
-  /* 로그아웃 후 랜딩페이지로 이동 (클라이언트 사이드 내비게이션) */
+  /* 로그아웃 후 랜딩페이지로 이동 (클라이언트 사이드 내비게이션, 새로고침 없음) */
   const handleSignOut = async () => {
     if (isSigningOut) return;
     setIsSigningOut(true);
     try {
       await signOut();
-    } finally {
-      router.refresh();
+      /* signOut()이 user/profile/session을 null로 초기화하므로
+         router.refresh() 없이 replace만으로 충분 */
       router.replace('/contests/3/landing');
+    } catch {
+      /* signOut 실패 시에도 랜딩으로 이동 */
+      router.replace('/contests/3/landing');
+    } finally {
+      setIsSigningOut(false);
     }
   };
 

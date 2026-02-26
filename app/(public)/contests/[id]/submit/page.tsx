@@ -92,7 +92,7 @@ export default function ContestSubmitPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadStep, setUploadStep] = useState<'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
+  const [uploadStep, setUploadStep] = useState<'preparing' | 'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
@@ -252,6 +252,8 @@ export default function ContestSubmitPage() {
       setSubmitError(null);
       setErrorType(null);
       setIsSubmitting(true);
+      setUploadStep('preparing');
+      setUploadProgress(0);
 
       /* 업로드 시작 전 세션 갱신 - 장시간 폼 작성 후에도 토큰 유효 보장 */
       try {
@@ -263,8 +265,7 @@ export default function ContestSubmitPage() {
         /* 갱신 실패해도 진행 - 이후 단계에서 다시 시도 */
       }
 
-      setUploadStep('video');
-      setUploadProgress(0);
+      /* Cloudflare Stream 업로드 URL 발급 */
       const uploadUrlResponse = await fetch('/api/upload/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,18 +283,37 @@ export default function ContestSubmitPage() {
       }
 
       /* 영상 업로드 — XMLHttpRequest로 진행률 추적 */
+      setUploadStep('video');
+      setUploadProgress(0);
+      console.log('[제출] 영상 업로드 시작:', videoFile.name, videoFile.size, 'bytes');
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', uploadUrlResult.uploadURL!);
+        /* 5분 타임아웃 (200MB 기준 느린 네트워크 고려) */
+        xhr.timeout = 5 * 60 * 1000;
         xhr.upload.onprogress = (ev) => {
-          if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+          if (ev.lengthComputable) {
+            const pct = Math.round((ev.loaded / ev.total) * 100);
+            console.log(`[제출] 영상 업로드 진행: ${pct}% (${ev.loaded}/${ev.total})`);
+            setUploadProgress(pct);
+          }
         };
         xhr.onload = () => {
+          console.log('[제출] 영상 업로드 완료, status:', xhr.status);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
-          else reject(new Error('영상 파일 업로드에 실패했습니다.'));
+          else {
+            console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
+            reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
+          }
         };
-        xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
-        xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+        xhr.onerror = () => {
+          console.error('[제출] 영상 업로드 네트워크 오류');
+          reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+        };
+        xhr.ontimeout = () => {
+          console.error('[제출] 영상 업로드 타임아웃');
+          reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+        };
         const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
 
@@ -1091,6 +1111,7 @@ export default function ContestSubmitPage() {
               )}
               {isSubmitting && (
                 <p className="text-sm text-muted-foreground mt-4">
+                  {uploadStep === 'preparing' && '업로드 준비 중...'}
                   {uploadStep === 'video' && '영상 업로드 중...'}
                   {uploadStep === 'thumbnail' && '썸네일 업로드 중...'}
                   {uploadStep === 'proof-images' && '인증 이미지 업로드 중...'}
@@ -1179,12 +1200,13 @@ export default function ContestSubmitPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {([
+                  { key: 'preparing', label: '업로드 준비', icon: Loader2, showProgress: false, file: null },
                   { key: 'video', label: '영상 업로드', icon: FileVideo, showProgress: true, file: videoFile },
                   { key: 'thumbnail', label: '썸네일 업로드', icon: ImageIcon, showProgress: false, file: thumbnailFile },
                   { key: 'proof-images', label: '인증 이미지 업로드', icon: Shield, showProgress: false, file: null },
                   { key: 'submission', label: '출품작 등록', icon: CheckCircle2, showProgress: false, file: null },
                 ] as const).map((step) => {
-                  const steps = ['video', 'thumbnail', 'proof-images', 'submission'] as const;
+                  const steps = ['preparing', 'video', 'thumbnail', 'proof-images', 'submission'] as const;
                   const currentIdx = uploadStep ? steps.indexOf(uploadStep) : -1;
                   const stepIdx = steps.indexOf(step.key);
                   const isActive = uploadStep === step.key;
