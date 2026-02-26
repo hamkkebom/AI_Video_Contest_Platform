@@ -352,7 +352,7 @@ export default function ContestSubmitPage() {
             setUploadProgress(100);
             try {
               const res = JSON.parse(xhr.responseText);
-              resolve({ path: res.Key ?? thumbnailPath });
+              resolve({ path: thumbnailPath });
             } catch {
               resolve({ path: thumbnailPath });
             }
