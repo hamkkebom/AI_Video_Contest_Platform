@@ -115,7 +115,8 @@ export default function ContestSubmitPage() {
         try {
           const supabase = createBrowserClient();
           if (supabase) {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+            const currentUser = session?.user;
             if (currentUser) {
               const { count } = await supabase
                 .from('submissions')
