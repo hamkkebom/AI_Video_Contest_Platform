@@ -56,8 +56,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  /* 세션 갱신 (만료된 토큰 자동 리프레시) */
-  const { data: { user } } = await supabase.auth.getUser();
+  /* 세션 갱신 (쿠키에서 읽기 — HTTP 호출 없음)
+     getUser()는 Supabase Auth 서버에 HTTP 요청을 보내 hang 위험이 있으므로
+     getSession()으로 쿠키 기반 세션 확인만 수행한다. */
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   /* ====== 라우트 가드: 보호 경로 미인증 시 /login 리다이렉트 ====== */
   const { pathname } = request.nextUrl;
 
