@@ -85,7 +85,7 @@ export function PrizesSection() {
         </div>
 
         {/* 상 카드 — 1등 대형 + 나머지 3개 */}
-        <div className="space-y-6 mb-16">
+        <div className="space-y-6">
           {/* 대상 (1등) */}
           <div className="arirang-animate">
             <div
@@ -149,6 +149,11 @@ export function PrizesSection() {
             ))}
           </div>
         </div>
+
+        {/* 심사 결과 안내 */}
+        <p className="arirang-animate text-center text-sm mt-4 mb-16" style={{ color: 'rgba(245,240,232,0.5)' }}>
+          {t(prizesTranslations, 'prizeDisclaimer', lang)}
+        </p>
 
         {/* 수상자 혜택 섹션 */}
         <div className="arirang-animate max-w-6xl mx-auto mb-20">

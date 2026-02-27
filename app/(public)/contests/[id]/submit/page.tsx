@@ -441,6 +441,7 @@ export default function ContestSubmitPage() {
           aiTools: aiToolsList.join(', '),
           productionProcess: form.productionProcess,
           bonusEntries: bonusEntries.length > 0 ? bonusEntries : undefined,
+          termsAgreed: form.agree,
         }),
       });
 

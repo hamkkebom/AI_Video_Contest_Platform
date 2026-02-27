@@ -144,12 +144,7 @@ export default function LoginForm() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm">비밀번호</Label>
-                  <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                    비밀번호를 잊으셨나요?
-                  </Link>
-                </div>
+                <Label htmlFor="password" className="text-sm">비밀번호</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -203,12 +198,23 @@ export default function LoginForm() {
               Google로 로그인
             </Button>
 
-            {/* 회원가입 링크 */}
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">계정이 없으신가요? </span>
-              <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold">
-                회원가입
-              </Link>
+            {/* 하단 링크 */}
+            <div className="text-center text-sm space-y-2">
+              <div>
+                <span className="text-muted-foreground">계정이 없으신가요? </span>
+                <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold">
+                  회원가입
+                </Link>
+              </div>
+              <div className="flex items-center justify-center gap-3 text-sm">
+                <Link href="/find-email" className="text-muted-foreground hover:text-primary transition-colors">
+                  이메일 찾기
+                </Link>
+                <span className="text-muted-foreground/50">|</span>
+                <Link href="/forgot-password" className="text-muted-foreground hover:text-primary transition-colors">
+                  비밀번호 찾기
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

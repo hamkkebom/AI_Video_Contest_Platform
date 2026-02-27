@@ -43,7 +43,7 @@ interface AuthContextValue {
   /** 이메일/비밀번호 로그인 */
   signInWithPassword: (email: string, password: string) => Promise<{ error?: string }>;
   /** 이메일 회원가입 */
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+  signUpWithEmail: (email: string, password: string, name: string, phone?: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   /** 비밀번호 재설정 이메일 발송 */
   resetPasswordForEmail: (email: string) => Promise<{ error?: string }>;
 }
@@ -255,14 +255,14 @@ function AuthProviderInner({
   }, [supabase]);
 
   /** 이메일 회원가입 */
-  const signUpWithEmail = useCallback(async (email: string, password: string, name: string): Promise<{ error?: string; needsConfirmation?: boolean }> => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string, phone?: string): Promise<{ error?: string; needsConfirmation?: boolean }> => {
     const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${origin}/auth/callback`,
-        data: { full_name: name, name },
+        data: { full_name: name, name, ...(phone ? { phone } : {}) },
       },
     });
     if (error) {

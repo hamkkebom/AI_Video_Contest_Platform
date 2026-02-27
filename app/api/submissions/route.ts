@@ -19,6 +19,7 @@ interface CreateSubmissionBody {
   aiTools?: string;
   productionProcess?: string;
   bonusEntries?: BonusEntryBody[];
+  termsAgreed?: boolean;
 }
 
 /** 출품작 생성 API */
@@ -126,6 +127,7 @@ export async function POST(request: Request) {
         tags,
         ai_tools: aiTools || null,
         production_process: productionProcess,
+        terms_agreed: body.termsAgreed ?? false,
       })
       .select('id')
       .single();

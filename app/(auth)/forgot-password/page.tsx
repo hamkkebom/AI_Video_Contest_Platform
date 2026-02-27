@@ -142,12 +142,17 @@ function ForgotPasswordForm() {
                   </Button>
                 </form>
 
-                {/* 로그인으로 돌아가기 */}
-                <div className="text-center">
+                {/* 하단 링크 */}
+                <div className="text-center space-y-2">
                   <Link href="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
                     <ArrowLeft className="h-3 w-3" />
                     로그인으로 돌아가기
                   </Link>
+                  <div>
+                    <Link href="/find-email" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                      이메일이 기억나지 않으시나요?
+                    </Link>
+                  </div>
                 </div>
               </>
             )}

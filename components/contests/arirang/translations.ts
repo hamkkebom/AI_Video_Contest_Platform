@@ -116,6 +116,7 @@ export const translations = {
     dreamAwardRank: { ko: '장려상', en: 'Encouragement Prize' },
     dreamAwardCount: { ko: '30명', en: '30 winners' },
     dreamAwardAmount: { ko: '각 10만 원', en: '₩100,000 each' },
+    prizeDisclaimer: { ko: '※ 심사 결과에 따라 적격자가 없을 경우, 당선작을 선정하지 않을 수 있습니다.', en: '※ If no eligible candidates are found based on the judging results, winning works may not be selected.' },
     benefitsTitle: { ko: '수상자 혜택', en: 'Winner Benefits' },
     benefit1: { ko: '함께봄 전속 프리랜서 계약 가능', en: 'Opportunity for an exclusive freelance contract with Hamkkebom' },
     benefit2: { ko: 'AI 콘텐츠 활용 및 마케팅 관련 창업 네트워크', en: 'Startup network for AI content utilization and marketing' },
