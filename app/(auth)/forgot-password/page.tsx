@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -67,7 +67,7 @@ function ForgotPasswordForm() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <TreePine className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-xl font-bold">꿈플</span>
+              <span className="text-xl font-bold">AI꿈</span>
             </Link>
 
             {isSent ? (

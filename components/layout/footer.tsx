@@ -41,7 +41,7 @@ export function Footer() {
         {/* 하단 저작권 */}
         <div className="mt-12 pt-8 border-t border-background/10">
           <p className="text-xs text-background/40 text-center">
-            &copy; 2026 함께봄. All rights reserved.
+            &copy; 2026 함께봄 주식회사. All rights reserved.
           </p>
         </div>
       </div>

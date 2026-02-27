@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -65,11 +65,11 @@ export default function LoginForm() {
   /* 이메일/비밀번호 로그인 */
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!email.trim() || !password.trim()) return;
     setIsSigningIn(true);
     setErrorMsg('');
     try {
-      const result = await signInWithPassword(email.trim(), password);
+      const result = await signInWithPassword(email.trim(), password.trim());
       if (result.error) {
         setErrorMsg(result.error);
         setIsSigningIn(false);
@@ -108,10 +108,10 @@ export default function LoginForm() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <TreePine className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-xl font-bold">꿈플</span>
+              <span className="text-xl font-bold">AI꿈</span>
             </Link>
             <h1 className="text-2xl font-bold tracking-tight" aria-label="로그인">로그인</h1>
-            <p className="text-sm text-muted-foreground mt-1">꿈플에 로그인하세요</p>
+            <p className="text-sm text-muted-foreground mt-1">AI꿈에 로그인하세요</p>
           </CardHeader>
 
           <CardContent className="pt-4 space-y-4">
@@ -162,7 +162,7 @@ export default function LoginForm() {
               <Button
                 type="submit"
                 className="w-full h-11 text-base cursor-pointer"
-                disabled={isAnyLoading || !email.trim() || !password}
+                disabled={isAnyLoading || !email.trim() || !password.trim()}
               >
                 {isSigningIn ? <Loader2 className="h-5 w-5 animate-spin" /> : '로그인'}
               </Button>

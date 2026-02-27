@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -66,7 +66,7 @@ export default function SignupPage() {
       const normalizedPhone = phone.replace(/[^0-9]/g, '');
       const result = await signUpWithEmail(
         email.trim(),
-        password,
+        password.trim(),
         name.trim(),
         normalizedPhone || undefined,
       );
@@ -115,7 +115,7 @@ export default function SignupPage() {
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <TreePine className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-xl font-bold">꿈플</span>
+                <span className="text-xl font-bold">AI꿈</span>
               </div>
               <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
                 <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -156,10 +156,10 @@ export default function SignupPage() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <TreePine className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-xl font-bold">꿈플</span>
+              <span className="text-xl font-bold">AI꿈</span>
             </Link>
             <h1 className="text-2xl font-bold tracking-tight">회원가입</h1>
-            <p className="text-sm text-muted-foreground mt-1">꿈플에 가입하세요</p>
+            <p className="text-sm text-muted-foreground mt-1">AI꿈에 가입하세요</p>
           </CardHeader>
 
           <CardContent className="pt-4 space-y-4">

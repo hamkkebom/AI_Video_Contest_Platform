@@ -1,4 +1,4 @@
-import {
+﻿import {
   ARTICLE_TYPES,
   FAQ_CATEGORIES,
   JUDGING_TYPES,
@@ -462,10 +462,10 @@ let likesStore: Like[] = Array.from({ length: 360 }, (_, index) => ({
 }));
 
 const articleTitles = [
-  '꿈플 서비스 오픈',
+  'AI꿈 서비스 오픈',
   '2026년 상반기 AI 영상 공모전 일정 안내 및 참가자 모집 공고',
   'AI 영상 제작, 어디까지 왔나?',
-  '제3회 꿈플 우수작품전 개최',
+  '제3회 AI꿈 우수작품전 개최',
   '크리에이터를 위한 AI 영상 제작 무료 교육 프로그램 참가 신청 안내 — 초급부터 고급 과정까지 단계별로 배워보세요',
   '심사 기준 변경 안내',
   '글로벌 AI 영상 트렌드 리포트: Sora, Runway, Kling 등 주요 도구별 비교 분석과 크리에이터가 알아야 할 핵심 인사이트',
@@ -477,7 +477,7 @@ const articleTitles = [
 ];
 
 const articleExcerpts = [
-  '꿈플이 정식 오픈했습니다.',
+  'AI꿈이 정식 오픈했습니다.',
   '올해 상반기에 진행되는 AI 영상 공모전 전체 일정을 확인하고, 관심 있는 공모전에 미리 참가 신청하세요. 총 8개 공모전이 예정되어 있습니다.',
   'AI 기반 영상 제작 기술이 빠르게 발전하고 있습니다. 최신 도구들의 현황과 가능성을 살펴봅니다.',
   '우수작품전이 열립니다.',
@@ -507,7 +507,7 @@ const articlesStore: Article[] = Array.from({ length: 12 }, (_, index) => ({
 
 const FAQ_ITEMS: Array<{ category: FAQ["category"]; topic: FAQ["topic"]; q: string; a: string }> = [
   /* 일반 (general) */
-  { category: "general", topic: "service", q: "꿈플은 어떤 서비스인가요?", a: "꿈플은 AI 영상 공모전 플랫폼으로, 크리에이터와 기업이 함께 성장할 수 있는 공간입니다." },
+  { category: "general", topic: "service", q: "AI꿈은 어떤 서비스인가요?", a: "AI꿈은 AI 영상 공모전 플랫폼으로, 크리에이터와 기업이 함께 성장할 수 있는 공간입니다." },
   { category: "general", topic: "account", q: "회원가입은 어떻게 하나요?", a: "메인 페이지 우측 상단의 '회원가입' 버튼을 통해 개인 또는 기업 계정으로 가입할 수 있습니다." },
   { category: "general", topic: "payment", q: "서비스 이용 요금이 있나요?", a: "기본 서비스는 무료이며, 프리미엄 분석 기능은 유료로 제공됩니다." },
   { category: "general", topic: "technical", q: "지원하는 브라우저는 무엇인가요?", a: "Chrome, Firefox, Safari, Edge 최신 버전을 지원합니다." },

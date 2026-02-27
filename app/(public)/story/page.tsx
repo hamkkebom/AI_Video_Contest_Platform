@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
@@ -99,7 +99,7 @@ function NewsContent() {
               Story
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              꿈플의 새로운 소식을 만나보세요
+              AI꿈의 새로운 소식을 만나보세요
             </p>
           </div>
         </div>

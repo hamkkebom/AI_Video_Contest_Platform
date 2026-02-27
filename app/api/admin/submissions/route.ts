@@ -111,8 +111,8 @@ export async function POST(request: Request) {
       .single();
 
     if (error || !data) {
-      console.error('[POST /api/admin/submissions] INSERT 실패:', error?.message);
-      return NextResponse.json({ error: '출품작 등록에 실패했습니다.' }, { status: 500 });
+      console.error('[POST /api/admin/submissions] INSERT 실패:', error?.message, error?.details, error?.hint);
+      return NextResponse.json({ error: `출품작 등록에 실패했습니다: ${error?.message ?? 'unknown'}` }, { status: 500 });
     }
 
     /* 가산점 인증 저장 */

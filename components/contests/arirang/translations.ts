@@ -1,4 +1,4 @@
-import type { Lang } from './lang-context';
+﻿import type { Lang } from './lang-context';
 
 type Translation = {
   ko: string;
@@ -11,7 +11,7 @@ export function t(dict: Record<string, Translation>, key: string, lang: Lang): s
 
 export const translations = {
   navbar: {
-    brand: { ko: '꿈플', en: '꿈플' },
+    brand: { ko: 'AI꿈', en: 'AI꿈' },
     navAbout: { ko: '공모전 소개', en: 'About' },
     navOverview: { ko: '공모 개요', en: 'Overview' },
     navSchedule: { ko: '일정', en: 'Schedule' },
@@ -253,8 +253,8 @@ export const translations = {
   },
   footer: {
     title: { ko: '꿈꾸는 아리랑', en: 'Dreaming Arirang' },
-    hostedBy: { ko: '주최: 함께봄', en: 'Hosted by: Hamkkebom' },
+    hostedBy: { ko: '주최: 함께봄 주식회사', en: 'Hosted by: Hamkkebom Inc.' },
     contactTitle: { ko: '문의', en: 'Contact' },
-    copyright: { ko: '2026 함께봄. All rights reserved.', en: '2026 Hamkkebom. All rights reserved.' },
+    copyright: { ko: '2026 함께봄 주식회사. All rights reserved.', en: '2026 Hamkkebom Inc. All rights reserved.' },
   },
 } as const;

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -243,7 +243,7 @@ export function Header() {
           <div className="hidden md:flex flex-shrink-0 items-center mr-8">
             <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
-              <span>꿈플</span>
+              <span>AI꿈</span>
             </Link>
           </div>
 
@@ -251,7 +251,7 @@ export function Header() {
           <div className="flex md:hidden flex-shrink-0 items-center">
             <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
-              <span>꿈플</span>
+              <span>AI꿈</span>
             </Link>
           </div>
 

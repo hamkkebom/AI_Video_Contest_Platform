@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -105,7 +105,7 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
         <div className="border-b border-border px-4 py-4">
           <Link href="/" className="mb-3 flex items-center gap-2 text-lg font-bold transition-colors hover:text-foreground">
             <TreePine className="h-5 w-5 text-primary" />
-            <span>꿈플</span>
+            <span>AI꿈</span>
           </Link>
           <Link href="/contests">
             <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
@@ -132,7 +132,7 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
             <div className="border-b border-border px-4 py-4">
               <Link href="/" className="mb-3 flex items-center gap-2 text-lg font-bold transition-colors hover:text-foreground">
                 <TreePine className="h-5 w-5 text-primary" />
-                <span>꿈플</span>
+                <span>AI꿈</span>
               </Link>
               <Link href="/contests">
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
