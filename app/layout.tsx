@@ -13,13 +13,13 @@ import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  title: "AI꿈 — AI로 꿈을 키우는 나무",
-  description: "AI꿈 — AI로 영상과 노래를 시도하며 꿈을 키워가는 나무",
+  title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
+  description: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
   },
   openGraph: {
-    title: "AI꿈 — AI로 꿈을 키우는 나무",
+    title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
     description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
     siteName: "AI꿈",
     type: "website",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "AI꿈 — AI로 꿈을 키우는 나무",
+    title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
     description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
     images: [],
   },
