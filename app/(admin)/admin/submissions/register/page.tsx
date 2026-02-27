@@ -118,6 +118,8 @@ export default function AdminSubmissionRegisterPage() {
   const [uploadStep, setUploadStep] = useState<'preparing' | 'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showValidationPopup, setShowValidationPopup] = useState(false);
 
   /* 선택된 공모전 */
   const selectedContest = useMemo(
@@ -252,23 +254,47 @@ export default function AdminSubmissionRegisterPage() {
     return [...new Set([...chatAi, ...imageAi, ...videoAi])].join(', ');
   }, [chatAi, imageAi, videoAi]);
 
-  const isFormValid =
-    !!contestId
-    && !!selectedUser
-    && !!title.trim()
-    && !!description.trim()
-    && !!videoFile
-    && !!thumbnailFile
-    && !!productionProcess.trim()
-    && agree;
+  /* 필수 필드 유효성 검사 */
+  const validateForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!contestId) errors.contestId = '공모전을 선택해주세요';
+    if (!selectedUser) errors.selectedUser = '회원을 선택해주세요';
+    if (!title.trim()) errors.title = '영상 제목을 입력해주세요';
+    if (!description.trim()) errors.description = '영상 설명을 입력해주세요';
+    if (!videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
+    if (!thumbnailFile) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
+    if (!productionProcess.trim()) errors.productionProcess = '제작과정 설명을 입력해주세요';
+    if (!agree) errors.agree = '유의사항에 동의해주세요';
+    return errors;
+  };
+
+  /* 필드 변경 시 해당 에러 자동 제거 */
+  useEffect(() => {
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (contestId) delete next.contestId;
+      if (selectedUser) delete next.selectedUser;
+      if (title.trim()) delete next.title;
+      if (description.trim()) delete next.description;
+      if (videoFile) delete next.videoFile;
+      if (thumbnailFile) delete next.thumbnailFile;
+      if (productionProcess.trim()) delete next.productionProcess;
+      if (agree) delete next.agree;
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+  }, [contestId, selectedUser, title, description, videoFile, thumbnailFile, productionProcess, agree]);
 
   /* ── 제출 ── */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedUser || !isFormValid || !thumbnailFile || !videoFile) {
-      setErrorMessage('필수 항목을 모두 입력해주세요.');
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setShowValidationPopup(true);
       return;
     }
+    setFieldErrors({});
+    if (!selectedUser || !thumbnailFile || !videoFile) return;
 
     const parsedDate = new Date(submittedAt);
     if (Number.isNaN(parsedDate.getTime())) {
@@ -475,6 +501,7 @@ export default function AdminSubmissionRegisterPage() {
                     <option key={c.id} value={c.id}>{c.title}</option>
                   ))}
                 </select>
+                {fieldErrors.contestId && <p className="text-xs text-red-500 mt-1">{fieldErrors.contestId}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="admin-submission-submitted-at" className="text-sm font-semibold">
@@ -542,6 +569,7 @@ export default function AdminSubmissionRegisterPage() {
               {userResults.length === 0 && userQuery.trim() && !searchingUsers && !selectedUser && (
                 <p className="text-xs text-muted-foreground">검색 결과가 없습니다.</p>
               )}
+              {fieldErrors.selectedUser && !selectedUser && <p className="text-xs text-red-500 mt-1">{fieldErrors.selectedUser}</p>}
             </div>
           </div>
         </Card>
@@ -563,6 +591,7 @@ export default function AdminSubmissionRegisterPage() {
               </Label>
               <Input id="title" type="text" maxLength={100} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="영상 제목을 입력하세요 (최대 100자)" className="bg-background/50 border-border" />
               <p className="text-xs text-muted-foreground text-right">{title.length}/100</p>
+              {fieldErrors.title && <p className="text-xs text-red-500">{fieldErrors.title}</p>}
             </div>
 
             {/* 영상 설명 */}
@@ -572,6 +601,7 @@ export default function AdminSubmissionRegisterPage() {
               </Label>
               <Textarea id="description" maxLength={1000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="영상에 대한 설명을 입력하세요. 제작 의도, 주제 해석 등을 포함해 주세요." className="min-h-32 bg-background/50 border-border" />
               <p className="text-xs text-muted-foreground text-right">{description.length}/1000</p>
+              {fieldErrors.description && <p className="text-xs text-red-500">{fieldErrors.description}</p>}
             </div>
 
             {/* AI 도구 */}
@@ -591,6 +621,7 @@ export default function AdminSubmissionRegisterPage() {
               </Label>
               <Textarea id="productionProcess" maxLength={3000} value={productionProcess} onChange={(e) => setProductionProcess(e.target.value)} placeholder="영상의 기획 → 제작 → 편집 과정을 상세히 설명해 주세요." className="min-h-48 bg-background/50 border-border" />
               <p className="text-xs text-muted-foreground text-right">{productionProcess.length}/3000</p>
+              {fieldErrors.productionProcess && <p className="text-xs text-red-500">{fieldErrors.productionProcess}</p>}
             </div>
           </div>
         </Card>
@@ -640,6 +671,7 @@ export default function AdminSubmissionRegisterPage() {
                   </div>
                 </button>
               )}
+              {fieldErrors.thumbnailFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.thumbnailFile}</p>}
             </div>
 
             {/* 영상 파일 업로드 */}
@@ -677,6 +709,7 @@ export default function AdminSubmissionRegisterPage() {
                   </div>
                 </button>
               )}
+              {fieldErrors.videoFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.videoFile}</p>}
             </div>
           </div>
         </Card>
@@ -762,6 +795,7 @@ export default function AdminSubmissionRegisterPage() {
             유의사항 및 저작권 안내에 동의합니다 <span className="text-red-500">*</span>
           </label>
         </div>
+        {fieldErrors.agree && <p className="text-xs text-red-500 mt-1 ml-8">{fieldErrors.agree}</p>}
 
         {/* 에러 메시지 */}
         {errorMessage && (
@@ -776,11 +810,37 @@ export default function AdminSubmissionRegisterPage() {
           <Button type="button" variant="outline" onClick={() => router.push('/admin/submissions' as Route)} disabled={submitting}>
             취소
           </Button>
-          <Button type="submit" disabled={submitting || !isFormValid} className="min-w-[120px]">
+          <Button type="submit" disabled={submitting} className="min-w-[120px]">
             {submitting ? '등록 중...' : '출품작 등록'}
           </Button>
         </div>
       </form>
+
+      {/* ===== 유효성 검사 실패 안내 팝업 ===== */}
+      <Dialog open={showValidationPopup} onOpenChange={setShowValidationPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
+            </div>
+            <DialogTitle className="text-center">필수 항목을 확인해주세요</DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              다음 항목이 입력되지 않았습니다
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {Object.values(fieldErrors).map((msg) => (
+              <div key={msg} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>{msg}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="w-full cursor-pointer" onClick={() => setShowValidationPopup(false)}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== 업로드 진행 / 성공 / 실패 Dialog ===== */}
       <Dialog

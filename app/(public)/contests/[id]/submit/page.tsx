@@ -103,6 +103,8 @@ export default function ContestSubmitPage() {
   const [openBonuses, setOpenBonuses] = useState<string[]>([]);
   /* 가산점 폼 데이터 (bonusConfigId → 값) */
   const [bonusForms, setBonusForms] = useState<Record<string, BonusFormEntry>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showValidationPopup, setShowValidationPopup] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -239,14 +241,14 @@ export default function ContestSubmitPage() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.agree) return;
-
-    if (!videoFile || !thumbnailFile) {
-      const message = '영상 파일과 썸네일 파일을 모두 선택해 주세요.';
-      setSubmitError(message);
-      alert(message);
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setShowValidationPopup(true);
       return;
     }
+    setFieldErrors({});
+    if (!videoFile || !thumbnailFile) return;
 
     try {
       setSubmitError(null);
@@ -490,15 +492,31 @@ export default function ContestSubmitPage() {
   /* 가산점 존재 여부 */
   const hasBonusConfigs = contest?.bonusConfigs && contest.bonusConfigs.length > 0;
 
-  /* 제출 가능 여부 */
-  const canSubmit =
-    form.title.trim() &&
-    form.description.trim() &&
-    form.productionProcess.trim() &&
-    videoFile &&
-    thumbnailFile &&
-    form.agree &&
-    !isSubmitting;
+  /* 필수 필드 유효성 검사 */
+  const validateForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!form.title.trim()) errors.title = '영상 제목을 입력해주세요';
+    if (!form.description.trim()) errors.description = '영상 설명을 입력해주세요';
+    if (!form.productionProcess.trim()) errors.productionProcess = '제작과정 설명을 입력해주세요';
+    if (!videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
+    if (!thumbnailFile) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
+    if (!form.agree) errors.agree = '유의사항에 동의해주세요';
+    return errors;
+  };
+
+  /* 필드 변경 시 해당 에러 자동 제거 */
+  useEffect(() => {
+    setFieldErrors(prev => {
+      const next = { ...prev };
+      if (form.title.trim()) delete next.title;
+      if (form.description.trim()) delete next.description;
+      if (form.productionProcess.trim()) delete next.productionProcess;
+      if (videoFile) delete next.videoFile;
+      if (thumbnailFile) delete next.thumbnailFile;
+      if (form.agree) delete next.agree;
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+  }, [form.title, form.description, form.productionProcess, videoFile, thumbnailFile, form.agree]);
 
   if (loading) {
     return (
@@ -698,6 +716,7 @@ export default function ContestSubmitPage() {
                     className="bg-background/50 border-border"
                   />
                   <p className="text-xs text-muted-foreground text-right">{form.title.length}/100</p>
+                  {fieldErrors.title && <p className="text-xs text-red-500">{fieldErrors.title}</p>}
                 </div>
                 {/* 영상 설명 */}
                 <div className="space-y-2">
@@ -716,6 +735,7 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground text-right">
                     {form.description.length}/1000
                   </p>
+                  {fieldErrors.description && <p className="text-xs text-red-500">{fieldErrors.description}</p>}
                 </div>
                 {/* 사용한 AI 도구 */}
                 <div className="space-y-4">
@@ -761,6 +781,7 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground text-right">
                     {form.productionProcess.length}/3000
                   </p>
+                  {fieldErrors.productionProcess && <p className="text-xs text-red-500">{fieldErrors.productionProcess}</p>}
                 </div>
               </div>
             </Card>
@@ -826,6 +847,7 @@ export default function ContestSubmitPage() {
                       </div>
                     </button>
                   )}
+                  {fieldErrors.thumbnailFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.thumbnailFile}</p>}
                 </div>
                 {/* 영상 파일 업로드 */}
                 <div className="space-y-2">
@@ -880,6 +902,7 @@ export default function ContestSubmitPage() {
                       </div>
                     </button>
                   )}
+                  {fieldErrors.videoFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.videoFile}</p>}
                 </div>
               </div>
             </Card>
@@ -1106,6 +1129,7 @@ export default function ContestSubmitPage() {
                   에 동의합니다 <span className="text-red-500">*</span>
                 </label>
               </div>
+              {fieldErrors.agree && <p className="text-xs text-red-500 mt-1 ml-8">{fieldErrors.agree}</p>}
               {/* 제출 버튼 */}
               {submitError && (
                 <p className="text-sm text-red-500 mt-4">{submitError}</p>
@@ -1134,7 +1158,7 @@ export default function ContestSubmitPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold cursor-pointer"
-                  disabled={!canSubmit}
+                  disabled={isSubmitting}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isSubmitting ? '업로드 중...' : '제출하기'}
@@ -1144,6 +1168,32 @@ export default function ContestSubmitPage() {
           </form>
         </div>
       </section>
+
+      {/* ===== 유효성 검사 실패 안내 팝업 ===== */}
+      <Dialog open={showValidationPopup} onOpenChange={setShowValidationPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
+            </div>
+            <DialogTitle className="text-center">필수 항목을 확인해주세요</DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              다음 항목이 입력되지 않았습니다
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {Object.values(fieldErrors).map((msg) => (
+              <div key={msg} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>{msg}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="w-full cursor-pointer" onClick={() => setShowValidationPopup(false)}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== 업로드 진행 / 성공 / 실패 통합 Dialog ===== */}
       <Dialog

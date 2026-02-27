@@ -147,6 +147,7 @@ export async function POST(request: Request) {
     });
 
     revalidateTag('submissions');
+    revalidateTag('users');
 
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });
   } catch (error) {
