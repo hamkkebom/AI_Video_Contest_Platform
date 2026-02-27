@@ -151,7 +151,7 @@ export function PrizesSection() {
         </div>
 
         {/* 심사 결과 안내 */}
-        <p className="arirang-animate text-center text-sm mt-4 mb-16" style={{ color: 'rgba(245,240,232,0.5)' }}>
+        <p className="arirang-animate text-lg mt-4 mb-16" style={{ color: 'rgba(245,240,232,0.5)' }}>
           {t(prizesTranslations, 'prizeDisclaimer', lang)}
         </p>
 
