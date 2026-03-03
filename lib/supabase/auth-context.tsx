@@ -246,6 +246,7 @@ function AuthProviderInner({
 
 
   /** 로그아웃 (본인 의지) */
+  /** 로그아웃 (본인 의지) */
   const signOut = useCallback(async () => {
     manualSignOutRef.current = true;
     // 로그아웃 로그: fire-and-forget (signOut 전에 발사해야 인증 토큰 유효)
@@ -254,12 +255,8 @@ function AuthProviderInner({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'logout' }),
     }).catch(() => {});
-    // 클라이언트 상태 먼저 초기화 (UI 즉시 반영)
-    setUser(null);
-    setProfile(null);
-    setSession(null);
-    // 서버사이드 강제 로그아웃 (쿠키 삭제 + Supabase signOut)
-    // 서버에서 직접 쿠키를 삭제하므로 미들웨어 재인증 문제 해결
+    // 서버사이드 강제 로그아웃으로 즉시 리다이렉트
+    // UI 상태를 미리 초기화하지 않음 — 쿠키 삭제 전에 로그인 버튼이 노출되는 문제 방지
     window.location.href = '/api/auth/logout';
   }, []);
 

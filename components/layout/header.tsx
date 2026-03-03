@@ -130,6 +130,13 @@ export function Header() {
     return '/my/submissions';
   })();
 
+  /* 역할별 프로필 편집 경로 */
+  const profileHref = (() => {
+    if (roles.includes('admin')) return '/admin/profile';
+    if (roles.includes('host')) return '/host/profile';
+    return '/my/profile';
+  })();
+
   /* admin용 대시보드 선택지 */
   const adminDashboards = [
     { label: '관리자 대시보드', href: '/admin/dashboard', icon: Shield },
@@ -218,7 +225,7 @@ export function Header() {
         <DropdownMenuSeparator />
         {/* 프로필 편집 */}
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href="/my/profile" className="flex items-center gap-2">
+          <Link href={profileHref as any} className="flex items-center gap-2">
             <UserPen className="h-4 w-4" />
             프로필 편집
           </Link>

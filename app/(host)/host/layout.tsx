@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
-import { BarChart3, FileText, LayoutDashboard, Trophy } from 'lucide-react';
+import { BarChart3, FileText, LayoutDashboard, Trophy, UserCircle } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 import { RoleGuard } from '@/components/auth/role-guard';
 
@@ -12,6 +12,7 @@ const hostDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIco
   { href: '/host/contests', label: '공모전 관리', icon: Trophy },
   { href: '/host/analytics', label: '분석', icon: BarChart3 },
   { href: '/host/reports', label: '리포트', icon: FileText },
+  { href: '/host/profile', label: '프로필', icon: UserCircle },
 ];
 
 interface HostDashboardLayoutProps {

@@ -13,6 +13,7 @@ import {
   Newspaper,
   Settings,
   Trophy,
+  UserCircle,
   Users,
   Video,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ const adminDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIc
   { href: '/admin/agency-requests', label: '대행 의뢰', icon: Briefcase },
   { href: '/admin/analytics', label: '분석', icon: BarChart3 },
   { href: '/admin/settings/pricing', label: '가격 설정', icon: Settings },
+  { href: '/admin/profile', label: '프로필', icon: UserCircle },
 ];
 
 interface AdminLayoutProps {
