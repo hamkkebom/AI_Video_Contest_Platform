@@ -1,27 +1,6 @@
-import { ParticipantAnalyticsContent } from '@/components/dashboard/participant-analytics-content';
-import { getSubmissions, getAuthProfile } from '@/lib/data';
 import { redirect } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
 
-export default async function ParticipantAnalyticsPage() {
-  const profile = await getAuthProfile();
-  if (!profile) redirect('/login?redirect=/my/analytics');
-
-  try {
-    const allSubmissions = await getSubmissions();
-    const userSubmissions = allSubmissions.filter((submission) => submission.userId === profile.id);
-
-    return <ParticipantAnalyticsContent submissions={userSubmissions} />;
-  } catch (error) {
-    console.error('Failed to load analytics:', error);
-
-    return (
-      <Card className="border-destructive/30 bg-destructive/5">
-        <CardContent className="py-10 text-center">
-          <p className="font-medium text-destructive">분석 데이터를 불러오지 못했습니다.</p>
-          <p className="mt-1 text-sm text-muted-foreground">잠시 후 다시 시도해 주세요.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+/** 임시 비활성화 — 내 분석 페이지 (URL 직접 접근 차단) */
+export default function ParticipantAnalyticsPage() {
+  redirect('/my/submissions');
 }
