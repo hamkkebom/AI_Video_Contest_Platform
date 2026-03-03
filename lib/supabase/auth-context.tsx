@@ -392,7 +392,7 @@ function AuthProviderInner({
               // 이미 기록함 — 무시
             }
           }
-        }
+        } else {
           // 세션이 사라짐 — 로그아웃 또는 세션 만료
           if (!manualSignOutRef.current && lastLoggedEventRef.current) {
             // 본인 의지 로그아웃이 아님 → 세션 아웃
