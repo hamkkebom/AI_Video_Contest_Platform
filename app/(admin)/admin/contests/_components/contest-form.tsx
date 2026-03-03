@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
@@ -62,6 +63,7 @@ type ContestMutationPayload = {
   allowedVideoExtensions: string[];
   prizeAmount?: string;
   posterUrl?: string;
+  heroImageUrl?: string;
   promotionVideoUrls?: string[];
   hasLandingPage: boolean;
   resultFormat: string;
@@ -152,7 +154,7 @@ const selectClass = 'flex h-10 w-full rounded-md border border-input bg-backgrou
 const textareaClass = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /** 파일 업로드 헬퍼 — Supabase Storage 직접 업로드 (Vercel 4.5MB 제한 우회) */
-async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | 'detail-image'): Promise<string> {
+async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | 'detail-image' | 'hero-image'): Promise<string> {
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
@@ -164,7 +166,7 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   /* 타입별 검증 */
   const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-  if (type === 'poster' || type === 'detail-image') {
+  if (type === 'poster' || type === 'detail-image' || type === 'hero-image') {
     if (file.size > 10 * 1024 * 1024) throw new Error('이미지 파일은 10MB 이하여야 합니다.');
     if (!imageTypes.includes(file.type)) throw new Error('지원하지 않는 이미지 형식입니다. (JPG, PNG, WebP, GIF)');
   } else if (type === 'promo-video') {
@@ -173,7 +175,7 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   }
 
   /* 버킷 결정 + 파일 경로 생성 */
-  const bucket = type === 'poster' ? 'posters' : 'contest-assets';
+  const bucket = (type === 'poster' || type === 'hero-image') ? 'posters' : 'contest-assets';
   const ext = file.name.split('.').pop() || 'bin';
   const filePath = `${type}/${user.id}/${Date.now()}.${ext}`;
 
@@ -248,6 +250,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Contest['status']>('draft');
   const [posterUrl, setPosterUrl] = useState('');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
   const [promotionVideoUrls, setPromotionVideoUrls] = useState<string[]>([]);
   const [resultFormat, setResultFormat] = useState('website');
 
@@ -262,7 +265,13 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [promoThumbnailUrl, setPromoThumbnailUrl] = useState('');
   const [promoUrlInput, setPromoUrlInput] = useState('');
   const posterFileRef = useRef<HTMLInputElement>(null);
+
   const promoFileRef = useRef<HTMLInputElement>(null);
+  const [heroInputMode, setHeroInputMode] = useState<'url' | 'file'>('url');
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroPreviewUrl, setHeroPreviewUrl] = useState('');
+  const heroFileRef = useRef<HTMLInputElement>(null);
 
   /* 상세 안내 */
   const [detailContent, setDetailContent] = useState('');
@@ -350,6 +359,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setSelectedTags(contest.tags);
         setStatus(contest.status);
         setPosterUrl(contest.posterUrl ?? '');
+        setHeroImageUrl(contest.heroImageUrl ?? '');
         setPromotionVideoUrls(contest.promotionVideoUrls ?? []);
         setResultFormat(contest.resultFormat ?? 'website');
         setHasLandingPage(!!contest.landingPageUrl);
@@ -433,6 +443,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     };
   }, [posterPreviewUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (heroPreviewUrl && heroPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(heroPreviewUrl);
+      }
+    };
+  }, [heroPreviewUrl]);
+
   /* ===== 파생 값 ===== */
   const parsedAwardCounts = useMemo(() => awardTiers.map((t) => {
     const n = parseInt(t.countStr, 10);
@@ -497,6 +515,20 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       setErrorMessage(err instanceof Error ? err.message : '포스터 업로드 실패');
     } finally {
       setPosterUploading(false);
+    }
+  };
+
+  const handleHeroFileSelect = async (file: File) => {
+    setHeroFile(file);
+    setHeroPreviewUrl(URL.createObjectURL(file));
+    setHeroUploading(true);
+    try {
+      const url = await uploadContestAsset(file, 'hero-image');
+      setHeroImageUrl(url);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '히어로 이미지 업로드 실패');
+    } finally {
+      setHeroUploading(false);
     }
   };
 
@@ -629,6 +661,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       maxSubmissionsPerUser: parsedMaxSubmissions,
       allowedVideoExtensions: selectedExtensions,
       posterUrl: posterUrl.trim() || undefined,
+      heroImageUrl: heroImageUrl.trim() || undefined,
       promotionVideoUrls: promotionVideoUrls.length > 0 ? promotionVideoUrls : undefined,
       hasLandingPage,
       resultFormat,
@@ -737,38 +770,27 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     );
   }
 
-  if (saved) {
-    const detailPath = mode === 'edit' && contestId ? (`/admin/contests/${contestId}` as Route) : ('/admin/contests' as Route);
-
-    return (
-      <div className="space-y-6 pb-10">
-        <header className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{mode === 'create' ? '등록이 완료되었습니다' : '수정이 완료되었습니다'}</h1>
-          <p className="text-sm text-muted-foreground">{mode === 'create' ? '공모전이 정상적으로 등록되었습니다.' : '공모전 정보가 정상적으로 수정되었습니다.'}</p>
-        </header>
-
-        <Card className="border-border">
-          <CardContent className="space-y-5 py-10 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xl font-semibold text-foreground">{submittedTitle || title}</p>
-              <p className="text-sm text-muted-foreground">{mode === 'create' ? '공모전이 등록되었습니다.' : '공모전 정보가 수정되었습니다.'}</p>
-            </div>
-            <Button
-              onClick={() => {
-                router.push('/admin/contests');
-                router.refresh();
-              }}
-            >
-              공모전 관리로 이동
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  /* ===== 저장 완료 모달 ===== */
+  const successModal = (
+    <Dialog open={saved} onOpenChange={(open) => { if (!open) router.back(); }}>
+      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+          </div>
+          <DialogTitle className="text-center">{mode === 'create' ? '등록이 완료되었습니다' : '수정이 완료되었습니다'}</DialogTitle>
+          <DialogDescription className="text-center">
+            &quot;{submittedTitle || title}&quot; {mode === 'create' ? '공모전이 정상적으로 등록되었습니다.' : '공모전 정보가 정상적으로 수정되었습니다.'}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button className="w-full cursor-pointer" onClick={() => router.back()}>
+            확인
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   /* ===== 탭 버튼 (URL / 파일 업로드) ===== */
   const renderInputModeTab = (
@@ -811,6 +833,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   /* ===== 메인 폼 ===== */
   return (
     <div className="space-y-6 pb-10">
+      {successModal}
       {/* 헤더 */}
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -939,6 +962,65 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 </div>
               )}
               {fieldErrors.posterUrl && <p className="text-xs text-destructive">{fieldErrors.posterUrl}</p>}
+            </div>
+
+            {/* 히어로 이미지 (선택) — 랜딩페이지 히어로 섹션 배경 이미지 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  히어로 이미지 <span className="text-xs text-muted-foreground ml-1">(선택)</span>
+                </label>
+                {renderInputModeTab(heroInputMode, setHeroInputMode)}
+              </div>
+              <p className="text-xs text-muted-foreground">랜딩페이지 히어로 섹션 배경 이미지입니다. 미등록 시 포스터 이미지가 사용됩니다.</p>
+              {heroInputMode === 'url' ? (
+                <>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/hero-banner.jpg"
+                    value={heroImageUrl}
+                    onChange={(e) => setHeroImageUrl(e.target.value)}
+                  />
+                  {heroImageUrl.trim() && /^https?:\/\/.+/i.test(heroImageUrl.trim()) && (
+                    renderPreviewImage(heroImageUrl.trim(), '히어로 이미지 미리보기', () => setHeroImageUrl(''))
+                  )}
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    ref={heroFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleHeroFileSelect(f);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={heroUploading}
+                    onClick={() => heroFileRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {heroUploading ? '업로드 중...' : heroFile ? heroFile.name : '이미지 선택 (JPG, PNG, WebP, GIF)'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">최대 10MB · JPG, PNG, WebP, GIF · 권장 사이즈: 1920×600 이상</p>
+                  {heroImageUrl && heroInputMode === 'file' && (
+                    <p className="text-xs text-emerald-600">업로드 완료</p>
+                  )}
+                  {heroPreviewUrl && (
+                    renderPreviewImage(heroPreviewUrl, '히어로 이미지 미리보기', () => {
+                      setHeroPreviewUrl('');
+                      setHeroFile(null);
+                      setHeroImageUrl('');
+                    })
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 홍보영상 — 다중 URL 입력 / 파일 업로드 */}

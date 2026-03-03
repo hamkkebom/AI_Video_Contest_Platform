@@ -9,6 +9,7 @@ import { getContestById, getSubmissions, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { SubmissionActions } from '@/components/submissions/submission-actions';
 
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
@@ -149,14 +150,7 @@ export default async function HostContestSubmissionsPage({ params, searchParams 
                                 상세
                               </Button>
                               {(submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
-                                <>
-                                  <Button size="sm" type="button">
-                                    승인
-                                  </Button>
-                                  <Button size="sm" variant="outline" type="button" className="text-destructive">
-                                    거절
-                                  </Button>
-                                </>
+                                <SubmissionActions submissionId={submission.id} submissionTitle={submission.title} />
                               )}
                             </div>
                           </TableCell>
