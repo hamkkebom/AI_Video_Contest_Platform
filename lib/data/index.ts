@@ -94,6 +94,7 @@ function toContest(
     prizeAmount: (row.prize_amount as string) ?? undefined,
     awardTiers,
     posterUrl: (row.poster_url as string) ?? undefined,
+    heroImageUrl: (row.hero_image_url as string) ?? undefined,
     promotionVideoUrls: (row.promotion_video_urls as string[]) ?? undefined,
     hasLandingPage: (row.has_landing_page as boolean) ?? false,
     landingPageUrl: (row.landing_page_url as string) ?? undefined,
@@ -153,6 +154,7 @@ export type ContestMutationInput = {
   allowedVideoExtensions: string[];
   prizeAmount?: string;
   posterUrl?: string;
+  heroImageUrl?: string;
   promotionVideoUrls?: string[];
   hasLandingPage?: boolean;
   bonusMaxScore?: number;
@@ -191,6 +193,7 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
     allowed_video_extensions: input.allowedVideoExtensions,
     prize_amount: input.prizeAmount ?? null,
     poster_url: input.posterUrl ?? null,
+    hero_image_url: input.heroImageUrl ?? null,
     promotion_video_urls: input.promotionVideoUrls ?? [],
     has_landing_page: input.hasLandingPage ?? false,
     bonus_max_score: input.bonusMaxScore ?? null,
@@ -589,7 +592,12 @@ export const getContests = unstable_cache(
     }
 
     const { data: contestRows, error } = await query;
-    if (error || !contestRows || contestRows.length === 0) return [];
+    // 에러 시 throw → unstable_cache가 실패 결과를 캐시하지 않도록 방지
+    if (error) {
+      console.error('[getContests] Supabase 쿼리 실패:', error.message);
+      throw new Error(`getContests failed: ${error.message}`);
+    }
+    if (!contestRows || contestRows.length === 0) return [];
 
     const contestIds = contestRows.map((c) => String(c.id));
     const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
@@ -632,49 +640,37 @@ export async function getContestIdBySlug(slug: string): Promise<string | null> {
 
 /**
  * 관련 공모전 조회 (경량 버전)
- * 동일 지역 우선, 부족하면 다른 지역으로 채움. 최대 limit개.
+ * 최신 공모전 순으로 현재 공모전 제외 후 limit개 반환 — 120초 캐시
  */
-export async function getRelatedContests(excludeId: string, region: string, limit = 6): Promise<Contest[]> {
-  const supabase = await createClient();
+export function getRelatedContests(excludeId: string, limit = 6): Promise<Contest[]> {
+  return unstable_cache(
+    async (): Promise<Contest[]> => {
+      const supabase = createPublicClient();
 
-  // 동일 지역 공모전 먼저 조회
-  const { data: sameRegion } = await supabase
-    .from('contests')
-    .select('*')
-    .neq('id', excludeId)
-    .eq('region', region)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+      const { data } = await supabase
+        .from('contests')
+        .select('*')
+        .neq('id', excludeId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-  const sameRegionRows = sameRegion ?? [];
+      const rows = data ?? [];
+      if (rows.length === 0) return [];
 
-  // 부족하면 다른 지역에서 추가 조회
-  let otherRows: typeof sameRegionRows = [];
-  if (sameRegionRows.length < limit) {
-    const remaining = limit - sameRegionRows.length;
-    const { data: others } = await supabase
-      .from('contests')
-      .select('*')
-      .neq('id', excludeId)
-      .neq('region', region)
-      .order('created_at', { ascending: false })
-      .limit(remaining);
-    otherRows = others ?? [];
-  }
+      const contestIds = rows.map((c) => String(c.id));
+      const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
-  const allRows = [...sameRegionRows, ...otherRows];
-  if (allRows.length === 0) return [];
-
-  const contestIds = allRows.map((c) => String(c.id));
-  const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
-
-  return allRows.map((row) =>
-    toContest(
-      row as Record<string, unknown>,
-      tiersMap.get(String(row.id)) ?? [],
-      bonusMap.get(String(row.id)) ?? [],
-    ),
-  );
+      return rows.map((row) =>
+        toContest(
+          row as Record<string, unknown>,
+          tiersMap.get(String(row.id)) ?? [],
+          bonusMap.get(String(row.id)) ?? [],
+        ),
+      );
+    },
+    [`related-contests-${excludeId}-${limit}`],
+    { tags: ['contests'], revalidate: 120 },
+  )();
 }
 
 /** 출품작 목록 조회 — 30초 캐시, 필터 지원 */
@@ -754,26 +750,34 @@ export async function toggleLike(
   return { liked: !existing, totalLikes: count ?? 0 };
 }
 
-export async function getArticles(): Promise<Article[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('articles')
-    .select('*')
-    .eq('is_published', true)
-    .order('published_at', { ascending: false });
-  if (error || !data) return [];
-  return data.map((row) => toArticle(row as Record<string, unknown>));
-}
+export const getArticles = unstable_cache(
+  async (): Promise<Article[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('is_published', true)
+      .order('published_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => toArticle(row as Record<string, unknown>));
+  },
+  ['articles'],
+  { tags: ['articles'], revalidate: 600 },
+);
 
-export async function getFaqs(): Promise<FAQ[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('faqs')
-    .select('*')
-    .order('updated_at', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => toFaq(row as Record<string, unknown>));
-}
+export const getFaqs = unstable_cache(
+  async (): Promise<FAQ[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('faqs')
+      .select('*')
+      .order('updated_at', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toFaq(row as Record<string, unknown>));
+  },
+  ['faqs'],
+  { tags: ['faqs'], revalidate: 600 },
+);
 
 export async function getInquiries(): Promise<Inquiry[]> {
   const supabase = await createClient();
@@ -832,15 +836,19 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
   }));
 }
 
-export async function getJudges(): Promise<Judge[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('judges')
-    .select('*')
-    .order('invited_at', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => toJudge(row as Record<string, unknown>));
-}
+export const getJudges = unstable_cache(
+  async (): Promise<Judge[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('judges')
+      .select('*')
+      .order('invited_at', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toJudge(row as Record<string, unknown>));
+  },
+  ['judges'],
+  { tags: ['judges'], revalidate: 120 },
+);
 
 export async function getScores(): Promise<Score[]> {
   const supabase = await createClient();
@@ -879,24 +887,32 @@ export async function getScores(): Promise<Score[]> {
   }));
 }
 
-export async function getContestResults(): Promise<ContestResult[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('contest_results')
-    .select('*')
-    .order('rank', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => toContestResult(row as Record<string, unknown>));
-}
+export const getContestResults = unstable_cache(
+  async (): Promise<ContestResult[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('contest_results')
+      .select('*')
+      .order('rank', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toContestResult(row as Record<string, unknown>));
+  },
+  ['contest-results'],
+  { tags: ['results'], revalidate: 300 },
+);
 
-export async function getPricingPlans(): Promise<PricingPlan[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('pricing_plans')
-    .select('*');
-  if (error || !data) return [];
-  return data.map((row) => toPricingPlan(row as Record<string, unknown>));
-}
+export const getPricingPlans = unstable_cache(
+  async (): Promise<PricingPlan[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('pricing_plans')
+      .select('*');
+    if (error || !data) return [];
+    return data.map((row) => toPricingPlan(row as Record<string, unknown>));
+  },
+  ['pricing-plans'],
+  { tags: ['pricing'], revalidate: 3600 },
+);
 
 export async function getActivityLogs(): Promise<ActivityLog[]> {
   const supabase = await createClient();
@@ -931,148 +947,157 @@ export interface GallerySubmission extends Submission {
 }
 
 /**
- * 전체 갤러리: 결과발표된 공모전의 모든 출품작
+ * 전체 갤러리: 검토 승인(approved)된 모든 출품작 — 5분 캐시
  */
-export async function getGallerySubmissions(): Promise<GallerySubmission[]> {
-  const supabase = await createClient();
+export const getGallerySubmissions = unstable_cache(
+  async (): Promise<GallerySubmission[]> => {
+    const supabase = createPublicClient();
 
-  // completed 상태 공모전 조회
-  const { data: completedContests } = await supabase
-    .from('contests')
-    .select('id, title')
-    .eq('status', 'completed');
-  if (!completedContests || completedContests.length === 0) return [];
+    // 승인된 출품작 조회
+    const { data: submissions } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('status', 'approved')
+      .order('submitted_at', { ascending: false });
+    if (!submissions || submissions.length === 0) return [];
 
-  const completedIds = completedContests.map((c) => String(c.id));
-  const contestTitleMap = new Map(completedContests.map((c) => [String(c.id), c.title as string]));
+    // 관련 공모전 제목 조회
+    const contestIds = [...new Set(submissions.map((s) => s.contest_id as string))];
+    const { data: contests } = await supabase
+      .from('contests')
+      .select('id, title')
+      .in('id', contestIds);
+    const contestTitleMap = new Map(
+      (contests ?? []).map((c) => [String(c.id), c.title as string]),
+    );
 
-  // 해당 공모전의 출품작 조회
-  const { data: submissions } = await supabase
-    .from('submissions')
-    .select('*')
-    .in('contest_id', completedIds);
-  if (!submissions || submissions.length === 0) return [];
+    // 크리에이터 정보 조회
+    const userIds = [...new Set(submissions.map((s) => s.user_id as string))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, nickname, name')
+      .in('id', userIds);
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [
+        p.id as string,
+        (p.nickname as string) ?? (p.name as string) ?? '익명',
+      ]),
+    );
 
-  // 크리에이터 정보 조회
-  const userIds = [...new Set(submissions.map((s) => s.user_id as string))];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, nickname, name')
-    .in('id', userIds);
-  const profileMap = new Map(
-    (profiles ?? []).map((p) => [
-      p.id as string,
-      (p.nickname as string) ?? (p.name as string) ?? '익명',
-    ]),
-  );
+    // 수상 결과 조회
+    const { data: results } = await supabase
+      .from('contest_results')
+      .select('submission_id, prize_label, rank')
+      .in('contest_id', contestIds);
+    const resultMap = new Map(
+      (results ?? []).map((r) => [
+        String(r.submission_id),
+        { prizeLabel: r.prize_label as string, rank: r.rank as number },
+      ]),
+    );
 
-  // 수상 결과 조회
-  const { data: results } = await supabase
-    .from('contest_results')
-    .select('submission_id, prize_label, rank')
-    .in('contest_id', completedIds);
-  const resultMap = new Map(
-    (results ?? []).map((r) => [
-      String(r.submission_id),
-      { prizeLabel: r.prize_label as string, rank: r.rank as number },
-    ]),
-  );
-
-  return submissions.map((row) => {
-    const sub = toSubmission(row as Record<string, unknown>);
-    const result = resultMap.get(sub.id);
-    return {
-      ...sub,
-      contestTitle: contestTitleMap.get(sub.contestId) ?? '',
-      creatorName: profileMap.get(sub.userId) ?? '익명',
-      prizeLabel: result?.prizeLabel,
-      rank: result?.rank,
-    };
-  });
-}
-
-/**
- * 수상작 갤러리: 결과발표된 공모전의 수상작만
- */
-export async function getAwardedSubmissions(): Promise<GallerySubmission[]> {
-  const supabase = await createClient();
-
-  // completed 공모전
-  const { data: completedContests } = await supabase
-    .from('contests')
-    .select('id, title')
-    .eq('status', 'completed');
-  if (!completedContests || completedContests.length === 0) return [];
-
-  const completedIds = completedContests.map((c) => String(c.id));
-  const contestTitleMap = new Map(completedContests.map((c) => [String(c.id), c.title as string]));
-
-  // 수상 결과 조회
-  const { data: results } = await supabase
-    .from('contest_results')
-    .select('*')
-    .in('contest_id', completedIds)
-    .order('rank', { ascending: true });
-  if (!results || results.length === 0) return [];
-
-  // 해당 submission 조회
-  const submissionIds = results.map((r) => String(r.submission_id));
-  const { data: submissions } = await supabase
-    .from('submissions')
-    .select('*')
-    .in('id', submissionIds);
-
-  const submissionMap = new Map(
-    (submissions ?? []).map((s) => [String(s.id), s]),
-  );
-
-  // 크리에이터 정보 조회
-  const userIds = [...new Set((submissions ?? []).map((s) => s.user_id as string))];
-  const { data: profiles } = userIds.length > 0
-    ? await supabase.from('profiles').select('id, nickname, name').in('id', userIds)
-    : { data: [] };
-  const profileMap = new Map(
-    (profiles ?? []).map((p) => [
-      p.id as string,
-      (p.nickname as string) ?? (p.name as string) ?? '익명',
-    ]),
-  );
-
-  return results.map((r) => {
-    const submissionRow = submissionMap.get(String(r.submission_id));
-    if (submissionRow) {
-      const sub = toSubmission(submissionRow as Record<string, unknown>);
+    return submissions.map((row) => {
+      const sub = toSubmission(row as Record<string, unknown>);
+      const result = resultMap.get(sub.id);
       return {
         ...sub,
-        contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
+        contestTitle: contestTitleMap.get(sub.contestId) ?? '',
         creatorName: profileMap.get(sub.userId) ?? '익명',
+        prizeLabel: result?.prizeLabel,
+        rank: result?.rank,
+      };
+    });
+  },
+  ['gallery-submissions'],
+  { tags: ['gallery', 'submissions'], revalidate: 300 },
+);
+
+/**
+ * 수상작 갤러리: 결과발표된 공모전의 수상작만 — 5분 캐시
+ */
+export const getAwardedSubmissions = unstable_cache(
+  async (): Promise<GallerySubmission[]> => {
+    const supabase = createPublicClient();
+
+    // completed 공모전
+    const { data: completedContests } = await supabase
+      .from('contests')
+      .select('id, title')
+      .eq('status', 'completed');
+    if (!completedContests || completedContests.length === 0) return [];
+
+    const completedIds = completedContests.map((c) => String(c.id));
+    const contestTitleMap = new Map(completedContests.map((c) => [String(c.id), c.title as string]));
+
+    // 수상 결과 조회
+    const { data: results } = await supabase
+      .from('contest_results')
+      .select('*')
+      .in('contest_id', completedIds)
+      .order('rank', { ascending: true });
+    if (!results || results.length === 0) return [];
+
+    // 해당 submission 조회
+    const submissionIds = results.map((r) => String(r.submission_id));
+    const { data: submissions } = await supabase
+      .from('submissions')
+      .select('*')
+      .in('id', submissionIds);
+
+    const submissionMap = new Map(
+      (submissions ?? []).map((s) => [String(s.id), s]),
+    );
+
+    // 크리에이터 정보 조회
+    const userIds = [...new Set((submissions ?? []).map((s) => s.user_id as string))];
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from('profiles').select('id, nickname, name').in('id', userIds)
+      : { data: [] };
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [
+        p.id as string,
+        (p.nickname as string) ?? (p.name as string) ?? '익명',
+      ]),
+    );
+
+    return results.map((r) => {
+      const submissionRow = submissionMap.get(String(r.submission_id));
+      if (submissionRow) {
+        const sub = toSubmission(submissionRow as Record<string, unknown>);
+        return {
+          ...sub,
+          contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
+          creatorName: profileMap.get(sub.userId) ?? '익명',
+          prizeLabel: r.prize_label as string,
+          rank: r.rank as number,
+        };
+      }
+      // submission이 삭제된 경우 빈 껍데기
+      return {
+        id: String(r.submission_id),
+        contestId: String(r.contest_id),
+        userId: '',
+        title: '수상작',
+        description: '',
+        videoUrl: '',
+        thumbnailUrl: '',
+        status: 'judged' as const,
+        submittedAt: r.awarded_at as string,
+        views: 0,
+        likeCount: 0,
+        videoDuration: 180,
+        avgWatchDuration: 90,
+        tags: [],
+        contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
+        creatorName: '익명',
         prizeLabel: r.prize_label as string,
         rank: r.rank as number,
       };
-    }
-    // submission이 삭제된 경우 빈 껍데기
-    return {
-      id: String(r.submission_id),
-      contestId: String(r.contest_id),
-      userId: '',
-      title: '수상작',
-      description: '',
-      videoUrl: '',
-      thumbnailUrl: '',
-      status: 'judged' as const,
-      submittedAt: r.awarded_at as string,
-      views: 0,
-      likeCount: 0,
-      videoDuration: 180,
-      avgWatchDuration: 90,
-      tags: [],
-      contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
-      creatorName: '익명',
-      prizeLabel: r.prize_label as string,
-      rank: r.rank as number,
-    };
-  });
-}
+    });
+  },
+  ['awarded-submissions'],
+  { tags: ['gallery'], revalidate: 300 },
+);
 
 /** 시청 유지율 승수: 0.5 + retentionRate × 0.5 (범위 0.5 ~ 1.0) */
 function retentionMultiplier(s: { videoDuration: number; avgWatchDuration: number }): number {
@@ -1091,48 +1116,40 @@ export async function getFeaturedSubmissions(limit = 12): Promise<GallerySubmiss
 }
 
 /**
- * 단일 출품작 상세 조회
+ * 단일 출품작 상세 조회 — 5분 캐시
  */
-export async function getSubmissionById(id: string): Promise<GallerySubmission | null> {
-  const supabase = await createClient();
+export function getSubmissionById(id: string): Promise<GallerySubmission | null> {
+  return unstable_cache(
+    async (): Promise<GallerySubmission | null> => {
+      const supabase = createPublicClient();
 
-  const { data: submissionRow } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (!submissionRow) return null;
+      const { data: submissionRow } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!submissionRow) return null;
 
-  const sub = toSubmission(submissionRow as Record<string, unknown>);
+      const sub = toSubmission(submissionRow as Record<string, unknown>);
 
-  // 공모전 제목
-  const { data: contest } = await supabase
-    .from('contests')
-    .select('title')
-    .eq('id', sub.contestId)
-    .maybeSingle();
+      // 병렬 조회: 공모전 제목, 크리에이터, 수상 결과
+      const [contestRes, profileRes, resultRes] = await Promise.all([
+        supabase.from('contests').select('title').eq('id', sub.contestId).maybeSingle(),
+        supabase.from('profiles').select('nickname, name').eq('id', sub.userId).maybeSingle(),
+        supabase.from('contest_results').select('prize_label, rank').eq('submission_id', id).maybeSingle(),
+      ]);
 
-  // 크리에이터 이름
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('nickname, name')
-    .eq('id', sub.userId)
-    .maybeSingle();
-
-  // 수상 결과
-  const { data: result } = await supabase
-    .from('contest_results')
-    .select('prize_label, rank')
-    .eq('submission_id', id)
-    .maybeSingle();
-
-  return {
-    ...sub,
-    contestTitle: (contest?.title as string) ?? '',
-    creatorName: (profile?.nickname as string) ?? (profile?.name as string) ?? '익명',
-    prizeLabel: result ? (result.prize_label as string) : undefined,
-    rank: result ? (result.rank as number) : undefined,
-  };
+      return {
+        ...sub,
+        contestTitle: (contestRes.data?.title as string) ?? '',
+        creatorName: (profileRes.data?.nickname as string) ?? (profileRes.data?.name as string) ?? '익명',
+        prizeLabel: resultRes.data ? (resultRes.data.prize_label as string) : undefined,
+        rank: resultRes.data ? (resultRes.data.rank as number) : undefined,
+      };
+    },
+    [`submission-${id}`],
+    { tags: ['submissions', 'gallery'], revalidate: 300 },
+  )();
 }
 
 /**
@@ -1482,27 +1499,33 @@ export async function deleteContest(id: string): Promise<boolean> {
 // ============================================================
 
 /** 특정 주최자(host)의 공모전만 조회 */
-export async function getContestsByHost(hostUserId: string): Promise<Contest[]> {
-  const supabase = await createClient();
+export function getContestsByHost(hostUserId: string): Promise<Contest[]> {
+  return unstable_cache(
+    async (): Promise<Contest[]> => {
+      const supabase = await createClient();
 
-  const { data: contestRows, error } = await supabase
-    .from('contests')
-    .select('*')
-    .eq('host_user_id', hostUserId)
-    .order('created_at', { ascending: false });
-  if (error || !contestRows) return [];
+      const { data: contestRows, error } = await supabase
+        .from('contests')
+        .select('*')
+        .eq('host_user_id', hostUserId)
+        .order('created_at', { ascending: false });
+      if (error || !contestRows) return [];
 
-  const contestIds = contestRows.map((c) => String(c.id));
-  if (contestIds.length === 0) return [];
-  const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
+      const contestIds = contestRows.map((c) => String(c.id));
+      if (contestIds.length === 0) return [];
+      const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
-  return contestRows.map((row) =>
-    toContest(
-      row as Record<string, unknown>,
-      tiersMap.get(String(row.id)) ?? [],
-      bonusMap.get(String(row.id)) ?? [],
-    ),
-  );
+      return contestRows.map((row) =>
+        toContest(
+          row as Record<string, unknown>,
+          tiersMap.get(String(row.id)) ?? [],
+          bonusMap.get(String(row.id)) ?? [],
+        ),
+      );
+    },
+    ['contests-by-host', hostUserId],
+    { tags: ['contests'], revalidate: 60 },
+  )();
 }
 
 /** 특정 심사위원(judge user)에게 배정된 공모전 ID 목록 조회 */

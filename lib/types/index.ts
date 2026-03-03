@@ -169,6 +169,8 @@ export interface Contest {
   prizeAmount?: string;
   awardTiers: AwardTier[];
   posterUrl?: string;
+  /** 히어로 섹션 배경 이미지 URL (없으면 posterUrl 사용) */
+  heroImageUrl?: string;
   promotionVideoUrls?: string[];
   /** 랜딩페이지 보유 여부 */
   hasLandingPage?: boolean;
