@@ -16,15 +16,15 @@ type ContestDetailPageProps = {
 
 function getStatusMeta(status: string) {
   if (status === 'draft') {
-    return { label: '접수전', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300' };
+    return { label: '접수전', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-700 hover:text-white dark:hover:bg-blue-300 dark:hover:text-blue-900 transition-colors cursor-default' };
   }
   if (status === 'open') {
-    return { label: '접수중', className: 'bg-accent text-accent-foreground' };
+    return { label: '접수중', className: 'bg-accent text-accent-foreground hover:bg-accent-foreground hover:text-accent transition-colors cursor-default' };
   }
   if (status === 'judging') {
-    return { label: '심사중', className: 'bg-primary text-primary-foreground' };
+    return { label: '심사중', className: 'bg-primary text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors cursor-default' };
   }
-  return { label: '결과발표', className: 'bg-muted text-muted-foreground' };
+  return { label: '결과발표', className: 'bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-muted transition-colors cursor-default' };
 }
 
 function getJudgingTypeLabel(type: string) {
@@ -198,7 +198,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       {/* 공모전 핵심 지표 — 제출기간 / 심사기간 / 결과 발표일 / 참가자 */}
       <section className="py-8 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {/* 제출기간 */}
             <Card className="p-5 border border-border">
               <div className="flex items-start justify-between gap-3">
