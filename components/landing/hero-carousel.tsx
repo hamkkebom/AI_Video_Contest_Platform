@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Carousel,
@@ -22,6 +21,8 @@ export type HeroSlide = {
   date: string;
   href: string;
   ctaLabel: string;
+  /** 포스터 이미지 URL (없으면 기본 배경 사용) */
+  imageUrl?: string;
 };
 
 const typeLabels: Record<string, string> = {
@@ -41,7 +42,7 @@ function FallbackHero() {
     <section className="relative w-full py-24 md:py-32 px-4 bg-foreground text-background">
       <div className="container mx-auto max-w-4xl text-center space-y-8">
         <p className="text-sm font-medium tracking-widest uppercase text-background/60">
-          꿈트리
+          AI꿈
         </p>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
           창의적인 AI 영상<br />제작자들의 무대
@@ -55,11 +56,6 @@ function FallbackHero() {
               공모전 둘러보기
             </Button>
           </Link>
-          <Link href="/gallery">
-            <Button size="lg" className="bg-background/20 hover:bg-background/30 text-background border border-background/30 cursor-pointer">
-              수상작 갤러리
-            </Button>
-          </Link>
         </div>
       </div>
     </section>
@@ -71,7 +67,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
 
-  // 오토플레이 플러그인 인스턴스 (ref로 유지하여 reset 호출 가능)
+  /* 오토플레이 플러그인 인스턴스 (ref로 유지하여 reset 호출 가능) */
   const autoplayPlugin = useRef(
     Autoplay({
       delay: 5000,
@@ -97,7 +93,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
     };
   }, [api, onSelect]);
 
-  // 화살표 클릭 핸들러 — 오토플레이 타이머 리셋 포함
+  /* 화살표 클릭 핸들러 — 오토플레이 타이머 리셋 포함 */
   const handlePrev = useCallback(() => {
     api?.scrollPrev();
     autoplayPlugin.current.reset();
@@ -108,7 +104,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
     autoplayPlugin.current.reset();
   }, [api]);
 
-  // 도트 클릭 핸들러 — 오토플레이 타이머 리셋 포함
+  /* 도트 클릭 핸들러 — 오토플레이 타이머 리셋 포함 */
   const handleDotClick = useCallback(
     (index: number) => {
       api?.scrollTo(index);
@@ -133,18 +129,25 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           {slides.map((slide, index) => (
             <CarouselItem key={slide.id} className="pl-0">
               <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden">
-                {/* 히어로 배경 이미지 (Ken Burns 영상 효과) */}
+                {/* 히어로 배경 이미지 — 포스터 URL 우선, 없으면 기본 이미지 */}
                 <div className="absolute inset-0 overflow-hidden">
-                  <Image
-                    src={`/images/hero-${(index % 6) + 1}.jpg`}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                    style={{
-                      animation: `kenburns-${(index % 3) + 1} 20s ease-in-out infinite alternate`,
-                    }}
-                  />
+                  {slide.imageUrl ? (
+                    <img
+                      src={slide.imageUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      style={{
+                        animation: `kenburns-${(index % 3) + 1} 20s ease-in-out infinite alternate`,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full bg-gradient-to-br from-violet-900 via-indigo-800 to-slate-900"
+                      style={{
+                        animation: `kenburns-${(index % 3) + 1} 20s ease-in-out infinite alternate`,
+                      }}
+                    />
+                  )}
                 </div>
                 {/* 다크 오버레이 */}
                 <div className="absolute inset-0 bg-black/40" />

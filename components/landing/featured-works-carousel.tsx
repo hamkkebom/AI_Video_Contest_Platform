@@ -91,12 +91,14 @@ export function FeaturedWorksCarousel({ submissions, showGalleryLink = true }: F
                                     <Link href={`/gallery/${sub.id}` as any}>
                                         <div className="group rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
                                             {/* 썸네일 */}
-                                            <div className="aspect-video overflow-hidden">
-                                                <img
-                                                    src={`/images/contest-${(index % 5) + 1}.jpg`}
-                                                    alt={sub.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
+                                            <div className="aspect-video overflow-hidden bg-muted">
+                                                {sub.thumbnailUrl && (
+                                                    <img
+                                                        src={sub.thumbnailUrl}
+                                                        alt={sub.title}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                )}
                                             </div>
                                             {/* 정보 */}
                                             <div className="p-4 space-y-2">

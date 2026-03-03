@@ -28,6 +28,9 @@ interface MenuItem {
 
 const commonMenuItems: MenuItem[] = [
   { label: '공모전', href: '/contests?status=open' },
+  // { label: '갤러리', href: '/gallery/all' },
+  // { label: '스토리', href: '/story' },
+  // { label: '고객센터', href: '/support/inquiry' },
 ];
 
 /**
@@ -159,7 +162,7 @@ export function Header() {
         pathname.startsWith('/judging') ||
         /^\/contests\/[^/]+\/submit/.test(pathname);
       if (isProtected) {
-        router.replace('/contests/3/landing');
+        router.replace('/');
       }
     } catch {
       /* signOut 실패 시에도 보호 라우트면 홈으로 */
@@ -170,7 +173,7 @@ export function Header() {
         pathname.startsWith('/judging') ||
         /^\/contests\/[^/]+\/submit/.test(pathname);
       if (isProtected) {
-        router.replace('/contests/3/landing');
+        router.replace('/');
       }
     } finally {
       setIsSigningOut(false);
@@ -241,7 +244,7 @@ export function Header() {
         <div className="container mx-auto max-w-6xl flex h-16 items-center px-4">
           {/* 왼쪽 — 로고 (데스크톱) */}
           <div className="hidden md:flex flex-shrink-0 items-center mr-8">
-            <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
               <span>AI꿈</span>
             </Link>
@@ -249,7 +252,7 @@ export function Header() {
 
           {/* 모바일 로고 */}
           <div className="flex md:hidden flex-shrink-0 items-center">
-            <Link href="/contests/3/landing" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-foreground transition-colors">
               <TreePine className="h-5 w-5 text-primary" />
               <span>AI꿈</span>
             </Link>
