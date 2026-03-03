@@ -35,15 +35,16 @@ export function FloatingButtons() {
         <ArrowUp className="h-5 w-5" />
       </button>
 
-      {/* 카카오 문의하기 버튼 */}
+      {/* 문의하기 버튼 */}
       <a
         href="http://pf.kakao.com/_cFfIX/chat"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-12 h-12 rounded-full bg-[#FEE500] text-[#391B1B] shadow-lg hover:shadow-xl hover:brightness-95 hover:scale-105 transition-all duration-300 flex items-center justify-center"
-        aria-label="카카오톡 문의하기"
+        className="flex items-center gap-2 px-5 h-12 rounded-full bg-[#EA580C] text-white shadow-lg hover:shadow-xl hover:bg-[#C2540A] hover:scale-105 transition-all duration-300"
+        aria-label="문의하기"
       >
         <MessageCircle className="h-5 w-5" />
+        <span className="text-sm font-semibold">문의하기</span>
       </a>
     </div>
   );
