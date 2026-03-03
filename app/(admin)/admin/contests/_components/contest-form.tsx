@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
-import { CheckCircle2, ChevronDown, ChevronUp, Plus, Search, Trophy, X, Star, Upload, ImagePlus, Globe } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, FileVideo, Globe, ImagePlus, Loader2, Plus, Search, Star, Trophy, Upload, X } from 'lucide-react';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type ContestFormMode = 'create' | 'edit';
@@ -153,8 +153,12 @@ function numericOnly(value: string): string {
 const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClass = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
-/** 파일 업로드 헬퍼 — Supabase Storage 직접 업로드 (Vercel 4.5MB 제한 우회) */
-async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | 'detail-image' | 'hero-image'): Promise<string> {
+/** 파일 업로드 헬퍼 — XHR 기반 Supabase Storage 직접 업로드 (실시간 진행률 + Vercel 4.5MB 제한 우회) */
+async function uploadContestAsset(
+  file: File,
+  type: 'poster' | 'promo-video' | 'detail-image' | 'hero-image',
+  onProgress?: (percent: number) => void,
+): Promise<string> {
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
@@ -162,6 +166,7 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   if (!user) throw new Error('인증이 필요합니다.');
+  const accessToken = session.access_token;
 
   /* 타입별 검증 */
   const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -179,16 +184,39 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   const ext = file.name.split('.').pop() || 'bin';
   const filePath = `${type}/${user.id}/${Date.now()}.${ext}`;
 
-  /* Supabase Storage에 직접 업로드 */
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, { upsert: true });
+  /* XHR로 Supabase Storage에 직접 업로드 — 실시간 progress 지원 */
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
 
-  if (uploadError) {
-    console.error('에셋 업로드 실패:', uploadError);
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    throw new Error(`업로드 실패 (${file.name}, ${sizeMB}MB): ${uploadError.message}`);
-  }
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl);
+    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.timeout = 10 * 60 * 1000; /* 10분 타임아웃 (500MB 기준) */
+
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable && onProgress) {
+        onProgress(Math.round((ev.loaded / ev.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve();
+      } else {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        let errMsg = '업로드 실패';
+        try { const body = JSON.parse(xhr.responseText); errMsg = body.message || body.error || errMsg; } catch { /* 파싱 실패 무시 */ }
+        reject(new Error(`업로드 실패 (${file.name}, ${sizeMB}MB): ${errMsg}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('네트워크 오류로 업로드에 실패했습니다.'));
+    xhr.ontimeout = () => reject(new Error('업로드 시간이 초과되었습니다 (10분).'));
+    xhr.send(file);
+  });
 
   /* 공개 URL 생성 */
   const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(filePath);
@@ -292,6 +320,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [promoInputMode, setPromoInputMode] = useState<'url' | 'file'>('url');
   const [promoUploading, setPromoUploading] = useState(false);
   const [promoUploadProgress, setPromoUploadProgress] = useState('');
+  const [promoUploadPercent, setPromoUploadPercent] = useState(0);
+  const [promoUploadModalOpen, setPromoUploadModalOpen] = useState(false);
+  const [promoUploadError, setPromoUploadError] = useState<string | null>(null);
+  const [promoUploadCurrentFile, setPromoUploadCurrentFile] = useState('');
+  const [promoUploadFileIndex, setPromoUploadFileIndex] = useState(0);
+  const [promoUploadFileTotal, setPromoUploadFileTotal] = useState(0);
   const [promoThumbnailUrl, setPromoThumbnailUrl] = useState('');
   const [promoUrlInput, setPromoUrlInput] = useState('');
   const posterFileRef = useRef<HTMLInputElement>(null);
@@ -565,8 +599,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const handlePromoFilesSelect = async (files: FileList) => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
+    /* 모달 열기 + 상태 초기화 */
     setPromoUploading(true);
-    setErrorMessage(null);
+    setPromoUploadModalOpen(true);
+    setPromoUploadError(null);
+    setPromoUploadPercent(0);
+    setPromoUploadFileTotal(fileArray.length);
     /* 썸네일 추출은 비동기 — 업로드를 블로킹하지 않음 */
     extractVideoThumbnail(fileArray[fileArray.length - 1])
       .then(thumbnail => setPromoThumbnailUrl(thumbnail))
@@ -574,19 +612,24 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     let successCount = 0;
     for (let i = 0; i < fileArray.length; i++) {
       const sizeMB = (fileArray[i].size / (1024 * 1024)).toFixed(1);
-      setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중... (${fileArray[i].name}, ${sizeMB}MB)`);
+      setPromoUploadFileIndex(i + 1);
+      setPromoUploadCurrentFile(`${fileArray[i].name} (${sizeMB}MB)`);
+      setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중...`);
+      setPromoUploadPercent(0);
       try {
-        const url = await uploadContestAsset(fileArray[i], 'promo-video');
+        const url = await uploadContestAsset(fileArray[i], 'promo-video', (pct) => setPromoUploadPercent(pct));
         setPromotionVideoUrls(prev => [...prev, url]);
         successCount++;
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : `홍보영상 업로드 실패 (${fileArray[i].name})`);
+        const errMsg = err instanceof Error ? err.message : `홍보영상 업로드 실패 (${fileArray[i].name})`;
+        setPromoUploadError(errMsg);
+        break; /* 에러 발생 시 중단 */
       }
     }
-    setPromoUploadProgress(successCount > 0 ? `${successCount}개 업로드 완료` : '');
+    if (!promoUploadError) {
+      setPromoUploadProgress(successCount > 0 ? `${successCount}개 업로드 완료` : '');
+    }
     setPromoUploading(false);
-    /* 3초 후 진행 메시지 초기화 */
-    setTimeout(() => setPromoUploadProgress(''), 3000);
   };
 
   const handleDetailImageUpload = async (files: FileList) => {
@@ -863,6 +906,69 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   return (
     <div className="space-y-6 pb-10">
       {successModal}
+
+      {/* 홍보영상 업로드 진행 모달 */}
+      <Dialog open={promoUploadModalOpen} onOpenChange={(open) => { if (!promoUploading) setPromoUploadModalOpen(open); }}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => { if (promoUploading) e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg">
+              {promoUploadError ? '업로드 실패' : promoUploading ? '홍보영상 업로드 중' : '업로드 완료'}
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm">
+              {promoUploadError
+                ? '파일 업로드 중 오류가 발생했습니다.'
+                : promoUploading
+                  ? '창을 닫지 마세요. 파일 크기에 따라 시간이 걸릴 수 있습니다.'
+                  : `${promoUploadFileTotal}개 파일이 정상적으로 업로드되었습니다.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* 진행 상태 */}
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${ promoUploadError ? 'bg-red-500/10 text-red-500' : promoUploading ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500' }`}>
+                {promoUploadError ? <AlertCircle className="h-5 w-5" />
+                  : promoUploading ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <CheckCircle2 className="h-5 w-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {promoUploading ? `${promoUploadFileIndex} / ${promoUploadFileTotal}` : promoUploadError ? '오류 발생' : '완료'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{promoUploadCurrentFile}</p>
+              </div>
+              {promoUploading && promoUploadPercent > 0 && (
+                <span className="text-sm font-mono font-semibold text-primary tabular-nums">{promoUploadPercent}%</span>
+              )}
+            </div>
+            {/* 프로그레스 바 */}
+            {promoUploading && (
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-300 ease-out"
+                  style={{ width: `${promoUploadPercent}%` }}
+                />
+              </div>
+            )}
+            {/* 에러 메시지 */}
+            {promoUploadError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                  <p className="text-sm text-red-700 dark:text-red-400 break-all">{promoUploadError}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* 버튼: 업로드 중이 아닐 때만 닫기 가능 */}
+          {!promoUploading && (
+            <DialogFooter>
+              <Button className="w-full cursor-pointer" onClick={() => setPromoUploadModalOpen(false)}>
+                확인
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
       {/* 헤더 */}
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -1130,8 +1236,8 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     {promoUploading ? '업로드 중...' : '영상 선택 (MP4, WebM, MOV, AVI · 복수 선택 가능)'}
                   </Button>
                   <p className="text-xs text-muted-foreground">최대 500MB · MP4, WebM, MOV, AVI</p>
-                  {promoUploadProgress && (
-                    <p className="text-xs text-muted-foreground animate-pulse">{promoUploadProgress}</p>
+                  {promoUploadProgress && !promoUploading && (
+                    <p className="text-xs text-emerald-600">{promoUploadProgress}</p>
                   )}
                 </div>
               )}
