@@ -64,11 +64,13 @@ export function SubmissionCarousel({ submissions, creators }: SubmissionCarousel
               >
                 <Card className="border border-border overflow-hidden h-full">
                   <div className="aspect-[4/3] overflow-hidden bg-muted">
-                    <img
-                      src={`/images/contest-${(index % 5) + 1}.jpg`}
-                      alt={submission.title}
-                      className="w-full h-full object-cover"
-                    />
+                    {submission.thumbnailUrl && (
+                      <img
+                        src={submission.thumbnailUrl}
+                        alt={submission.title}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                   <div className="p-4 space-y-3">
                     <div>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { ExternalLink, LogOut, Menu, TreePine, UserCircle } from 'lucide-react';
+import { ExternalLink, LogOut, Menu, TreePine, UserCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -60,10 +60,10 @@ function SidebarFooter({ roleLabel }: { roleLabel: string }) {
   const { user, profile, signOut } = useAuth();
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const email = profile?.email || user?.email || '';
-  const handleSignOut = async () => {
-    await signOut();
-    /* 랜딩페이지로 직접 이동 (홈 경유 없이) */
-    window.location.href = '/contests/3/landing';
+  const handleSignOut = () => {
+    /* 즉시 이동 — RoleGuard 스피너 노출 방지 */
+    window.location.href = '/';
+    signOut();
   };
 
   return (
@@ -77,9 +77,6 @@ function SidebarFooter({ roleLabel }: { roleLabel: string }) {
           <p className="truncate text-sm font-medium leading-tight">{displayName}</p>
           <p className="truncate text-xs text-muted-foreground leading-tight">{email}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {roleLabel}
-        </span>
       </div>
       {/* 로그아웃 */}
       <Button
@@ -107,10 +104,10 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
             <TreePine className="h-5 w-5 text-primary" />
             <span>AI꿈</span>
           </Link>
-          <Link href="/contests">
+          <Link href="/">
             <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" />
-              공모전 보기
+              <Home className="h-3.5 w-3.5" />
+              서비스 홈
             </Button>
           </Link>
         </div>
@@ -134,10 +131,10 @@ export function DashboardSidebar({ items, roleLabel }: DashboardSidebarProps) {
                 <TreePine className="h-5 w-5 text-primary" />
                 <span>AI꿈</span>
               </Link>
-              <Link href="/contests">
+              <Link href="/">
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1.5">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  공모전 보기
+                  <Home className="h-3.5 w-3.5" />
+                  서비스 홈
                 </Button>
               </Link>
             </div>

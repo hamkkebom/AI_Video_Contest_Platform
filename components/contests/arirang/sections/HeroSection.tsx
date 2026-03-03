@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter, useParams } from 'next/navigation';
-
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 import { useCountdown } from '@/hooks/useCountdown';
 import { ChevronDown } from 'lucide-react';
@@ -14,13 +14,8 @@ export function HeroSection() {
   const { lang } = useLang();
   const heroTranslations = translations.hero;
 
-  const router = useRouter();
   const params = useParams();
   const contestId = params.id as string;
-  /** 공모전 상세페이지로 이동 (로그인 체크 없음) */
-  const goToContestDetail = () => {
-    router.push(`/contests/${contestId}`);
-  };
 
   return (
     <section
@@ -124,16 +119,15 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA — Link로 프리페칭 활성화 */}
         <div className="animate-fade-in-up">
-          <button
-            type="button"
-            onClick={goToContestDetail}
-            className="px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300 cursor-pointer"
+          <Link
+            href={`/contests/${contestId}`}
+            className="inline-block px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300"
             style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)', boxShadow: '0 10px 25px rgba(212,168,67,0.25)' }}
           >
             {t(heroTranslations, 'cta', lang)}
-          </button>
+          </Link>
           <p className="mt-4 font-bold text-lg sm:text-xl md:text-2xl" style={{ color: 'rgba(212,168,67,0.8)' }}>
             {t(heroTranslations, 'totalPrize', lang)}
           </p>

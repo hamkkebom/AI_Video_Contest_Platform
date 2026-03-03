@@ -76,7 +76,7 @@ export function ArirangNavbar() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* 로고 */}
           <Link
-            href="/contests"
+            href="/"
             className="font-bold text-lg md:text-xl tracking-tight"
             style={{ color: 'var(--ar-accent)' }}
           >

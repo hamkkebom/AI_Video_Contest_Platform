@@ -1,6 +1,7 @@
 'use client';
 
-import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 import { Send, CheckCircle2, Film, Clock } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
@@ -8,7 +9,6 @@ import { t, translations } from '@/components/contests/arirang/translations';
 
 /** 공모전 접수 안내 섹션 — 클릭 시 공모전 상세페이지로 이동 */
 export function ApplySection() {
-  const router = useRouter();
   const params = useParams();
   const contestId = params.id as string;
   const { lang } = useLang();
@@ -82,11 +82,10 @@ export function ApplySection() {
             </p>
           </div>
 
-          {/* CTA 버튼 — 공모전 상세페이지로 이동 (로그인 체크 없음) */}
-          <button
-            type="button"
-            onClick={() => router.push(`/contests/${contestId}`)}
-            className="w-full py-4 font-bold text-lg rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+          {/* CTA 버튼 — Link로 프리페칭 활성화 */}
+          <Link
+            href={`/contests/${contestId}`}
+            className="w-full py-4 font-bold text-lg rounded-xl transition-colors flex items-center justify-center gap-2"
             style={{
               backgroundColor: 'var(--ar-accent)',
               color: 'var(--ar-primary-dark)',
@@ -96,7 +95,7 @@ export function ApplySection() {
           >
             <Send className="w-5 h-5" />
             {t(applyTranslations, 'cta', lang)}
-          </button>
+          </Link>
 
           <p className="text-center text-xs" style={{ color: 'rgba(245,240,232,0.3)' }}>
             {t(applyTranslations, 'ctaHint', lang)}
