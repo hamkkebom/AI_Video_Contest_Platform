@@ -1,11 +1,14 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { TreePine } from 'lucide-react';
 
 const serviceLinks = [
   { label: '공모전', href: '/contests?status=open' },
-  // { label: '갤러리', href: '/gallery/all' },
-  // { label: '스토리', href: '/story' },
-  // { label: '고객센터', href: '/support/inquiry' },
+  { label: '갤러리', href: '/gallery/all' },
+  { label: '스토리', href: '/story' },
+  { label: '고객센터', href: '/support/inquiry' },
 ];
 
 const legalLinks = [
@@ -14,8 +17,12 @@ const legalLinks = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+  /* 대시보드 경로에서는 사이드바(w-60) 패딩 적용 */
+  const isDashboard = pathname.startsWith('/admin') || pathname.startsWith('/host') || pathname.startsWith('/my');
+
   return (
-    <footer className="bg-foreground text-background">
+    <footer className={`bg-foreground text-background ${isDashboard ? 'md:pl-60' : ''}`}>
       <div className="container mx-auto max-w-6xl px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* 브랜드 */}

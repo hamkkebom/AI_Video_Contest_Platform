@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
-import { CheckCircle2, Plus, Search, Trophy, X, Star, Upload, ImagePlus, Globe } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Plus, Search, Trophy, X, Star, Upload, ImagePlus, Globe } from 'lucide-react';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type ContestFormMode = 'create' | 'edit';
@@ -194,42 +194,71 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
   return publicUrl.publicUrl;
 }
 
-/** 비디오 파일에서 스틸 이미지 추출 */
+/** 비디오 파일에서 스틸 이미지 추출 (5초 타임아웃) */
 function extractVideoThumbnail(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
     const video = document.createElement('video');
-    video.preload = 'metadata';
+    video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
     const objectUrl = URL.createObjectURL(file);
     video.src = objectUrl;
 
-    video.addEventListener('loadeddata', () => {
+    /* 정리 헬퍼 — 이벤트 리스너 제거 + objectUrl 해제 */
+    const cleanup = () => {
+      video.removeEventListener('loadeddata', onLoaded);
+      video.removeEventListener('seeked', onSeeked);
+      video.removeEventListener('error', onError);
+      URL.revokeObjectURL(objectUrl);
+      video.src = '';
+    };
+
+    /* 5초 안에 완료 못하면 reject — 업로드 흐름 block 방지 */
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        reject(new Error('썸네일 추출 타임아웃'));
+      }
+    }, 5000);
+
+    const onLoaded = () => {
       /* 1초 지점으로 이동 (짧은 영상이면 0초) */
       video.currentTime = Math.min(1, video.duration * 0.1);
-    });
+    };
 
-    video.addEventListener('seeked', () => {
+    const onSeeked = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
         const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('Canvas 2D 지원 불가')); return; }
+        if (!ctx) { cleanup(); reject(new Error('Canvas 2D 지원 불가')); return; }
         ctx.drawImage(video, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        URL.revokeObjectURL(objectUrl);
+        cleanup();
         resolve(dataUrl);
       } catch (err) {
-        URL.revokeObjectURL(objectUrl);
+        cleanup();
         reject(err);
       }
-    });
+    };
 
-    video.addEventListener('error', () => {
-      URL.revokeObjectURL(objectUrl);
+    const onError = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      cleanup();
       reject(new Error('비디오 로드 실패'));
-    });
+    };
+
+    video.addEventListener('loadeddata', onLoaded);
+    video.addEventListener('seeked', onSeeked);
+    video.addEventListener('error', onError);
   });
 }
 
@@ -1033,14 +1062,16 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               {promotionVideoUrls.length > 0 && (
                 <div className="space-y-1.5">
                   {promotionVideoUrls.map((url, idx) => (
-                    <div key={url} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm">
+                    <div key={'promo-' + idx} className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm">
                       <span className="shrink-0 font-medium text-foreground">홍보영상 {idx + 1}</span>
                       <span className="truncate flex-1 text-xs text-muted-foreground">{url}</span>
-                      <button
-                        type="button"
-                        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                        onClick={() => setPromotionVideoUrls(prev => prev.filter((_, i) => i !== idx))}
-                      >
+                      <button type="button" disabled={idx === 0} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors" onClick={() => { const next = [...promotionVideoUrls]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; setPromotionVideoUrls(next); }}>
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button type="button" disabled={idx === promotionVideoUrls.length - 1} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors" onClick={() => { const next = [...promotionVideoUrls]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; setPromotionVideoUrls(next); }}>
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <button type="button" className="shrink-0 p-0.5 text-muted-foreground hover:text-destructive transition-colors" onClick={() => setPromotionVideoUrls(prev => prev.filter((_, i) => i !== idx))}>
                         <X className="h-4 w-4" />
                       </button>
                     </div>
