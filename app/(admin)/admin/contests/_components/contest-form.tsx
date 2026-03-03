@@ -170,7 +170,7 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
     if (file.size > 10 * 1024 * 1024) throw new Error('이미지 파일은 10MB 이하여야 합니다.');
     if (!imageTypes.includes(file.type)) throw new Error('지원하지 않는 이미지 형식입니다. (JPG, PNG, WebP, GIF)');
   } else if (type === 'promo-video') {
-    if (file.size > 500 * 1024 * 1024) throw new Error('영상 파일은 500MB 이하여야 합니다.');
+    if (file.size > 500 * 1024 * 1024) throw new Error(`영상 파일은 500MB 이하여야 합니다. (현재 ${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
     if (![...videoTypes, ...imageTypes].includes(file.type)) throw new Error('지원하지 않는 파일 형식입니다.');
   }
 
@@ -186,7 +186,8 @@ async function uploadContestAsset(file: File, type: 'poster' | 'promo-video' | '
 
   if (uploadError) {
     console.error('에셋 업로드 실패:', uploadError);
-    throw new Error('파일 업로드에 실패했습니다.');
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    throw new Error(`업로드 실패 (${file.name}, ${sizeMB}MB): ${uploadError.message}`);
   }
 
   /* 공개 URL 생성 */
@@ -565,16 +566,15 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
     setPromoUploading(true);
-    /* 마지막 파일에서 썸네일 추출 (미리보기용) */
-    try {
-      const thumbnail = await extractVideoThumbnail(fileArray[fileArray.length - 1]);
-      setPromoThumbnailUrl(thumbnail);
-    } catch {
-      /* 스틸 추출 실패해도 업로드는 계속 진행 */
-    }
+    setErrorMessage(null);
+    /* 썸네일 추출은 비동기 — 업로드를 블로킹하지 않음 */
+    extractVideoThumbnail(fileArray[fileArray.length - 1])
+      .then(thumbnail => setPromoThumbnailUrl(thumbnail))
+      .catch(() => { /* 스틸 추출 실패해도 업로드에 영향 없음 */ });
     let successCount = 0;
     for (let i = 0; i < fileArray.length; i++) {
-      setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중...`);
+      const sizeMB = (fileArray[i].size / (1024 * 1024)).toFixed(1);
+      setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중... (${fileArray[i].name}, ${sizeMB}MB)`);
       try {
         const url = await uploadContestAsset(fileArray[i], 'promo-video');
         setPromotionVideoUrls(prev => [...prev, url]);
