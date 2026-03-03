@@ -150,7 +150,7 @@ function AuthProviderInner({
   // 본인 의지 로그아웃 플래그
   const manualSignOutRef = useRef(false);
 
-  /** profiles 테이블에서 사용자 프로필 조회 */
+  /** profiles 테이블에서 사용자 프로필 조회 (없으면 자동 생성) */
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -162,7 +162,50 @@ function AuthProviderInner({
       console.error('프로필 조회 실패:', error.message);
       return null;
     }
-    return data as Profile;
+
+    // 프로필이 존재하면 그대로 반환
+    if (data) return data as Profile;
+
+    // 프로필이 없으면 자동 생성 (트리거 실패 시 백업)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return null;
+
+      const meta = authUser.user_metadata ?? {};
+      const newProfile = {
+        id: userId,
+        email: authUser.email ?? 'unknown@unknown.com',
+        name: meta.full_name ?? meta.name ?? authUser.email?.split('@')[0] ?? '사용자',
+        avatar_url: meta.avatar_url ?? meta.picture ?? null,
+        phone: meta.phone ?? null,
+      };
+
+      const { data: created, error: insertError } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select('*')
+        .single();
+
+      if (insertError) {
+        // 동시 생성 (race condition) — 다시 조회 시도
+        if (insertError.code === '23505') {
+          const { data: retryData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+          return retryData as Profile | null;
+        }
+        console.error('프로필 자동 생성 실패:', insertError.message);
+        return null;
+      }
+
+      console.log('프로필 자동 생성 완료:', userId);
+      return created as Profile;
+    } catch (e) {
+      console.error('프로필 자동 생성 중 예외:', e);
+      return null;
+    }
   }, [supabase]);
 
   /** 프로필 갱신 */
@@ -210,33 +253,15 @@ function AuthProviderInner({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'logout' }),
-    }).catch(() => {
-      // 로그 기록 실패는 무시
-    });
-    // 클라이언트 상태 먼저 초기화 (UI 즉시 반영 — 서버 응답 hang 방지)
+    }).catch(() => {});
+    // 클라이언트 상태 먼저 초기화 (UI 즉시 반영)
     setUser(null);
     setProfile(null);
     setSession(null);
-    // 서버 사이드 로그아웃은 best-effort (3초 타임아웃)
-    try {
-      await Promise.race([
-        supabase.auth.signOut(),
-        new Promise(resolve => setTimeout(resolve, 3000)),
-      ]);
-    } catch {
-      // Supabase signOut 실패해도 이미 클라이언트 상태는 초기화됨
-    }
-    // signOut() hang 시 쿠키가 안 지워져서 새로고침 시 재로그인되는 문제 방지
-    // → Supabase auth 쿠키(sb-*) 수동 삭제
-    if (typeof document !== 'undefined') {
-      document.cookie.split(';').forEach(cookie => {
-        const name = cookie.split('=')[0].trim();
-        if (name.startsWith('sb-')) {
-          document.cookie = `${name}=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-        }
-      });
-    }
-  }, [supabase]);
+    // 서버사이드 강제 로그아웃 (쿠키 삭제 + Supabase signOut)
+    // 서버에서 직접 쿠키를 삭제하므로 미들웨어 재인증 문제 해결
+    window.location.href = '/api/auth/logout';
+  }, []);
 
   /** 이메일/비밀번호 로그인 */
   const signInWithPassword = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
@@ -304,11 +329,23 @@ function AuthProviderInner({
           // lastLoggedEventRef는 생성자에서 이미 설정됨
         } else {
           // 서버 상태 없음 — 클라이언트에서 초기화 (기존 동작)
-          setUser(currentSession?.user ?? null);
-          if (currentSession?.user) {
-            const p = await fetchProfile(currentSession.user.id);
+          const currentUser = currentSession?.user ?? null;
+
+          // 이메일 가입 유저가 이메일 인증을 완료하지 않은 경우 세션 파기
+          if (currentUser && !currentUser.email_confirmed_at && currentUser.app_metadata?.provider === 'email') {
+            console.warn('이메일 미인증 유저 — 세션 파기');
+            await supabase.auth.signOut();
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            return;
+          }
+
+          setUser(currentUser);
+          if (currentUser) {
+            const p = await fetchProfile(currentUser.id);
             setProfile(p);
-            lastLoggedEventRef.current = currentSession.user.id;
+            lastLoggedEventRef.current = currentUser.id;
           }
         }
       } catch (error) {
@@ -323,26 +360,39 @@ function AuthProviderInner({
     /* 인증 상태 변화 구독 */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        const newUser = newSession?.user ?? null;
 
-        if (newSession?.user) {
-          const p = await fetchProfile(newSession.user.id);
+        // 이메일 가입 유저가 이메일 인증을 완료하지 않은 경우 세션 파기
+        if (newUser && !newUser.email_confirmed_at && newUser.app_metadata?.provider === 'email') {
+          console.warn('이메일 미인증 유저 감지 — 세션 파기');
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        setSession(newSession);
+        setUser(newUser);
+
+        if (newUser) {
+          const p = await fetchProfile(newUser.id);
           setProfile(p);
 
           // 실제 로그인 시에만 로그 기록 (세션 복원 시 중복 방지)
           if (event === 'SIGNED_IN') {
-            const eventKey = `${newSession.user.id}_${event}`;
-            if (lastLoggedEventRef.current !== newSession.user.id) {
-              lastLoggedEventRef.current = newSession.user.id;
+            const eventKey = `${newUser.id}_${event}`;
+            if (lastLoggedEventRef.current !== newUser.id) {
+              lastLoggedEventRef.current = newUser.id;
               sendLog('login', {
-                provider: newSession.user.app_metadata?.provider ?? 'email',
+                provider: newUser.app_metadata?.provider ?? 'email',
               });
             } else if (lastLoggedEventRef.current === eventKey) {
               // 이미 기록함 — 무시
             }
           }
-        } else {
+        }
           // 세션이 사라짐 — 로그아웃 또는 세션 만료
           if (!manualSignOutRef.current && lastLoggedEventRef.current) {
             // 본인 의지 로그아웃이 아님 → 세션 아웃

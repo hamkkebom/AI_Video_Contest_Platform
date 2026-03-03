@@ -1,23 +1,42 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState, type FormEvent } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
 import { TreePine, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
- * 회원가입 페이지 — Google OAuth + 이메일/비밀번호 공존
- * Google 간편가입을 상단에 배치, 이메일 폼은 하단
- * 이름, 전화번호, 이메일, 비밀번호, 비밀번호 확인 입력
+ * 회원가입 페이지 — Suspense boundary로 useSearchParams() 감싸기
  */
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+/**
+ * 회원가입 폼 클라이언트 컴포넌트
+ * Google OAuth + 이메일/비밀번호 공존
+ * Google 간편가입을 상단에 배치, 이메일 폼은 하단
+ * 이름, 전화번호, 이메일, 비밀번호, 비밀번호 확인 입력
+ * useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링
+ */
+function SignupForm() {
   const { signInWithGoogle, signUpWithEmail } = useAuth();
   const router = useRouter();
+
+  /* URL에서 redirect 파라미터 읽기 (가입 후 돌아갈 경로) */
+  const searchParams = useSearchParams();
+  const redirectToParam = searchParams.get('redirectTo') || searchParams.get('redirect');
+  const redirectTo = redirectToParam?.startsWith('/') ? redirectToParam : '/';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -81,8 +100,8 @@ export default function SignupPage() {
         setIsSubmitting(false);
         return;
       }
-      /* 자동 로그인 성공 → 홈으로 이동 */
-      router.replace('/');
+      /* 자동 로그인 성공 → 원래 페이지로 이동 */
+      router.replace(redirectTo as Route);
     } catch {
       setErrorMsg('회원가입 중 오류가 발생했습니다.');
       setIsSubmitting(false);
@@ -93,7 +112,7 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setIsGoogleSubmitting(true);
     try {
-      await signInWithGoogle('/');
+      await signInWithGoogle(redirectTo);
     } catch {
       setIsGoogleSubmitting(false);
     }
@@ -303,7 +322,7 @@ export default function SignupPage() {
             {/* 로그인 링크 */}
             <div className="text-center text-sm">
               <span className="text-muted-foreground">이미 계정이 있으신가요? </span>
-              <Link href="/login" className="text-primary hover:text-primary/80 font-semibold">
+              <Link href={redirectTo !== '/' ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : '/login'} className="text-primary hover:text-primary/80 font-semibold">
                 로그인
               </Link>
             </div>

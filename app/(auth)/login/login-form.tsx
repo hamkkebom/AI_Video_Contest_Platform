@@ -202,7 +202,7 @@ export default function LoginForm() {
             <div className="text-center text-sm space-y-2">
               <div>
                 <span className="text-muted-foreground">계정이 없으신가요? </span>
-                <Link href="/signup" className="text-primary hover:text-primary/80 font-semibold">
+                <Link href={redirectTo !== '/' ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup'} className="text-primary hover:text-primary/80 font-semibold">
                   회원가입
                 </Link>
               </div>

@@ -119,7 +119,7 @@ export function SessionTimeoutGuard({ children }: { children: React.ReactNode })
         if (prev <= 1) {
           clearInterval(interval);
           setShowModal(false);
-          router.push('/contests/3/landing');
+          router.push('/');
           return 0;
         }
         return prev - 1;
