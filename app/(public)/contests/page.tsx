@@ -255,7 +255,32 @@ export default async function ContestsPage({
                   return (
                     <div key={contest.id} className="group bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-0.5">
                       <div className="flex flex-col md:flex-row">
-                        {/* 왼쪽: 콘텐츠 */}
+                        {/* 왼쪽: 포스터 이미지 */}
+                        <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
+                          <div className="relative h-60 md:h-full min-h-[240px]">
+                            <img
+                              src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                              alt={contest.title}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            {/* 상태 뱃지: open이지만 시작 전이면 접수전(초록) */}
+                            <div className="absolute top-4 left-4">
+                              {(contest.status === 'draft' || isBeforeStart) && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
+                              )}
+                              {contest.status === 'open' && !isBeforeStart && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">접수중</span>
+                              )}
+                              {contest.status === 'judging' && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">심사중</span>
+                              )}
+                              {(contest.status === 'completed' || contest.status === 'closed') && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">종료</span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                        {/* 오른쪽: 콘텐츠 */}
                         <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
                           <div className="space-y-3">
                             {/* 제목 */}
@@ -276,7 +301,7 @@ export default async function ContestsPage({
                               {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                             </p>
 
-                            {/* 카운트다운 + 총상금 (같은 라인: 카운트다운 왼쪽, 총상금 오른쪽) */}
+                            {/* 카운트다운 + 총상금 */}
                             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
                               <div>
                                 {displayStatus === 'open' && (
@@ -303,13 +328,11 @@ export default async function ContestsPage({
                             </div>
                           </div>
 
-                          {/* 하단: 버튼 (나란히 배치) */}
+                          {/* 하단: 버튼 */}
                           <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-neutral-700 flex justify-center gap-2 sm:gap-3">
-                            {/* 접수중(실제 접수 가능)일 때만 제출 버튼 표시 */}
                             {displayStatus === 'open' && (
                               <AuthSubmitButton contestId={contest.id} variant="sm" />
                             )}
-                            {/* 상세보기 버튼 */}
                             <Link href={`/contests/${contest.id}` as any} className="group/btn2">
                               <span className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                 <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
@@ -318,31 +341,6 @@ export default async function ContestsPage({
                             </Link>
                           </div>
                         </div>
-                        {/* 오른쪽: 포스터 이미지 */}
-                        <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
-                          <div className="relative h-60 md:h-full min-h-[240px]">
-                            <img
-                              src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
-                              alt={contest.title}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                            {/* 상태 뱃지: open이지만 시작 전이면 접수전(초록) */}
-                            <div className="absolute top-4 right-4">
-                              {(contest.status === 'draft' || isBeforeStart) && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
-                              )}
-                              {contest.status === 'open' && !isBeforeStart && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">접수중</span>
-                              )}
-                              {contest.status === 'judging' && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">심사중</span>
-                              )}
-                              {(contest.status === 'completed' || contest.status === 'closed') && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">종료</span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
                       </div>
                     </div>
                   );

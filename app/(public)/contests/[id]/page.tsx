@@ -147,7 +147,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   // 2단계: 주최자 + 관련 공모전 병렬 조회 (필요한 데이터만)
   const [hostUser, relatedContests] = await Promise.all([
     getUserById(contest.hostUserId),
-    getRelatedContests(contest.id, contest.region ?? '', 6),
+    getRelatedContests(contest.id, 6),
   ]);
   const isAdminHost = hostUser?.roles?.includes('admin');
   // 총 상금 계산 (contest.prizeAmount 우선, 없으면 awardTiers에서 합산)

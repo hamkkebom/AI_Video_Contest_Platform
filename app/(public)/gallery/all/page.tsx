@@ -134,12 +134,14 @@ export default async function GalleryAllPage({
               <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
                 <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
                   {/* 썸네일 */}
-                  <div className="aspect-video overflow-hidden relative">
-                    <img
-                      src={`/images/contest-${(index % 5) + 1}.jpg`}
-                      alt={submission.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                  <div className="aspect-video overflow-hidden relative bg-muted">
+                    {submission.thumbnailUrl && (
+                      <img
+                        src={submission.thumbnailUrl}
+                        alt={submission.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    )}
                   </div>
 
                   {/* 콘텐츠 */}

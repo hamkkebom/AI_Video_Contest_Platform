@@ -302,7 +302,7 @@ function SearchContent() {
                               <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
                                 <img
-                                  src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                                  src={contest.posterUrl || ''}
                                   alt={contest.title}
                                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
@@ -381,7 +381,7 @@ function SearchContent() {
                               <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
                                 <div className="aspect-video overflow-hidden">
                                   <img
-                                    src={submission.thumbnailUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                                    src={submission.thumbnailUrl || ''}
                                     alt={submission.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   />
@@ -439,7 +439,7 @@ function SearchContent() {
                               <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80 h-full flex flex-col">
                                 <div className="aspect-[16/9] relative overflow-hidden">
                                   <img
-                                    src={article.thumbnailUrl || `/images/hero-${(index % 6) + 1}.jpg`}
+                                    src={article.thumbnailUrl || ''}
                                     alt={article.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   />

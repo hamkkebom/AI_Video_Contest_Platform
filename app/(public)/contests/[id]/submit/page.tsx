@@ -108,10 +108,11 @@ export default function ContestSubmitPage() {
 
   useEffect(() => {
     const load = async () => {
-      /* 공모전 정보 조회 */
-      const res = await fetch('/api/contests'); const contests: Contest[] = await res.json();
-      const found = contests.find((c) => c.id === contestId);
-      setContest(found ?? null);
+      /* 공모전 단건 조회 */
+      const res = await fetch(`/api/contests/${contestId}`);
+      if (!res.ok) { setContest(null); setLoading(false); return; }
+      const found: Contest = await res.json();
+      setContest(found);
       setLoading(false);
 
       /* 기존 출품 수 확인 — AuthContext 세션 사용 (Supabase auth 호출 없음) */
@@ -1204,7 +1205,7 @@ export default function ContestSubmitPage() {
             setSubmitError(null);
             setUploadProgress(0);
             setErrorType(null);
-            if (submitted) router.push(`/contests/${contestId}`);
+            if (submitted) router.back();
           }
         }}
       >
@@ -1235,7 +1236,7 @@ export default function ContestSubmitPage() {
                 ))}
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>완료</Button>
+                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.back()}>완료</Button>
                 <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
               </DialogFooter>
             </>
