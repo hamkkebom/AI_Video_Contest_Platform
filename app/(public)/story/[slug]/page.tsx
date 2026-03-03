@@ -139,11 +139,13 @@ return (
                     <div className="border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:border-primary hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-background">
                       {/* Thumbnail */}
                       <div className="relative h-40 overflow-hidden bg-muted/30">
-                        <img
-                          src={relatedArticle.thumbnailUrl || `/images/hero-${(index % 6) + 1}.jpg`}
-                          alt={relatedArticle.title}
-                          className="w-full h-full object-cover"
-                        />
+                        {relatedArticle.thumbnailUrl && (
+                          <img
+                            src={relatedArticle.thumbnailUrl}
+                            alt={relatedArticle.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                         <div className={`absolute top-3 right-3 px-2.5 py-1 rounded text-xs font-semibold ${getTypeColor(relatedArticle.type)}`}>
                           {getTypeLabel(relatedArticle.type)}
                         </div>
