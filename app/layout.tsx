@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: [],
   },
   verification: {
-    google: "MmZsrGVkf7dm_tQpqGUq77hOgYrmVrvH9BUomSafY3M",
+    google: "UHtj0SGkSHBwH2OJr5foPs3Y3diFWF2i9qyEIC9xOkc",
   },
 };
 

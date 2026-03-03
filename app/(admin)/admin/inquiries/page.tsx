@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { CircleCheckBig, Clock3, MessageSquareMore, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

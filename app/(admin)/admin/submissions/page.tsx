@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +11,7 @@ import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { SubmissionActions } from '@/components/submissions/submission-actions';
 
 type AdminSubmissionsPageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -157,14 +160,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                                 상세
                               </Button>
                               {(submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
-                                <>
-                                  <Button size="sm" type="button">
-                                    승인
-                                  </Button>
-                                  <Button size="sm" variant="outline" type="button" className="text-destructive">
-                                    거절
-                                  </Button>
-                                </>
+                                <SubmissionActions submissionId={submission.id} submissionTitle={submission.title} />
                               )}
                             </div>
                           </TableCell>
