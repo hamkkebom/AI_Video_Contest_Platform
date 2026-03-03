@@ -1,0 +1,655 @@
+-- ============================================================
+-- 꿈플 AI 영상 공모전 플랫폼 — 통합 스키마 마이그레이션
+-- 신 프로덕션 Supabase 프로젝트용 (전체 001~021 통합)
+-- 생성일: 2026-03-03
+-- ============================================================
+
+-- 0) 확장 모듈
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================
+-- 1) profiles — auth.users 확장 (Supabase Auth 연동)
+-- ============================================================
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  seq_id SERIAL UNIQUE,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  nickname TEXT,
+  roles TEXT[] DEFAULT '{participant}' NOT NULL,
+  region TEXT,
+  preferred_ai_tools TEXT[],
+  plan_id TEXT DEFAULT 'plan-free',
+  avatar_url TEXT,
+  status TEXT DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'pending', 'suspended')),
+  phone TEXT,
+  introduction TEXT,
+  social_links JSONB DEFAULT '{}'::jsonb,
+  preferred_chat_ai TEXT[] DEFAULT '{}',
+  preferred_image_ai TEXT[] DEFAULT '{}',
+  preferred_video_ai TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+COMMENT ON TABLE profiles IS '사용자 프로필 (auth.users 확장)';
+
+-- 신규 가입 시 profiles 자동 생성 트리거
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, name, avatar_url)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================================
+-- 2) companies — 기업 (사업자 단위)
+-- ============================================================
+CREATE TABLE companies (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  business_number TEXT UNIQUE NOT NULL,
+  representative_name TEXT NOT NULL,
+  address TEXT,
+  phone TEXT,
+  logo_url TEXT,
+  website TEXT,
+  description TEXT,
+  business_license_image_url TEXT,
+  status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 3) company_members — 기업-사용자 매핑
+-- ============================================================
+CREATE TABLE company_members (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'staff' NOT NULL CHECK (role IN ('owner', 'manager', 'staff')),
+  company_email TEXT,
+  joined_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(company_id, user_id)
+);
+
+-- ============================================================
+-- 4) contests — 공모전
+-- ============================================================
+CREATE TABLE contests (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  host_company_id INT REFERENCES companies(id),
+  host_user_id UUID REFERENCES profiles(id),
+  description TEXT NOT NULL DEFAULT '',
+  region TEXT,
+  tags TEXT[] DEFAULT '{}',
+  status TEXT DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'open', 'closed', 'judging', 'completed')),
+  submission_start_at TIMESTAMPTZ NOT NULL,
+  submission_end_at TIMESTAMPTZ NOT NULL,
+  judging_start_at TIMESTAMPTZ,
+  judging_end_at TIMESTAMPTZ,
+  result_announced_at TIMESTAMPTZ,
+  judging_type TEXT DEFAULT 'internal' NOT NULL CHECK (judging_type IN ('internal', 'external', 'both')),
+  review_policy TEXT DEFAULT 'manual' NOT NULL CHECK (review_policy IN ('manual', 'auto_then_manual')),
+  max_submissions_per_user INT DEFAULT 3 NOT NULL,
+  allowed_video_extensions TEXT[] DEFAULT '{mp4}',
+  prize_amount TEXT,
+  poster_url TEXT,
+  promotion_video_url TEXT,
+  promotion_video_urls TEXT[] DEFAULT '{}',
+  has_landing_page BOOLEAN DEFAULT FALSE,
+  landing_page_url TEXT,
+  bonus_max_score INT,
+  bonus_percentage INT,
+  judge_weight_percent INT,
+  online_vote_weight_percent INT,
+  online_vote_type TEXT DEFAULT 'likes',
+  vote_likes_percent INT,
+  vote_views_percent INT,
+  judging_criteria JSONB DEFAULT '[]'::jsonb,
+  detail_content TEXT,
+  detail_image_urls TEXT[] DEFAULT '{}',
+  result_format TEXT DEFAULT 'website',
+  guidelines TEXT,
+  notes TEXT,
+  hero_image_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_contests_status ON contests(status);
+CREATE INDEX idx_contests_slug ON contests(slug);
+
+-- ============================================================
+-- 5) contest_award_tiers — 공모전 수상 티어
+-- ============================================================
+CREATE TABLE contest_award_tiers (
+  id SERIAL PRIMARY KEY,
+  contest_id INT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  count INT NOT NULL DEFAULT 1,
+  prize_amount TEXT,
+  sort_order INT DEFAULT 0
+);
+
+CREATE INDEX idx_award_tiers_contest ON contest_award_tiers(contest_id);
+
+-- ============================================================
+-- 6) contest_bonus_configs — 공모전 가산점 항목
+-- ============================================================
+CREATE TABLE contest_bonus_configs (
+  id SERIAL PRIMARY KEY,
+  contest_id INT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  description TEXT,
+  score INT DEFAULT 1 NOT NULL,
+  requires_url BOOLEAN DEFAULT FALSE,
+  requires_image BOOLEAN DEFAULT FALSE,
+  sort_order INT DEFAULT 0
+);
+
+CREATE INDEX idx_bonus_configs_contest ON contest_bonus_configs(contest_id);
+
+-- ============================================================
+-- 7) submissions — 출품작
+-- ============================================================
+CREATE TABLE submissions (
+  id SERIAL PRIMARY KEY,
+  contest_id INT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  video_url TEXT,
+  cloudflare_stream_uid TEXT,
+  thumbnail_url TEXT,
+  status TEXT DEFAULT 'pending_review' NOT NULL CHECK (status IN ('pending_review', 'approved', 'rejected', 'auto_rejected', 'judging', 'judged')),
+  submitted_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  views INT DEFAULT 0,
+  like_count INT DEFAULT 0,
+  video_duration INT DEFAULT 0,
+  avg_watch_duration INT DEFAULT 0,
+  tags TEXT[] DEFAULT '{}',
+  auto_rejected_reason TEXT,
+  ai_tools TEXT,
+  production_process TEXT,
+  terms_agreed BOOLEAN DEFAULT false NOT NULL,
+  registered_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_submissions_contest ON submissions(contest_id);
+CREATE INDEX idx_submissions_user ON submissions(user_id);
+CREATE INDEX idx_submissions_status ON submissions(status);
+
+-- ============================================================
+-- 8) bonus_entries — 가산점 인증 내역
+-- ============================================================
+CREATE TABLE bonus_entries (
+  id SERIAL PRIMARY KEY,
+  submission_id INT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  bonus_config_id INT NOT NULL REFERENCES contest_bonus_configs(id) ON DELETE CASCADE,
+  sns_url TEXT,
+  proof_image_url TEXT,
+  submitted_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(submission_id, bonus_config_id)
+);
+
+-- ============================================================
+-- 9) likes — 좋아요
+-- ============================================================
+CREATE TABLE likes (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  submission_id INT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, submission_id)
+);
+
+CREATE INDEX idx_likes_submission ON likes(submission_id);
+
+-- 좋아요 카운트 자동 갱신 트리거
+CREATE OR REPLACE FUNCTION update_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE submissions SET like_count = like_count + 1 WHERE id = NEW.submission_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE submissions SET like_count = like_count - 1 WHERE id = OLD.submission_id;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_like_change
+  AFTER INSERT OR DELETE ON likes
+  FOR EACH ROW EXECUTE FUNCTION update_like_count();
+
+-- ============================================================
+-- 10) judges — 심사위원 배정
+-- ============================================================
+CREATE TABLE judges (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  contest_id INT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+  is_external BOOLEAN DEFAULT FALSE,
+  email TEXT,
+  invited_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  accepted_at TIMESTAMPTZ,
+  UNIQUE(user_id, contest_id)
+);
+
+-- ============================================================
+-- 11) judging_templates — 심사 템플릿
+-- ============================================================
+CREATE TABLE judging_templates (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 12) judging_criteria — 심사 기준 항목
+-- ============================================================
+CREATE TABLE judging_criteria (
+  id SERIAL PRIMARY KEY,
+  template_id INT NOT NULL REFERENCES judging_templates(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  max_score INT NOT NULL,
+  description TEXT,
+  sort_order INT DEFAULT 0
+);
+
+-- ============================================================
+-- 13) scores — 심사 채점
+-- ============================================================
+CREATE TABLE scores (
+  id SERIAL PRIMARY KEY,
+  submission_id INT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  judge_id INT NOT NULL REFERENCES judges(id) ON DELETE CASCADE,
+  template_id INT REFERENCES judging_templates(id),
+  total INT NOT NULL,
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(submission_id, judge_id)
+);
+
+-- ============================================================
+-- 14) score_criteria — 채점 상세 (기준별 점수)
+-- ============================================================
+CREATE TABLE score_criteria (
+  id SERIAL PRIMARY KEY,
+  score_id INT NOT NULL REFERENCES scores(id) ON DELETE CASCADE,
+  criterion_id INT NOT NULL REFERENCES judging_criteria(id),
+  score INT NOT NULL
+);
+
+-- ============================================================
+-- 15) contest_results — 수상 결과
+-- ============================================================
+CREATE TABLE contest_results (
+  id SERIAL PRIMARY KEY,
+  contest_id INT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+  submission_id INT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  rank INT NOT NULL,
+  prize_label TEXT NOT NULL,
+  awarded_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(contest_id, submission_id)
+);
+
+-- ============================================================
+-- 16) articles — 게시글/공지
+-- ============================================================
+CREATE TABLE articles (
+  id SERIAL PRIMARY KEY,
+  type TEXT NOT NULL CHECK (type IN ('notice', 'program', 'insight')),
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  excerpt TEXT,
+  content TEXT NOT NULL DEFAULT '',
+  author_id UUID REFERENCES profiles(id),
+  tags TEXT[] DEFAULT '{}',
+  published_at TIMESTAMPTZ,
+  is_published BOOLEAN DEFAULT FALSE,
+  thumbnail_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 17) faqs — FAQ
+-- ============================================================
+CREATE TABLE faqs (
+  id SERIAL PRIMARY KEY,
+  category TEXT NOT NULL CHECK (category IN ('participant', 'host', 'judge', 'general')),
+  topic TEXT NOT NULL CHECK (topic IN ('contest', 'service', 'payment', 'technical', 'account')),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  is_pinned BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 18) inquiries — 문의
+-- ============================================================
+CREATE TABLE inquiries (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK (type IN ('general', 'support', 'agency')),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'in_progress', 'resolved')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 19) agency_requests — 대행 의뢰
+-- ============================================================
+CREATE TABLE agency_requests (
+  id SERIAL PRIMARY KEY,
+  company_name TEXT NOT NULL,
+  contact_name TEXT NOT NULL,
+  contact_email TEXT NOT NULL,
+  phone_number TEXT,
+  budget_range TEXT,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'new' NOT NULL CHECK (status IN ('new', 'reviewing', 'quoted', 'closed')),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 20) activity_logs — 활동 로그
+-- target_type: CHECK 제약 없음 (다양한 값 허용)
+-- target_type, target_id: nullable (search 등 타겟 없는 액션 허용)
+-- ============================================================
+CREATE TABLE activity_logs (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_activity_logs_user ON activity_logs(user_id);
+
+-- ============================================================
+-- 21) devices — 기기 관리
+-- ============================================================
+CREATE TABLE devices (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  platform TEXT CHECK (platform IN ('windows', 'macos', 'ios', 'android', 'linux')),
+  browser TEXT CHECK (browser IN ('chrome', 'safari', 'firefox', 'edge')),
+  ip_address TEXT,
+  last_active_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  is_trusted BOOLEAN DEFAULT TRUE
+);
+
+-- ============================================================
+-- 22) pricing_plans — 요금제
+-- ============================================================
+CREATE TABLE pricing_plans (
+  id TEXT PRIMARY KEY,
+  role TEXT NOT NULL,
+  name TEXT NOT NULL,
+  monthly_price INT DEFAULT 0,
+  yearly_price INT DEFAULT 0,
+  active BOOLEAN DEFAULT TRUE,
+  feature_keys TEXT[] DEFAULT '{}'
+);
+
+-- ============================================================
+-- 23) ip_logs — IP 로그
+-- ============================================================
+CREATE TABLE ip_logs (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  ip_address TEXT NOT NULL,
+  country TEXT,
+  region TEXT,
+  risk_level TEXT DEFAULT 'low' CHECK (risk_level IN ('low', 'medium', 'high')),
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- ============================================================
+-- 24) utm_visits — UTM 방문 추적
+-- ============================================================
+CREATE TABLE utm_visits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
+  utm_term TEXT,
+  utm_content TEXT,
+  referrer TEXT,
+  landing_page TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_utm_visits_user ON utm_visits(user_id);
+CREATE INDEX idx_utm_visits_source ON utm_visits(utm_source);
+CREATE INDEX idx_utm_visits_created ON utm_visits(created_at);
+
+-- ============================================================
+-- 25) account_withdrawals — 회원 탈퇴 사유
+-- ============================================================
+CREATE TABLE account_withdrawals (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_withdrawals_user ON account_withdrawals(user_id);
+
+-- ============================================================
+-- RLS (Row Level Security) 정책
+-- ============================================================
+
+-- 모든 테이블에 RLS 활성화
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contest_award_tiers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contest_bonus_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bonus_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE judges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE judging_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE judging_criteria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE score_criteria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contest_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agency_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pricing_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ip_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE utm_visits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE account_withdrawals ENABLE ROW LEVEL SECURITY;
+
+-- === profiles ===
+CREATE POLICY "profiles: 누구나 조회" ON profiles FOR SELECT USING (true);
+CREATE POLICY "profiles: 본인만 수정" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- === companies ===
+CREATE POLICY "companies: 누구나 조회" ON companies FOR SELECT USING (true);
+CREATE POLICY "companies: 멤버만 수정" ON companies FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM company_members WHERE company_id = companies.id AND user_id = auth.uid() AND role IN ('owner', 'manager'))
+);
+CREATE POLICY "companies: 인증 사용자 생성" ON companies FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- === company_members ===
+CREATE POLICY "company_members: 누구나 조회" ON company_members FOR SELECT USING (true);
+
+-- === contests ===
+CREATE POLICY "contests: 누구나 조회" ON contests FOR SELECT USING (true);
+CREATE POLICY "contests: 주최자만 생성" ON contests FOR INSERT WITH CHECK (auth.uid() = host_user_id);
+CREATE POLICY "contests: 주최자만 수정" ON contests FOR UPDATE USING (auth.uid() = host_user_id);
+CREATE POLICY "contests: 주최자만 삭제" ON contests FOR DELETE USING (auth.uid() = host_user_id);
+
+-- === contest_award_tiers ===
+CREATE POLICY "award_tiers: 누구나 조회" ON contest_award_tiers FOR SELECT USING (true);
+CREATE POLICY "award_tiers: 주최자만 생성" ON contest_award_tiers FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM contests WHERE id = contest_award_tiers.contest_id AND host_user_id = auth.uid())
+);
+CREATE POLICY "award_tiers: 주최자만 삭제" ON contest_award_tiers FOR DELETE USING (
+  EXISTS (SELECT 1 FROM contests WHERE id = contest_award_tiers.contest_id AND host_user_id = auth.uid())
+);
+
+-- === contest_bonus_configs ===
+CREATE POLICY "bonus_configs: 누구나 조회" ON contest_bonus_configs FOR SELECT USING (true);
+CREATE POLICY "bonus_configs: 주최자만 생성" ON contest_bonus_configs FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM contests WHERE id = contest_bonus_configs.contest_id AND host_user_id = auth.uid())
+);
+CREATE POLICY "bonus_configs: 주최자만 삭제" ON contest_bonus_configs FOR DELETE USING (
+  EXISTS (SELECT 1 FROM contests WHERE id = contest_bonus_configs.contest_id AND host_user_id = auth.uid())
+);
+
+-- === submissions ===
+CREATE POLICY "submissions: 누구나 조회" ON submissions FOR SELECT USING (true);
+CREATE POLICY "submissions: 인증 사용자 생성" ON submissions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "submissions: 본인만 수정" ON submissions FOR UPDATE USING (auth.uid() = user_id);
+-- 관리자 대리 등록
+CREATE POLICY "submissions: 관리자 대리 생성" ON submissions FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.roles::text LIKE '%admin%')
+);
+-- 관리자/주최자 상태 변경
+CREATE POLICY "submissions: 관리자/주최자 상태 변경" ON submissions FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (profiles.roles::text LIKE '%admin%' OR profiles.roles::text LIKE '%host%'))
+);
+
+-- === bonus_entries ===
+CREATE POLICY "bonus_entries: 누구나 조회" ON bonus_entries FOR SELECT USING (true);
+CREATE POLICY "bonus_entries: 본인 제출만 생성" ON bonus_entries FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM submissions WHERE id = bonus_entries.submission_id AND user_id = auth.uid())
+);
+-- 관리자 대리 생성
+CREATE POLICY "bonus_entries: 관리자 대리 생성" ON bonus_entries FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.roles::text LIKE '%admin%')
+);
+
+-- === likes ===
+CREATE POLICY "likes: 누구나 조회" ON likes FOR SELECT USING (true);
+CREATE POLICY "likes: 인증 사용자 생성" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "likes: 본인만 삭제" ON likes FOR DELETE USING (auth.uid() = user_id);
+
+-- === judges ===
+CREATE POLICY "judges: 누구나 조회" ON judges FOR SELECT USING (true);
+
+-- === judging_templates / judging_criteria ===
+CREATE POLICY "templates: 누구나 조회" ON judging_templates FOR SELECT USING (true);
+CREATE POLICY "criteria: 누구나 조회" ON judging_criteria FOR SELECT USING (true);
+
+-- === scores / score_criteria ===
+CREATE POLICY "scores: 누구나 조회" ON scores FOR SELECT USING (true);
+CREATE POLICY "scores: 심사위원 생성" ON scores FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM judges WHERE id = scores.judge_id AND user_id = auth.uid())
+);
+CREATE POLICY "score_criteria: 누구나 조회" ON score_criteria FOR SELECT USING (true);
+
+-- === contest_results ===
+CREATE POLICY "results: 누구나 조회" ON contest_results FOR SELECT USING (true);
+
+-- === articles ===
+CREATE POLICY "articles: 누구나 조회" ON articles FOR SELECT USING (is_published = true);
+
+-- === faqs ===
+CREATE POLICY "faqs: 누구나 조회" ON faqs FOR SELECT USING (true);
+
+-- === inquiries ===
+CREATE POLICY "inquiries: 본인만 조회" ON inquiries FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "inquiries: 인증 사용자 생성" ON inquiries FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- === agency_requests ===
+CREATE POLICY "agency_requests: 인증 사용자 생성" ON agency_requests FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- === activity_logs ===
+CREATE POLICY "activity_logs: 본인만 조회" ON activity_logs FOR SELECT USING (auth.uid() = user_id);
+-- INSERT 정책: 완화됨 (/api/log 라우트에서 인증 검증)
+CREATE POLICY "activity_logs: 로그 삽입 허용" ON activity_logs FOR INSERT WITH CHECK (true);
+
+-- === devices ===
+CREATE POLICY "devices: 본인만 조회" ON devices FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "devices: 본인만 관리" ON devices FOR ALL USING (auth.uid() = user_id);
+
+-- === pricing_plans ===
+CREATE POLICY "plans: 누구나 조회" ON pricing_plans FOR SELECT USING (true);
+
+-- === ip_logs ===
+CREATE POLICY "ip_logs: 본인만 조회" ON ip_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "ip_logs: 로그 삽입 허용" ON ip_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- === utm_visits ===
+CREATE POLICY "utm_insert_anyone" ON utm_visits FOR INSERT WITH CHECK (true);
+CREATE POLICY "utm_select_service" ON utm_visits FOR SELECT USING (false);
+
+-- === account_withdrawals ===
+CREATE POLICY "withdrawals: 인증 사용자 생성" ON account_withdrawals FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "withdrawals: 서비스 롤 조회" ON account_withdrawals FOR SELECT USING (false);
+
+-- ============================================================
+-- Storage 버킷
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public) VALUES ('thumbnails', 'thumbnails', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('proof-images', 'proof-images', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('posters', 'posters', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('company-assets', 'company-assets', true) ON CONFLICT (id) DO NOTHING;
+
+-- Storage 정책
+DROP POLICY IF EXISTS "storage: 누구나 조회" ON storage.objects;
+CREATE POLICY "storage: 누구나 조회" ON storage.objects FOR SELECT USING (true);
+DROP POLICY IF EXISTS "storage: 인증 사용자 업로드" ON storage.objects;
+CREATE POLICY "storage: 인증 사용자 업로드" ON storage.objects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "storage: 본인 파일 삭제" ON storage.objects;
+CREATE POLICY "storage: 본인 파일 삭제" ON storage.objects FOR DELETE USING (auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
+-- 초기 데이터: 요금제
+-- ============================================================
+INSERT INTO pricing_plans (id, role, name, monthly_price, yearly_price, active, feature_keys) VALUES
+  ('plan-free', 'participant', '무료', 0, 0, true, '{work-performance}'),
+  ('plan-participant-premium', 'participant', '참가자 프리미엄', 9900, 99000, true, '{work-performance,category-competition,ai-tool-trends,detailed-analysis}'),
+  ('plan-host-basic', 'host', '주최자 기본', 0, 0, true, '{submission-status}'),
+  ('plan-host-premium', 'host', '주최자 프리미엄', 29900, 299000, true, '{submission-status,participant-distribution,channel-performance,detailed-analysis}'),
+  ('plan-judge-basic', 'judge', '심사위원 기본', 0, 0, true, '{progress}'),
+  ('plan-judge-premium', 'judge', '심사위원 프리미엄', 0, 0, true, '{progress,score-distribution}');
+
+-- ============================================================
+-- 완료! 전체 스키마 + RLS + 트리거 + 스토리지 + 요금제 생성 완료
+-- 다음 단계: 001_seed_data.sql 실행하여 유저/공모전 데이터 삽입
+-- ============================================================
