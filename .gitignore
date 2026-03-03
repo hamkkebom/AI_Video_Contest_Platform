@@ -10,3 +10,15 @@ tsconfig.tsbuildinfo
 .env.local
 .env*.local
 skills/
+
+# 마이그레이션 임시 파일
+*.oc-hidden
+.env.vercel*
+auth_config*.json
+old_*.json
+missing_profiles.json
+users_to_recreate.json
+projects.json
+migrate_auth.py
+dev-log.txt
+tmp_*
