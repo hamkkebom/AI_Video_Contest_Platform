@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getContestById, getUserById, getRelatedContests } from '@/lib/data';
-import { Calendar, Gavel, Trophy, ArrowLeft, Search } from 'lucide-react';
+import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
-import { MediaTabs } from '@/components/contest/media-tabs';
+import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import type { AwardTier } from '@/lib/types';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { formatDateCompact } from '@/lib/utils';
@@ -74,9 +74,7 @@ function calculateTotalPrize(tiers: AwardTier[]): string | null {
 
 /** 상금 표시 포맷: 순수 숫자면 한국 원 단위로 변환, 이미 포맷된 문자열이면 그대로 반환 */
 function formatPrizeDisplay(amount: string): string {
-  // 이미 "만원", "억원" 등이 포함되어 있으면 그대로 반환
   if (/[만억원]/.test(amount)) return amount;
-  // 순수 숫자인 경우 포맷팅
   const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
   if (isNaN(num) || num === 0) return amount;
   if (num >= 100000000) {
@@ -99,7 +97,6 @@ function getAwardColorClass(label: string, index: number): string {
   if (lower.includes('우수') || lower.includes('은상')) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
   if (lower.includes('장려') || lower.includes('입선') || lower.includes('동상')) return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
   if (lower.includes('특별')) return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
-  // 라벨로 매칭 안 되면 인덱스 기반 폴백
   if (index === 0) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
   if (index === 1) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
   if (index === 2) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
@@ -108,11 +105,10 @@ function getAwardColorClass(label: string, index: number): string {
 
 export default async function ContestDetailPage({ params, searchParams }: ContestDetailPageProps) {
   const { id } = await params;
-  const { tab } = await searchParams;
-  // 공모전 조회 (단건 조회로 최적화)
+  await searchParams;
   const contest = await getContestById(id);
 
-  // 공모전 미존재 상태
+  /* 공모전 미존재 상태 */
   if (!contest) {
     return (
       <div className="w-full min-h-screen bg-background">
@@ -139,24 +135,23 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     );
   }
 
-  // 표시용 상태: open이지만 submissionStartAt이 미래면 '접수전'으로 취급
+  /* 표시용 상태 */
   const displayStatus = (contest.status === 'open' && new Date(contest.submissionStartAt).getTime() > Date.now())
     ? 'draft'
     : contest.status;
   const statusMeta = getStatusMeta(displayStatus);
-  // 2단계: 주최자 + 관련 공모전 병렬 조회 (필요한 데이터만)
+
   const [hostUser, relatedContests] = await Promise.all([
     getUserById(contest.hostUserId),
     getRelatedContests(contest.id, 6),
   ]);
   const isAdminHost = hostUser?.roles?.includes('admin');
-  // 총 상금 계산 (contest.prizeAmount 우선, 없으면 awardTiers에서 합산)
   const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
 
   return (
     <div className="w-full min-h-screen bg-background">
-      {/* 페이지 헤더 */}
-      <section className="relative py-16 px-4 bg-gradient-to-b from-primary/8 via-primary/3 to-background border-b border-border overflow-hidden">
+      {/* 히어로 섹션: 포스터(좌) + 공모전 정보(우) */}
+      <section className="relative py-10 sm:py-16 px-4 bg-gradient-to-b from-primary/8 via-primary/3 to-background border-b border-border overflow-hidden">
         {/* 배경 장식 */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
@@ -164,7 +159,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         </div>
 
         <div className="relative container mx-auto max-w-6xl space-y-6">
-          {/* 돌아가기 네비게이션 */}
+          {/* 돌아가기 */}
           <div>
             <Link
               href="/contests"
@@ -174,91 +169,88 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               돌아가기
             </Link>
           </div>
-          {/* 타이틀 및 설명 */}
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
-              <Badge className={`${statusMeta.className} text-base px-4 py-1`}>{statusMeta.label}</Badge>
+
+          {/* 포스터 + 정보 2컬럼 레이아웃 */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* 좌측: 포스터 */}
+            <div className="w-full lg:w-80 shrink-0">
+              {contest.posterUrl ? (
+                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4]">
+                  <img
+                    src={contest.posterUrl}
+                    alt={`${contest.title} 포스터`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl bg-muted/50 border border-dashed border-border shadow-lg aspect-[3/4] flex items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                </div>
+              )}
             </div>
-            {contest.description && (
-              <p className="max-w-3xl text-lg text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4 whitespace-pre-line">
-                {contest.description}
-              </p>
-            )}
-            {/* 작품 제출 버튼 — 실제 접수 가능할 때만 표시 (접수전이면 숨김) */}
-            {displayStatus === 'open' && (
-              <div className="flex justify-end py-3">
-                <AuthSubmitButton contestId={contest.id} />
+
+            {/* 우측: 공모전 정보 */}
+            <div className="flex-1 min-w-0 space-y-5">
+              {/* 상태 배지 + 제목 */}
+              <div className="space-y-3">
+                <Badge className={`${statusMeta.className} text-base px-4 py-1`}>{statusMeta.label}</Badge>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight">{contest.title}</h1>
               </div>
-            )}
+
+              {/* 설명 */}
+              {contest.description && (
+                <p className="text-base text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4 whitespace-pre-line">
+                  {contest.description}
+                </p>
+              )}
+
+              {/* 핵심 정보 미니 그리드 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground mb-0.5">제출기간</p>
+                  <p className="text-sm font-semibold">{formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground mb-0.5">심사기간</p>
+                  <p className="text-sm font-semibold">{formatDateCompact(contest.judgingStartAt)} ~ {formatDateCompact(contest.judgingEndAt)}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground mb-0.5">총 상금</p>
+                  <p className="text-sm font-semibold text-amber-600">{totalPrize ?? '미정'}</p>
+                </div>
+              </div>
+
+              {/* 영상 제출 버튼 — 풀 너비, 주황색 채움 */}
+              {displayStatus === 'open' && (
+                <AuthSubmitButton contestId={contest.id} variant="hero" />
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 공모전 핵심 지표 — 제출기간 / 심사기간 / 결과 발표일 / 참가자 */}
-      <section className="py-8 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            {/* 제출기간 */}
-            <Card className="p-5 border border-border">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground mb-1">제출기간</p>
-                  <p className="font-semibold text-[15px] leading-relaxed">
-                    {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
-                  </p>
-                </div>
-                <Calendar className="h-5 w-5 text-orange-500" />
-              </div>
-            </Card>
-
-            {/* 심사기간 */}
-            <Card className="p-5 border border-border">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground mb-1">심사기간</p>
-                  <p className="font-semibold text-[15px] leading-relaxed">
-                    {formatDateCompact(contest.judgingStartAt)} ~ {formatDateCompact(contest.judgingEndAt)}
-                  </p>
-                </div>
-                <Gavel className="h-5 w-5 text-primary" />
-              </div>
-            </Card>
-
-            {/* 결과 발표일 */}
-            <Card className="p-5 border border-border">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground mb-1">결과 발표일</p>
-                  <p className="font-semibold text-[15px]">{formatDateCompact(contest.resultAnnouncedAt)}</p>
-                </div>
-                <Trophy className="h-5 w-5 text-violet-600" />
-              </div>
-            </Card>
+      {/* 홍보영상 섹션 — 탭 없이 바로 노출 */}
+      {contest.promotionVideoUrls && contest.promotionVideoUrls.length > 0 && (
+        <section className="py-8 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <PromoVideoSection
+              videoUrls={contest.promotionVideoUrls}
+              title={contest.title}
+            />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 공모전 상세 정보 */}
       <section className="pb-10 px-4">
         <div className="container mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 좌측 상세 설명 */}
           <div className="lg:col-span-2 space-y-6">
-            {/* 포스터 & 홍보영상 — 탭 전환 */}
-            <Card className="p-6 border border-border">
-              <MediaTabs
-                posterUrl={contest.posterUrl}
-                promotionVideoUrls={contest.promotionVideoUrls}
-                title={contest.title}
-                defaultTab={tab === 'video' ? 'video' : undefined}
-              />
-            </Card>
-
             {/* 상세 안내 */}
             <Card className="p-6 border border-border space-y-6">
               <h2 className="text-2xl font-bold">상세 안내</h2>
 
-              {/* 상세 안내 이미지 (포스터 크기) */}
+              {/* 상세 안내 이미지 */}
               {contest.detailImageUrls && contest.detailImageUrls.length > 0 && (
                 <div className="flex flex-col items-center gap-4">
                   {contest.detailImageUrls.map((url) => (
@@ -284,7 +276,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
             </Card>
           </div>
 
-          {/* 우측 수상 안내 + 퀵 정보 + 태그 + 가이드라인 */}
+          {/* 우측 사이드바 */}
           <div className="space-y-6">
             {/* 수상 안내 */}
             {contest.awardTiers.length > 0 && (
@@ -326,7 +318,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               </Card>
             )}
 
-            {/* Quick Info */}
+            {/* 요약 정보 */}
             <Card className="p-6 border border-border space-y-4">
               <h3 className="text-lg font-bold">요약 정보</h3>
               <div className="space-y-3 text-sm">
@@ -349,18 +341,13 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                   <span className="text-right font-medium uppercase">{contest.allowedVideoExtensions.join(', ')}</span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <span className="text-muted-foreground">총 상금</span>
-                  <span className="text-right font-medium">{totalPrize ?? '미정'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">결과 발표 형태</span>
                   <span className="text-right font-medium">{getResultFormatLabel(contest.resultFormat)}</span>
                 </div>
               </div>
             </Card>
 
-
-            {/* 유의사항 및 저작권 안내 */}
+            {/* 유의사항 */}
             {contest.notes && (
               <Card className="p-6 border border-border space-y-3">
                 <h3 className="text-lg font-bold">유의사항 및 저작권 안내</h3>
@@ -382,7 +369,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               </div>
             </Card>
 
-            {/* 참가 규정 및 가이드라인 */}
+            {/* 가이드라인 */}
             {contest.guidelines && (
               <Card className="p-6 border border-border space-y-3">
                 <h3 className="text-lg font-bold">참가 규정 및 가이드라인</h3>
@@ -395,8 +382,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         </div>
       </section>
 
-
-      {/* 관련 공모전 섹션 — 캐러셀 (3개씩) */}
+      {/* 관련 공모전 */}
       {relatedContests.length > 0 && (
         <section className="pb-16 px-4">
           <div className="container mx-auto max-w-6xl space-y-5">

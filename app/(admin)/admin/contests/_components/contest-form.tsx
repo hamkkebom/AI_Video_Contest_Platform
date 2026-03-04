@@ -186,12 +186,15 @@ async function uploadContestAsset(
 
   /* XHR로 Supabase Storage에 직접 업로드 — 실시간 progress 지원 */
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
 
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', uploadUrl);
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.setRequestHeader('apikey', anonKey);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     xhr.setRequestHeader('x-upsert', 'true');
     xhr.timeout = 10 * 60 * 1000; /* 10분 타임아웃 (500MB 기준) */
 
