@@ -315,7 +315,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [promotionVideoUrls, setPromotionVideoUrls] = useState<string[]>([]);
   const [resultFormat, setResultFormat] = useState('website');
 
-  /* 포스터/홍보영상: URL or 파일 업로드 */
+  /* 포스터/예시영상: URL or 파일 업로드 */
   const [posterInputMode, setPosterInputMode] = useState<'url' | 'file'>('url');
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterUploading, setPosterUploading] = useState(false);
@@ -624,7 +624,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setPromotionVideoUrls(prev => [...prev, url]);
         successCount++;
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : `홍보영상 업로드 실패 (${fileArray[i].name})`;
+        const errMsg = err instanceof Error ? err.message : `예시영상 업로드 실패 (${fileArray[i].name})`;
         setPromoUploadError(errMsg);
         break; /* 에러 발생 시 중단 */
       }
@@ -910,12 +910,12 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     <div className="space-y-6 pb-10">
       {successModal}
 
-      {/* 홍보영상 업로드 진행 모달 */}
+      {/* 예시영상 업로드 진행 모달 */
       <Dialog open={promoUploadModalOpen} onOpenChange={(open) => { if (!promoUploading) setPromoUploadModalOpen(open); }}>
         <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => { if (promoUploading) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="text-center text-lg">
-              {promoUploadError ? '업로드 실패' : promoUploading ? '홍보영상 업로드 중' : '업로드 완료'}
+              {promoUploadError ? '업로드 실패' : promoUploading ? '예시영상 업로드 중' : '업로드 완료'}
             </DialogTitle>
             <DialogDescription className="text-center text-sm">
               {promoUploadError
@@ -1161,10 +1161,10 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               )}
             </div>
 
-            {/* 홍보영상 — 다중 URL 입력 / 파일 업로드 */}
+            {/* 예시영상 — 다중 URL 입력 / 파일 업로드 */
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">홍보영상{promotionVideoUrls.length > 0 && ` (${promotionVideoUrls.length}개)`}</label>
+                <label className="text-sm font-medium">예시영상{promotionVideoUrls.length > 0 && ` (${promotionVideoUrls.length}개)`}</label>
                 {renderInputModeTab(promoInputMode, setPromoInputMode)}
               </div>
               {/* 기존 영상 목록 */}
@@ -1172,7 +1172,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                 <div className="space-y-1.5">
                   {promotionVideoUrls.map((url, idx) => (
                     <div key={'promo-' + idx} className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm">
-                      <span className="shrink-0 font-medium text-foreground">홍보영상 {idx + 1}</span>
+                      <span className="shrink-0 font-medium text-foreground">예시영상 {idx + 1}</span>
                       <span className="truncate flex-1 text-xs text-muted-foreground">{url}</span>
                       <button type="button" disabled={idx === 0} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors" onClick={() => { const next = [...promotionVideoUrls]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; setPromotionVideoUrls(next); }}>
                         <ChevronUp className="h-4 w-4" />

@@ -229,7 +229,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         </div>
       </section>
 
-      {/* 홍보영상 섹션 — 탭 없이 바로 노출 */}
+      {/* 예시영상 섹션 — 탭 없이 바로 노출 */}
       {contest.promotionVideoUrls && contest.promotionVideoUrls.length > 0 && (
         <section className="py-8 px-4">
           <div className="container mx-auto max-w-6xl">

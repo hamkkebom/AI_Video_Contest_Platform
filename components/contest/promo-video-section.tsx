@@ -9,7 +9,7 @@ interface PromoVideoSectionProps {
 }
 
 /**
- * 홍보영상 섹션 — 탭 없이 바로 노출
+ * 예시영상 섹션 — 탭 없이 바로 노출
  * 영상 개수를 시각적으로 표시하고, 클릭으로 영상 전환
  */
 export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) {
@@ -20,7 +20,7 @@ export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) 
     <div className="space-y-4">
       {/* 섹션 헤더: 제목 + 영상 개수 */}
       <div className="flex items-center gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold">홍보영상</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">예시영상</h2>
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 text-sm font-semibold">
           <Film className="h-3.5 w-3.5" />
           {count}개
@@ -32,7 +32,7 @@ export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) 
         <div className="aspect-video relative">
           <iframe
             src={videoUrls[activeIndex]}
-            title={`${title} 홍보영상 ${activeIndex + 1}`}
+            title={`${title} 예시영상 ${activeIndex + 1}`}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
