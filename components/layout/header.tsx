@@ -28,9 +28,10 @@ interface MenuItem {
 
 const commonMenuItems: MenuItem[] = [
   { label: '공모전', href: '/contests?status=open' },
-  { label: '갤러리', href: '/gallery/all' },
-  { label: '스토리', href: '/story' },
-  { label: '고객센터', href: '/support/inquiry' },
+  // TODO: 메뉴 구현 완료 후 복원
+  // { label: '갤러리', href: '/gallery/all' },
+  // { label: '스토리', href: '/story' },
+  // { label: '고객센터', href: '/support/inquiry' },
 ];
 
 /**
@@ -130,7 +131,7 @@ export function Header() {
     return '/my/submissions';
   })();
 
-  /* 역할별 프로필 편집 경로 */
+  /* 역할별 프로필 경로 */
   const profileHref = (() => {
     if (roles.includes('admin')) return '/admin/profile';
     if (roles.includes('host')) return '/host/profile';
@@ -223,11 +224,11 @@ export function Header() {
           {mounted && theme === 'signature' && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {/* 프로필 편집 */}
+        {/* 프로필 */}
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link href={profileHref as any} className="flex items-center gap-2">
             <UserPen className="h-4 w-4" />
-            프로필 편집
+            프로필
           </Link>
         </DropdownMenuItem>
         {/* 로그아웃 */}

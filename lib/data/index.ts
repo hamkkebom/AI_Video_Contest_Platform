@@ -1153,6 +1153,70 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
 }
 
 /**
+ * 같은 공모전의 다른 출품작 조회 (상세 페이지 관련 작품용) — 5분 캐시
+ * getGallerySubmissions 전체 로드 대신 필요한 데이터만 조회
+ */
+export function getRelatedSubmissions(
+  contestId: string,
+  excludeId: string,
+  limit = 4,
+): Promise<GallerySubmission[]> {
+  return unstable_cache(
+    async (): Promise<GallerySubmission[]> => {
+      const supabase = createPublicClient();
+
+      // 같은 공모전의 승인된 출품작만 조회 (현재 작품 제외)
+      const { data: submissions } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('contest_id', contestId)
+        .eq('status', 'approved')
+        .neq('id', excludeId)
+        .order('submitted_at', { ascending: false })
+        .limit(limit);
+      if (!submissions || submissions.length === 0) return [];
+
+      // 크리에이터 정보 병렬 조회
+      const userIds = [...new Set(submissions.map((s) => s.user_id as string))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname, name')
+        .in('id', userIds);
+      const profileMap = new Map(
+        (profiles ?? []).map((p) => [
+          p.id as string,
+          (p.nickname as string) ?? (p.name as string) ?? '익명',
+        ]),
+      );
+
+      // 수상 결과 조회
+      const subIds = submissions.map((s) => String(s.id));
+      const { data: results } = await supabase
+        .from('contest_results')
+        .select('submission_id, prize_label, rank')
+        .in('submission_id', subIds);
+      const resultMap = new Map(
+        (results ?? []).map((r) => [String(r.submission_id), r]),
+      );
+
+      return submissions.map((row) => {
+        const sub = toSubmission(row as Record<string, unknown>);
+        const result = resultMap.get(sub.id);
+        return {
+          ...sub,
+          contestTitle: '',
+          creatorName: profileMap.get(sub.userId) ?? '익명',
+          prizeLabel: result ? (result.prize_label as string) : undefined,
+          rank: result ? (result.rank as number) : undefined,
+        };
+      });
+    },
+    [`related-submissions-${contestId}-${excludeId}`],
+    { tags: ['submissions', 'gallery'], revalidate: 300 },
+  )();
+}
+
+/**
  * 결과발표 완료된 공모전 목록
  */
 export async function getCompletedContests(): Promise<Contest[]> {

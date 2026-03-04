@@ -148,7 +148,7 @@ interface ProfileEditFormProps {
 }
 
 /**
- * 공유 프로필 편집 폼 컴포넌트
+ * 공유 프로필 폼 컴포넌트
  * 모든 역할 대시보드에서 재사용 (admin, host, participant)
  */
 export function ProfileEditForm({ loginRedirectPath }: ProfileEditFormProps) {
@@ -410,7 +410,7 @@ export function ProfileEditForm({ loginRedirectPath }: ProfileEditFormProps) {
   return (
     <div className="space-y-6 pb-10">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">프로필 편집</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">프로필</h1>
         <p className="text-sm text-muted-foreground">프로필 정보와 포트폴리오 링크를 최신 상태로 유지해보세요.</p>
       </header>
 

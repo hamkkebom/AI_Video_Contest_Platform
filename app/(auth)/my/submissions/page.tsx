@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Trophy, Film, Eye, Heart, Clock, CalendarDays } from 'lucide-react';
+import { Trophy, Film, Eye, Heart, Clock, ChevronRight, Pencil, CalendarDays } from 'lucide-react';
 import type { Contest, Submission, SubmissionStatus } from '@/lib/types';
 import { getSubmissions, getContests, getAuthProfile } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -177,6 +177,25 @@ export default async function MyContestsPage() {
                                   {formatDateCompact(submission.submittedAt)}
                                 </span>
                               </div>
+                            </div>
+                            {/* 액션 버튼 */}
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              {ds === 'open' && (
+                                <Link
+                                  href={`/contests/${contest.id}/submit`}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  수정
+                                </Link>
+                              )}
+                              <Link
+                                href={`/gallery/${submission.id}`}
+                                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              >
+                                <Eye className="h-3 w-3" />
+                                상세
+                              </Link>
                             </div>
                           </div>
                         );

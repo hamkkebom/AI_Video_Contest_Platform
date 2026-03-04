@@ -6,9 +6,10 @@ import { TreePine } from 'lucide-react';
 
 const serviceLinks = [
   { label: '공모전', href: '/contests?status=open' },
-  { label: '갤러리', href: '/gallery/all' },
-  { label: '스토리', href: '/story' },
-  { label: '고객센터', href: '/support/inquiry' },
+  // TODO: 메뉴 구현 완료 후 복원
+  // { label: '갤러리', href: '/gallery/all' },
+  // { label: '스토리', href: '/story' },
+  // { label: '고객센터', href: '/support/inquiry' },
 ];
 
 const legalLinks = [
