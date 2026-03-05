@@ -139,7 +139,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground mb-1">출품 공모전</p>
                 <Link
-                  href={`/contests/${submission.contestId}/landing` as any}
+                  href={`/contests/${submission.contestId}`}
                   className="text-sm font-semibold text-primary hover:underline line-clamp-1"
                 >
                   {submission.contestTitle}

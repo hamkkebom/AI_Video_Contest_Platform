@@ -115,6 +115,8 @@ export default function ContestSubmitPage() {
   const [savedBonusConfigIds, setSavedBonusConfigIds] = useState<Set<string>>(new Set());
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showValidationPopup, setShowValidationPopup] = useState(false);
+  const initialFormRef = useRef<FormState | null>(null);
+  const initialBonusFormsRef = useRef<Record<string, BonusFormEntry> | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -163,6 +165,17 @@ export default function ContestSubmitPage() {
             agree: true,
           }));
 
+          // 초기 폼 상태 저장 (변경 감지용)
+          initialFormRef.current = {
+            title: submission.title ?? '',
+            description: submission.description ?? '',
+            chatAi: parsedAiTools.filter((tool) => chatToolSet.has(tool)),
+            imageAi: parsedAiTools.filter((tool) => imageToolSet.has(tool)),
+            videoAi: parsedAiTools.filter((tool) => videoToolSet.has(tool)),
+            productionProcess: submission.productionProcess ?? '',
+            agree: true,
+          };
+
           setExistingSubmission({
             videoUrl: submission.videoUrl,
             thumbnailUrl: submission.thumbnailUrl,
@@ -179,6 +192,9 @@ export default function ContestSubmitPage() {
           }, {});
 
           setBonusForms(nextBonusForms);
+
+          // 초기 가산점 상태 저장 (변경 감지용)
+          initialBonusFormsRef.current = JSON.parse(JSON.stringify(nextBonusForms));
           setOpenBonuses(loadedBonusEntries.map((entry) => entry.bonusConfigId));
           setSavedBonusConfigIds(new Set(loadedBonusEntries.filter((e) => (e.snsUrl ?? '').trim() && e.proofImageUrl).map((e) => String(e.bonusConfigId))));
         } catch (error) {
@@ -213,6 +229,37 @@ export default function ContestSubmitPage() {
     };
     load();
   }, [contestId, currentUserId, isEditMode, editSubmissionId]);
+
+  /** 수정 모드: 폼 데이터가 초기 로드 시점과 달라졌는지 판별 */
+  const hasFormChanges = (() => {
+    if (!isEditMode || !initialFormRef.current) return true; // 신규 모드면 항상 활성화
+    const init = initialFormRef.current;
+    // 기본 텍스트 필드 비교
+    if (form.title !== init.title) return true;
+    if (form.description !== init.description) return true;
+    if (form.productionProcess !== init.productionProcess) return true;
+    // AI 도구 배열 비교
+    const arrEq = (a: string[], b: string[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+    if (!arrEq(form.chatAi, init.chatAi)) return true;
+    if (!arrEq(form.imageAi, init.imageAi)) return true;
+    if (!arrEq(form.videoAi, init.videoAi)) return true;
+    // 파일 변경
+    if (videoFile || thumbnailFile) return true;
+    // 가산점 비교
+    if (initialBonusFormsRef.current) {
+      const initBonus = initialBonusFormsRef.current;
+      const currentKeys = Object.keys(bonusForms);
+      const initKeys = Object.keys(initBonus);
+      if (currentKeys.length !== initKeys.length) return true;
+      for (const key of currentKeys) {
+        if (!initBonus[key]) return true;
+        if (bonusForms[key].snsUrl !== initBonus[key].snsUrl) return true;
+        if (bonusForms[key].proofImageFile) return true; // 새 파일 선택됨
+        if (bonusForms[key].proofImagePreview !== initBonus[key].proofImagePreview) return true;
+      }
+    }
+    return false;
+  })();
 
   const updateField = (field: keyof FormState, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -1378,7 +1425,7 @@ export default function ContestSubmitPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold cursor-pointer"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || (isEditMode && !hasFormChanges)}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isSubmitting ? (isEditMode ? '수정 중...' : '업로드 중...') : (isEditMode ? '수정하기' : '제출하기')}
@@ -1458,9 +1505,8 @@ export default function ContestSubmitPage() {
                   </div>
                 ))}
               </div>
-              <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.back()}>완료</Button>
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+              <DialogFooter>
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => router.push('/my/submissions')}>확인</Button>
               </DialogFooter>
             </>
           ) : (
