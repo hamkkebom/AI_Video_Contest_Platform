@@ -2,14 +2,14 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
 import { getContestById, getSubmissions, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { SubmissionActions } from '@/components/submissions/submission-actions';
+import { SubmissionRow } from './submission-row';
 
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
@@ -32,12 +32,11 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const { tab } = await searchParams;
     const activeTab = REVIEW_TABS.some((item) => item.value === tab) ? (tab as SubmissionStatus) : 'pending_review';
 
-    // 단건/필터 조회로 최적화
     const [allSubmissions, contest] = await Promise.all([
       getSubmissions({ contestId: id }),
       getContestById(id),
     ]);
-    // 제출자 유저 정보만 별도 조회
+
     const userIds = [...new Set(allSubmissions.map((s) => s.userId))];
     const users = await getUsersByIds(userIds);
     const usersMap = new Map(users.map((u) => [u.id, u]));
@@ -51,47 +50,46 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
 
     return (
       <div className="space-y-6 pb-10">
+        {/* 헤더 */}
         <header className="space-y-1">
-          <Link
-            href={'/admin/contests' as Route}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> 공모전 목록으로
+          <Link href={'/admin/contests' as Route}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ArrowLeft className="h-4 w-4" />
+              공모전 목록
+            </Button>
           </Link>
-          <p className="text-sm text-muted-foreground">공모전별 제출물 관리</p>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="pt-2 text-3xl font-semibold tracking-tight md:text-4xl">
             {contest?.title ?? id}
           </h1>
           <p className="text-sm text-muted-foreground">총 {allSubmissions.length}개 제출물</p>
         </header>
 
-        {/* 상태 필터 탭 */}
-        <section>
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle>상태 필터</CardTitle>
-              <CardDescription>현재 탭: {REVIEW_TABS.find((item) => item.value === activeTab)?.label}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {REVIEW_TABS.map((reviewTab) => {
-                const isActive = reviewTab.value === activeTab;
-                return (
-                  <Link key={reviewTab.value} href={`/admin/contests/${id}/submissions?tab=${reviewTab.value}` as Route}>
-                    <Button variant={isActive ? 'default' : 'outline'} size="sm" className="gap-1.5">
-                      {reviewTab.label}
-                      <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
-                        {countByStatus[reviewTab.value] ?? 0}
-                      </span>
-                    </Button>
-                  </Link>
-                );
-              })}
-            </CardContent>
-          </Card>
+        {/* 검수 현황 필터 (카드 밖) */}
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">검수 현황</h2>
+          <div className="flex flex-wrap gap-2">
+            {REVIEW_TABS.map((reviewTab) => {
+              const isActive = reviewTab.value === activeTab;
+              return (
+                <Link key={reviewTab.value} href={`/admin/contests/${id}/submissions?tab=${reviewTab.value}` as Route}>
+                  <Button variant={isActive ? 'default' : 'outline'} size="sm" className="gap-1.5">
+                    {reviewTab.label}
+                    <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
+                      {countByStatus[reviewTab.value] ?? 0}
+                    </span>
+                  </Button>
+                </Link>
+              );
+            })}
+          </div>
         </section>
 
         {/* 제출물 테이블 */}
-        <section>
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">제출물 목록</h2>
+            <p className="text-sm text-muted-foreground">총 <span className="font-bold text-primary">{filteredSubmissions.length}</span>건</p>
+          </div>
           {filteredSubmissions.length === 0 ? (
             <Card className="border-border">
               <CardContent className="space-y-3 py-14 text-center">
@@ -101,12 +99,6 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
             </Card>
           ) : (
             <Card className="border-border">
-              <CardHeader>
-                <CardTitle>제출물 목록</CardTitle>
-                <CardDescription>
-                  {REVIEW_TABS.find((item) => item.value === activeTab)?.label} 상태 · {filteredSubmissions.length}건
-                </CardDescription>
-              </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
@@ -116,7 +108,6 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                       <TableHead>상태</TableHead>
                       <TableHead>제출일</TableHead>
                       <TableHead>반응</TableHead>
-                      <TableHead className="text-right">액션</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -125,7 +116,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                       const statusInfo = statusBadgeMap[submission.status];
 
                       return (
-                        <TableRow key={submission.id}>
+                        <SubmissionRow key={submission.id} href={`/gallery/${submission.id}`}>
                           <TableCell>
                             <div className="flex min-w-[260px] items-center gap-3">
                               <img
@@ -154,17 +145,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                           <TableCell className="text-muted-foreground">
                             조회 {submission.views} · 좋아요 {submission.likeCount}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" type="button">
-                                상세
-                              </Button>
-                              {(submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
-                                <SubmissionActions submissionId={submission.id} submissionTitle={submission.title} />
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        </SubmissionRow>
                       );
                     })}
                   </TableBody>
