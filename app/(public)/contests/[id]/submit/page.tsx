@@ -73,11 +73,16 @@ export default function ContestSubmitPage() {
   const isEditMode = !!editSubmissionId;
   const router = useRouter();
   const { session: authSession } = useAuth();
+  const currentUserId = authSession?.user?.id;
 
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [existingSubmission, setExistingSubmission] = useState<{
+    videoUrl: string;
+    thumbnailUrl: string;
+  } | null>(null);
   const [errorType, setErrorType] = useState<'duplicate' | 'contest_closed' | 'deadline_passed' | 'auth_expired' | 'general' | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
@@ -106,6 +111,8 @@ export default function ContestSubmitPage() {
   const [openBonuses, setOpenBonuses] = useState<string[]>([]);
   /* 가산점 폼 데이터 (bonusConfigId → 값) */
   const [bonusForms, setBonusForms] = useState<Record<string, BonusFormEntry>>({});
+  /* 수정 모드: 서버에서 불러온 기존 가산점 configId 목록 */
+  const [savedBonusConfigIds, setSavedBonusConfigIds] = useState<Set<string>>(new Set());
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showValidationPopup, setShowValidationPopup] = useState(false);
 
@@ -116,10 +123,76 @@ export default function ContestSubmitPage() {
       if (!res.ok) { setContest(null); setLoading(false); return; }
       const found: Contest = await res.json();
       setContest(found);
+
+      if (isEditMode && editSubmissionId) {
+        try {
+          const submissionRes = await fetch(`/api/submissions/${editSubmissionId}`);
+          if (!submissionRes.ok) {
+            throw new Error('기존 출품작 정보를 불러오지 못했습니다.');
+          }
+
+          const submissionResult = await submissionRes.json() as {
+            submission: {
+              title: string;
+              description: string;
+              videoUrl: string;
+              thumbnailUrl: string;
+              aiTools: string | null;
+              productionProcess: string;
+              bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
+            };
+          };
+          const submission = submissionResult.submission;
+
+          const parsedAiTools = (submission.aiTools ?? '')
+            .split(',')
+            .map((tool) => tool.trim())
+            .filter(Boolean);
+          const chatToolSet = new Set<string>(CHAT_AI_TOOLS);
+          const imageToolSet = new Set<string>(IMAGE_AI_TOOLS);
+          const videoToolSet = new Set<string>(VIDEO_AI_TOOLS);
+
+          setForm((prev) => ({
+            ...prev,
+            title: submission.title ?? '',
+            description: submission.description ?? '',
+            chatAi: parsedAiTools.filter((tool) => chatToolSet.has(tool)),
+            imageAi: parsedAiTools.filter((tool) => imageToolSet.has(tool)),
+            videoAi: parsedAiTools.filter((tool) => videoToolSet.has(tool)),
+            productionProcess: submission.productionProcess ?? '',
+            agree: true,
+          }));
+
+          setExistingSubmission({
+            videoUrl: submission.videoUrl,
+            thumbnailUrl: submission.thumbnailUrl,
+          });
+
+          const loadedBonusEntries = submission.bonusEntries ?? [];
+          const nextBonusForms = loadedBonusEntries.reduce<Record<string, BonusFormEntry>>((acc, entry) => {
+            acc[entry.bonusConfigId] = {
+              snsUrl: entry.snsUrl ?? '',
+              proofImageFile: null,
+              proofImagePreview: entry.proofImageUrl ?? null,
+            };
+            return acc;
+          }, {});
+
+          setBonusForms(nextBonusForms);
+          setOpenBonuses(loadedBonusEntries.map((entry) => entry.bonusConfigId));
+          setSavedBonusConfigIds(new Set(loadedBonusEntries.filter((e) => (e.snsUrl ?? '').trim() && e.proofImageUrl).map((e) => String(e.bonusConfigId))));
+        } catch (error) {
+          setSubmitError(error instanceof Error ? error.message : '기존 출품작 정보를 불러오지 못했습니다.');
+          setErrorType('general');
+        }
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
 
       /* 기존 출품 수 확인 — 수정 모드일 때는 제한 체크 건너뛰 */
-      if (found && authSession?.user && !isEditMode) {
+      if (found && currentUserId && !isEditMode) {
         try {
           const supabase = createBrowserClient();
           if (supabase) {
@@ -127,7 +200,7 @@ export default function ContestSubmitPage() {
               .from('submissions')
               .select('id', { count: 'exact', head: true })
               .eq('contest_id', contestId)
-              .eq('user_id', authSession.user.id);
+              .eq('user_id', currentUserId);
             const maxSub = found.maxSubmissionsPerUser ?? 1;
             if ((count ?? 0) >= maxSub) {
               setAlreadySubmitted(true);
@@ -139,7 +212,7 @@ export default function ContestSubmitPage() {
       }
     };
     load();
-  }, [contestId]);
+  }, [contestId, currentUserId, isEditMode, editSubmissionId]);
 
   const updateField = (field: keyof FormState, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -252,7 +325,104 @@ export default function ContestSubmitPage() {
       return;
     }
     setFieldErrors({});
+
+    /* ── 수정 모드 ── */
+    if (isEditMode && editSubmissionId) {
+      try {
+        setSubmitError(null);
+        setErrorType(null);
+        setIsSubmitting(true);
+        setUploadStep('submission');
+        setUploadProgress(0);
+
+        const accessToken = authSession?.access_token;
+        const currentUser = authSession?.user;
+        if (!accessToken || !currentUser) {
+          throw new Error('로그인 세션이 만료되었습니다.');
+        }
+
+        /* 가산점 인증 이미지 처리 */
+        const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
+        const editBonusFormEntries = Object.entries(bonusForms).filter(
+          ([, entry]) => entry.snsUrl?.trim() || entry.proofImageFile || entry.proofImagePreview,
+        );
+
+        if (editBonusFormEntries.length > 0) {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const supabase = createBrowserClient()!;
+
+          for (const [configId, entry] of editBonusFormEntries) {
+            let proofImageUrl: string | undefined;
+            if (entry.proofImageFile) {
+              /* 새 이미지 업로드 */
+              setUploadStep('proof-images');
+              const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+              const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
+              await new Promise<void>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
+                xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+                xhr.setRequestHeader('x-upsert', 'false');
+                xhr.timeout = 30_000;
+                xhr.onload = () => {
+                  if (xhr.status >= 200 && xhr.status < 300) resolve();
+                  else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));
+                };
+                xhr.onerror = () => reject(new Error('네트워크 오류'));
+                xhr.ontimeout = () => reject(new Error('업로드 시간 초과'));
+                xhr.send(entry.proofImageFile);
+              });
+              const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofPath);
+              proofImageUrl = proofPublicData.publicUrl;
+            } else if (entry.proofImagePreview) {
+              proofImageUrl = entry.proofImagePreview;
+            }
+            bonusEntries.push({
+              bonusConfigId: configId,
+              snsUrl: entry.snsUrl?.trim() || undefined,
+              proofImageUrl,
+            });
+          }
+        }
+
+        setUploadStep('submission');
+        const aiToolsList = [...form.chatAi, ...form.imageAi, ...form.videoAi];
+        const response = await fetch(`/api/submissions/${editSubmissionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title,
+            description: form.description,
+            aiTools: aiToolsList.join(', '),
+            productionProcess: form.productionProcess,
+            bonusEntries,
+          }),
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          const serverCode = result.code;
+          if (serverCode === 'CONTEST_NOT_OPEN') setErrorType('contest_closed');
+          else if (serverCode === 'DEADLINE_PASSED') setErrorType('deadline_passed');
+          else if (serverCode === 'AUTH_REQUIRED') setErrorType('auth_expired');
+          else setErrorType('general');
+          setSubmitError(result.error ?? '수정에 실패했습니다.');
+          return;
+        }
+
+        setSubmitted(true);
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : '수정 중 오류가 발생했습니다.');
+        setErrorType('general');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (!videoFile || !thumbnailFile) return;
+    const selectedVideoFile = videoFile;
+    const selectedThumbnailFile = thumbnailFile;
 
     try {
       setSubmitError(null);
@@ -296,7 +466,7 @@ export default function ContestSubmitPage() {
       /* 영상 업로드 — XMLHttpRequest로 진행률 추적 */
       setUploadStep('video');
       setUploadProgress(0);
-      console.log('[제출] 영상 업로드 시작:', videoFile.name, videoFile.size, 'bytes');
+      console.log('[제출] 영상 업로드 시작:', selectedVideoFile.name, selectedVideoFile.size, 'bytes');
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', uploadUrlResult.uploadURL!);
@@ -325,7 +495,7 @@ export default function ContestSubmitPage() {
           console.error('[제출] 영상 업로드 타임아웃');
           reject(new Error('영상 업로드 시간이 초과되었습니다.'));
         };
-        const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
+        const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
       /* ── 3단계: 썸네일 업로드 (사전 확보한 인증 사용) ── */
@@ -333,9 +503,9 @@ export default function ContestSubmitPage() {
       setUploadProgress(0);
       console.log('[제출] 썸네일 업로드 시작 (사전 확보 토큰 사용)');
 
-      const safeThumbnailName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeThumbnailName = selectedThumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
-      console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', thumbnailFile.size, 'bytes');
+      console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', selectedThumbnailFile.size, 'bytes');
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
@@ -370,7 +540,7 @@ export default function ContestSubmitPage() {
         };
         xhr.onerror = () => reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.'));
         xhr.ontimeout = () => reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초).'));
-        xhr.send(thumbnailFile);
+        xhr.send(selectedThumbnailFile);
       });
       console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
 
@@ -502,8 +672,8 @@ export default function ContestSubmitPage() {
     if (!form.title.trim()) errors.title = '영상 제목을 입력해주세요';
     if (!form.description.trim()) errors.description = '영상 설명을 입력해주세요';
     if (!form.productionProcess.trim()) errors.productionProcess = '제작과정 설명을 입력해주세요';
-    if (!videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
-    if (!thumbnailFile) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
+    if (!isEditMode && !videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
+    if (!isEditMode && !thumbnailFile) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
     if (!form.agree) errors.agree = '유의사항에 동의해주세요';
     return errors;
   };
@@ -515,12 +685,12 @@ export default function ContestSubmitPage() {
       if (form.title.trim()) delete next.title;
       if (form.description.trim()) delete next.description;
       if (form.productionProcess.trim()) delete next.productionProcess;
-      if (videoFile) delete next.videoFile;
-      if (thumbnailFile) delete next.thumbnailFile;
+      if (isEditMode || videoFile) delete next.videoFile;
+      if (isEditMode || thumbnailFile) delete next.thumbnailFile;
       if (form.agree) delete next.agree;
       return Object.keys(next).length === Object.keys(prev).length ? prev : next;
     });
-  }, [form.title, form.description, form.productionProcess, videoFile, thumbnailFile, form.agree]);
+  }, [form.title, form.description, form.productionProcess, videoFile, thumbnailFile, form.agree, isEditMode]);
 
   if (loading) {
     return (
@@ -628,13 +798,15 @@ export default function ContestSubmitPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
                   </span>
-                  Submit Your Vision
+                  {isEditMode ? 'Edit Your Work' : 'Submit Your Vision'}
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-sm leading-tight">
-                  영상 제출하기
+                  {isEditMode ? '영상 수정하기' : '영상 제출하기'}
                 </h1>
                 <p className="text-base md:text-[1.1rem] text-zinc-300 leading-relaxed font-light max-w-xl">
-                  공모전에 참가할 당신만의 창의적인 영상을 세상에 선보여주세요.
+                  {isEditMode
+                    ? '출품작의 정보를 수정합니다. 영상과 썸네일은 변경할 수 없습니다.'
+                    : '공모전에 참가할 당신만의 창의적인 영상을 세상에 선보여주세요.'}
                 </p>
               </div>
             </div>
@@ -660,7 +832,7 @@ export default function ContestSubmitPage() {
                     {/* 공모전 제목과 주제 */}
                     <div>
                       <h2 className="font-bold text-foreground text-xl leading-tight mb-1">{contest.title}</h2>
-                      <p className="text-[0.95rem] text-muted-foreground font-medium leading-relaxed">
+                      <p className="text-[0.95rem] text-muted-foreground font-medium leading-relaxed whitespace-pre-line">
                         {contest.description}
                       </p>
                     </div>
@@ -799,116 +971,145 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground">썸네일과 영상 파일을 업로드해 주세요</p>
                 </div>
               </div>
-              <div className="grid md:grid-cols-2 gap-5">
-                {/* 썸네일 이미지 업로드 */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">
-                    썸네일 이미지 <span className="text-red-500">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground">JPG, PNG 형식, 최대 10MB · 권장 1920×1080px</p>
-                  <input
-                    ref={thumbnailInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleThumbnailSelect}
-                  />
-                  {thumbnailFile ? (
-                    <div className="p-4 rounded-xl border border-violet-500/30 bg-violet-500/5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                            <ImageIcon className="h-5 w-5 text-violet-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{thumbnailFile.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(thumbnailFile.size)}
-                            </p>
-                          </div>
+              {isEditMode && existingSubmission ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-muted/30 border border-border">
+                    <p className="text-sm font-medium mb-3 text-muted-foreground">업로드된 파일 (수정 불가)</p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="rounded-lg border border-border overflow-hidden">
+                        <img src={existingSubmission.thumbnailUrl} alt="썸네일" className="w-full h-32 object-cover" />
+                        <div className="px-3 py-2 bg-muted/20">
+                          <p className="text-xs text-muted-foreground">썸네일 이미지</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleThumbnailRemove}
-                          className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
-                        >
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/10">
+                        <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                          <FileVideo className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">영상 파일</p>
+                          <p className="text-xs text-muted-foreground">업로드 완료</p>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => thumbnailInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-violet-500" />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-medium text-sm">썸네일 업로드</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
-                      </div>
-                    </button>
-                  )}
-                  {fieldErrors.thumbnailFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.thumbnailFile}</p>}
-                </div>
-                {/* 영상 파일 업로드 */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">
-                    영상 파일 <span className="text-red-500">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 200MB
+                  </div>
+                  <p className="text-xs text-amber-600 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    제출 후 영상 파일과 썸네일은 수정이 불가합니다.
                   </p>
-                  <input
-                    ref={videoInputRef}
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={handleVideoSelect}
-                  />
-                  {videoFile ? (
-                    <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                            <FileVideo className="h-5 w-5 text-orange-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{videoFile.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(videoFile.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleVideoRemove}
-                          className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
-                        >
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => videoInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <Upload className="h-6 w-6 text-orange-500" />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-medium text-sm">영상 업로드</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
-                      </div>
-                    </button>
-                  )}
-                  {fieldErrors.videoFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.videoFile}</p>}
                 </div>
-              </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-5">
+                  {/* 썸네일 이미지 업로드 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      썸네일 이미지 <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">JPG, PNG 형식, 최대 10MB · 권장 1920×1080px</p>
+                    <input
+                      ref={thumbnailInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleThumbnailSelect}
+                    />
+                    {thumbnailFile ? (
+                      <div className="p-4 rounded-xl border border-violet-500/30 bg-violet-500/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-violet-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{thumbnailFile.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(thumbnailFile.size)}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleThumbnailRemove}
+                            className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+                          >
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => thumbnailInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-violet-500" />
+                        </div>
+                        <div className="text-center">
+                          <p className="font-medium text-sm">썸네일 업로드</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
+                        </div>
+                      </button>
+                    )}
+                    {fieldErrors.thumbnailFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.thumbnailFile}</p>}
+                  </div>
+                  {/* 영상 파일 업로드 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      영상 파일 <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 200MB
+                    </p>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleVideoSelect}
+                    />
+                    {videoFile ? (
+                      <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                              <FileVideo className="h-5 w-5 text-orange-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{videoFile.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(videoFile.size)}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleVideoRemove}
+                            className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+                          >
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => videoInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                          <Upload className="h-6 w-6 text-orange-500" />
+                        </div>
+                        <div className="text-center">
+                          <p className="font-medium text-sm">영상 업로드</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
+                        </div>
+                      </button>
+                    )}
+                    {fieldErrors.videoFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.videoFile}</p>}
+                  </div>
+                </div>
+              )}
             </Card>
 
             {/* ===== STEP 3: 가산점 인증 (조건부) ===== */}
@@ -930,8 +1131,11 @@ export default function ContestSubmitPage() {
                   {contest.bonusConfigs!.map((config) => {
                     const isOpen = openBonuses.includes(config.id);
                     const entry = bonusForms[config.id] || { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                    const hasBothFields = !!(entry.snsUrl?.trim() && (entry.proofImagePreview || entry.proofImageFile));
+                    const isSaved = savedBonusConfigIds.has(String(config.id)) && hasBothFields;
+                    const isNewUpload = !savedBonusConfigIds.has(String(config.id)) && isEditMode && hasBothFields;
                     return (
-                      <Card key={config.id} className="border border-border overflow-hidden">
+                      <Card key={config.id} className={cn('border overflow-hidden', isSaved ? 'border-emerald-500/50' : isNewUpload ? 'border-blue-500/50' : 'border-border')}>
                         {/* 아코디언 헤더 */}
                         <button
                           type="button"
@@ -939,6 +1143,18 @@ export default function ContestSubmitPage() {
                           className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors cursor-pointer"
                         >
                           <span className="flex-1 text-sm font-medium">{config.label}</span>
+                          {isSaved && (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" />
+                              등록완료
+                            </span>
+                          )}
+                          {isNewUpload && (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" />
+                              입력 완료
+                            </span>
+                          )}
                           <ChevronDown
                             className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
                           />
@@ -960,7 +1176,7 @@ export default function ContestSubmitPage() {
                               className="bg-background/50 border-border text-sm"
                             />
                             {/* 인증 이미지 업로드 */}
-                            {entry.proofImageFile && entry.proofImagePreview ? (
+                            {entry.proofImagePreview ? (
                               <div className="rounded-lg border border-border overflow-hidden">
                                 <div className="relative bg-muted/30">
                                   <img
@@ -971,7 +1187,7 @@ export default function ContestSubmitPage() {
                                 </div>
                                 <div className="flex items-center justify-between px-3 py-2 bg-muted/20">
                                   <span className="text-xs text-muted-foreground truncate flex-1 mr-2">
-                                    {entry.proofImageFile.name} ({formatFileSize(entry.proofImageFile.size)})
+                                    {entry.proofImageFile ? `${entry.proofImageFile.name} (${formatFileSize(entry.proofImageFile.size)})` : '업로드된 인증 이미지'}
                                   </span>
                                   <button
                                     type="button"
@@ -1090,7 +1306,7 @@ export default function ContestSubmitPage() {
                               const bodyLines = isTitle ? lines.slice(1) : lines;
 
                               return (
-                                <div key={`section-${sectionIndex}`} className={sectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}>
+                                <div key={`section-${titleLine ?? bodyLines.join('-')}`} className={sectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}>
                                   {titleLine && (
                                     <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                                       <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
@@ -1165,7 +1381,7 @@ export default function ContestSubmitPage() {
                   disabled={isSubmitting}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {isSubmitting ? '업로드 중...' : '제출하기'}
+                  {isSubmitting ? (isEditMode ? '수정 중...' : '업로드 중...') : (isEditMode ? '수정하기' : '제출하기')}
                 </Button>
               </div>
             </Card>
@@ -1223,15 +1439,19 @@ export default function ContestSubmitPage() {
                 <div className="mx-auto mb-2 w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
-                <DialogTitle className="text-center">영상이 제출되었습니다!</DialogTitle>
+                <DialogTitle className="text-center">{isEditMode ? '수정이 완료되었습니다!' : '영상이 제출되었습니다!'}</DialogTitle>
                 <DialogDescription className="text-center">
-                  &quot;{form.title}&quot; 영상이 성공적으로 접수되었습니다.
-                  검수 완료 후 공모전 출품작 목록에 표시됩니다.
+                  {isEditMode
+                    ? `"${form.title}" 출품작이 성공적으로 수정되었습니다.`
+                    : `"${form.title}" 영상이 성공적으로 접수되었습니다. 검수 완료 후 공모전 출품작 목록에 표시됩니다.`}
                   {hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2 py-2">
-                {['영상 업로드', '썸네일 업로드', '출품작 등록'].map((label) => (
+                {(isEditMode
+                  ? ['출품작 정보 수정']
+                  : ['영상 업로드', '썸네일 업로드', '출품작 등록']
+                ).map((label) => (
                   <div key={label} className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-4 w-4" />
                     <span>{label} 완료</span>

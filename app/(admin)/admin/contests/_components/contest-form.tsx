@@ -632,6 +632,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
 
   const handlePromoFilesSelect = async (files: FileList) => {
     const fileArray = Array.from(files);
+    const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
     if (fileArray.length === 0) return;
     /* 모달 열기 + 상태 초기화 */
     setPromoUploading(true);
@@ -651,7 +652,59 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       setPromoUploadProgress(`${i + 1}/${fileArray.length} 업로드 중...`);
       setPromoUploadPercent(0);
       try {
-        const url = await uploadContestAsset(fileArray[i], 'promo-video', (pct) => setPromoUploadPercent(pct));
+        const file = fileArray[i];
+        const isVideoFile = videoTypes.includes(file.type);
+        let url: string;
+
+        if (isVideoFile) {
+          const uploadUrlResponse = await fetch('/api/upload/video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maxDurationSeconds: 3600 }),
+          });
+
+          const uploadUrlResult = (await uploadUrlResponse.json()) as {
+            uploadURL?: string;
+            uid?: string;
+            error?: string;
+          };
+
+          if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
+            throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
+          }
+
+          const streamUploadUrl = uploadUrlResult.uploadURL;
+          const streamUid = uploadUrlResult.uid;
+
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', streamUploadUrl);
+            xhr.timeout = 10 * 60 * 1000;
+            xhr.upload.onprogress = (ev) => {
+              if (ev.lengthComputable) {
+                setPromoUploadPercent(Math.round((ev.loaded / ev.total) * 100));
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                setPromoUploadPercent(100);
+                resolve();
+              } else {
+                reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
+              }
+            };
+            xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+            xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+            const fd = new FormData();
+            fd.append('file', file);
+            xhr.send(fd);
+          });
+
+          url = `https://iframe.videodelivery.net/${streamUid}`;
+        } else {
+          url = await uploadContestAsset(file, 'promo-video', (pct) => setPromoUploadPercent(pct));
+        }
+
         setPromotionVideoUrls(prev => [...prev, url]);
         successCount++;
       } catch (err) {

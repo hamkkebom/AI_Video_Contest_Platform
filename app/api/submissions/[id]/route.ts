@@ -106,3 +106,207 @@ export async function PATCH(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+/** 본인 출품작 단건 조회 API (수정 모드용) */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: submissionId } = await params;
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  }
+
+  /* 출품작 조회 */
+  const { data: submission, error: fetchError } = await supabase
+    .from('submissions')
+    .select('*')
+    .eq('id', submissionId)
+    .single();
+
+  if (fetchError || !submission) {
+    return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
+  }
+
+  /* 본인 것인지 확인 */
+  if (submission.user_id !== user.id) {
+    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+  }
+
+  /* 가산점 인증 내역 조회 */
+  const { data: bonusEntries } = await supabase
+    .from('bonus_entries')
+    .select('*')
+    .eq('submission_id', submissionId);
+
+  return NextResponse.json({
+    submission: {
+      id: submission.id,
+      contestId: submission.contest_id,
+      title: submission.title,
+      description: submission.description,
+      videoUrl: submission.video_url,
+      thumbnailUrl: submission.thumbnail_url,
+      aiTools: submission.ai_tools,
+      productionProcess: submission.production_process,
+      bonusEntries: (bonusEntries ?? []).map((e: Record<string, unknown>) => ({
+        bonusConfigId: e.bonus_config_id,
+        snsUrl: e.sns_url,
+        proofImageUrl: e.proof_image_url,
+      })),
+    },
+  });
+}
+
+/** 본인 출품작 내용 수정 API (영상/썸네일 제외) */
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: submissionId } = await params;
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: '인증이 필요합니다.', code: 'AUTH_REQUIRED' }, { status: 401 });
+  }
+
+  /* 출품작 존재 + 소유권 확인 */
+  const { data: submission, error: fetchError } = await supabase
+    .from('submissions')
+    .select('id, user_id, contest_id')
+    .eq('id', submissionId)
+    .single();
+
+  if (fetchError || !submission) {
+    return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
+  }
+
+  if (submission.user_id !== user.id) {
+    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+  }
+
+  /* 공모전 상태 확인 (open일 때만 수정 가능) */
+  const { data: contest } = await supabase
+    .from('contests')
+    .select('status, submission_end_at')
+    .eq('id', submission.contest_id)
+    .single();
+
+  if (!contest || contest.status !== 'open') {
+    return NextResponse.json(
+      { error: '접수 기간이 아니라 수정할 수 없습니다.', code: 'CONTEST_NOT_OPEN' },
+      { status: 410 },
+    );
+  }
+
+  if (contest.submission_end_at && new Date(contest.submission_end_at as string) < new Date()) {
+    return NextResponse.json(
+      { error: '접수 마감일이 지나 수정할 수 없습니다.', code: 'DEADLINE_PASSED' },
+      { status: 403 },
+    );
+  }
+
+  try {
+    const body = (await request.json()) as {
+      title?: string;
+      description?: string;
+      aiTools?: string;
+      productionProcess?: string;
+      bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
+    };
+
+    const title = body.title?.trim();
+    const description = body.description?.trim();
+    const aiTools = body.aiTools?.trim();
+    const productionProcess = body.productionProcess?.trim();
+
+    if (!title || !description || !productionProcess) {
+      return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
+    }
+
+    /* 출품작 정보 업데이트 */
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('submissions')
+      .update({
+        title,
+        description,
+        ai_tools: aiTools || null,
+        production_process: productionProcess,
+      })
+      .eq('id', submissionId)
+      .select('id');
+
+    if (updateError) {
+      console.error('[PUT /api/submissions/[id]] 업데이트 실패:', updateError.message);
+      return NextResponse.json({ error: '수정에 실패했습니다.' }, { status: 500 });
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      console.error('[PUT /api/submissions/[id]] RLS 또는 조건 불일치로 업데이트된 행 없음. submissionId:', submissionId);
+      return NextResponse.json({ error: '수정 권한이 없거나 출품작을 찾을 수 없습니다.' }, { status: 403 });
+    }
+
+    console.log('[PUT /api/submissions/[id]] 업데이트 성공. submissionId:', submissionId, 'title:', title);
+
+    /* 가산점 인증 업데이트 (기존 삭제 → 재삽입) */
+    if (Array.isArray(body.bonusEntries)) {
+      await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
+
+      const bonusInserts = body.bonusEntries
+        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .map((e) => ({
+          submission_id: submissionId,
+          bonus_config_id: e.bonusConfigId,
+          sns_url: e.snsUrl || null,
+          proof_image_url: e.proofImageUrl || null,
+          submitted_at: new Date().toISOString(),
+        }));
+
+      if (bonusInserts.length > 0) {
+        const { error: bonusError } = await supabase
+          .from('bonus_entries')
+          .insert(bonusInserts);
+
+        if (bonusError) {
+          console.error('가산점 인증 업데이트 실패 (출품작은 수정됨):', bonusError);
+        }
+      }
+    }
+
+    /* 활동 로그 기록 */
+    await createActivityLog({
+      userId: user.id,
+      action: 'update_submission',
+      targetType: 'submission',
+      targetId: submissionId,
+      metadata: { contestId: submission.contest_id as string, title: title ?? '' },
+    });
+
+    /* 캐시 무효화 */
+    revalidateTag('submissions');
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '알 수 없는 오류';
+    console.error('[PUT /api/submissions/[id]] 실패:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
