@@ -4,15 +4,18 @@ import { redirect } from 'next/navigation';
 import { formatDate } from '@/lib/utils';
 
 export default async function HostDashboardPage() {
-  const profile = await getAuthProfile();
-  if (!profile) redirect('/login?redirect=/host/dashboard');
-
   try {
-    const [hostContests, allSubmissions, allJudges] = await Promise.all([
-      getContestsByHost(profile.id),
+    // getAuthProfile과 독립적인 쿼리를 병렬 실행 (순차 대기 제거)
+    const [profile, allSubmissions, allJudges] = await Promise.all([
+      getAuthProfile(),
       getSubmissions(),
       getJudges(),
     ]);
+
+    if (!profile) redirect('/login?redirect=/host/dashboard');
+
+    // profile.id 의존 쿼리만 순차 실행
+    const hostContests = await getContestsByHost(profile.id);
 
     const hostContestIds = new Set(hostContests.map((c) => c.id));
     const hostSubmissions = allSubmissions.filter((s) => hostContestIds.has(s.contestId));

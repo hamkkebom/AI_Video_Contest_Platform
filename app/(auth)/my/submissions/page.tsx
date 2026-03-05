@@ -182,7 +182,7 @@ export default async function MyContestsPage() {
                             <div className="flex shrink-0 items-center gap-1.5">
                               {ds === 'open' && (
                                 <Link
-                                  href={`/contests/${contest.id}/submit`}
+                                  href={`/contests/${contest.id}/submit?edit=${submission.id}`}
                                   className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                 >
                                   <Pencil className="h-3 w-3" />

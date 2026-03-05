@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { deleteContest, getContestById, updateContest, createActivityLog, type ContestMutationInput } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
+import { deleteDownloadsForUrls } from '@/lib/cloudflare-stream';
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -70,6 +71,13 @@ export async function PUT(
         targetId: id,
         metadata: { title: contest.title, role: 'admin' },
       });
+    }
+
+    // 예시영상 CF Stream 다운로드 자동 삭제 (사용자 다운로드 방지)
+    if (body.promotionVideoUrls && body.promotionVideoUrls.length > 0) {
+      deleteDownloadsForUrls(body.promotionVideoUrls).catch((err) =>
+        console.error('CF Stream 다운로드 삭제 실패:', err),
+      );
     }
 
     revalidateTag('contests');

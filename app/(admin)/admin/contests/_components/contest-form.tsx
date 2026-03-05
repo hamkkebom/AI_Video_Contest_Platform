@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { JUDGING_TYPES, VIDEO_EXTENSIONS, CONTEST_TAGS, RESULT_FORMATS } from '@/config/constants';
 import type { Contest } from '@/lib/types';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, FileVideo, Globe, ImagePlus, Loader2, Plus, Search, Star, Trophy, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Download, FileVideo, Globe, ImagePlus, Loader2, Plus, Search, Star, Trophy, Upload, X } from 'lucide-react';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type ContestFormMode = 'create' | 'edit';
@@ -339,6 +339,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroPreviewUrl, setHeroPreviewUrl] = useState('');
   const heroFileRef = useRef<HTMLInputElement>(null);
+  const [downloadingVideoIdx, setDownloadingVideoIdx] = useState<number | null>(null);
 
   /* 상세 안내 */
   const [detailContent, setDetailContent] = useState('');
@@ -596,6 +597,36 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       setErrorMessage(err instanceof Error ? err.message : '히어로 이미지 업로드 실패');
     } finally {
       setHeroUploading(false);
+    }
+  };
+
+  /** 예시영상 다운로드 (관리자 전용) — CF Stream API로 다운로드 생성 후 열기 */
+  const handlePromoDownload = async (url: string, idx: number) => {
+    setDownloadingVideoIdx(idx);
+    try {
+      const res = await fetch('/api/admin/stream/downloads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: url }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.download?.url) {
+        alert(data.error || '다운로드 생성에 실패했습니다.');
+        return;
+      }
+      // 다운로드 URL을 새 탭으로 열기
+      window.open(data.download.url, '_blank');
+      // 다운로드 후 자동 삭제 (사용자 다운로드 방지)
+      await fetch('/api/admin/stream/downloads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: url }),
+      });
+    } catch (err) {
+      console.error('다운로드 오류:', err);
+      alert('다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingVideoIdx(null);
     }
   };
 
@@ -910,7 +941,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     <div className="space-y-6 pb-10">
       {successModal}
 
-      {/* 예시영상 업로드 진행 모달 */
+      {/* 예시영상 업로드 진행 모달 */}
       <Dialog open={promoUploadModalOpen} onOpenChange={(open) => { if (!promoUploading) setPromoUploadModalOpen(open); }}>
         <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => { if (promoUploading) e.preventDefault(); }}>
           <DialogHeader>
@@ -1161,7 +1192,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
               )}
             </div>
 
-            {/* 예시영상 — 다중 URL 입력 / 파일 업로드 */
+            {/* 예시영상 — 다중 URL 입력 / 파일 업로드 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">예시영상{promotionVideoUrls.length > 0 && ` (${promotionVideoUrls.length}개)`}</label>
@@ -1179,6 +1210,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                       </button>
                       <button type="button" disabled={idx === promotionVideoUrls.length - 1} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors" onClick={() => { const next = [...promotionVideoUrls]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; setPromotionVideoUrls(next); }}>
                         <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <button type="button" disabled={downloadingVideoIdx === idx} className="shrink-0 p-0.5 text-muted-foreground hover:text-blue-600 disabled:opacity-50 transition-colors" title="다운로드" onClick={() => handlePromoDownload(url, idx)}>
+                        {downloadingVideoIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                       </button>
                       <button type="button" className="shrink-0 p-0.5 text-muted-foreground hover:text-destructive transition-colors" onClick={() => setPromotionVideoUrls(prev => prev.filter((_, i) => i !== idx))}>
                         <X className="h-4 w-4" />

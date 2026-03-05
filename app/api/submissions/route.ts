@@ -42,6 +42,34 @@ export async function POST(request: Request) {
   }
   console.log('[submissions API] 인증 성공:', user.id, user.email);
 
+  /* ====== 프로필 존재 확인 (외래키 제약 보호) ====== */
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!existingProfile) {
+    /* 프로필이 없으면 자동 생성 (트리거 미작동 대비 백업) */
+    console.warn('[submissions API] 프로필 없음 — 자동 생성 시도:', user.id);
+    const meta = user.user_metadata ?? {};
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email ?? 'unknown@unknown.com',
+        name: meta.full_name ?? meta.name ?? user.email?.split('@')[0] ?? '사용자',
+        avatar_url: meta.avatar_url ?? meta.picture ?? null,
+        phone: meta.phone ?? null,
+      });
+
+    if (profileError && profileError.code !== '23505') {
+      console.error('[submissions API] 프로필 자동 생성 실패:', profileError.message);
+      return NextResponse.json({ error: '사용자 프로필 생성에 실패했습니다.' }, { status: 500 });
+    }
+    console.log('[submissions API] 프로필 자동 생성 완료:', user.id);
+  }
+
   try {
     const body = (await request.json()) as CreateSubmissionBody;
 

@@ -1354,16 +1354,37 @@ export async function getAllInquiries(): Promise<Inquiry[]> {
   return data.map((row) => toInquiry(row as Record<string, unknown>));
 }
 
-/** admin 전용: 모든 활동로그 조회 */
-export async function getAllActivityLogs(): Promise<ActivityLog[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('activity_logs')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error || !data) return [];
-  return data.map((row) => toActivityLog(row as Record<string, unknown>));
-}
+/** admin 전용: 활동로그 조회 (limit 미지정 시 전체, 60초 캐시) */
+export const getAllActivityLogs = unstable_cache(
+  async (limit?: number): Promise<ActivityLog[]> => {
+    const supabase = createPublicClient();
+    let query = supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (limit) query = query.limit(limit);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map((row) => toActivityLog(row as Record<string, unknown>));
+  },
+  ['activity-logs'],
+  { tags: ['activity-logs'], revalidate: 60 },
+);
+
+/** admin 전용: 특정 상태의 문의 건수 조회 (count-only, 120초 캐시) */
+export const getInquiryCountByStatus = unstable_cache(
+  async (status: string): Promise<number> => {
+    const supabase = createPublicClient();
+    const { count, error } = await supabase
+      .from('inquiries')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', status);
+    if (error) return 0;
+    return count ?? 0;
+  },
+  ['inquiry-count'],
+  { tags: ['inquiries'], revalidate: 120 },
+);
 
 /** admin 전용: 모든 IP 로그 조회 */
 export async function getAllIpLogs(): Promise<IpLog[]> {

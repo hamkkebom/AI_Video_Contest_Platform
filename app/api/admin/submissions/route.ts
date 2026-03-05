@@ -86,6 +86,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '출품일시 형식이 올바르지 않습니다.' }, { status: 400 });
     }
 
+    /* ====== 대상 유저 프로필 존재 확인 (외래키 제약 보호) ====== */
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', targetUserId)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      console.warn('[POST /api/admin/submissions] 대상 유저 프로필 없음:', targetUserId);
+      return NextResponse.json({ error: '대상 사용자의 프로필이 존재하지 않습니다.' }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from('submissions')
       .insert({

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createContest, createActivityLog, type ContestMutationInput } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
+import { deleteDownloadsForUrls } from '@/lib/cloudflare-stream';
 
 /** 관리자 공모전 생성 API */
 export async function POST(request: Request) {
@@ -34,6 +35,13 @@ export async function POST(request: Request) {
       targetId: contest.id,
       metadata: { title: contest.title, role: 'admin' },
     });
+
+    // 예시영상 CF Stream 다운로드 자동 삭제 (사용자 다운로드 방지)
+    if (body.promotionVideoUrls && body.promotionVideoUrls.length > 0) {
+      deleteDownloadsForUrls(body.promotionVideoUrls).catch((err) =>
+        console.error('CF Stream 다운로드 삭제 실패:', err),
+      );
+    }
     revalidateTag('contests');
     return NextResponse.json({ contest }, { status: 201 });
   } catch (error) {

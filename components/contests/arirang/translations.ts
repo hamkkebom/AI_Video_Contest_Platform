@@ -37,6 +37,7 @@ export const translations = {
     countdownMinutes: { ko: '분', en: 'Minutes' },
     countdownSeconds: { ko: '초', en: 'Seconds' },
     cta: { ko: '지금 접수하기', en: 'Apply Now' },
+    ctaInquiry: { ko: '문의하기', en: 'Contact Us' },
     totalPrize: { ko: '총 상금 1,300만 원', en: 'Total Prize: ₩13,000,000' },
     mountainLabel: { ko: '산 실루엣', en: 'Mountain silhouette' },
     mountainTitle: { ko: '산 실루엣', en: 'Mountain silhouette' },

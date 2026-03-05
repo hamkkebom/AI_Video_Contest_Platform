@@ -137,7 +137,7 @@ export function ArirangNavbar() {
             ) : (
               <button
                 type="button"
-                onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/landing`)}
+                onClick={() => { window.scrollTo(0, 0); router.push(`/login?redirectTo=/contests/${contestId}/landing`); }}
                 className="hidden md:block px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer"
                 style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
               >
@@ -198,7 +198,7 @@ export function ArirangNavbar() {
           ) : (
             <button
               type="button"
-              onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/landing`)}
+              onClick={() => { window.scrollTo(0, 0); router.push(`/login?redirectTo=/contests/${contestId}/landing`); }}
               className="block w-full mt-2 px-4 py-3 font-semibold rounded-lg text-center cursor-pointer"
               style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)' }}
             >

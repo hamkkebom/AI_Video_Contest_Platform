@@ -56,7 +56,7 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
     default: 'group/btn inline-flex items-center gap-2 px-8 py-2.5 rounded-lg border-2 border-orange-500 text-orange-500 font-semibold overflow-hidden transition-all duration-300 cursor-pointer relative',
     sm: 'group/btn relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer',
     card: 'group/btn relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer',
-    hero: 'group/btn relative w-full py-3.5 rounded-xl bg-orange-500 text-white text-lg font-bold flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 cursor-pointer hover:bg-orange-400 shadow-lg hover:shadow-xl',
+    hero: 'group/btn relative w-full py-3.5 rounded-xl bg-orange-500 text-white text-lg font-bold flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 cursor-pointer hover:bg-orange-600 hover:scale-[1.02] shadow-lg hover:shadow-orange-500/30 hover:shadow-xl active:scale-[0.98]',
   }[variant];
 
   const iconClass = {

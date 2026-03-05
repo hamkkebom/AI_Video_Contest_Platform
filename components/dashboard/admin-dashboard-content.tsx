@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -59,6 +60,8 @@ interface AdminDashboardData {
 
 interface AdminDashboardContentProps {
   data: AdminDashboardData;
+  /** Suspense 슬롯: 활동 피드를 서버 컴포넌트로 스트리밍할 때 사용 */
+  activitySlot?: ReactNode;
 }
 
 interface StatCard {
@@ -121,7 +124,7 @@ const quickActions: Array<{
   },
 ];
 
-export function AdminDashboardContent({ data }: AdminDashboardContentProps) {
+export function AdminDashboardContent({ data, activitySlot }: AdminDashboardContentProps) {
   const roleChartData = [
     { name: '참가자', value: data.roleDistribution.participant },
     { name: '주최자', value: data.roleDistribution.host },
@@ -270,50 +273,53 @@ export function AdminDashboardContent({ data }: AdminDashboardContentProps) {
         </Card>
       </section>
 
-      <section>
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>최근 활동 피드</CardTitle>
-              <CardDescription>회원 행동 로그 기준 최신 8건</CardDescription>
-            </div>
-            <Link href="/admin/analytics">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                활동 분석 <ArrowUpRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {data.recentActivities.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-                최근 활동 데이터가 없습니다.
+      {/* 활동 피드: activitySlot이 있으면 서버에서 스트리밍, 없으면 data에서 렌더 */}
+      {activitySlot ?? (
+        <section>
+          <Card className="border-border">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>최근 활동 피드</CardTitle>
+                <CardDescription>회원 행동 로그 기준 최신 8건</CardDescription>
               </div>
-            ) : (
-              <div className="space-y-0">
-                {data.recentActivities.map((activity, index) => (
-                  <div key={activity.id} className="flex gap-4 py-4">
-                    <div className="relative flex flex-col items-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {activity.userInitial}
+              <Link href="/admin/analytics">
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  활동 분석 <ArrowUpRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {data.recentActivities.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+                  최근 활동 데이터가 없습니다.
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {data.recentActivities.map((activity, index) => (
+                    <div key={activity.id} className="flex gap-4 py-4">
+                      <div className="relative flex flex-col items-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                          {activity.userInitial}
+                        </div>
+                        {index < data.recentActivities.length - 1 ? (
+                          <span className="mt-2 h-full w-px bg-border" aria-hidden="true" />
+                        ) : null}
                       </div>
-                      {index < data.recentActivities.length - 1 ? (
-                        <span className="mt-2 h-full w-px bg-border" aria-hidden="true" />
-                      ) : null}
+                      <div className="min-w-0 flex-1 space-y-1 border-b border-border pb-4 last:border-b-0 last:pb-0">
+                        <p className="text-sm font-medium leading-relaxed">
+                          <span className="font-semibold text-foreground">{activity.userName}</span>{' '}
+                          <span className="text-muted-foreground">{activity.description}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1 space-y-1 border-b border-border pb-4 last:border-b-0 last:pb-0">
-                      <p className="text-sm font-medium leading-relaxed">
-                        <span className="font-semibold text-foreground">{activity.userName}</span>{' '}
-                        <span className="text-muted-foreground">{activity.description}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       <section>
         <div className="mb-3 flex items-center justify-between">

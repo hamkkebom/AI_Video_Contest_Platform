@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { AdminDashboardContent } from '@/components/dashboard/admin-dashboard-content';
-import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getAllActivityLogs, getContests, getInquiryCountByStatus, getSubmissions, getUsers } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 const actionLabelMap: Record<string, string> = {
@@ -15,20 +20,24 @@ const targetLabelMap = {
   inquiry: '문의',
 } as const;
 
+/**
+ * 관리자 대시보드 페이지
+ * - 통계 카드 + 차트: 캐시된 데이터로 즉시 렌더
+ * - 활동 피드: Suspense로 독립 스트리밍 (체감 속도 개선)
+ */
 export default async function AdminDashboardPage() {
   try {
-    const [users, contests, submissions, inquiries, activityLogs] = await Promise.all([
+    // 통계 데이터: 모두 unstable_cache 적용 → 캐시 히트 시 즉시 반환
+    const [users, contests, submissions, pendingInquiries] = await Promise.all([
       getUsers(),
       getContests(),
       getSubmissions(),
-      getAllInquiries(),
-      getAllActivityLogs(),
+      getInquiryCountByStatus('pending'),
     ]);
 
     const activeUsers = users.filter((user) => user.status === 'active').length;
     const ongoingContests = contests.filter((contest) => contest.status === 'open' || contest.status === 'judging').length;
     const approvedSubmissions = submissions.filter((submission) => submission.status === 'approved').length;
-    const pendingInquiries = inquiries.filter((inquiry) => inquiry.status === 'pending').length;
 
     const roleDistribution = users.reduce(
       (acc, user) => {
@@ -40,32 +49,6 @@ export default async function AdminDashboardPage() {
       },
       { participant: 0, host: 0, judge: 0, admin: 0 }
     );
-
-    const usersById = new Map(users.map((user) => [user.id, user]));
-
-    const recentActivities = [...activityLogs]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 8)
-      .map((activity) => {
-        const user = usersById.get(activity.userId);
-        const userName = user?.name ?? '알 수 없음';
-        const userInitial = userName.charAt(0) || '?';
-        const actionLabel = actionLabelMap[activity.action] ?? `${activity.action} 작업을 수행했습니다`;
-        const targetLabel = targetLabelMap[activity.targetType] ?? activity.targetType;
-
-        return {
-          id: activity.id,
-          userName,
-          userInitial,
-          description: `${actionLabel} (${targetLabel} ${activity.targetId})`,
-          timestamp: formatDate(activity.createdAt, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        };
-      });
 
     return (
       <AdminDashboardContent
@@ -84,8 +67,13 @@ export default async function AdminDashboardPage() {
           approvedSubmissions,
           pendingInquiries,
           roleDistribution,
-          recentActivities,
+          recentActivities: [],
         }}
+        activitySlot={
+          <Suspense fallback={<ActivityFeedSkeleton />}>
+            <RecentActivitiesSection />
+          </Suspense>
+        }
       />
     );
   } catch (error) {
@@ -98,4 +86,114 @@ export default async function AdminDashboardPage() {
       </div>
     );
   }
+}
+
+/** 활동 피드: 별도 서버 컴포넌트로 분리 → Suspense 스트리밍 */
+async function RecentActivitiesSection() {
+  const [activityLogs, users] = await Promise.all([
+    getAllActivityLogs(10),
+    getUsers(), // unstable_cache → 위 통계 쿼리와 동일 캐시 히트
+  ]);
+
+  const usersById = new Map(users.map((user) => [user.id, user]));
+
+  const recentActivities = activityLogs
+    .slice(0, 8)
+    .map((activity) => {
+      const user = usersById.get(activity.userId);
+      const userName = user?.name ?? '알 수 없음';
+      const userInitial = userName.charAt(0) || '?';
+      const actionLabel = actionLabelMap[activity.action] ?? `${activity.action} 작업을 수행했습니다`;
+      const targetLabel = targetLabelMap[activity.targetType as keyof typeof targetLabelMap] ?? activity.targetType;
+
+      return {
+        id: activity.id,
+        userName,
+        userInitial,
+        description: `${actionLabel} (${targetLabel} ${activity.targetId})`,
+        timestamp: formatDate(activity.createdAt, {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+    });
+
+  return (
+    <section>
+      <Card className="border-border">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>최근 활동 피드</CardTitle>
+            <CardDescription>회원 행동 로그 기준 최신 8건</CardDescription>
+          </div>
+          <Link href="/admin/analytics">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              활동 분석 <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {recentActivities.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+              최근 활동 데이터가 없습니다.
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {recentActivities.map((activity, index) => (
+                <div key={activity.id} className="flex gap-4 py-4">
+                  <div className="relative flex flex-col items-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {activity.userInitial}
+                    </div>
+                    {index < recentActivities.length - 1 ? (
+                      <span className="mt-2 h-full w-px bg-border" aria-hidden="true" />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1 border-b border-border pb-4 last:border-b-0 last:pb-0">
+                    <p className="text-sm font-medium leading-relaxed">
+                      <span className="font-semibold text-foreground">{activity.userName}</span>{' '}
+                      <span className="text-muted-foreground">{activity.description}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+/** 활동 피드 로딩 스켈레톤 */
+function ActivityFeedSkeleton() {
+  return (
+    <section>
+      <Card className="border-border">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1.5">
+            <div className="h-5 w-28 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-44 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="h-8 w-24 rounded bg-muted animate-pulse" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4 py-4">
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2 border-b border-border pb-4">
+                  <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
 }

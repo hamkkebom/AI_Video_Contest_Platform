@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,10 @@ interface BonusFormEntry {
  */
 export default function ContestSubmitPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const contestId = params.id as string;
+  const editSubmissionId = searchParams.get('edit'); // 수정 모드: 기존 출품작 ID
+  const isEditMode = !!editSubmissionId;
   const router = useRouter();
   const { session: authSession } = useAuth();
 
@@ -115,8 +118,8 @@ export default function ContestSubmitPage() {
       setContest(found);
       setLoading(false);
 
-      /* 기존 출품 수 확인 — AuthContext 세션 사용 (Supabase auth 호출 없음) */
-      if (found && authSession?.user) {
+      /* 기존 출품 수 확인 — 수정 모드일 때는 제한 체크 건너뛰 */
+      if (found && authSession?.user && !isEditMode) {
         try {
           const supabase = createBrowserClient();
           if (supabase) {

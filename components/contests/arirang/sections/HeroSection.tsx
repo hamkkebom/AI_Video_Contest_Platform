@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { useCountdown } from '@/hooks/useCountdown';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, MessageCircle } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
 
@@ -120,15 +120,33 @@ export function HeroSection() {
         </div>
 
         {/* CTA — Link로 프리페칭 활성화 */}
-        <div className="animate-fade-in-up">
-          <Link
-            href={`/contests/${contestId}`}
-            className="inline-block px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300"
-            style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)', boxShadow: '0 10px 25px rgba(212,168,67,0.25)' }}
-          >
-            {t(heroTranslations, 'cta', lang)}
-          </Link>
-          <p className="mt-4 font-bold text-lg sm:text-xl md:text-2xl" style={{ color: 'rgba(212,168,67,0.8)' }}>
+        <div id="hero-cta" className="animate-fade-in-up flex flex-col items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href={`/contests/${contestId}`}
+              className="inline-block px-10 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300"
+              style={{ backgroundColor: 'var(--ar-accent)', color: 'var(--ar-primary-dark)', boxShadow: '0 10px 25px rgba(212,168,67,0.25)' }}
+            >
+              {t(heroTranslations, 'cta', lang)}
+            </Link>
+            <a
+              href="http://pf.kakao.com/_cFfIX/chat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 font-bold text-lg rounded-full hover:scale-105 transition-all duration-300"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--ar-cream)',
+                border: '2px solid rgba(245,240,232,0.3)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--ar-accent)'; e.currentTarget.style.color = 'var(--ar-accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(245,240,232,0.3)'; e.currentTarget.style.color = 'var(--ar-cream)'; }}
+            >
+              <MessageCircle className="w-5 h-5" />
+              {t(heroTranslations, 'ctaInquiry', lang)}
+            </a>
+          </div>
+          <p className="mt-2 font-bold text-lg sm:text-xl md:text-2xl" style={{ color: 'rgba(212,168,67,0.8)' }}>
             {t(heroTranslations, 'totalPrize', lang)}
           </p>
         </div>

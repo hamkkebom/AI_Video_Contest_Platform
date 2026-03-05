@@ -13,6 +13,7 @@ import { PrizesSection } from '@/components/contests/arirang/sections/PrizesSect
 import { ApplySection } from '@/components/contests/arirang/sections/ApplySection';
 import { NotesSection } from '@/components/contests/arirang/sections/NotesSection';
 import { FooterSection } from '@/components/contests/arirang/sections/FooterSection';
+import { FloatingInquiryButton } from '@/components/contests/arirang/FloatingInquiryButton';
 
 /** 아리랑 랜딩페이지 클라이언트 컴포넌트 (애니메이션 + 렌더링) */
 export default function ArirangLandingClient() {
@@ -50,6 +51,7 @@ export default function ArirangLandingClient() {
         <ApplySection />
         <NotesSection />
         <FooterSection />
+        <FloatingInquiryButton />
       </div>
     </LangProvider>
   );

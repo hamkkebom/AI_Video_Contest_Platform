@@ -10,6 +10,7 @@ interface MediaTabsProps {
     defaultTab?: 'poster' | 'video';
 }
 
+
 export function MediaTabs({ posterUrl, promotionVideoUrls, title, defaultTab }: MediaTabsProps) {
     const hasPoster = Boolean(posterUrl);
     const hasVideo = Boolean(promotionVideoUrls?.length);
@@ -77,12 +78,15 @@ export function MediaTabs({ posterUrl, promotionVideoUrls, title, defaultTab }: 
             {activeTab === 'video' && hasVideo && (
                 <div className="overflow-hidden rounded-lg bg-muted">
                     <div className="aspect-video relative">
-                        <iframe
+                        <video
                             src={promotionVideoUrls![videoIndex]}
                             title={`${title} 홍보영상`}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
+                            className="w-full h-full object-contain"
+                            controls
+                            controlsList="nodownload noremoteplayback"
+                            disablePictureInPicture
+                            onContextMenu={(e) => e.preventDefault()}
+                            playsInline
                         />
                         {/* 비디오 네비게이션 */}
                         {promotionVideoUrls!.length > 1 && (

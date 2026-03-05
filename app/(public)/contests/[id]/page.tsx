@@ -19,7 +19,7 @@ function getStatusMeta(status: string) {
     return { label: '접수전', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-700 hover:text-white dark:hover:bg-blue-300 dark:hover:text-blue-900 transition-colors cursor-default' };
   }
   if (status === 'open') {
-    return { label: '접수중', className: 'bg-accent text-accent-foreground hover:bg-accent-foreground hover:text-accent transition-colors cursor-default' };
+    return { label: '접수중', className: 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors cursor-default' };
   }
   if (status === 'judging') {
     return { label: '심사중', className: 'bg-primary text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors cursor-default' };
@@ -163,7 +163,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           <div>
             <Link
               href="/contests"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/50 text-sm text-muted-foreground hover:bg-muted hover:text-violet-500 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-foreground/10 text-sm font-medium text-foreground/70 hover:bg-violet-500 hover:text-white transition-all"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               돌아가기
@@ -204,28 +204,53 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 </p>
               )}
 
-              {/* 핵심 정보 미니 그리드 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">제출기간</p>
-                  <p className="text-sm font-semibold">{formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}</p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">심사기간</p>
-                  <p className="text-sm font-semibold">{formatDateCompact(contest.judgingStartAt)} ~ {formatDateCompact(contest.judgingEndAt)}</p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">총 상금</p>
-                  <p className="text-sm font-semibold text-amber-600">{totalPrize ?? '미정'}</p>
-                </div>
+              {/* 핵심 정보 카드 */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                {/* 제출기간 */}
+                <Card className="p-5 border border-border">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-muted-foreground mb-1">제출기간</p>
+                      <p className="font-semibold text-[15px] leading-relaxed">
+                        {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
+                      </p>
+                    </div>
+                    <Calendar className="h-5 w-5 text-orange-500" />
+                  </div>
+                </Card>
+
+                {/* 심사기간 */}
+                <Card className="p-5 border border-border">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-muted-foreground mb-1">심사기간</p>
+                      <p className="font-semibold text-[15px] leading-relaxed">
+                        {formatDateCompact(contest.judgingStartAt)} ~ {formatDateCompact(contest.judgingEndAt)}
+                      </p>
+                    </div>
+                    <Gavel className="h-5 w-5 text-primary" />
+                  </div>
+                </Card>
+
+                {/* 결과 발표일 */}
+                <Card className="p-5 border border-border">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-muted-foreground mb-1">결과 발표일</p>
+                      <p className="font-semibold text-[15px]">{formatDateCompact(contest.resultAnnouncedAt)}</p>
+                    </div>
+                    <Trophy className="h-5 w-5 text-violet-600" />
+                  </div>
+                </Card>
               </div>
 
-              {/* 영상 제출 버튼 — 풀 너비, 주황색 채움 */}
-              {displayStatus === 'open' && (
-                <AuthSubmitButton contestId={contest.id} variant="hero" />
-              )}
             </div>
           </div>
+
+          {/* 영상 제출 버튼 — 포스터+정보 전체 너비 */}
+          {displayStatus === 'open' && (
+            <AuthSubmitButton contestId={contest.id} variant="hero" />
+          )}
         </div>
       </section>
 
