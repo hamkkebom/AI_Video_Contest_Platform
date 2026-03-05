@@ -46,15 +46,12 @@ export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) 
       {/* 영상 플레이어 */}
       <div className="overflow-hidden rounded-xl bg-black shadow-lg">
         <div className="aspect-video relative">
-          <video
+          <iframe
             src={videoUrls[activeIndex]}
             title={`${title} 예시영상 ${activeIndex + 1}`}
-            className="w-full h-full object-contain"
-            controls
-            controlsList="nodownload noremoteplayback"
-            disablePictureInPicture
-            onContextMenu={(e) => e.preventDefault()}
-            playsInline
+            className="w-full h-full border-0"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
           />
         </div>
       </div>
