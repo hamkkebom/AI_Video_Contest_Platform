@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'lucide-react';
-import { getSubmissionById, getRelatedSubmissions } from '@/lib/data';
+import { getSubmissionById, getRelatedSubmissions, getAuthProfile } from '@/lib/data';
 import { formatDateCompact } from '@/lib/utils';
+import { AdminDownloadButton } from './admin-download-button';
+import { SubmissionActions } from '@/components/submissions/submission-actions';
 
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -45,6 +47,10 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
 
   /* 같은 공모전의 다른 작품 (최대 4개) — 최적화된 쿼리 사용 */
   const relatedSubmissions = await getRelatedSubmissions(submission.contestId, submission.id, 4);
+
+  /* 관리자 여부 확인 */
+  const profile = await getAuthProfile();
+  const isAdmin = profile?.roles?.includes('admin') ?? false;
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -122,6 +128,18 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                 좋아요 {submission.likeCount.toLocaleString()}
               </span>
             </div>
+
+          {/* 관리자 전용: 영상 다운로드 */}
+          {isAdmin && submission.videoUrl && (
+            <AdminDownloadButton videoUrl={submission.videoUrl} />
+          )}
+
+          {/* 관리자 전용: 승인/거절 버튼 (검수대기 또는 자동반려 상태) */}
+          {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
+            <div className="flex items-center gap-2">
+              <SubmissionActions submissionId={String(submission.id)} submissionTitle={submission.title} />
+            </div>
+          )}
           </div>
 
           {/* 3. 설명 */}
@@ -156,8 +174,8 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
         </div>
       </section>
 
-      {/* 5. 같은 공모전의 다른 작품 */}
-      {relatedSubmissions.length > 0 && (
+      {/* 5. 같은 공모전의 다른 작품 — TODO: 추후 다시 활성화 */}
+      {false && relatedSubmissions.length > 0 && (
         <section className="pb-16 px-4">
           <div className="container mx-auto max-w-4xl space-y-5">
             <h2 className="text-lg sm:text-xl font-bold">같은 공모전의 다른 작품</h2>
