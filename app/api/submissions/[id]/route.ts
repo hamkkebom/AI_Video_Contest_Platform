@@ -268,7 +268,14 @@ export async function PUT(
 
     /* 가산점 인증 업데이트 (기존 삭제 → 재삽입) */
     if (Array.isArray(body.bonusEntries)) {
-      await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
+      const { error: deleteError } = await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
+      if (deleteError) {
+        console.error('가산점 인증 삭제 실패:', deleteError);
+        return NextResponse.json(
+          { success: true, warning: '출품작은 수정되었으나 가산점 인증 업데이트에 실패했습니다.' },
+          { status: 200 },
+        );
+      }
 
       const bonusInserts = body.bonusEntries
         .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
@@ -286,7 +293,11 @@ export async function PUT(
           .insert(bonusInserts);
 
         if (bonusError) {
-          console.error('가산점 인증 업데이트 실패 (출품작은 수정됨):', bonusError);
+          console.error('가산점 인증 저장 실패:', bonusError);
+          return NextResponse.json(
+            { success: true, warning: '출품작은 수정되었으나 가산점 인증 저장에 실패했습니다.' },
+            { status: 200 },
+          );
         }
       }
     }

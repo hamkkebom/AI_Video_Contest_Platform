@@ -185,6 +185,11 @@ export async function POST(request: Request) {
 
         if (bonusError) {
           console.error('가산점 인증 저장 실패 (출품작은 생성됨):', bonusError);
+          /* 출품작은 이미 생성되었으므로 warning으로 응답 */
+          return NextResponse.json(
+            { submission: { id: data.id }, warning: '출품작은 제출되었으나 가산점 인증 저장에 실패했습니다. 수정 화면에서 다시 등록해 주세요.' },
+            { status: 201 },
+          );
         }
       }
     }
