@@ -4,14 +4,14 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
 import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { SubmissionActions } from '@/components/submissions/submission-actions';
+import { SubmissionRow } from '@/app/(admin)/admin/contests/[id]/submissions/submission-row';
 
 type AdminSubmissionsPageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -51,19 +51,17 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
     return (
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
-          <p className="text-sm text-muted-foreground">전체 제출물 통합 관리</p>
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">제출물 관리</h1>
           <p className="text-sm text-muted-foreground">
             전체 {allSubmissions.length}개 · {allContests.length}개 공모전
           </p>
         </header>
 
-        {/* 상태 필터 탭 */}
+        {/* 검수 현황 */}
         <section>
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>상태 필터</CardTitle>
-              <CardDescription>현재 탭: {REVIEW_TABS.find((item) => item.value === activeTab)?.label}</CardDescription>
+              <CardTitle>검수 현황</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               {REVIEW_TABS.map((reviewTab) => {
@@ -84,7 +82,11 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
         </section>
 
         {/* 제출물 테이블 */}
-        <section>
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">제출물 목록</h2>
+            <p className="text-sm text-muted-foreground">총 <span className="font-bold text-primary">{filteredSubmissions.length}</span>건</p>
+          </div>
           {filteredSubmissions.length === 0 ? (
             <Card className="border-border">
               <CardContent className="space-y-3 py-14 text-center">
@@ -94,12 +96,6 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
             </Card>
           ) : (
             <Card className="border-border">
-              <CardHeader>
-                <CardTitle>제출물 목록</CardTitle>
-                <CardDescription>
-                  {REVIEW_TABS.find((item) => item.value === activeTab)?.label} 상태 · {filteredSubmissions.length}건
-                </CardDescription>
-              </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
@@ -110,7 +106,6 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                       <TableHead>상태</TableHead>
                       <TableHead>제출일</TableHead>
                       <TableHead>반응</TableHead>
-                      <TableHead className="text-right">액션</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -120,7 +115,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                       const statusInfo = statusBadgeMap[submission.status];
 
                       return (
-                        <TableRow key={submission.id}>
+                        <SubmissionRow key={submission.id} href={`/gallery/${submission.id}`}>
                           <TableCell>
                             <div className="flex min-w-[220px] items-center gap-3">
                               <img
@@ -154,17 +149,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                           <TableCell className="text-muted-foreground">
                             조회 {submission.views} · 좋아요 {submission.likeCount}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" type="button">
-                                상세
-                              </Button>
-                              {(submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
-                                <SubmissionActions submissionId={submission.id} submissionTitle={submission.title} />
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        </SubmissionRow>
                       );
                     })}
                   </TableBody>
