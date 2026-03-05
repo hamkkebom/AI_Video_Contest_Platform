@@ -2,10 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  experimental: {
-    // 번들 최적화: 대시보드에서 사용하는 무거운 라이브러리 tree-shaking 개선
-    optimizePackageImports: ['recharts', 'lucide-react'],
-  },
+  // recharts, lucide-react는 Next.js 15 기본 최적화 대상 — 중복 등록 시 dev HMR chunk 충돌 발생
 };
 
 export default nextConfig;
