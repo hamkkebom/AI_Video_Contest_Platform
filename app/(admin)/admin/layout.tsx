@@ -21,18 +21,18 @@ import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 import { RoleGuard } from '@/components/auth/role-guard';
 
 const adminDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
-  { href: '/admin/dashboard', label: '대시보드', icon: LayoutDashboard },
   { href: '/admin/contests', label: '공모전 관리', icon: Trophy },
   { href: '/admin/users', label: '회원 관리', icon: Users },
   { href: '/admin/submissions', label: '제출물 관리', icon: Video },
-  { href: '/admin/submissions/register', label: '출품작 등록', icon: FilePlus },
-  { href: '/admin/companies', label: '기업 관리', icon: Building2 },
-  { href: '/admin/inquiries', label: '문의 관리', icon: MessageSquare },
+  { href: '/admin/submissions/register', label: '출품작 수동 등록', icon: FilePlus },
   { href: '/admin/articles', label: '아티클', icon: Newspaper },
-  { href: '/admin/agency-requests', label: '대행 의뢰', icon: Briefcase },
-  { href: '/admin/analytics', label: '분석', icon: BarChart3 },
-  { href: '/admin/settings/pricing', label: '가격 설정', icon: Settings },
   { href: '/admin/profile', label: '프로필', icon: UserCircle },
+  { href: '/admin/dashboard', label: '대시보드 - 준비중', icon: LayoutDashboard },
+  { href: '/admin/companies', label: '기업 관리 - 준비중', icon: Building2 },
+  { href: '/admin/inquiries', label: '문의 관리 - 준비중', icon: MessageSquare },
+  { href: '/admin/agency-requests', label: '대행 의뢰 - 준비중', icon: Briefcase },
+  { href: '/admin/analytics', label: '분석 - 준비중', icon: BarChart3 },
+  { href: '/admin/settings/pricing', label: '가격 설정 - 준비중', icon: Settings },
 ];
 
 interface AdminLayoutProps {
@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="min-h-screen bg-background">
         <DashboardSidebar items={adminDashboardNavItems} roleLabel="관리자" />
         <div className="md:pl-60">
-          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:pb-8 md:pt-[121px]">{children}</main>
         </div>
       </div>
     </RoleGuard>

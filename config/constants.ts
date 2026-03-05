@@ -8,9 +8,17 @@ export const REVIEW_TABS = [
   { value: "pending_review", label: "검수대기" },
   { value: "approved", label: "검수승인" },
   { value: "rejected", label: "반려" },
-  { value: "auto_rejected", label: "자동반려 (재검토 가능)" },
   { value: "judging", label: "심사중" },
   { value: "judged", label: "심사완료" }
+] as const;
+
+export const CONTEST_STATUS_TABS = [
+  { value: "all", label: "전체" },
+  { value: "draft", label: "초안" },
+  { value: "open", label: "접수중" },
+  { value: "closed", label: "마감" },
+  { value: "judging", label: "심사중" },
+  { value: "completed", label: "완료" }
 ] as const;
 
 export const FAQ_CATEGORIES = [
