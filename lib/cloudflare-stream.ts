@@ -57,6 +57,40 @@ export function extractStreamVideoUid(url: string): string | null {
   return null;
 }
 
+/** CF Stream 영상 상세 정보 (에러 진단용) */
+interface StreamVideoInfo {
+  name: string | null;
+  readyToStream: boolean;
+  errorReasonCode: string | null;
+  errorReasonText: string | null;
+}
+
+/**
+ * CF Stream 영상 상세 정보 조회 (원본 파일명, 인코딩 상태 등)
+ */
+async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoInfo | null> {
+  if (!CF_ACCOUNT_ID || !CF_API_TOKEN) return null;
+
+  try {
+    const res = await fetch(cfStreamUrl(videoUid, ''), {
+      method: 'GET',
+      headers: cfHeaders(),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const r = data.result;
+    return {
+      name: r?.meta?.name ?? null,
+      readyToStream: r?.readyToStream ?? false,
+      errorReasonCode: r?.status?.errorReasonCode ?? null,
+      errorReasonText: r?.status?.errorReasonText ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 비디오의 다운로드 삭제 (플레이어에서 다운로드 버튼 비활성화)
  */
@@ -91,7 +125,7 @@ export async function deleteStreamDownloads(videoUid: string): Promise<boolean> 
  */
 export async function createStreamDownload(
   videoUid: string,
-): Promise<{ url: string; status: string; percentComplete: number } | null> {
+): Promise<{ url: string; status: string; percentComplete: number } | { error: string } | null> {
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
     console.error('Cloudflare 환경변수 미설정');
     return null;
@@ -107,8 +141,26 @@ export async function createStreamDownload(
     if (!res.ok) {
       const text = await res.text();
       console.error(`CF Stream 다운로드 생성 실패 (${videoUid}):`, text);
-      return null;
-    }
+
+      /* 영상 상세 정보 조회 — 원본 파일명, 에러 사유 포함 */
+      const info = await getStreamVideoInfo(videoUid);
+      const fileName = info?.name ?? null;
+      const errorReason = info?.errorReasonText ?? info?.errorReasonCode ?? null;
+
+      /* 에러 메시지 조합: 상황 설명 + 파일 정보 + 안내 */
+      const parts: string[] = [];
+      if (!info?.readyToStream) {
+        parts.push('정상적인 동영상 파일이 아니어서 다운로드할 수 없습니다.');
+        if (fileName) parts.push(`파일: ${fileName}`);
+        if (errorReason) parts.push(`사유: ${errorReason}`);
+        parts.push('해당 제출물을 반려 처리하고 참가자에게 올바른 영상 파일로 다시 제출하도록 안내해 주세요.');
+      } else {
+        parts.push('다운로드 생성에 실패했습니다.');
+        if (fileName) parts.push(`파일: ${fileName}`);
+        parts.push('잠시 후 다시 시도해 주세요.');
+      }
+
+      return { error: parts.join(' ') };
 
     const data = await res.json();
     const result = data.result?.default ?? data.result;

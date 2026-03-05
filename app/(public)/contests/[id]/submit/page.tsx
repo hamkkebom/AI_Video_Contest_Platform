@@ -43,6 +43,17 @@ const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_PROOF_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
+/** 확장자 → MIME type 매핑 (영상 파일 형식 검증용) */
+const EXT_TO_MIME: Record<string, string[]> = {
+  mp4: ['video/mp4'],
+  webm: ['video/webm'],
+  mov: ['video/quicktime'],
+  avi: ['video/x-msvideo', 'video/avi'],
+  mkv: ['video/x-matroska'],
+  wmv: ['video/x-ms-wmv'],
+  flv: ['video/x-flv'],
+};
+
 /** 제출 폼 상태 타입 */
 interface FormState {
   title: string;
@@ -321,6 +332,24 @@ export default function ContestSubmitPage() {
     const selectedFile = event.target.files?.[0] ?? null;
     if (!selectedFile) return;
 
+    /* 파일 형식 검증: 확장자 + MIME type */
+    const ext = selectedFile.name.split('.').pop()?.toLowerCase() ?? '';
+    const allowedExts = contest?.allowedVideoExtensions?.map((e) => e.toLowerCase()) ?? ['mp4'];
+    const allowedMimes = allowedExts.flatMap((e) => EXT_TO_MIME[e] ?? []);
+
+    const isExtAllowed = allowedExts.includes(ext);
+    const isMimeAllowed = allowedMimes.length === 0 || allowedMimes.includes(selectedFile.type);
+
+    if (!isExtAllowed || !isMimeAllowed) {
+      const extList = allowedExts.map((e) => e.toUpperCase()).join(', ');
+      const message = `지원하지 않는 파일 형식입니다. ${extList} 형식의 영상만 업로드할 수 있습니다.`;
+      setSubmitError(message);
+      alert(message);
+      event.target.value = '';
+      return;
+    }
+
+    /* 파일 크기 검증 */
     if (selectedFile.size > MAX_VIDEO_SIZE_BYTES) {
       const message = '영상 파일은 최대 200MB까지 업로드할 수 있습니다. 파일이 큰 경우 해상도를 낮추거나 압축 후 다시 시도해 주세요.';
       setSubmitError(message);
@@ -1111,7 +1140,7 @@ export default function ContestSubmitPage() {
                     <input
                       ref={videoInputRef}
                       type="file"
-                      accept="video/*"
+                      accept={contest.allowedVideoExtensions.flatMap((e) => EXT_TO_MIME[e.toLowerCase()] ?? [`video/${e}`]).join(',')}
                       className="hidden"
                       onChange={handleVideoSelect}
                     />

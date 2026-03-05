@@ -84,8 +84,15 @@ export async function POST(request: Request) {
     }
 
     const result = await createStreamDownload(uid);
+
+    /* null = 환경변수 미설정 등 치명적 오류 */
     if (!result) {
       return NextResponse.json({ error: '다운로드 생성에 실패했습니다.' }, { status: 500 });
+    }
+
+    /* CF API가 구체적 에러 메시지를 반환한 경우 */
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: 422 });
     }
 
     return NextResponse.json({ uid, download: result });

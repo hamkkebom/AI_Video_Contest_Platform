@@ -6,7 +6,8 @@ import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Contest } from '@/lib/types';
 import { ArrowLeft, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -211,54 +212,79 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   return (
     <div className="space-y-6 pb-10">
       <header className="space-y-2">
-        <Link
-          href={'/admin/contests' as Route}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" /> 공모전 목록으로
+        <Link href={'/admin/contests' as Route}>
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <ArrowLeft className="h-4 w-4" />
+            공모전 목록
+          </Button>
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">공모전 상세 관리</p>
+          <div>
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{contest.title}</h1>
-            <p className="text-sm text-muted-foreground">{contest.description || '설명이 없습니다.'}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{contest.description || '설명이 없습니다.'}</p>
           </div>
           <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
         </div>
       </header>
 
       <Card className="border-border">
-        <CardHeader>
-          <CardTitle>관리 액션</CardTitle>
-          <CardDescription>상태를 다음 단계로 진행하거나 공모전을 삭제할 수 있습니다.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
+        <CardContent className="flex flex-wrap items-center gap-2 py-4">
           <Link href={`/admin/contests/${contest.id}/edit` as Route}>
             <Button variant="outline">공모전 수정</Button>
           </Link>
           <Link href={`/admin/contests/${contest.id}/submissions` as Route}>
             <Button variant="outline">영상 관리</Button>
           </Link>
-          <Button type="button" onClick={handleMoveToNextStatus} disabled={updatingStatus || !nextStatus}>
-            {nextStatus ? (updatingStatus ? '상태 변경 중...' : `${statusLabelMap[nextStatus]} 상태로 변경`) : '최종 상태'}
-          </Button>
+          <Select
+            value={contest.status}
+            onValueChange={(value) => {
+              const newStatus = value as Contest['status'];
+              if (newStatus !== contest.status) {
+                setUpdatingStatus(true);
+                setErrorMessage(null);
+                fetch(`/api/admin/contests/${contest.id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(toUpdatePayload(contest, newStatus)),
+                })
+                  .then((res) => res.json())
+                  .then((data: { contest?: Contest; error?: string }) => {
+                    if (data.contest) {
+                      setContest(data.contest);
+                      router.refresh();
+                    } else {
+                      setErrorMessage(data.error ?? '상태 변경에 실패했습니다.');
+                    }
+                  })
+                  .catch(() => setErrorMessage('상태 변경에 실패했습니다.'))
+                  .finally(() => setUpdatingStatus(false));
+              }
+            }}
+            disabled={updatingStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusFlow.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {statusLabelMap[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {updatingStatus && <span className="text-sm text-muted-foreground">변경 중...</span>}
           <Button type="button" variant="outline" className="text-destructive" onClick={handleDelete} disabled={deleting}>
             {deleting ? '삭제 중...' : '공모전 삭제'}
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle>공모전 정보</CardTitle>
-          <CardDescription>일정 및 심사 설정 정보입니다.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-lg bg-muted/40 p-4">
-            <p className="text-xs text-muted-foreground">지역</p>
-            <p className="text-sm font-semibold text-foreground">{contest.region}</p>
-          </div>
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">공모전 정보</h2>
+        <Card className="border-border">
+          <CardContent className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
           <div className="rounded-lg bg-muted/40 p-4">
             <p className="text-xs text-muted-foreground">태그</p>
             <p className="text-sm font-semibold text-foreground">{contest.tags.length > 0 ? contest.tags.join(', ') : '-'}</p>
@@ -326,8 +352,9 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                 : <span className="text-xs text-muted-foreground">수상 정보가 없습니다.</span>}
             </div>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </section>
 
       {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
     </div>
