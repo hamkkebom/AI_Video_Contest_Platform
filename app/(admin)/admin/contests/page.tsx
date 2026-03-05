@@ -8,7 +8,7 @@ import { CONTEST_STATUS_TABS } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
 import type { Contest, ContestStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
-import ContestRowActions from './contest-row-actions';
+import { SubmissionRow } from './[id]/submissions/submission-row';
 import { formatDate } from '@/lib/utils';
 
 /** 공모전 상태 라벨 */
@@ -151,12 +151,11 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
                       <TableHead>접수작</TableHead>
                       <TableHead>검수대기</TableHead>
                       <TableHead>접수 기간</TableHead>
-                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredContests.map((contest) => (
-                      <TableRow key={contest.id}>
+                      <SubmissionRow key={contest.id} href={`/admin/contests/${contest.id}`}>
                         <TableCell>
                           <p className="max-w-[280px] truncate font-semibold text-foreground">{contest.title}</p>
                         </TableCell>
@@ -181,10 +180,7 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
                           {formatDate(contest.submissionStartAt)} ~{' '}
                           {formatDate(contest.submissionEndAt)}
                         </TableCell>
-                        <TableCell>
-                          <ContestRowActions contestId={contest.id} />
-                        </TableCell>
-                      </TableRow>
+                      </SubmissionRow>
                     ))}
                   </TableBody>
                 </Table>
