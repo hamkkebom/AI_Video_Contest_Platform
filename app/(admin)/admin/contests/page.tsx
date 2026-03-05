@@ -2,10 +2,11 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CONTEST_STATUS_TABS } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
-import type { Contest } from '@/lib/types';
+import type { Contest, ContestStatus } from '@/lib/types';
 import { Inbox } from 'lucide-react';
 import ContestRowActions from './contest-row-actions';
 import { formatDate } from '@/lib/utils';
@@ -28,12 +29,30 @@ const statusBadgeClassMap: Record<Contest['status'], string> = {
   completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
 };
 
-export default async function AdminContestsPage() {
+type AdminContestsPageProps = {
+  searchParams: Promise<{ status?: string }>;
+};
+
+export default async function AdminContestsPage({ searchParams }: AdminContestsPageProps) {
   try {
+    const { status } = await searchParams;
+    const activeStatus = CONTEST_STATUS_TABS.some((t) => t.value === status) ? status! : 'all';
+
     const [allContests, allSubmissions] = await Promise.all([
       getContests(),
       getSubmissions(),
     ]);
+
+    /* 상태별 카운트 집계 */
+    const countByStatus = allContests.reduce<Record<string, number>>((acc, c) => {
+      acc[c.status] = (acc[c.status] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    /* 필터링된 공모전 목록 */
+    const filteredContests = activeStatus === 'all'
+      ? allContests
+      : allContests.filter((c) => c.status === activeStatus);
 
     /* 공모전별 접수작 수 집계 */
     const submissionCountByContest = allSubmissions.reduce<Record<string, number>>((acc, s) => {
@@ -51,15 +70,9 @@ export default async function AdminContestsPage() {
 
     return (
       <div className="space-y-6 pb-10">
-        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">전체 공모전 관리</p>
-            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">공모전 관리</h1>
-            <p className="text-sm text-muted-foreground">총 {allContests.length}개 공모전</p>
-          </div>
-          <Link href={'/admin/contests/new' as Route}>
-            <Button>새 공모전</Button>
-          </Link>
+        <header className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">공모전 관리</h1>
+          <p className="text-base text-muted-foreground">총 <span className="text-lg font-bold text-primary">{allContests.length}</span>개 공모전</p>
         </header>
 
         {/* 요약 카드 */}
@@ -94,36 +107,55 @@ export default async function AdminContestsPage() {
           </Card>
         </section>
 
+        {/* 상태 필터 */}
+        <section className="flex flex-wrap gap-2">
+          {CONTEST_STATUS_TABS.map((tab) => {
+            const isActive = tab.value === activeStatus;
+            const count = tab.value === 'all' ? allContests.length : (countByStatus[tab.value] ?? 0);
+            return (
+              <Link key={tab.value} href={tab.value === 'all' ? ('/admin/contests' as Route) : (`/admin/contests?status=${tab.value}` as Route)}>
+                <Button variant={isActive ? 'default' : 'outline'} size="sm" className="gap-1.5">
+                  {tab.label}
+                  <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
+                    {count}
+                  </span>
+                </Button>
+              </Link>
+            );
+          })}
+        </section>
+
         {/* 공모전 테이블 */}
-        <section>
-          {allContests.length === 0 ? (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">공모전 목록</h2>
+            <Link href={'/admin/contests/new' as Route}>
+              <Button size="sm">+ 공모전 등록</Button>
+            </Link>
+          </div>
+          {filteredContests.length === 0 ? (
             <Card className="border-border">
               <CardContent className="space-y-3 py-14 text-center">
                 <Inbox className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">등록된 공모전이 없습니다.</p>
+                <p className="text-sm text-muted-foreground">해당 상태의 공모전이 없습니다.</p>
               </CardContent>
             </Card>
           ) : (
             <Card className="border-border">
-              <CardHeader>
-                <CardTitle>공모전 목록</CardTitle>
-                <CardDescription>공모전별 접수 현황을 확인하고 영상을 관리하세요.</CardDescription>
-              </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>공모전명</TableHead>
                       <TableHead>상태</TableHead>
-                      <TableHead>지역</TableHead>
                       <TableHead>접수작</TableHead>
                       <TableHead>검수대기</TableHead>
                       <TableHead>접수 기간</TableHead>
-                      <TableHead className="text-right">액션</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allContests.map((contest) => (
+                    {filteredContests.map((contest) => (
                       <TableRow key={contest.id}>
                         <TableCell>
                           <p className="max-w-[280px] truncate font-semibold text-foreground">{contest.title}</p>
@@ -133,7 +165,6 @@ export default async function AdminContestsPage() {
                             {statusLabelMap[contest.status]}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{contest.region}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {submissionCountByContest[contest.id] ?? 0}건
                         </TableCell>
