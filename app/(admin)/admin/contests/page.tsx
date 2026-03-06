@@ -3,12 +3,10 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CONTEST_STATUS_TABS } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
-import type { Contest, ContestStatus } from '@/lib/types';
-import { Inbox } from 'lucide-react';
-import { SubmissionRow } from './[id]/submissions/submission-row';
+import type { Contest } from '@/lib/types';
+import { Inbox, Calendar, Gavel, Trophy, FileVideo, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 /** 공모전 상태 라벨 */
@@ -107,16 +105,16 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
           </Card>
         </section>
 
-        {/* 상태 필터 */}
-        <section className="flex flex-wrap gap-2">
+        {/* 상태 필터 — min-h로 레이아웃 시프트 방지 */}
+        <section className="flex min-h-[40px] flex-wrap items-start gap-2">
           {CONTEST_STATUS_TABS.map((tab) => {
             const isActive = tab.value === activeStatus;
             const count = tab.value === 'all' ? allContests.length : (countByStatus[tab.value] ?? 0);
             return (
               <Link key={tab.value} href={tab.value === 'all' ? ('/admin/contests' as Route) : (`/admin/contests?status=${tab.value}` as Route)}>
-                <Button variant={isActive ? 'default' : 'outline'} size="sm" className="gap-1.5">
+                <Button variant={isActive ? 'default' : 'outline'} size="sm" className="min-w-[72px] gap-1.5">
                   {tab.label}
-                  <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
                     {count}
                   </span>
                 </Button>
@@ -125,7 +123,7 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
           })}
         </section>
 
-        {/* 공모전 테이블 */}
+        {/* 공모전 목록 — 리스트형 카드 */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">공모전 목록</h2>
@@ -141,51 +139,64 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-border">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>공모전명</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead>접수작</TableHead>
-                      <TableHead>검수대기</TableHead>
-                      <TableHead>접수 기간</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredContests.map((contest) => (
-                      <SubmissionRow key={contest.id} href={`/admin/contests/${contest.id}`}>
-                        <TableCell>
-                          <p className="max-w-[280px] truncate font-semibold text-foreground">{contest.title}</p>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusBadgeClassMap[contest.status]}>
-                            {statusLabelMap[contest.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {submissionCountByContest[contest.id] ?? 0}건
-                        </TableCell>
-                        <TableCell>
-                          {(pendingCountByContest[contest.id] ?? 0) > 0 ? (
-                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                              {pendingCountByContest[contest.id]}건
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0건</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(contest.submissionStartAt)} ~{' '}
-                          {formatDate(contest.submissionEndAt)}
-                        </TableCell>
-                      </SubmissionRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              {filteredContests.map((contest) => {
+                const subCount = submissionCountByContest[contest.id] ?? 0;
+                const pendingCount = pendingCountByContest[contest.id] ?? 0;
+                return (
+                  <Link key={contest.id} href={`/admin/contests/${contest.id}` as Route} className="block">
+                    <Card className="border-border transition-colors hover:border-primary/40 hover:bg-muted/30">
+                      <CardContent className="p-5">
+                        {/* 상단: 제목 + 상태 뱃지 + 접수 통계 */}
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2.5">
+                              <h3 className="truncate text-base font-semibold text-foreground">{contest.title}</h3>
+                              <Badge className={statusBadgeClassMap[contest.status]}>
+                                {statusLabelMap[contest.status]}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3 text-sm">
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <FileVideo className="h-3.5 w-3.5" />
+                              접수 {subCount}건
+                            </span>
+                            {pendingCount > 0 ? (
+                              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                                <AlertCircle className="mr-1 h-3 w-3" />
+                                검수대기 {pendingCount}건
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">검수대기 0건</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 하단: 일정 정보 */}
+                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-emerald-500" />
+                            <span className="font-medium text-foreground/70">접수</span>
+                            {formatDate(contest.submissionStartAt)} ~ {formatDate(contest.submissionEndAt)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Gavel className="h-3.5 w-3.5 text-sky-500" />
+                            <span className="font-medium text-foreground/70">심사</span>
+                            {formatDate(contest.judgingStartAt)} ~ {formatDate(contest.judgingEndAt)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="font-medium text-foreground/70">결과발표</span>
+                            {formatDate(contest.resultAnnouncedAt)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
           )}
         </section>
       </div>
