@@ -133,7 +133,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [submissionCounts, setSubmissionCounts] = useState<{ total: number; pendingReview: number; judging: number; judged: number } | null>(null);
+  const [submissionCounts, setSubmissionCounts] = useState({ total: 0, pendingReview: 0, approved: 0, rejected: 0, judging: 0, judged: 0 });
 
   useEffect(() => {
     const loadContest = async () => {
@@ -174,6 +174,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
         setSubmissionCounts({
           total: data.length,
           pendingReview: data.filter((s) => s.status === 'pending_review').length,
+          approved: data.filter((s) => s.status === 'approved').length,
+          rejected: data.filter((s) => s.status === 'rejected' || s.status === 'auto_rejected').length,
           judging: data.filter((s) => s.status === 'judging').length,
           judged: data.filter((s) => s.status === 'judged').length,
         });
@@ -311,7 +313,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
             {/* 좌측: 포스터 */}
             <div className="w-full lg:w-64 shrink-0">
               {contest.posterUrl ? (
-                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4]">
+                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4] pointer-events-none">
                   <img
                     src={contest.posterUrl}
                     alt={`${contest.title} 포스터`}
@@ -373,7 +375,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                     {contest.title}
                   </h1>
                   <Link href={`/admin/contests/${contest.id}/edit` as Route} className="shrink-0">
-                    <Button size="sm" variant="outline" className="gap-1.5 bg-background/60 backdrop-blur-sm">
+                    <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-400 transition-colors">
                       <Pencil className="h-3.5 w-3.5" />
                       수정
                     </Button>
@@ -397,7 +399,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
       {/* 영상 관리 섹션 — 풀 width + 상태별 카운트 */}
       <div className="mb-8">
         <Link href={`/admin/contests/${contest.id}/submissions` as Route} className="block">
-          <Card className="p-5 border border-border hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group">
+          <Card className="p-5 border border-primary/20 bg-gradient-to-r from-primary/8 to-sky-500/5 hover:from-primary/15 hover:to-sky-500/10 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -408,29 +410,39 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                   <p className="text-sm text-muted-foreground">출품작 검수 및 심사 관리</p>
                 </div>
               </div>
-              {submissionCounts && (
+              {
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
                     <p className="text-lg font-bold text-foreground">{submissionCounts.total}</p>
-                    <p className="text-muted-foreground">총 접수</p>
+                    <p className="text-muted-foreground font-bold">총 접수</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-lg font-bold text-amber-600">{submissionCounts.pendingReview}</p>
-                    <p className="text-muted-foreground">검수대기</p>
+                    <p className="text-muted-foreground font-bold">검수대기</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-emerald-600">{submissionCounts.approved}</p>
+                    <p className="text-muted-foreground font-bold">검수완료</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-rose-600">{submissionCounts.rejected}</p>
+                    <p className="text-muted-foreground font-bold">반려</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-lg font-bold text-sky-600">{submissionCounts.judging}</p>
-                    <p className="text-muted-foreground">심사중</p>
+                    <p className="text-muted-foreground font-bold">심사중</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-lg font-bold text-emerald-600">{submissionCounts.judged}</p>
-                    <p className="text-muted-foreground">심사완료</p>
+                    <p className="text-muted-foreground font-bold">심사완료</p>
                   </div>
                 </div>
-              )}
+              }
             </div>
           </Card>
         </Link>

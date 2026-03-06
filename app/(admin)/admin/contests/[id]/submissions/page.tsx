@@ -3,34 +3,46 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
 import { getContestById, getSubmissions, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
-import { ArrowLeft, Inbox } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
-import { SubmissionRow } from './submission-row';
+import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { formatDateTime } from '@/lib/utils';
 
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; sort?: string }>;
 };
 
-/** 제출물 상태별 뱃지 스타일 */
+/** 제출물 상태별 뱃지 스타일 (hover 반전 포함) */
 const statusBadgeMap: Record<SubmissionStatus, { label: string; className: string }> = {
-  pending_review: { label: '검수대기', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-  approved: { label: '승인', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
-  rejected: { label: '반려', className: 'bg-destructive/10 text-destructive' },
-  auto_rejected: { label: '자동반려', className: 'bg-destructive/10 text-destructive' },
-  judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
-  judged: { label: '심사완료', className: 'bg-primary/10 text-primary' },
+  pending_review: { label: '검수대기', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white' },
+  approved: { label: '검수완료', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white' },
+  rejected: { label: '반려', className: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white' },
+  auto_rejected: { label: '자동반려', className: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white' },
+  judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-500 dark:hover:text-white' },
+  judged: { label: '심사완료', className: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-500 dark:hover:text-white' },
 };
+
+/** 상태별 카운트 카드 설정 (전체 포함) */
+const statusCardConfig: Array<{ key: string; label: string; icon: typeof ClipboardCheck; color: string; countColor: string }> = [
+  { key: 'all', label: '전체', icon: ListFilter, color: 'text-primary', countColor: 'text-foreground' },
+  { key: 'pending_review', label: '검수대기', icon: ClipboardCheck, color: 'text-amber-500', countColor: 'text-amber-600' },
+  { key: 'approved', label: '검수완료', icon: CheckCircle2, color: 'text-emerald-500', countColor: 'text-emerald-600' },
+  { key: 'rejected', label: '반려', icon: XCircle, color: 'text-rose-500', countColor: 'text-rose-600' },
+  { key: 'judging', label: '심사중', icon: Scale, color: 'text-sky-500', countColor: 'text-sky-600' },
+  { key: 'judged', label: '심사완료', icon: Award, color: 'text-violet-500', countColor: 'text-violet-600' },
+];
+
+/** 유효한 탭 값 목록 (전체 포함) */
+const VALID_TABS = ['all', ...REVIEW_TABS.map((t) => t.value)];
 
 export default async function AdminContestSubmissionsPage({ params, searchParams }: ContestSubmissionsPageProps) {
   try {
     const { id } = await params;
-    const { tab } = await searchParams;
-    const activeTab = REVIEW_TABS.some((item) => item.value === tab) ? (tab as SubmissionStatus) : 'pending_review';
+    const { tab, sort } = await searchParams;
+    const activeTab = VALID_TABS.includes(tab ?? '') ? tab! : 'all';
+    const activeSort = sort === 'oldest' ? 'oldest' : 'newest';
 
     const [allSubmissions, contest] = await Promise.all([
       getSubmissions({ contestId: id }),
@@ -41,124 +53,210 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const users = await getUsersByIds(userIds);
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
-    const countByStatus = REVIEW_TABS.reduce<Record<string, number>>((acc, item) => {
-      acc[item.value] = allSubmissions.filter((s) => s.status === item.value).length;
-      return acc;
-    }, {});
+    /* 상태별 카운트 (전체 포함) */
+    const countByStatus: Record<string, number> = { all: allSubmissions.length };
+    for (const item of REVIEW_TABS) {
+      countByStatus[item.value] = allSubmissions.filter((s) => s.status === item.value).length;
+    }
 
-    const filteredSubmissions = allSubmissions.filter((s) => s.status === activeTab);
+    /* 자동반려 카운트를 반려에 합산 */
+    const autoRejectedCount = allSubmissions.filter((s) => s.status === 'auto_rejected').length;
+    if (countByStatus['rejected'] !== undefined) {
+      countByStatus['rejected'] += autoRejectedCount;
+    }
+
+    /* 탭 필터링 */
+    const filteredSubmissions = activeTab === 'all'
+      ? [...allSubmissions]
+      : allSubmissions.filter((s) => s.status === activeTab);
+
+    /* 정렬 */
+    filteredSubmissions.sort((a, b) => {
+      const dateA = new Date(a.submittedAt).getTime();
+      const dateB = new Date(b.submittedAt).getTime();
+      return activeSort === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
+    /** 탭 URL 빌더 (현재 정렬 유지) */
+    const buildTabUrl = (tabValue: string) => {
+      const p = new URLSearchParams();
+      if (tabValue !== 'all') p.set('tab', tabValue);
+      if (activeSort !== 'newest') p.set('sort', activeSort);
+      const qs = p.toString();
+      return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
+    };
+
+    /** 정렬 URL 빌더 (현재 탭 유지) */
+    const buildSortUrl = (sortValue: string) => {
+      const p = new URLSearchParams();
+      if (activeTab !== 'all') p.set('tab', activeTab);
+      if (sortValue !== 'newest') p.set('sort', sortValue);
+      const qs = p.toString();
+      return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
+    };
+
+    /** 현재 탭 라벨 */
+    const activeTabLabel = statusCardConfig.find((c) => c.key === activeTab)?.label ?? activeTab;
 
     return (
       <div className="space-y-6 pb-10">
-        {/* 헤더 */}
-        <header className="space-y-1">
-          <Link href={'/admin/contests' as Route}>
-            <Button variant="outline" size="sm" className="gap-1.5">
+        {/* 뒤로 가기 */}
+        <div>
+          <Link href={`/admin/contests/${id}` as Route}>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
-              공모전 목록
+              공모전 상세
             </Button>
           </Link>
-          <h1 className="pt-2 text-3xl font-semibold tracking-tight md:text-4xl">
-            {contest?.title ?? id}
-          </h1>
-          <p className="text-sm text-muted-foreground">총 {allSubmissions.length}개 제출물</p>
-        </header>
+        </div>
 
-        {/* 검수 현황 필터 (카드 밖) */}
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">검수 현황</h2>
-          <div className="flex flex-wrap gap-2">
-            {REVIEW_TABS.map((reviewTab) => {
-              const isActive = reviewTab.value === activeTab;
-              return (
-                <Link key={reviewTab.value} href={`/admin/contests/${id}/submissions?tab=${reviewTab.value}` as Route}>
-                  <Button variant={isActive ? 'default' : 'outline'} size="sm" className="gap-1.5">
-                    {reviewTab.label}
-                    <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
-                      {countByStatus[reviewTab.value] ?? 0}
-                    </span>
-                  </Button>
-                </Link>
-              );
-            })}
+        {/* 히어로 헤더 */}
+        <section className="relative -mx-4 overflow-hidden rounded-xl bg-gradient-to-b from-primary/8 via-primary/3 to-background border border-border px-6 py-8 sm:px-8 sm:py-10">
+          {/* 배경 장식 */}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden>
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-orange-500/5 blur-3xl" />
+          </div>
+
+          <div className="relative space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Video className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-muted-foreground">영상 관리</p>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{contest?.title ?? id}</h1>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* 제출물 테이블 */}
+        {/* 상태별 카운트 카드 (전체 포함, 6열) */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {statusCardConfig.map(({ key, label, icon: Icon, color, countColor }) => {
+            const isActive = key === activeTab;
+            return (
+              <Link key={key} href={buildTabUrl(key)} scroll={false}>
+                <Card className={`p-4 border transition-all cursor-pointer hover:shadow-md hover:border-primary/40 ${isActive ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20' : 'border-border'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : color}`} />
+                    {isActive && <div className="h-2 w-2 rounded-full bg-primary" />}
+                  </div>
+                  <p className={`text-2xl font-bold ${isActive ? 'text-primary' : countColor}`}>{countByStatus[key] ?? 0}</p>
+                  <p className="text-xs font-bold text-muted-foreground mt-0.5">{label}</p>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* 출품 영상 목록 */}
         <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">제출물 목록</h2>
-            <p className="text-sm text-muted-foreground">총 <span className="font-bold text-primary">{filteredSubmissions.length}</span>건</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">출품 영상 목록</h2>
+              <p className="text-sm text-muted-foreground">
+                {activeTabLabel} <span className="font-bold text-primary">{filteredSubmissions.length}</span>건
+              </p>
+            </div>
+
+            {/* 정렬 */}
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <Link href={buildSortUrl('newest')} scroll={false}>
+                <Button
+                  variant={activeSort === 'newest' ? 'default' : 'outline'}
+                  size="sm"
+                  className={`gap-1 text-xs h-7 ${activeSort === 'newest' ? 'bg-primary hover:bg-primary/90' : ''}`}
+                >
+                  <ArrowDown className="h-3 w-3" />
+                  최신순
+                </Button>
+              </Link>
+              <Link href={buildSortUrl('oldest')} scroll={false}>
+                <Button
+                  variant={activeSort === 'oldest' ? 'default' : 'outline'}
+                  size="sm"
+                  className={`gap-1 text-xs h-7 ${activeSort === 'oldest' ? 'bg-primary hover:bg-primary/90' : ''}`}
+                >
+                  <ArrowUp className="h-3 w-3" />
+                  오래된순
+                </Button>
+              </Link>
+            </div>
           </div>
+
           {filteredSubmissions.length === 0 ? (
             <Card className="border-border">
-              <CardContent className="space-y-3 py-14 text-center">
-                <Inbox className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">선택한 상태의 제출물이 없습니다.</p>
+              <CardContent className="space-y-3 py-16 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                  <Inbox className="h-7 w-7 text-muted-foreground/60" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">출품 영상이 없습니다</p>
+                  <p className="text-sm text-muted-foreground mt-1">{activeTabLabel} 상태의 출품 영상이 아직 없습니다.</p>
+                </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-border">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>작품</TableHead>
-                      <TableHead>제출자</TableHead>
-                      <TableHead>계정</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead>제출일</TableHead>
-                      <TableHead>반응</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubmissions.map((submission) => {
-                      const creator = usersMap.get(submission.userId);
-                      const statusInfo = statusBadgeMap[submission.status];
+            <div className="space-y-3">
+              {filteredSubmissions.map((submission) => {
+                const creator = usersMap.get(submission.userId);
+                const statusInfo = statusBadgeMap[submission.status];
+                const showReactions = submission.status !== 'pending_review';
 
-                      return (
-                        <SubmissionRow key={submission.id} href={`/gallery/${submission.id}`}>
-                          <TableCell>
-                            <div className="flex min-w-[260px] items-center gap-3">
-                              <img
-                                src={submission.thumbnailUrl}
-                                alt={submission.title}
-                                className="h-14 w-24 rounded-md border border-border object-cover"
-                              />
+                return (
+                  <Link key={submission.id} href={`/gallery/${submission.id}` as Route} className="block">
+                    <Card className="border border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group">
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          {/* 썸네일 */}
+                          <div className="shrink-0">
+                            <img
+                              src={submission.thumbnailUrl}
+                              alt={submission.title}
+                              className="h-20 w-36 rounded-lg border border-border object-cover shadow-sm group-hover:shadow-md transition-shadow"
+                            />
+                          </div>
+
+                          {/* 정보 */}
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate font-semibold text-foreground">{submission.title}</p>
-                                <p className="line-clamp-1 text-xs text-muted-foreground">{submission.description}</p>
+                                <p className="truncate font-bold text-foreground group-hover:text-primary transition-colors">{submission.title}</p>
+                                <p className="line-clamp-1 text-sm text-muted-foreground mt-0.5">{submission.description}</p>
                               </div>
+                              <Badge className={`shrink-0 ${statusInfo.className}`}>{statusInfo.label}</Badge>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{submission.submitterName || '-'}</p>
-                              <p className="text-xs text-muted-foreground">{submission.submitterPhone || '-'}</p>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">{submission.submitterName || creator?.name || '알 수 없음'}</span>
+                              <span className="hidden sm:inline">·</span>
+                              <span>{creator?.email ?? '-'}</span>
+                              <span className="hidden sm:inline">·</span>
+                              <span>{formatDateTime(submission.submittedAt)}</span>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{creator?.name ?? '알 수 없음'}</p>
-                              <p className="text-xs text-muted-foreground">{creator?.email ?? '-'}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDate(submission.submittedAt)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            조회 {submission.views} · 좋아요 {submission.likeCount}
-                          </TableCell>
-                        </SubmissionRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+
+                            {showReactions && (
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="font-medium text-foreground">{submission.views}</span>
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3.5 w-3.5" />
+                                  <span className="font-medium text-foreground">{submission.likeCount}</span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
           )}
         </section>
       </div>
@@ -167,7 +265,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     console.error('Failed to load contest submissions:', error);
     return (
       <div className="rounded-xl border border-border bg-card px-6 py-16 text-center">
-        <p className="text-destructive">제출물 목록을 불러올 수 없습니다</p>
+        <p className="text-destructive">출품 영상 목록을 불러올 수 없습니다</p>
       </div>
     );
   }
