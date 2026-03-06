@@ -56,6 +56,8 @@ const EXT_TO_MIME: Record<string, string[]> = {
 
 /** 제출 폼 상태 타입 */
 interface FormState {
+  submitterName: string;
+  submitterPhone: string;
   title: string;
   description: string;
   chatAi: string[];
@@ -99,6 +101,8 @@ export default function ContestSubmitPage() {
 
   /* 제출 폼 상태 */
   const [form, setForm] = useState<FormState>({
+    submitterName: '',
+    submitterPhone: '',
     title: '',
     description: '',
     chatAi: [],
@@ -146,6 +150,8 @@ export default function ContestSubmitPage() {
 
           const submissionResult = await submissionRes.json() as {
             submission: {
+              submitterName?: string;
+              submitterPhone?: string;
               title: string;
               description: string;
               videoUrl: string;
@@ -167,6 +173,8 @@ export default function ContestSubmitPage() {
 
           setForm((prev) => ({
             ...prev,
+            submitterName: submission.submitterName ?? '',
+            submitterPhone: submission.submitterPhone ?? '',
             title: submission.title ?? '',
             description: submission.description ?? '',
             chatAi: parsedAiTools.filter((tool) => chatToolSet.has(tool)),
@@ -178,6 +186,8 @@ export default function ContestSubmitPage() {
 
           // 초기 폼 상태 저장 (변경 감지용)
           initialFormRef.current = {
+            submitterName: submission.submitterName ?? '',
+            submitterPhone: submission.submitterPhone ?? '',
             title: submission.title ?? '',
             description: submission.description ?? '',
             chatAi: parsedAiTools.filter((tool) => chatToolSet.has(tool)),
@@ -471,6 +481,8 @@ export default function ContestSubmitPage() {
             description: form.description,
             aiTools: aiToolsList.join(', '),
             productionProcess: form.productionProcess,
+            submitterName: form.submitterName,
+            submitterPhone: form.submitterPhone,
             bonusEntries,
           }),
         });
@@ -692,6 +704,8 @@ export default function ContestSubmitPage() {
           tags: [],
           aiTools: aiToolsList.join(', '),
           productionProcess: form.productionProcess,
+          submitterName: form.submitterName,
+          submitterPhone: form.submitterPhone,
           bonusEntries: bonusEntries.length > 0 ? bonusEntries : undefined,
           termsAgreed: form.agree,
         }),
@@ -745,6 +759,8 @@ export default function ContestSubmitPage() {
   /* 필수 필드 유효성 검사 */
   const validateForm = (): Record<string, string> => {
     const errors: Record<string, string> = {};
+    if (!form.submitterName.trim()) errors.submitterName = '이름을 입력해주세요';
+    if (!form.submitterPhone.trim()) errors.submitterPhone = '전화번호를 입력해주세요';
     if (!form.title.trim()) errors.title = '영상 제목을 입력해주세요';
     if (!form.description.trim()) errors.description = '영상 설명을 입력해주세요';
     if (!form.productionProcess.trim()) errors.productionProcess = '제작과정 설명을 입력해주세요';
@@ -758,6 +774,8 @@ export default function ContestSubmitPage() {
   useEffect(() => {
     setFieldErrors(prev => {
       const next = { ...prev };
+      if (form.submitterName.trim()) delete next.submitterName;
+      if (form.submitterPhone.trim()) delete next.submitterPhone;
       if (form.title.trim()) delete next.title;
       if (form.description.trim()) delete next.description;
       if (form.productionProcess.trim()) delete next.productionProcess;
@@ -766,7 +784,7 @@ export default function ContestSubmitPage() {
       if (form.agree) delete next.agree;
       return Object.keys(next).length === Object.keys(prev).length ? prev : next;
     });
-  }, [form.title, form.description, form.productionProcess, videoFile, thumbnailFile, form.agree, isEditMode]);
+  }, [form.submitterName, form.submitterPhone, form.title, form.description, form.productionProcess, videoFile, thumbnailFile, form.agree, isEditMode]);
 
   if (loading) {
     return (
@@ -846,12 +864,15 @@ export default function ContestSubmitPage() {
         <div className="container mx-auto max-w-3xl relative z-10">
           {/* Top navigation */}
           <div className="mb-6">
-            <Link
-              href={`/contests/${contestId}/landing`}
-              className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-              공모전으로 돌아가기
+            <Link href={`/contests/${contestId}/landing`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="group gap-1.5 rounded-full px-4 border-border/60 bg-background/60 backdrop-blur-sm shadow-sm hover:bg-accent hover:shadow-md transition-all"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+                공모전으로 돌아가기
+              </Button>
             </Link>
           </div>
 
@@ -952,6 +973,40 @@ export default function ContestSubmitPage() {
                 </div>
               </div>
               <div className="space-y-5">
+                {/* 이름 */}
+                <div className="space-y-2">
+                  <Label htmlFor="submitterName" className="text-sm font-semibold">
+                    이름 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="submitterName"
+                    type="text"
+                    required
+                    maxLength={50}
+                    value={form.submitterName}
+                    onChange={(e) => updateField('submitterName', e.target.value)}
+                    placeholder="이름을 입력하세요"
+                    className="bg-background/50 border-border"
+                  />
+                  {fieldErrors.submitterName && <p className="text-xs text-red-500">{fieldErrors.submitterName}</p>}
+                </div>
+                {/* 전화번호 */}
+                <div className="space-y-2">
+                  <Label htmlFor="submitterPhone" className="text-sm font-semibold">
+                    전화번호 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="submitterPhone"
+                    type="tel"
+                    required
+                    maxLength={20}
+                    value={form.submitterPhone}
+                    onChange={(e) => updateField('submitterPhone', e.target.value)}
+                    placeholder="010-0000-0000"
+                    className="bg-background/50 border-border"
+                  />
+                  {fieldErrors.submitterPhone && <p className="text-xs text-red-500">{fieldErrors.submitterPhone}</p>}
+                </div>
                 {/* 영상 제목 */}
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-sm font-semibold">
