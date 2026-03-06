@@ -8,6 +8,7 @@ import type { Contest } from '@/lib/types';
 import { ClipboardList, Plus, UserCheck } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { formatDate } from '@/lib/utils';
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,21 +16,6 @@ type ContestListPageProps = {
   searchParams: Promise<{ status?: string }>;
 };
 
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  open: 'bg-primary/10 text-primary',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-};
 
 type ContestTabStatus = 'all' | 'open' | 'closed' | 'judging' | 'completed';
 
@@ -173,7 +159,7 @@ export default async function HostContestsPage({ searchParams }: ContestListPage
                           <CardTitle className="truncate text-xl">{contest.title}</CardTitle>
                           <CardDescription className="line-clamp-2">{contest.description}</CardDescription>
                         </div>
-                        <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
+                        <Badge className={STATUS_BADGE_CLASS_MAP[contest.status]}>{STATUS_LABEL_MAP[contest.status]}</Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">

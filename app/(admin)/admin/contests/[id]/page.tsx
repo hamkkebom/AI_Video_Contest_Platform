@@ -11,27 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { Contest } from '@/lib/types';
 import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Award } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 type AdminContestDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-/** 목록 페이지와 동일한 뱃지 색상 */
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  open: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-pink-500/10 text-pink-700 dark:text-pink-300',
-  completed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-};
 
 const statusFlow: Contest['status'][] = ['draft', 'open', 'closed', 'judging', 'completed'];
 
@@ -296,8 +281,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
           {/* 상태 뱃지 + 제목 */}
           <div className="space-y-3">
-            <Badge className={`${statusBadgeClassMap[contest.status]} text-base px-4 py-1`}>
-              {statusLabelMap[contest.status]}
+            <Badge className={`${STATUS_BADGE_CLASS_MAP[contest.status]} text-base px-4 py-1`}>
+              {STATUS_LABEL_MAP[contest.status]}
             </Badge>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
               {contest.title}
@@ -473,7 +458,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
               <SelectContent>
                 {statusFlow.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {statusLabelMap[s]}
+                    {STATUS_LABEL_MAP[s]}
                   </SelectItem>
                 ))}
               </SelectContent>

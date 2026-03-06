@@ -7,26 +7,12 @@ import { getContestById, getJudgesByContest, getSubmissions, getUserById } from 
 import type { Contest } from '@/lib/types';
 import { ExternalLink, Inbox, Search, SquarePen, UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  open: 'bg-primary/10 text-primary',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-};
 
 export default async function HostContestDetailPage({ params }: ContestDetailPageProps) {
   try {
@@ -77,7 +63,7 @@ export default async function HostContestDetailPage({ params }: ContestDetailPag
           <p className="text-sm text-muted-foreground">공모전 운영 상세</p>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{contest.title}</h1>
-            <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
+            <Badge className={STATUS_BADGE_CLASS_MAP[contest.status]}>{STATUS_LABEL_MAP[contest.status]}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{contest.description}</p>
         </header>

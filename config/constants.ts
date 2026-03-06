@@ -185,3 +185,21 @@ export const RESULT_FORMATS = [
   { value: "sns", label: "SNS 발표" },
   { value: "offline", label: "오프라인 시상식" },
 ] as const;
+
+/** 공모전 상태 라벨 (전체 공통) */
+export const STATUS_LABEL_MAP: Record<string, string> = {
+  draft: '초안',
+  open: '접수중',
+  closed: '마감',
+  judging: '심사중',
+  completed: '완료',
+};
+
+/** 공모전 상태 뱃지 스타일 — hover 시 색상 반전 (전체 공통) */
+export const STATUS_BADGE_CLASS_MAP: Record<string, string> = {
+  draft: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white',
+  open: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 hover:bg-orange-600 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white',
+  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white',
+  judging: 'bg-pink-500/10 text-pink-700 dark:text-pink-300 hover:bg-pink-600 hover:text-white dark:hover:bg-pink-500 dark:hover:text-white',
+  completed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white',
+};

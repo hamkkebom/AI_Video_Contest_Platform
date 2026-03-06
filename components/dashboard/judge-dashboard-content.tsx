@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 interface JudgeContestProgress {
   contestId: string;
   title: string;
@@ -51,21 +52,6 @@ interface StatCard {
   iconClass: string;
 }
 
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  open: 'bg-primary/10 text-primary',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-};
 
 const pieColors = [
   'hsl(var(--primary))',
@@ -240,7 +226,7 @@ export function JudgeDashboardContent({ data }: JudgeDashboardContentProps) {
                         <div className="min-w-0 flex-1 space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate text-base font-semibold">{contest.title}</p>
-                            <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
+                            <Badge className={STATUS_BADGE_CLASS_MAP[contest.status]}>{STATUS_LABEL_MAP[contest.status]}</Badge>
                           </div>
                           <p className="line-clamp-2 text-sm text-muted-foreground">{contest.description}</p>
                         </div>

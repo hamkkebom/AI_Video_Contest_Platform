@@ -8,23 +8,25 @@ import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import type { AwardTier } from '@/lib/types';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { formatDateCompact } from '@/lib/utils';
+import { STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 };
 
+/** 공개 페이지용 상태 메타 — 색상은 공통 상수, 라벨은 사용자 노출용 */
 function getStatusMeta(status: string) {
-  if (status === 'draft') {
-    return { label: '접수전', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-700 hover:text-white dark:hover:bg-blue-300 dark:hover:text-blue-900 transition-colors cursor-default' };
-  }
-  if (status === 'open') {
-    return { label: '접수중', className: 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors cursor-default' };
-  }
-  if (status === 'judging') {
-    return { label: '심사중', className: 'bg-primary text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors cursor-default' };
-  }
-  return { label: '결과발표', className: 'bg-muted text-muted-foreground hover:bg-muted-foreground hover:text-muted transition-colors cursor-default' };
+  const publicLabels: Record<string, string> = {
+    draft: '접수전',
+    open: '접수중',
+    judging: '심사중',
+    closed: '결과발표',
+    completed: '결과발표',
+  };
+  const label = publicLabels[status] ?? '결과발표';
+  const className = `${STATUS_BADGE_CLASS_MAP[status] ?? STATUS_BADGE_CLASS_MAP.completed} cursor-default`;
+  return { label, className };
 }
 
 function getJudgingTypeLabel(type: string) {

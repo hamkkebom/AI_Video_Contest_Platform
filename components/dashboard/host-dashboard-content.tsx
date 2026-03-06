@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 interface HostDashboardData {
   contests: Contest[];
@@ -71,21 +72,6 @@ const pieColors = [
   'hsl(var(--destructive))',
 ];
 
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  open: 'bg-primary/10 text-primary',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-};
 
 const quickActions: Array<{
   href: Route;
@@ -144,7 +130,7 @@ export function HostDashboardContent({ data }: HostDashboardContentProps) {
 
   const contestStatusDistribution = Object.entries(statusCounts)
     .filter(([, count]) => count > 0)
-    .map(([status, count]) => ({ name: statusLabelMap[status as Contest['status']], value: count }));
+    .map(([status, count]) => ({ name: STATUS_LABEL_MAP[status as Contest['status']], value: count }));
 
   const chartStatusData =
     contestStatusDistribution.length > 0 ? contestStatusDistribution : [{ name: '데이터 없음', value: 1 }];
@@ -315,7 +301,7 @@ export function HostDashboardContent({ data }: HostDashboardContentProps) {
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="truncate text-base font-semibold">{contest.title}</p>
                         <div className="flex items-center gap-2">
-                          <Badge className={statusBadgeClassMap[contest.status]}>{statusLabelMap[contest.status]}</Badge>
+                          <Badge className={STATUS_BADGE_CLASS_MAP[contest.status]}>{STATUS_LABEL_MAP[contest.status]}</Badge>
                           <span className="text-xs text-muted-foreground">마감 {formatDate(contest.submissionEndAt)}</span>
                         </div>
                       </div>

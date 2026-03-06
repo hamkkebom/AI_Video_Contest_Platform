@@ -6,6 +6,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 interface HostAnalyticsData {
   totalContests: number;
@@ -30,13 +31,6 @@ interface HostAnalyticsContentProps {
   data: HostAnalyticsData;
 }
 
-const statusBadgeMap: Record<Contest['status'], { label: string; className: string }> = {
-  draft: { label: '초안', className: 'bg-muted text-muted-foreground' },
-  open: { label: '접수중', className: 'bg-primary/10 text-primary' },
-  closed: { label: '마감', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-  judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
-  completed: { label: '완료', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
-};
 
 export function HostAnalyticsContent({ data }: HostAnalyticsContentProps) {
   const trendData = data.monthlyTrend.length > 0 ? data.monthlyTrend : [{ month: '데이터 없음', count: 0 }];
@@ -143,14 +137,14 @@ export function HostAnalyticsContent({ data }: HostAnalyticsContentProps) {
             ) : (
               <div className="space-y-3">
                 {data.contestRows.map((row) => {
-                  const status = statusBadgeMap[row.status];
+                  const statusLabel = STATUS_LABEL_MAP[row.status] ?? row.status;
 
                   return (
                     <div key={row.contestId} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4 md:flex-row md:items-center md:justify-between">
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="truncate font-semibold text-foreground">{row.title}</p>
-                          <Badge className={status.className}>{status.label}</Badge>
+                          <Badge className={STATUS_BADGE_CLASS_MAP[row.status] ?? ''}>{statusLabel}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">총 {row.total}건 · 승인 {row.approved}건 · 대기 {row.pending}건 · 반려 {row.rejected}건</p>
                       </div>

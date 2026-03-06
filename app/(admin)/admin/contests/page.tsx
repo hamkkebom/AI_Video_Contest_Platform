@@ -3,29 +3,12 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CONTEST_STATUS_TABS } from '@/config/constants';
+import { CONTEST_STATUS_TABS, STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
 import type { Contest } from '@/lib/types';
 import { Inbox, Calendar, Gavel, Trophy } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
-/** 공모전 상태 라벨 */
-const statusLabelMap: Record<Contest['status'], string> = {
-  draft: '초안',
-  open: '접수중',
-  closed: '마감',
-  judging: '심사중',
-  completed: '완료',
-};
-
-/** 공모전 상태별 뱃지 스타일 */
-const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  open: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-pink-500/10 text-pink-700 dark:text-pink-300',
-  completed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-};
 
 type AdminContestsPageProps = {
   searchParams: Promise<{ status?: string }>;
@@ -183,8 +166,8 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
                         <div className="flex-1 space-y-3 p-6">
                           <div className="flex items-center gap-2.5">
                             <h3 className="truncate text-xl font-semibold text-foreground">{contest.title}</h3>
-                            <Badge className={statusBadgeClassMap[contest.status]}>
-                              {statusLabelMap[contest.status]}
+                            <Badge className={STATUS_BADGE_CLASS_MAP[contest.status]}>
+                              {STATUS_LABEL_MAP[contest.status]}
                             </Badge>
                           </div>
                           <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
