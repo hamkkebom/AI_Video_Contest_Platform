@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Contest } from '@/lib/types';
-import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Award } from 'lucide-react';
+import type { Contest, SubmissionStatus } from '@/lib/types';
+import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Award, Image as ImageIcon } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
 import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type AdminContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -132,6 +133,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [submissionCounts, setSubmissionCounts] = useState<{ total: number; pendingReview: number; judging: number; judged: number } | null>(null);
 
   useEffect(() => {
     const loadContest = async () => {
@@ -156,6 +158,31 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
     };
 
     loadContest();
+  }, [id]);
+
+  /* 출품작 상태별 카운트 조회 */
+  useEffect(() => {
+    const loadSubmissionCounts = async () => {
+      try {
+        const supabase = createBrowserClient();
+        if (!supabase) return;
+        const { data } = await supabase
+          .from('submissions')
+          .select('status')
+          .eq('contest_id', id);
+        if (!data) return;
+        setSubmissionCounts({
+          total: data.length,
+          pendingReview: data.filter((s) => s.status === 'pending_review').length,
+          judging: data.filter((s) => s.status === 'judging').length,
+          judged: data.filter((s) => s.status === 'judged').length,
+        });
+      } catch {
+        /* 카운트 조회 실패 무시 */
+      }
+    };
+
+    loadSubmissionCounts();
   }, [id]);
 
   const nextStatus = useMemo(() => {
@@ -259,60 +286,155 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
   return (
     <div className="space-y-0 pb-10">
-      {/* 히어로 헤더 섹션 — 공개 페이지 스타일 gradient */}
-      <section className="relative -mx-4 -mt-4 mb-8 overflow-hidden rounded-xl bg-gradient-to-b from-primary/8 via-primary/3 to-background border border-border px-6 py-8 sm:px-8 sm:py-10">
+      {/* 뒤로가기 */}
+      <div className="mb-4">
+        <Link
+          href={'/admin/contests' as Route}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-foreground/10 text-sm font-medium text-foreground/70 hover:bg-primary hover:text-white transition-all"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          목록으로
+        </Link>
+      </div>
+
+      {/* 히어로 헤더 섹션 — 포스터(좌) + 정보(우) */}
+      <section className="relative -mx-4 mb-8 overflow-hidden rounded-xl bg-gradient-to-b from-primary/8 via-primary/3 to-background border border-border px-6 py-8 sm:px-8 sm:py-10">
         {/* 배경 장식 */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
           <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-orange-500/5 blur-3xl" />
         </div>
 
-        <div className="relative space-y-5">
-          {/* 뒤로가기 */}
-          <div>
-            <Link
-              href={'/admin/contests' as Route}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-foreground/10 text-sm font-medium text-foreground/70 hover:bg-primary hover:text-white transition-all"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              목록으로
-            </Link>
-          </div>
+        <div className="relative space-y-6">
+          {/* 포스터 + 정보 2컬럼 레이아웃 */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* 좌측: 포스터 */}
+            <div className="w-full lg:w-64 shrink-0">
+              {contest.posterUrl ? (
+                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4]">
+                  <img
+                    src={contest.posterUrl}
+                    alt={`${contest.title} 포스터`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl bg-muted/50 border border-dashed border-border shadow-lg aspect-[3/4] flex items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                </div>
+              )}
+            </div>
 
-          {/* 상태 뱃지 + 제목 */}
-          <div className="space-y-3">
-            <Badge className={`${STATUS_BADGE_CLASS_MAP[contest.status]} text-base px-4 py-1`}>
-              {STATUS_LABEL_MAP[contest.status]}
-            </Badge>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-              {contest.title}
-            </h1>
-          </div>
+            {/* 우측: 공모전 정보 */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {/* 상태 드롭다운 (뱃지 스타일) + 제목 */}
+              <div className="space-y-3">
+                <Select
+                  value={contest.status}
+                  onValueChange={(value) => {
+                    const newStatus = value as Contest['status'];
+                    if (newStatus !== contest.status) {
+                      setUpdatingStatus(true);
+                      setErrorMessage(null);
+                      fetch(`/api/admin/contests/${contest.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(toUpdatePayload(contest, newStatus)),
+                      })
+                        .then((res) => res.json())
+                        .then((data: { contest?: Contest; error?: string }) => {
+                          if (data.contest) {
+                            setContest(data.contest);
+                            router.refresh();
+                          } else {
+                            setErrorMessage(data.error ?? '상태 변경에 실패했습니다.');
+                          }
+                        })
+                        .catch(() => setErrorMessage('상태 변경에 실패했습니다.'))
+                        .finally(() => setUpdatingStatus(false));
+                    }
+                  }}
+                  disabled={updatingStatus}
+                >
+                  <SelectTrigger className={`${STATUS_BADGE_CLASS_MAP[contest.status]} w-auto inline-flex h-auto rounded-full border-0 px-4 py-1 text-base font-semibold gap-1.5 cursor-pointer [&>svg]:opacity-60`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusFlow.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABEL_MAP[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {updatingStatus && <p className="text-xs text-muted-foreground">변경 중...</p>}
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+                    {contest.title}
+                  </h1>
+                  <Link href={`/admin/contests/${contest.id}/edit` as Route} className="shrink-0">
+                    <Button size="sm" variant="outline" className="gap-1.5 bg-background/60 backdrop-blur-sm">
+                      <Pencil className="h-3.5 w-3.5" />
+                      수정
+                    </Button>
+                  </Link>
+                </div>
 
-          {/* 설명 */}
-          {contest.description && (
-            <p className="text-base text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4">
-              {contest.description}
-            </p>
-          )}
+              </div>
 
-          {/* 액션 버튼 */}
-          <div className="flex items-center gap-2 pt-1">
-            <Link href={`/admin/contests/${contest.id}/edit` as Route}>
-              <Button size="sm" variant="outline" className="gap-1.5 bg-background/60 backdrop-blur-sm">
-                <Pencil className="h-3.5 w-3.5" />
-                수정
-              </Button>
-            </Link>
-            <Link href={`/admin/contests/${contest.id}/submissions` as Route}>
-              <Button size="sm" variant="outline" className="gap-1.5 bg-background/60 backdrop-blur-sm">
-                <Video className="h-3.5 w-3.5" />
-                영상 관리
-              </Button>
-            </Link>
+              {/* 설명 */}
+              {contest.description && (
+                <p className="text-base text-foreground/70 leading-relaxed border-l-4 border-primary/30 pl-4 whitespace-pre-line">
+                  {contest.description}
+                </p>
+              )}
+
+            </div>
           </div>
         </div>
       </section>
+
+      {/* 영상 관리 섹션 — 풀 width + 상태별 카운트 */}
+      <div className="mb-8">
+        <Link href={`/admin/contests/${contest.id}/submissions` as Route} className="block">
+          <Card className="p-5 border border-border hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">영상 관리</p>
+                  <p className="text-sm text-muted-foreground">출품작 검수 및 심사 관리</p>
+                </div>
+              </div>
+              {submissionCounts && (
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-foreground">{submissionCounts.total}</p>
+                    <p className="text-muted-foreground">총 접수</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-amber-600">{submissionCounts.pendingReview}</p>
+                    <p className="text-muted-foreground">검수대기</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-sky-600">{submissionCounts.judging}</p>
+                    <p className="text-muted-foreground">심사중</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-emerald-600">{submissionCounts.judged}</p>
+                    <p className="text-muted-foreground">심사완료</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </Link>
+      </div>
 
       {/* 에러 메시지 */}
       {errorMessage && (
@@ -420,52 +542,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
           )}
         </div>
 
-        {/* 오른쪽: 상태 변경 + 수상 + 위험 */}
+        {/* 오른쪽: 수상 + 위험 */}
         <div className="space-y-6">
-          {/* 상태 변경 */}
-          <Card className="p-6 border border-border space-y-4">
-            <h3 className="text-lg font-bold">상태 변경</h3>
-            <Select
-              value={contest.status}
-              onValueChange={(value) => {
-                const newStatus = value as Contest['status'];
-                if (newStatus !== contest.status) {
-                  setUpdatingStatus(true);
-                  setErrorMessage(null);
-                  fetch(`/api/admin/contests/${contest.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(toUpdatePayload(contest, newStatus)),
-                  })
-                    .then((res) => res.json())
-                    .then((data: { contest?: Contest; error?: string }) => {
-                      if (data.contest) {
-                        setContest(data.contest);
-                        router.refresh();
-                      } else {
-                        setErrorMessage(data.error ?? '상태 변경에 실패했습니다.');
-                      }
-                    })
-                    .catch(() => setErrorMessage('상태 변경에 실패했습니다.'))
-                    .finally(() => setUpdatingStatus(false));
-                }
-              }}
-              disabled={updatingStatus}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusFlow.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABEL_MAP[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {updatingStatus && <p className="text-xs text-muted-foreground">변경 중...</p>}
-          </Card>
-
           {/* 수상 설정 — 공개 페이지 스타일 색상 코딩 */}
           <Card className="p-6 border border-border space-y-4 bg-gradient-to-br from-amber-500/5 to-transparent">
             <h3 className="text-lg font-bold flex items-center gap-2">
