@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="min-h-screen bg-background">
         <DashboardSidebar items={adminDashboardNavItems} roleLabel="관리자" />
         <div className="md:pl-60">
-          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:pb-8 md:pt-[121px]">{children}</main>
+          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:pb-8 md:pt-[60px]">{children}</main>
         </div>
       </div>
     </RoleGuard>

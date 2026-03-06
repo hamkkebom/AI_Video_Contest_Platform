@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CONTEST_STATUS_TABS } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
 import type { Contest } from '@/lib/types';
-import { Inbox, Calendar, Gavel, Trophy, FileVideo, AlertCircle } from 'lucide-react';
+import { Inbox, Calendar, Gavel, Trophy } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 /** 공모전 상태 라벨 */
@@ -20,11 +20,11 @@ const statusLabelMap: Record<Contest['status'], string> = {
 
 /** 공모전 상태별 뱃지 스타일 */
 const statusBadgeClassMap: Record<Contest['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  open: 'bg-primary/10 text-primary',
+  draft: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  open: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
   closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  judging: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  completed: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  judging: 'bg-pink-500/10 text-pink-700 dark:text-pink-300',
+  completed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
 };
 
 type AdminContestsPageProps = {
@@ -66,58 +66,90 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
       return acc;
     }, {});
 
+    /* 요약 통계용 날짜 계산 */
+    const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const pendingReviewCount = allSubmissions.filter((s) => s.status === 'pending_review').length;
+    const openCount = allContests.filter((c) => c.status === 'open').length;
+    const closingSoonCount = allContests.filter(
+      (c) => c.status === 'open' && new Date(c.submissionEndAt) <= threeDaysFromNow && new Date(c.submissionEndAt) > now,
+    ).length;
+    const todaySubmissionCount = allSubmissions.filter((s) => {
+      const d = new Date(s.submittedAt);
+      return d >= todayStart && d < todayEnd;
+    }).length;
+    const judgingContestCount = allContests.filter((c) => c.status === 'judging').length;
+    const completedCount = allContests.filter((c) => c.status === 'completed').length;
+    const resultAnnouncedCount = allContests.filter(
+      (c) => c.status === 'completed' && new Date(c.resultAnnouncedAt) <= now,
+    ).length;
+
+    /* 핵심 현황 카드 (4개) */
+    const primaryCards = [
+      { label: '총 공모전 수', value: allContests.length, border: 'border-l-primary' },
+      { label: '진행 중', value: openCount, border: 'border-l-emerald-500' },
+      { label: '승인대기', value: pendingReviewCount, border: 'border-l-amber-500' },
+      { label: '마감 임박', value: closingSoonCount, border: 'border-l-red-500' },
+    ];
+
+    /* 보조 현황 (인라인 stat) */
+    const secondaryStats = [
+      { label: '오늘 접수 작품 수', value: todaySubmissionCount, color: 'text-sky-600 dark:text-sky-400' },
+      { label: '심사 중', value: judgingContestCount, color: 'text-pink-600 dark:text-pink-400' },
+      { label: '심사 완료', value: completedCount, color: 'text-teal-600 dark:text-teal-400' },
+      { label: '결과 발표', value: resultAnnouncedCount, color: 'text-orange-600 dark:text-orange-400' },
+    ];
     return (
       <div className="space-y-6 pb-10">
         <header className="space-y-1">
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">공모전 관리</h1>
-          <p className="text-base text-muted-foreground">총 <span className="text-lg font-bold text-primary">{allContests.length}</span>개 공모전</p>
         </header>
 
-        {/* 요약 카드 */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="border-border border-l-4 border-l-primary">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">전체 공모전</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">{allContests.length}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border border-l-4 border-l-emerald-500">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">접수중</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
-                {allContests.filter((c) => c.status === 'open').length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-border border-l-4 border-l-sky-500">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">심사중</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
-                {allContests.filter((c) => c.status === 'judging').length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-border border-l-4 border-l-amber-500">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">전체 접수작</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">{allSubmissions.length}</p>
-            </CardContent>
-          </Card>
+        {/* 핵심 현황 카드 */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {primaryCards.map((card) => (
+            <Card key={card.label} className={`border-border border-l-4 ${card.border}`}>
+              <CardContent className="p-4">
+                <p className="text-base font-semibold text-muted-foreground">{card.label}</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">{card.value}</p>
+              </CardContent>
+            </Card>
+          ))}
         </section>
 
-        {/* 상태 필터 — min-h로 레이아웃 시프트 방지 */}
-        <section className="flex min-h-[40px] flex-wrap items-start gap-2">
+        {/* 보조 현황 — 인라인 stat */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-muted/30 px-5 py-3">
+          {secondaryStats.map((stat) => (
+            <span key={stat.label} className="flex items-center gap-2 text-base">
+              <span className="text-muted-foreground">{stat.label}</span>
+              <span className={`font-bold tabular-nums ${stat.color}`}>{stat.value}</span>
+            </span>
+          ))}
+        </div>
+
+        {/* 상태 필터 */}
+        <section className="mt-16 flex flex-wrap items-start gap-2">
           {CONTEST_STATUS_TABS.map((tab) => {
             const isActive = tab.value === activeStatus;
             const count = tab.value === 'all' ? allContests.length : (countByStatus[tab.value] ?? 0);
             return (
               <Link key={tab.value} href={tab.value === 'all' ? ('/admin/contests' as Route) : (`/admin/contests?status=${tab.value}` as Route)}>
-                <Button variant={isActive ? 'default' : 'outline'} size="sm" className="min-w-[72px] gap-1.5">
+                <span
+                  className={[
+                    'inline-flex min-w-[72px] items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'border-orange-500 bg-orange-500 text-white'
+                      : 'border-border bg-background text-muted-foreground hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950 dark:hover:text-orange-300',
+                  ].join(' ')}
+                >
                   {tab.label}
-                  <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="text-xs tabular-nums opacity-70">
                     {count}
                   </span>
-                </Button>
+                </span>
               </Link>
             );
           })}
@@ -126,7 +158,7 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
         {/* 공모전 목록 — 리스트형 카드 */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">공모전 목록</h2>
+            <h2 className="text-2xl font-semibold">공모전 목록</h2>
             <Link href={'/admin/contests/new' as Route}>
               <Button size="sm">+ 공모전 등록</Button>
             </Link>
@@ -146,50 +178,44 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
                 return (
                   <Link key={contest.id} href={`/admin/contests/${contest.id}` as Route} className="block">
                     <Card className="border-border transition-colors hover:border-primary/40 hover:bg-muted/30">
-                      <CardContent className="p-5">
-                        {/* 상단: 제목 + 상태 뱃지 + 접수 통계 */}
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2.5">
-                              <h3 className="truncate text-base font-semibold text-foreground">{contest.title}</h3>
-                              <Badge className={statusBadgeClassMap[contest.status]}>
-                                {statusLabelMap[contest.status]}
-                              </Badge>
-                            </div>
+                      <CardContent className="flex items-stretch p-0">
+                        {/* 왼쪽: 공모전 정보 */}
+                        <div className="flex-1 space-y-3 p-6">
+                          <div className="flex items-center gap-2.5">
+                            <h3 className="truncate text-xl font-semibold text-foreground">{contest.title}</h3>
+                            <Badge className={statusBadgeClassMap[contest.status]}>
+                              {statusLabelMap[contest.status]}
+                            </Badge>
                           </div>
-                          <div className="flex shrink-0 items-center gap-3 text-sm">
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <FileVideo className="h-3.5 w-3.5" />
-                              접수 {subCount}건
+                          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-4 w-4 text-emerald-500" />
+                              <span className="font-medium text-foreground/70">접수</span>
+                              {formatDate(contest.submissionStartAt)} ~ {formatDate(contest.submissionEndAt)}
                             </span>
-                            {pendingCount > 0 ? (
-                              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                                <AlertCircle className="mr-1 h-3 w-3" />
-                                검수대기 {pendingCount}건
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">검수대기 0건</span>
-                            )}
+                            <span className="flex items-center gap-1.5">
+                              <Gavel className="h-4 w-4 text-sky-500" />
+                              <span className="font-medium text-foreground/70">심사</span>
+                              {formatDate(contest.judgingStartAt)} ~ {formatDate(contest.judgingEndAt)}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Trophy className="h-4 w-4 text-amber-500" />
+                              <span className="font-medium text-foreground/70">결과발표</span>
+                              {formatDate(contest.resultAnnouncedAt)}
+                            </span>
                           </div>
                         </div>
-
-                        {/* 하단: 일정 정보 */}
-                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-emerald-500" />
-                            <span className="font-medium text-foreground/70">접수</span>
-                            {formatDate(contest.submissionStartAt)} ~ {formatDate(contest.submissionEndAt)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Gavel className="h-3.5 w-3.5 text-sky-500" />
-                            <span className="font-medium text-foreground/70">심사</span>
-                            {formatDate(contest.judgingStartAt)} ~ {formatDate(contest.judgingEndAt)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                            <span className="font-medium text-foreground/70">결과발표</span>
-                            {formatDate(contest.resultAnnouncedAt)}
-                          </span>
+                        {/* 오른쪽: 접수/검수 통계 — 전체 높이 채움 */}
+                        <div className="flex shrink-0 items-center gap-6 px-8">
+                          <div className="text-center">
+                            <p className="text-3xl font-bold tabular-nums text-foreground">{subCount}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">접수</p>
+                          </div>
+                          <div className="h-10 w-px" />
+                          <div className="text-center">
+                            <p className={['text-3xl font-bold tabular-nums', pendingCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'].join(' ')}>{pendingCount}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">검수대기</p>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
