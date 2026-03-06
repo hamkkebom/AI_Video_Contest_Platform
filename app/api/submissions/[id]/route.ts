@@ -153,6 +153,8 @@ export async function GET(
     submission: {
       id: submission.id,
       contestId: submission.contest_id,
+      submitterName: submission.submitter_name,
+      submitterPhone: submission.submitter_phone,
       title: submission.title,
       description: submission.description,
       videoUrl: submission.video_url,
@@ -230,6 +232,8 @@ export async function PUT(
       description?: string;
       aiTools?: string;
       productionProcess?: string;
+      submitterName?: string;
+      submitterPhone?: string;
       bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
     };
 
@@ -237,6 +241,8 @@ export async function PUT(
     const description = body.description?.trim();
     const aiTools = body.aiTools?.trim();
     const productionProcess = body.productionProcess?.trim();
+    const submitterName = body.submitterName?.trim();
+    const submitterPhone = body.submitterPhone?.trim();
 
     if (!title || !description || !productionProcess) {
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
@@ -250,6 +256,8 @@ export async function PUT(
         description,
         ai_tools: aiTools || null,
         production_process: productionProcess,
+        submitter_name: submitterName || null,
+        submitter_phone: submitterPhone || null,
       })
       .eq('id', submissionId)
       .select('id');

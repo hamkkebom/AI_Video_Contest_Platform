@@ -18,6 +18,8 @@ interface CreateSubmissionBody {
   tags?: string[];
   aiTools?: string;
   productionProcess?: string;
+  submitterName?: string;
+  submitterPhone?: string;
   bonusEntries?: BonusEntryBody[];
   termsAgreed?: boolean;
 }
@@ -80,13 +82,15 @@ export async function POST(request: Request) {
     const thumbnailUrl = body.thumbnailUrl?.trim();
     const aiTools = body.aiTools?.trim();
     const productionProcess = body.productionProcess?.trim();
+    const submitterName = body.submitterName?.trim();
+    const submitterPhone = body.submitterPhone?.trim();
     const tags = Array.isArray(body.tags)
       ? body.tags.map((tag) => tag.trim()).filter(Boolean)
       : [];
 
-    console.log('[submissions API] 입력값:', { contestId, title: title?.substring(0, 20), videoUrl: videoUrl?.substring(0, 20), thumbnailUrl: thumbnailUrl?.substring(0, 30), hasProductionProcess: !!productionProcess });
-    if (!contestId || !title || !description || !videoUrl || !thumbnailUrl || !productionProcess) {
-      console.error('[submissions API] 필수값 누락:', { contestId: !!contestId, title: !!title, description: !!description, videoUrl: !!videoUrl, thumbnailUrl: !!thumbnailUrl, productionProcess: !!productionProcess });
+    console.log('[submissions API] 입력값:', { contestId, title: title?.substring(0, 20), videoUrl: videoUrl?.substring(0, 20), thumbnailUrl: thumbnailUrl?.substring(0, 30), hasProductionProcess: !!productionProcess, submitterName, submitterPhone: submitterPhone ? '있음' : '없음' });
+    if (!contestId || !title || !description || !videoUrl || !thumbnailUrl || !productionProcess || !submitterName || !submitterPhone) {
+      console.error('[submissions API] 필수값 누락:', { contestId: !!contestId, title: !!title, description: !!description, videoUrl: !!videoUrl, thumbnailUrl: !!thumbnailUrl, productionProcess: !!productionProcess, submitterName: !!submitterName, submitterPhone: !!submitterPhone });
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
     }
 
@@ -156,6 +160,8 @@ export async function POST(request: Request) {
         ai_tools: aiTools || null,
         production_process: productionProcess,
         terms_agreed: body.termsAgreed ?? false,
+        submitter_name: submitterName,
+        submitter_phone: submitterPhone,
       })
       .select('id')
       .single();
