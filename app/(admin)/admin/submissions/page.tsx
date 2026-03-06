@@ -102,7 +102,8 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                     <TableRow>
                       <TableHead>작품</TableHead>
                       <TableHead>공모전</TableHead>
-                      <TableHead>참가자</TableHead>
+                      <TableHead>제출자</TableHead>
+                      <TableHead>계정</TableHead>
                       <TableHead>상태</TableHead>
                       <TableHead>제출일</TableHead>
                       <TableHead>반응</TableHead>
@@ -133,6 +134,12 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                             <p className="max-w-[160px] truncate text-sm text-muted-foreground">
                               {contest?.title ?? submission.contestId}
                             </p>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{submission.submitterName || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{submission.submitterPhone || '-'}</p>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div>

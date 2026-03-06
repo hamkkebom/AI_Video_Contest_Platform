@@ -104,7 +104,8 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                   <TableHeader>
                     <TableRow>
                       <TableHead>작품</TableHead>
-                      <TableHead>참가자</TableHead>
+                      <TableHead>제출자</TableHead>
+                      <TableHead>계정</TableHead>
                       <TableHead>상태</TableHead>
                       <TableHead>제출일</TableHead>
                       <TableHead>반응</TableHead>
@@ -128,6 +129,12 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                                 <p className="truncate font-semibold text-foreground">{submission.title}</p>
                                 <p className="line-clamp-1 text-xs text-muted-foreground">{submission.description}</p>
                               </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{submission.submitterName || '-'}</p>
+                              <p className="text-xs text-muted-foreground">{submission.submitterPhone || '-'}</p>
                             </div>
                           </TableCell>
                           <TableCell>
