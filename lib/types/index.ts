@@ -231,6 +231,10 @@ export interface Submission {
   /** 평균 시청 시간 (초) */
   avgWatchDuration: number;
   tags: string[];
+  /** 제출자 이름 (개인정보) */
+  submitterName?: string;
+  /** 제출자 전화번호 (개인정보) */
+  submitterPhone?: string;
   autoRejectedReason?: string;
   /** 사용한 AI 도구 (예: Sora, Runway, Midjourney) */
   aiTools?: string;

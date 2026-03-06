@@ -295,6 +295,8 @@ function toSubmission(row: Record<string, unknown>): Submission {
     autoRejectedReason: (row.auto_rejected_reason as string) ?? undefined,
     aiTools: (row.ai_tools as string) ?? undefined,
     productionProcess: (row.production_process as string) ?? undefined,
+    submitterName: (row.submitter_name as string) ?? undefined,
+    submitterPhone: (row.submitter_phone as string) ?? undefined,
   };
 }
 
