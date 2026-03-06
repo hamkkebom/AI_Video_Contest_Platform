@@ -161,6 +161,7 @@ export async function createStreamDownload(
       }
 
       return { error: parts.join(' ') };
+    }
 
     const data = await res.json();
     const result = data.result?.default ?? data.result;
