@@ -10,7 +10,7 @@ import { t, translations } from '@/components/contests/arirang/translations';
 
 /** 히어로 섹션 — 메인 비주얼 + 카운트다운 */
 export function HeroSection() {
-  const countdown = useCountdown('2026-03-28T23:59:59+09:00');
+  const countdown = useCountdown('2026-04-04T23:59:59+09:00');
   const { lang } = useLang();
   const heroTranslations = translations.hero;
 
