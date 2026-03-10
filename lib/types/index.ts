@@ -380,3 +380,34 @@ export interface PricingPlan {
   active: boolean;
   featureKeys: string[];
 }
+
+/* ── 팝업 ── */
+export type PopupStatus = 'draft' | 'active' | 'inactive';
+
+export interface Popup {
+  id: string;
+  title: string;
+  content?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  linkTarget?: string;
+  status: PopupStatus;
+  displayStartAt: string;
+  displayEndAt: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 팝업 생성/수정 입력 */
+export interface PopupMutationInput {
+  title: string;
+  content?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  linkTarget?: string;
+  status: PopupStatus;
+  displayStartAt: string;
+  displayEndAt: string;
+  sortOrder?: number;
+}

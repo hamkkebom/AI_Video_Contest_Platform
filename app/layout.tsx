@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
+import { SitePopup } from '@/components/popup/site-popup';
 import { AuthProvider } from '@/lib/supabase/auth-context';
 import { Suspense } from 'react';
 import { UtmTracker } from '@/components/tracking/utm-tracker';
@@ -109,6 +110,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 {children}
               </main>
               <Footer />
+              <SitePopup />
               <FloatingButtons />
               <Suspense fallback={null}>
                 <UtmTracker />

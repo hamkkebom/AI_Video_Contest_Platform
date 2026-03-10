@@ -39,6 +39,7 @@ import type {
   BonusConfig,
   JudgingCriterion,
 } from '@/lib/types';
+import type { Popup, PopupMutationInput } from '@/lib/types';
 
 // ============================================================
 // 유틸리티: snake_case → camelCase 변환
@@ -1762,4 +1763,138 @@ export async function createUtmVisit(params: {
   if (error) {
     console.error('UTM 방문 기록 실패:', error.message);
   }
+}
+
+// ============================================================
+// 팝업 관리
+// ============================================================
+
+/** DB row → Popup 변환 */
+function toPopup(row: Record<string, unknown>): Popup {
+  return {
+    id: String(row.id),
+    title: row.title as string,
+    content: (row.content as string) ?? undefined,
+    imageUrl: (row.image_url as string) ?? undefined,
+    linkUrl: (row.link_url as string) ?? undefined,
+    linkTarget: (row.link_target as string) ?? '_self',
+    status: row.status as Popup['status'],
+    displayStartAt: row.display_start_at as string,
+    displayEndAt: row.display_end_at as string,
+    sortOrder: (row.sort_order as number) ?? 0,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+/** 팝업 전체 목록 (관리자용, 캐시 없음) */
+export async function getAllPopups(): Promise<Popup[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('popups')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data.map((row) => toPopup(row as Record<string, unknown>));
+}
+
+/** 활성 팝업 목록 (공개용, 5분 캐시) */
+export const getActivePopups = unstable_cache(
+  async (): Promise<Popup[]> => {
+    const supabase = createPublicClient();
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('popups')
+      .select('*')
+      .eq('status', 'active')
+      .lte('display_start_at', now)
+      .gte('display_end_at', now)
+      .order('sort_order', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toPopup(row as Record<string, unknown>));
+  },
+  ['active-popups'],
+  { tags: ['popups'], revalidate: 300 },
+);
+
+/** 팝업 상세 조회 */
+export async function getPopupById(id: string): Promise<Popup | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('popups')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return toPopup(data as Record<string, unknown>);
+}
+
+/** 팝업 생성 */
+export async function createPopup(input: PopupMutationInput): Promise<Popup | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('popups')
+    .insert({
+      title: input.title,
+      content: input.content ?? null,
+      image_url: input.imageUrl ?? null,
+      link_url: input.linkUrl ?? null,
+      link_target: input.linkTarget ?? '_self',
+      status: input.status,
+      display_start_at: input.displayStartAt,
+      display_end_at: input.displayEndAt,
+      sort_order: input.sortOrder ?? 0,
+    })
+    .select('*')
+    .single();
+  if (error || !data) {
+    console.error('[createPopup] 실패:', error?.message);
+    return null;
+  }
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('popups');
+  return toPopup(data as Record<string, unknown>);
+}
+
+/** 팝업 수정 */
+export async function updatePopup(id: string, input: PopupMutationInput): Promise<Popup | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('popups')
+    .update({
+      title: input.title,
+      content: input.content ?? null,
+      image_url: input.imageUrl ?? null,
+      link_url: input.linkUrl ?? null,
+      link_target: input.linkTarget ?? '_self',
+      status: input.status,
+      display_start_at: input.displayStartAt,
+      display_end_at: input.displayEndAt,
+      sort_order: input.sortOrder ?? 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error || !data) {
+    console.error('[updatePopup] 실패:', error?.message);
+    return null;
+  }
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('popups');
+  return toPopup(data as Record<string, unknown>);
+}
+
+/** 팝업 삭제 */
+export async function deletePopup(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from('popups').delete().eq('id', id);
+  if (error) {
+    console.error('[deletePopup] 실패:', error.message);
+    return false;
+  }
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('popups');
+  return true;
 }
