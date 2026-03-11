@@ -315,6 +315,7 @@ export default function AdminSubmissionRegisterPage() {
     setSubmitted(false);
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const supabase = createBrowserClient()!;
 
       /* 단계: 영상 업로드 */
@@ -371,6 +372,8 @@ export default function AdminSubmissionRegisterPage() {
         xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbnailPath}`);
         xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
         xhr.setRequestHeader('x-upsert', 'false');
+        xhr.setRequestHeader('apikey', anonKey);
+        xhr.setRequestHeader('Content-Type', thumbnailFile.type || 'application/octet-stream');
         xhr.timeout = 30_000;
         xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
         xhr.onload = () => {
@@ -405,6 +408,8 @@ export default function AdminSubmissionRegisterPage() {
             xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
             xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
             xhr.setRequestHeader('x-upsert', 'false');
+            xhr.setRequestHeader('apikey', anonKey);
+            xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
             xhr.timeout = 30_000;
             xhr.onload = () => {
               if (xhr.status >= 200 && xhr.status < 300) resolve();

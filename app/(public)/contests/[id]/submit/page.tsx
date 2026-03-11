@@ -435,6 +435,7 @@ export default function ContestSubmitPage() {
 
         if (editBonusFormEntries.length > 0) {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
           const supabase = createBrowserClient()!;
 
           for (const [configId, entry] of editBonusFormEntries) {
@@ -449,6 +450,8 @@ export default function ContestSubmitPage() {
                 xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
                 xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
                 xhr.setRequestHeader('x-upsert', 'false');
+                xhr.setRequestHeader('apikey', anonKey);
+                xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
                 xhr.timeout = 30_000;
                 xhr.onload = () => {
                   if (xhr.status >= 200 && xhr.status < 300) resolve();
@@ -596,12 +599,15 @@ export default function ContestSubmitPage() {
       console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', selectedThumbnailFile.size, 'bytes');
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
       const thumbnailData = await new Promise<{ path: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbnailPath}`);
         xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
         xhr.setRequestHeader('x-upsert', 'false');
+        xhr.setRequestHeader('apikey', anonKey);
+        xhr.setRequestHeader('Content-Type', selectedThumbnailFile.type || 'application/octet-stream');
         xhr.timeout = 30_000;
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
@@ -664,6 +670,8 @@ export default function ContestSubmitPage() {
               xhr.open('POST', proofUploadUrl);
               xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
               xhr.setRequestHeader('x-upsert', 'false');
+              xhr.setRequestHeader('apikey', anonKey);
+              xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
               xhr.timeout = 30_000;
               xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
