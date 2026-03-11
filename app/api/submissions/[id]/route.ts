@@ -101,9 +101,8 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[PATCH /api/submissions/[id]] 실패:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[PATCH /api/submissions/[id]] 실패:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: '출품작 상태 변경에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }
 
@@ -324,8 +323,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[PUT /api/submissions/[id]] 실패:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[PUT /api/submissions/[id]] 실패:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: '출품작 수정에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }

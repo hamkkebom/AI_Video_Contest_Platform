@@ -39,8 +39,7 @@ export async function POST(request: Request) {
     revalidateTag('popups');
     return NextResponse.json({ popup }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[POST /api/admin/popups] 실패:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[POST /api/admin/popups] 실패:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: '팝업 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }

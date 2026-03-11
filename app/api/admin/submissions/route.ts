@@ -124,9 +124,8 @@ export async function POST(request: Request) {
 
     if (error || !data) {
       console.error('[POST /api/admin/submissions] INSERT 실패:', error?.message, error?.details, error?.hint);
-      return NextResponse.json({ error: `출품작 등록에 실패했습니다: ${error?.message ?? 'unknown'}` }, { status: 500 });
+      return NextResponse.json({ error: '출품작 등록에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
     }
-
     /* 가산점 인증 저장 */
     if (Array.isArray(body.bonusEntries) && body.bonusEntries.length > 0) {
       const bonusInserts = body.bonusEntries
@@ -163,8 +162,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    console.error('[POST /api/admin/submissions] 실패:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[POST /api/admin/submissions] 실패:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: '출품작 등록에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }

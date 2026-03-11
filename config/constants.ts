@@ -195,11 +195,11 @@ export const STATUS_LABEL_MAP: Record<string, string> = {
   completed: '완료',
 };
 
-/** 공모전 상태 뱃지 스타일 — hover 시 색상 반전 (전체 공통) */
+/** 공모전 상태 뱃지 스타일 — 기본 solid, hover 시 연한 톤 (전체 공통) */
 export const STATUS_BADGE_CLASS_MAP: Record<string, string> = {
-  draft: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white',
-  open: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 hover:bg-orange-600 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white',
-  closed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white',
-  judging: 'bg-pink-500/10 text-pink-700 dark:text-pink-300 hover:bg-pink-600 hover:text-white dark:hover:bg-pink-500 dark:hover:text-white',
-  completed: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white',
+  draft: 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-300',
+  open: 'bg-orange-600 text-white dark:bg-orange-500 dark:text-white hover:bg-orange-500/10 hover:text-orange-700 dark:hover:bg-orange-500/15 dark:hover:text-orange-300',
+  closed: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white hover:bg-amber-500/10 hover:text-amber-700 dark:hover:bg-amber-500/15 dark:hover:text-amber-300',
+  judging: 'bg-pink-600 text-white dark:bg-pink-500 dark:text-white hover:bg-pink-500/10 hover:text-pink-700 dark:hover:bg-pink-500/15 dark:hover:text-pink-300',
+  completed: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white hover:bg-amber-500/10 hover:text-amber-700 dark:hover:bg-amber-500/15 dark:hover:text-amber-300',
 };

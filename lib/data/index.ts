@@ -1446,7 +1446,7 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
 
   if (insertError) {
     console.error('[createContest] insert 실패:', insertError.message, insertError.details, insertError.hint);
-    throw new Error(`contests insert 실패: ${insertError.message}`);
+    throw new Error('공모전 등록에 실패했습니다.');
   }
   if (!insertedContest) {
     throw new Error('contests insert 후 데이터 없음');
@@ -1469,7 +1469,7 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     if (tierError) {
       console.error('[createContest] award_tiers insert 실패:', tierError.message, tierError.details);
       await supabase.from('contests').delete().eq('id', contestId);
-      throw new Error(`award_tiers insert 실패: ${tierError.message}`);
+      throw new Error('시상 부문 등록에 실패했습니다.');
     }
   }
 
@@ -1491,7 +1491,7 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
       console.error('[createContest] bonus_configs insert 실패:', bonusError.message, bonusError.details);
       await supabase.from('contest_award_tiers').delete().eq('contest_id', contestId);
       await supabase.from('contests').delete().eq('id', contestId);
-      throw new Error(`bonus_configs insert 실패: ${bonusError.message}`);
+      throw new Error('가산점 설정 등록에 실패했습니다.');
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -79,20 +80,33 @@ export function SitePopup() {
 
   return (
     <Dialog open={!!currentPopup} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-md overflow-hidden p-0">
-        {currentPopup.imageUrl ? (
-          <div className="overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full rounded-t object-cover" />
-          </div>
-        ) : null}
-
-        <div className="space-y-4 p-6 pt-5">
-          <DialogHeader>
+      <DialogContent className="max-w-md overflow-hidden p-0 [&>button[class*='absolute']]:hidden">
+        {/* 제목 헤더 + 닫기 */}
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <DialogHeader className="flex-1">
             <DialogTitle>{currentPopup.title}</DialogTitle>
             <DialogDescription className="sr-only">운영 팝업 안내</DialogDescription>
           </DialogHeader>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">닫기</span>
+          </button>
+        </div>
 
+        {/* 이미지 */}
+        {currentPopup.imageUrl ? (
+          <div className="overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover" />
+          </div>
+        ) : null}
+
+        {/* 본문 */}
+        <div className="space-y-4 p-6 pt-5">
           {currentPopup.content ? (
             <div
               className="max-h-[260px] overflow-y-auto text-sm leading-relaxed text-foreground/90"

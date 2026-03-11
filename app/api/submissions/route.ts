@@ -168,7 +168,7 @@ export async function POST(request: Request) {
 
     if (error || !data) {
       console.error('[submissions API] 출품작 INSERT 실패:', error?.message, error?.details, error?.hint);
-      return NextResponse.json({ error: `출품작 생성에 실패했습니다: ${error?.message ?? '알 수 없는 오류'}` }, { status: 500 });
+      return NextResponse.json({ error: '출품작 등록에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
     }
     console.log('[submissions API] 출품작 생성 성공! ID:', data.id);
 
@@ -217,6 +217,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });
   } catch (error) {
     console.error('[submissions API] 예외 발생:', error instanceof Error ? error.message : error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+    return NextResponse.json({ error: '출품작 등록에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }
