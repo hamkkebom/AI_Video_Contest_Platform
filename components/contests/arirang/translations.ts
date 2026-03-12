@@ -141,7 +141,7 @@ export const translations = {
       en: 'In 1886, a 23-year-old American arrived in Joseon. He wrote the first Hangul textbook, Saminpilji, and devoted his life to Korea\'s independence and progress, including serving as Emperor Gojong\'s secret envoy to The Hague Peace Conference.',
     },
     hulbertMore: { ko: '헐버트 박사 더 알아보기', en: 'Learn more about Dr. Hulbert' },
-    exhibitionDate: { ko: '전시일정: 3월 12일(목) ~ 3월 24일(화)', en: 'Exhibition dates: 3월 12일(목) ~ 3월 24일(화)' },
+    exhibitionDate: { ko: '전시일정: 3월 19일(목) ~ 4월 19일(일)', en: 'Exhibition dates: 3월 19일(목) ~ 4월 19일(일)' },
     exhibitionPlace: { ko: '전시장소: 함께봄 본사 (서울 종로구 효자로 7길 10, 광화문광장 도보 10분거리)', en: 'Venue: Hamkkebom HQ (10, Hyoja-ro 7-gil, Jongno-gu, Seoul, 10 minutes on foot from Gwanghwamun Square)' },
     hashtagsTitle: { ko: '필수 해시태그', en: 'Required Hashtags' },
     verifyMethod: { ko: '인증방법: 공모전 마이페이지 → 가산점 등록 → SNS 게시글 캡처본 업로드', en: 'Verification: Contest My Page -> Bonus registration -> Upload a screenshot of your social media post' },
