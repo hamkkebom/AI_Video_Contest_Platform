@@ -7,6 +7,7 @@ import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { Clapperboard, ArrowRight } from 'lucide-react';
 import type { AwardTier } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
+import { SitePopup } from '@/components/popup/site-popup';
 
 /**
  * 랜딩 페이지
@@ -93,6 +94,7 @@ export default async function LandingPage() {
     c.status === 'open' && new Date(c.submissionStartAt).getTime() > nowMs;
 
   return (
+    <>
     <div className="w-full">
       {/* ══ 히어로 캐러셀 ══ */}
       <HeroCarousel slides={heroSlides} />
@@ -245,5 +247,7 @@ export default async function LandingPage() {
         </div>
       </section>
     </div>
+    <SitePopup />
+    </>
   );
 }
