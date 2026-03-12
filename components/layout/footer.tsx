@@ -28,10 +28,10 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* 브랜드 */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <a href="https://www.hamkkebom.com/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <TreePine className="h-5 w-5 text-background/80" />
-              <span className="text-lg font-bold">AI꿈(아이꿈)</span>
-            </div>
+              <span className="text-lg font-bold">함께봄</span>
+            </a>
             <p className="text-sm text-background/60 leading-relaxed">
               AI와 함께 꿈을 설계하고 완성하다
             </p>
@@ -77,7 +77,7 @@ export function Footer() {
         {/* 하단 저작권 */}
         <div className="mt-12 pt-8 border-t border-background/10">
           <p className="text-xs text-background/40 text-center">
-            &copy; 2026 함께봄 주식회사. All rights reserved.
+            &copy; 2026 <a href="https://www.hamkkebom.com/" target="_blank" rel="noopener noreferrer" className="hover:text-background/60 transition-colors">함께봄 주식회사</a>. All rights reserved.
           </p>
         </div>
       </div>
