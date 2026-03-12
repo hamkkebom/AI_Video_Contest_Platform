@@ -106,32 +106,33 @@ export function SitePopup() {
           </button>
         </div>
 
-        {/* 이미지 */}
+        {/* 이미지 (linkUrl이 있으면 클릭 시 이동) */}
         {currentPopup.imageUrl ? (
-          <div className="overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover" />
-          </div>
+          currentPopup.linkUrl ? (
+            <a
+              href={currentPopup.linkUrl}
+              target={currentPopup.linkTarget === '_blank' ? '_blank' : '_self'}
+              rel={currentPopup.linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
+              className="block overflow-hidden cursor-pointer"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover transition-opacity hover:opacity-90" />
+            </a>
+          ) : (
+            <div className="overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover" />
+            </div>
+          )
         ) : null}
 
-        {/* 본문 */}
+        {/* 본문 + 푸터 */}
         <div className="space-y-4 p-6 pt-5">
           {currentPopup.content ? (
             <div
               className="max-h-[260px] overflow-y-auto text-sm leading-relaxed text-foreground/90"
               dangerouslySetInnerHTML={{ __html: currentPopup.content }}
             />
-          ) : null}
-
-          {currentPopup.linkUrl ? (
-            <a
-              href={currentPopup.linkUrl}
-              target={currentPopup.linkTarget === '_blank' ? '_blank' : '_self'}
-              rel={currentPopup.linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
-              className="inline-flex"
-            >
-              <Button size="sm">자세히 보기</Button>
-            </a>
           ) : null}
 
           <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">

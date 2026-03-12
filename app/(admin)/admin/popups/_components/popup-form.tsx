@@ -458,7 +458,7 @@ export default function PopupForm({ mode, popupId }: PopupFormProps) {
                 onChange={(event) => setLinkUrl(event.target.value)}
                 placeholder="https://example.com"
               />
-              <p className="text-xs text-muted-foreground">팝업에서 &apos;자세히 보기&apos; 클릭 시 이동할 URL입니다.</p>
+              <p className="text-xs text-muted-foreground">팝업 이미지 클릭 시 이동할 URL입니다.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -549,12 +549,25 @@ export default function PopupForm({ mode, popupId }: PopupFormProps) {
                 </div>
               </div>
 
-              {/* 이미지 */}
+              {/* 이미지 (linkUrl이 있으면 클릭 시 이동) */}
               {imagePreview ? (
-                <div className="overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imagePreview} alt={title || '팝업 이미지'} className="h-auto w-full object-cover" />
-                </div>
+                linkUrl ? (
+                  <a
+                    href={linkUrl}
+                    target={linkTarget === '_blank' ? '_blank' : '_self'}
+                    rel={linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
+                    className="block overflow-hidden cursor-pointer"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePreview} alt={title || '팝업 이미지'} className="h-auto w-full object-cover transition-opacity hover:opacity-90" />
+                  </a>
+                ) : (
+                  <div className="overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePreview} alt={title || '팝업 이미지'} className="h-auto w-full object-cover" />
+                  </div>
+                )
               ) : null}
 
               {/* 본문 */}
@@ -568,18 +581,6 @@ export default function PopupForm({ mode, popupId }: PopupFormProps) {
                   <p className="text-sm text-muted-foreground italic">내용을 입력하면 여기에 표시됩니다.</p>
                 )}
 
-                {/* 링크 버튼 */}
-                {linkUrl ? (
-                  <a
-                    href={linkUrl}
-                    target={linkTarget === '_blank' ? '_blank' : '_self'}
-                    rel={linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
-                    className="inline-flex"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <Button type="button" size="sm">자세히 보기</Button>
-                  </a>
-                ) : null}
 
                 {/* 하단 버튼 (미리보기 전용 — 비활성) */}
                 <div className="flex items-center justify-between gap-2 pt-2 border-t">
