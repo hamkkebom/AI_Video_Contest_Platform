@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useAuth } from '@/lib/supabase/auth-context';
 import {
   Dialog,
   DialogContent,
@@ -25,13 +26,15 @@ function getTodayString() {
   return `${year}-${month}-${day}`;
 }
 
-function getDismissKey(popupId: string, dateString: string) {
-  return `popup_dismissed_${popupId}_${dateString}`;
+function getDismissKey(userId: string, popupId: string, dateString: string) {
+  return `popup_dismissed_${userId}_${popupId}_${dateString}`;
 }
 
 export function SitePopup() {
   const [popups, setPopups] = useState<Popup[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { user } = useAuth();
+  const userId = user?.id ?? 'anonymous';
 
   const todayString = useMemo(() => getTodayString(), []);
 
@@ -45,7 +48,7 @@ export function SitePopup() {
         const rawPopups = data.popups ?? [];
 
         const filtered = rawPopups.filter((popup) => {
-          const dismissed = localStorage.getItem(getDismissKey(popup.id, todayString));
+          const dismissed = localStorage.getItem(getDismissKey(userId, popup.id, todayString));
           return dismissed !== '1';
         });
 
@@ -56,7 +59,7 @@ export function SitePopup() {
     };
 
     loadPopups();
-  }, [todayString]);
+  }, [todayString, userId]);
 
   const currentPopup = popups[currentIndex];
 
@@ -66,7 +69,7 @@ export function SitePopup() {
 
   const handleDismissToday = () => {
     if (!currentPopup) return;
-    localStorage.setItem(getDismissKey(currentPopup.id, todayString), '1');
+    localStorage.setItem(getDismissKey(userId, currentPopup.id, todayString), '1');
     moveToNextPopup();
   };
 
