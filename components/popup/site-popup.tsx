@@ -47,7 +47,13 @@ export function SitePopup() {
         const data = (await response.json()) as PopupListResponse;
         const rawPopups = data.popups ?? [];
 
+        const now = new Date();
         const filtered = rawPopups.filter((popup) => {
+          // 서버 캐시가 stale할 경우를 대비한 클라이언트 날짜 검증
+          const start = new Date(popup.displayStartAt);
+          const end = new Date(popup.displayEndAt);
+          if (now < start || now > end) return false;
+
           const dismissed = localStorage.getItem(getDismissKey(userId, popup.id, todayString));
           return dismissed !== '1';
         });
