@@ -18,6 +18,12 @@ function hasPermission(roles: unknown): boolean {
   return false;
 }
 
+function isAdmin(roles: unknown): boolean {
+  if (Array.isArray(roles)) return roles.includes('admin');
+  if (typeof roles === 'string') return roles.split(',').map((r) => r.trim()).includes('admin');
+  return false;
+}
+
 /** 제출물 상태 변경 API (승인/거절) */
 export async function PATCH(
   request: Request,
@@ -137,9 +143,12 @@ export async function GET(
     return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
   }
 
-  /* 본인 것인지 확인 */
+  /* 본인 것인지 확인 — 관리자는 모든 출품작 조회 가능 */
   if (submission.user_id !== user.id) {
-    return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+    const { data: adminProfile } = await supabase.from('profiles').select('roles').eq('id', user.id).single();
+    if (!adminProfile || !isAdmin(adminProfile.roles)) {
+      return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+    }
   }
 
   /* 가산점 인증 내역 조회 */
@@ -169,7 +178,7 @@ export async function GET(
   });
 }
 
-/** 본인 출품작 내용 수정 API (영상/썸네일 제외) */
+/** 본인 출품작 내용 수정 API (영상/썸네일 제외, 관리자는 전체 수정 가능) */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -200,29 +209,34 @@ export async function PUT(
     return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
   }
 
-  if (submission.user_id !== user.id) {
+  const { data: callerProfile } = await supabase.from('profiles').select('roles').eq('id', user.id).single();
+  const callerIsAdmin = callerProfile && isAdmin(callerProfile.roles);
+
+  if (submission.user_id !== user.id && !callerIsAdmin) {
     return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
   }
 
-  /* 공모전 상태 확인 (open일 때만 수정 가능) */
-  const { data: contest } = await supabase
-    .from('contests')
-    .select('status, submission_end_at')
-    .eq('id', submission.contest_id)
-    .single();
+  if (!callerIsAdmin) {
+    /* 공모전 상태 확인 (open일 때만 수정 가능) — 참가자만 */
+    const { data: contest } = await supabase
+      .from('contests')
+      .select('status, submission_end_at')
+      .eq('id', submission.contest_id)
+      .single();
 
-  if (!contest || contest.status !== 'open') {
-    return NextResponse.json(
-      { error: '접수 기간이 아니라 수정할 수 없습니다.', code: 'CONTEST_NOT_OPEN' },
-      { status: 410 },
-    );
-  }
+    if (!contest || contest.status !== 'open') {
+      return NextResponse.json(
+        { error: '접수 기간이 아니라 수정할 수 없습니다.', code: 'CONTEST_NOT_OPEN' },
+        { status: 410 },
+      );
+    }
 
-  if (contest.submission_end_at && new Date(contest.submission_end_at as string) < new Date()) {
-    return NextResponse.json(
-      { error: '접수 마감일이 지나 수정할 수 없습니다.', code: 'DEADLINE_PASSED' },
-      { status: 403 },
-    );
+    if (contest.submission_end_at && new Date(contest.submission_end_at as string) < new Date()) {
+      return NextResponse.json(
+        { error: '접수 마감일이 지나 수정할 수 없습니다.', code: 'DEADLINE_PASSED' },
+        { status: 403 },
+      );
+    }
   }
 
   try {
@@ -233,6 +247,9 @@ export async function PUT(
       productionProcess?: string;
       submitterName?: string;
       submitterPhone?: string;
+      videoUrl?: string;
+      thumbnailUrl?: string;
+      status?: string;
       bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
     };
 
@@ -247,17 +264,24 @@ export async function PUT(
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
     }
 
+    const updateData: Record<string, unknown> = {
+      title,
+      description,
+      ai_tools: aiTools || null,
+      production_process: productionProcess,
+      submitter_name: submitterName || null,
+      submitter_phone: submitterPhone || null,
+    };
+    if (callerIsAdmin) {
+      if (body.videoUrl !== undefined) updateData.video_url = body.videoUrl;
+      if (body.thumbnailUrl !== undefined) updateData.thumbnail_url = body.thumbnailUrl;
+      if (body.status !== undefined) updateData.status = body.status;
+    }
+
     /* 출품작 정보 업데이트 */
     const { data: updatedRows, error: updateError } = await supabase
       .from('submissions')
-      .update({
-        title,
-        description,
-        ai_tools: aiTools || null,
-        production_process: productionProcess,
-        submitter_name: submitterName || null,
-        submitter_phone: submitterPhone || null,
-      })
+      .update(updateData)
       .eq('id', submissionId)
       .select('id');
 
@@ -326,4 +350,65 @@ export async function PUT(
     console.error('[PUT /api/submissions/[id]] 실패:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: '출품작 수정에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
+}
+
+/** 관리자 출품작 삭제 API */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: submissionId } = await params;
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  }
+
+  /* 관리자 권한 확인 */
+  const { data: profile } = await supabase.from('profiles').select('roles').eq('id', user.id).single();
+  if (!profile || !isAdmin(profile.roles)) {
+    return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+  }
+
+  /* 출품작 존재 확인 */
+  const { data: submission } = await supabase
+    .from('submissions')
+    .select('id, title, contest_id, user_id')
+    .eq('id', submissionId)
+    .single();
+  if (!submission) {
+    return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
+  }
+
+  /* 삭제 (bonus_entries는 FK CASCADE로 자동 삭제) */
+  const { error: deleteError } = await supabase.from('submissions').delete().eq('id', submissionId);
+  if (deleteError) {
+    console.error('[DELETE /api/submissions/[id]] 삭제 실패:', deleteError.message);
+    return NextResponse.json({ error: '삭제에 실패했습니다.' }, { status: 500 });
+  }
+
+  /* 활동 로그 */
+  await createActivityLog({
+    userId: user.id,
+    action: 'delete_submission',
+    targetType: 'submission',
+    targetId: submissionId,
+    metadata: {
+      contestId: submission.contest_id as string,
+      title: submission.title as string,
+      deletedUserId: submission.user_id as string,
+    },
+  });
+
+  /* 캐시 무효화 */
+  revalidateTag('submissions');
+
+  return NextResponse.json({ success: true });
 }

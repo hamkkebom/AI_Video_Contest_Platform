@@ -6,6 +6,7 @@ import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked 
 import { formatDateCompact } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { SubmissionActions } from '@/components/submissions/submission-actions';
+import { AdminSubmissionActions } from '@/components/submissions/admin-submission-actions';
 import { LikeButton } from '@/components/common/like-button';
 import { ViewTracker } from '@/components/common/view-tracker';
 
@@ -140,6 +141,25 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             <div className="flex items-center gap-2">
               <SubmissionActions submissionId={String(submission.id)} submissionTitle={submission.title} />
             </div>
+          )}
+
+          {/* 관리자 전용: 수정/삭제 (모든 상태) */}
+          {isAdmin && (
+            <AdminSubmissionActions
+              submissionId={String(submission.id)}
+              submissionTitle={submission.title}
+              contestId={String(submission.contestId)}
+              currentData={{
+                title: submission.title,
+                description: submission.description || '',
+                aiTools: submission.aiTools || '',
+                productionProcess: submission.productionProcess || '',
+                submitterName: submission.submitterName || '',
+                submitterPhone: submission.submitterPhone || '',
+                videoUrl: submission.videoUrl || '',
+                thumbnailUrl: submission.thumbnailUrl || '',
+              }}
+            />
           )}
           </div>
 
