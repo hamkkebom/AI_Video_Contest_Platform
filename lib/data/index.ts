@@ -753,6 +753,19 @@ export async function toggleLike(
   return { liked: !existing, totalLikes: count ?? 0 };
 }
 
+/** 특정 유저가 특정 출품작에 좋아요했는지 확인 */
+export async function hasUserLiked(userId: string, submissionId: string): Promise<boolean> {
+  const supabase = await createClient();
+  if (!supabase) return false;
+  const { data } = await supabase
+    .from('likes')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('submission_id', submissionId)
+    .maybeSingle();
+  return !!data;
+}
+
 export const getArticles = unstable_cache(
   async (): Promise<Article[]> => {
     const supabase = createPublicClient();
@@ -1896,5 +1909,59 @@ export async function deletePopup(id: string): Promise<boolean> {
   }
   const { revalidateTag } = await import('next/cache');
   revalidateTag('popups');
+  return true;
+}
+
+/* ─── 부정사용 플래그 (abuse_flags) ─── */
+
+export type AbuseFlag = {
+  id: string;
+  flagType: string;
+  severity: number;
+  submissionId: string | null;
+  userId: string | null;
+  ipHash: string | null;
+  details: Record<string, unknown>;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+};
+
+/** 부정사용 플래그 목록 조회 (관리자 전용) */
+export async function getAbuseFlags(): Promise<AbuseFlag[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('abuse_flags')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error || !data) return [];
+  return data.map((row: Record<string, unknown>) => ({
+    id: String(row.id),
+    flagType: row.flag_type as string,
+    severity: (row.severity as number) ?? 1,
+    submissionId: row.submission_id ? String(row.submission_id) : null,
+    userId: (row.user_id as string) ?? null,
+    ipHash: (row.ip_hash as string) ?? null,
+    details: (row.details as Record<string, unknown>) ?? {},
+    createdAt: row.created_at as string,
+    resolvedAt: (row.resolved_at as string) ?? null,
+    resolvedBy: (row.resolved_by as string) ?? null,
+  }));
+}
+
+/** 부정사용 플래그 해결 처리 */
+export async function resolveAbuseFlag(flagId: string, resolvedByUserId: string): Promise<boolean> {
+  const supabase = await createClient();
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('abuse_flags')
+    .update({ resolved_at: new Date().toISOString(), resolved_by: resolvedByUserId })
+    .eq('id', flagId);
+  if (error) {
+    console.error('[resolveAbuseFlag] 실패:', error.message);
+    return false;
+  }
   return true;
 }

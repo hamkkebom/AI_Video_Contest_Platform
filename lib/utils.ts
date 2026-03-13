@@ -43,3 +43,36 @@ export function formatDateCompact(dateStr: string | Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}.${m}.${day}`;
 }
+
+/* ─── IP 추출 / 해시 유틸 (부정사용 방지) ─── */
+
+/**
+ * Vercel 환경에서 클라이언트 IP 추출
+ * x-forwarded-for(첫 번째 IP) → x-real-ip 순서로 시도
+ */
+export function extractClientIp(headers: Headers): string | null {
+  const forwarded = headers.get('x-forwarded-for');
+  if (forwarded) {
+    // 첫 번째 IP만 사용 (프록시 체인에서 원본)
+    return forwarded.split(',')[0].trim();
+  }
+  return headers.get('x-real-ip') ?? null;
+}
+
+/**
+ * IP/UA를 SHA-256 해시로 변환 (개인정보 보호: 원본 미저장)
+ * 서버 시크릿을 HMAC 키로 사용하여 레인보우 테이블 공격 방지
+ */
+export async function hashForAntiAbuse(value: string): Promise<string> {
+  const secret = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'fallback-secret';
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const msgData = encoder.encode(value);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  const hashArray = Array.from(new Uint8Array(signature));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}

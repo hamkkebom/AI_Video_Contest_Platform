@@ -2,10 +2,12 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'lucide-react';
-import { getSubmissionById, getRelatedSubmissions, getAuthProfile } from '@/lib/data';
+import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked } from '@/lib/data';
 import { formatDateCompact } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { SubmissionActions } from '@/components/submissions/submission-actions';
+import { LikeButton } from '@/components/common/like-button';
+import { ViewTracker } from '@/components/common/view-tracker';
 
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -51,7 +53,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
   /* 관리자 여부 확인 */
   const profile = await getAuthProfile();
   const isAdmin = profile?.roles?.includes('admin') ?? false;
-
+  const userLiked = profile ? await hasUserLiked(profile.id, id) : false;
   return (
     <div className="w-full min-h-screen bg-background">
       {/* 상단 네비게이션 */}
@@ -87,6 +89,8 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               </div>
             )}
           </div>
+          {/* 조회수 추적 */}
+          <ViewTracker submissionId={id} />
 
           {/* 2. 작품 제목 + 메타 정보 */}
           <div className="space-y-3">
@@ -123,10 +127,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                 <Eye className="h-4 w-4" />
                 조회 {submission.views.toLocaleString()}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Heart className="h-4 w-4" />
-                좋아요 {submission.likeCount.toLocaleString()}
-              </span>
+              <LikeButton submissionId={id} liked={userLiked} initialCount={submission.likeCount} />
             </div>
 
           {/* 관리자 전용: 영상 다운로드 */}
