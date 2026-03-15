@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useSubmissionStatus } from '@/hooks/useSubmissionStatus';
 import {
@@ -30,6 +30,19 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
   const { user, loading } = useAuth();
   const { hasSubmitted, loading: statusLoading } = useSubmissionStatus(contestId);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
+
+  /* 상태 조회 완료 시 보류 중인 클릭 처리 */
+  useEffect(() => {
+    if (pendingSubmit && !statusLoading) {
+      setPendingSubmit(false);
+      if (hasSubmitted) {
+        setDialogOpen(true);
+      } else {
+        router.push(`/contests/${contestId}/submit`);
+      }
+    }
+  }, [pendingSubmit, statusLoading, hasSubmitted, contestId, router]);
 
   const handleClick = () => {
     /* 인증 로딩 중이면 무시 */
@@ -47,8 +60,14 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
       return;
     }
 
-    /* 쿼리 미완료면 그냥 이동 — submit 페이지에서 이중 체크 */
-    router.push(`/contests/${contestId}/submit`);
+    /* 쿼리 완료 + 미제출 → 바로 이동 */
+    if (!statusLoading && !hasSubmitted) {
+      router.push(`/contests/${contestId}/submit`);
+      return;
+    }
+
+    /* 쿼리 미완료 → 완료될 때까지 대기 (useEffect에서 처리) */
+    setPendingSubmit(true);
   };
 
   /* variant별 스타일 */
@@ -70,10 +89,16 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
 
   return (
     <>
-      <button type="button" onClick={handleClick} className={buttonClass}>
+      <button type="button" onClick={handleClick} disabled={pendingSubmit} className={buttonClass}>
         {variant !== 'hero' && <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />}
-        <Upload className={iconClass} />
-        <span className="relative z-10 group-hover/btn:text-white transition-colors">{label}</span>
+        {pendingSubmit ? (
+          <Loader2 className={`${iconClass} animate-spin`} />
+        ) : (
+          <Upload className={iconClass} />
+        )}
+        <span className="relative z-10 group-hover/btn:text-white transition-colors">
+          {pendingSubmit ? '확인 중...' : label}
+        </span>
       </button>
 
       {/* 이미 제출한 경우 안내 Dialog */}

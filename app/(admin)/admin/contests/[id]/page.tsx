@@ -134,6 +134,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [submissionCounts, setSubmissionCounts] = useState({ total: 0, pendingReview: 0, approved: 0, rejected: 0, judging: 0, judged: 0 });
+  const [countsError, setCountsError] = useState(false);
 
   useEffect(() => {
     const loadContest = async () => {
@@ -165,12 +166,22 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
     const loadSubmissionCounts = async () => {
       try {
         const supabase = createBrowserClient();
-        if (!supabase) return;
-        const { data } = await supabase
+        if (!supabase) {
+          console.error('[submissionCounts] Supabase 클라이언트 초기화 실패');
+          setCountsError(true);
+          return;
+        }
+        const { data, error } = await supabase
           .from('submissions')
           .select('status')
           .eq('contest_id', id);
+        if (error) {
+          console.error('[submissionCounts] 쿼리 실패:', error.message);
+          setCountsError(true);
+          return;
+        }
         if (!data) return;
+        setCountsError(false);
         setSubmissionCounts({
           total: data.length,
           pendingReview: data.filter((s) => s.status === 'pending_review').length,
@@ -179,8 +190,9 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
           judging: data.filter((s) => s.status === 'judging').length,
           judged: data.filter((s) => s.status === 'judged').length,
         });
-      } catch {
-        /* 카운트 조회 실패 무시 */
+      } catch (err) {
+        console.error('[submissionCounts] 예외 발생:', err);
+        setCountsError(true);
       }
     };
 
@@ -410,7 +422,9 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                   <p className="text-sm text-muted-foreground">출품작 검수 및 심사 관리</p>
                 </div>
               </div>
-              {
+              {countsError ? (
+                <p className="text-sm text-destructive">카운트 조회 실패 — 콘솔 로그를 확인하세요</p>
+              ) : (
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
                     <p className="text-lg font-bold text-foreground">{submissionCounts.total}</p>
@@ -442,7 +456,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                     <p className="text-muted-foreground font-bold">심사완료</p>
                   </div>
                 </div>
-              }
+              )}
             </div>
           </Card>
         </Link>

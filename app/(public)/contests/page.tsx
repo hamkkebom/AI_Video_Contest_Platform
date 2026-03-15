@@ -20,7 +20,14 @@ export default async function ContestsPage({
   searchParams: Promise<{ status?: string; sort?: string; page?: string; search?: string; view?: string }>;
 }) {
   const { status, sort, page, search, view } = await searchParams;
-  const contests = await getContests({ search });
+  let contests: Awaited<ReturnType<typeof getContests>> = [];
+  let fetchError = false;
+  try {
+    contests = await getContests({ search });
+  } catch (e) {
+    console.error('[ContestsPage] getContests 실패:', e);
+    fetchError = true;
+  }
   const currentStatus = status || 'open';
   const currentSort = sort || 'deadline';
   const currentView = view || 'list';
@@ -244,7 +251,20 @@ export default async function ContestsPage({
             </div>
           </div>
 
-          {displayedContests.length > 0 ? (
+          {fetchError ? (
+            <div className="flex flex-col items-center justify-center py-32 text-center">
+              <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+                <span className="text-4xl">⚡</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">공모전을 불러오지 못했어요</h3>
+              <p className="text-muted-foreground mb-8 max-w-md">
+                일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.
+              </p>
+              <Link href="/contests">
+                <Button variant="outline" size="lg">다시 시도</Button>
+              </Link>
+            </div>
+          ) : displayedContests.length > 0 ? (
             currentView === 'list' ? (
               /* ────────────── 리스트 뷰 ────────────── */
               <div className="space-y-6">

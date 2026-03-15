@@ -572,50 +572,68 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
  * 공모전 목록 조회 (award_tiers, bonus_configs 포함)
  * 필터 지원: status, region, search
  * 60초 캐시 — 데이터 변경 시 revalidateTag('contests')로 무효화
+ * 필터 조합별 캐시 키 분리로 캐시 충돌 방지
+ * Supabase 일시 장애 시 1회 자동 재시도
  */
-export const getContests = unstable_cache(
-  async (filters?: ContestFilters): Promise<Contest[]> => {
-    const supabase = createPublicClient();
+export function getContests(filters?: ContestFilters): Promise<Contest[]> {
+  const keyParts = [
+    'contests',
+    filters?.status ?? 'all',
+    filters?.region ?? 'all',
+    filters?.search ?? '',
+  ];
 
-    let query = supabase
-      .from('contests')
-      .select('*')
-      .order('created_at', { ascending: true });
+  return unstable_cache(
+    async (): Promise<Contest[]> => {
+      const fetchContests = async (attempt: number): Promise<Contest[]> => {
+        const supabase = createPublicClient();
 
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.region) {
-      query = query.eq('region', filters.region);
-    }
-    if (filters?.search) {
-      query = query.or(
-        `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-      );
-    }
+        let query = supabase
+          .from('contests')
+          .select('*')
+          .order('created_at', { ascending: true });
 
-    const { data: contestRows, error } = await query;
-    // 에러 시 throw → unstable_cache가 실패 결과를 캐시하지 않도록 방지
-    if (error) {
-      console.error('[getContests] Supabase 쿼리 실패:', error.message);
-      throw new Error(`getContests failed: ${error.message}`);
-    }
-    if (!contestRows || contestRows.length === 0) return [];
+        if (filters?.status) {
+          query = query.eq('status', filters.status);
+        }
+        if (filters?.region) {
+          query = query.eq('region', filters.region);
+        }
+        if (filters?.search) {
+          query = query.or(
+            `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
+          );
+        }
 
-    const contestIds = contestRows.map((c) => String(c.id));
-    const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
+        const { data: contestRows, error } = await query;
+        if (error) {
+          console.error(`[getContests] Supabase 쿼리 실패 (시도 ${attempt}/2):`, error.message, { filters });
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 500));
+            return fetchContests(attempt + 1);
+          }
+          throw new Error(`getContests failed: ${error.message}`);
+        }
+        if (!contestRows || contestRows.length === 0) return [];
 
-    return contestRows.map((row) =>
-      toContest(
-        row as Record<string, unknown>,
-        tiersMap.get(String(row.id)) ?? [],
-        bonusMap.get(String(row.id)) ?? [],
-      ),
-    );
-  },
-  ['contests'],
-  { tags: ['contests'], revalidate: 60 },
-);
+        const contestIds = contestRows.map((c) => String(c.id));
+        const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
+
+        return contestRows.map((row) =>
+          toContest(
+            row as Record<string, unknown>,
+            tiersMap.get(String(row.id)) ?? [],
+            bonusMap.get(String(row.id)) ?? [],
+          ),
+        );
+      };
+
+      return fetchContests(1);
+    },
+    keyParts,
+    { tags: ['contests'], revalidate: 60 },
+  )();
+}
 
 /** 공모전 단건 조회 (award_tiers, bonus_configs 포함) — 120초 캐시 */
 export function getContestById(id: string): Promise<Contest | null> {

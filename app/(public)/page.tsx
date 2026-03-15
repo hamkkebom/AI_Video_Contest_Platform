@@ -15,11 +15,12 @@ import { SitePopup } from '@/components/popup/site-popup';
  */
 export default async function LandingPage() {
   let contests: Awaited<ReturnType<typeof getContests>> = [];
+  let contestsFetchError = false;
   try {
     contests = await getContests();
   } catch (e) {
-    // Supabase 일시 장애 시 빈 랜딩 페이지 노출 (캐시되지 않음)
     console.error('[LandingPage] getContests 실패:', e);
+    contestsFetchError = true;
   }
   const openContests = contests.filter(c => c.status === 'open').slice(0, 8);
 
@@ -100,6 +101,16 @@ export default async function LandingPage() {
       <HeroCarousel slides={heroSlides} />
 
       {/* ══ 진행 중인 공모전 — 리스트뷰 ══ */}
+      {contestsFetchError && openContests.length === 0 && (
+        <section className="pt-20 pb-8 px-4">
+          <div className="container mx-auto max-w-6xl text-center py-16">
+            <p className="text-muted-foreground mb-4">공모전을 불러오는 데 문제가 발생했습니다.</p>
+            <Link href="/">
+              <Button variant="outline">다시 시도</Button>
+            </Link>
+          </div>
+        </section>
+      )}
       {openContests.length > 0 && (
         <section className="pt-20 pb-8 px-4">
           <div className="container mx-auto max-w-6xl">
