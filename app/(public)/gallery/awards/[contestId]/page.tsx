@@ -1,8 +1,52 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Eye, Heart, Trophy, ArrowLeft } from 'lucide-react';
 import { getAwardedSubmissions, getCompletedContests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
+type ContestAwardsMetadataProps = {
+  params: Promise<{ contestId: string }>;
+};
+
+export async function generateMetadata({ params }: ContestAwardsMetadataProps): Promise<Metadata> {
+  const { contestId } = await params;
+  const completedContests = await getCompletedContests();
+  const contest = completedContests.find((c) => c.id === contestId);
+
+  if (!contest) {
+    return { title: '수상작을 찾을 수 없습니다' };
+  }
+
+  const title = `${contest.title} 수상작 — AI꿈 갤러리`;
+  const description = `${contest.title} AI 영상 공모전의 수상작을 감상하세요.`;
+  const url = `${SITE_URL}/gallery/awards/${contestId}`;
+  const images = contest.posterUrl
+    ? [{ url: contest.posterUrl, width: 1200, height: 630, alt: contest.title }]
+    : undefined;
+
+  return {
+    title,
+    description,
+    keywords: [contest.title, '수상작 갤러리', 'AI 영상 공모전 수상작', 'AI꿈'],
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: contest.posterUrl ? [contest.posterUrl] : undefined,
+    },
+  };
+}
 
 /**
  * 공모전별 수상작 상세 갤러리

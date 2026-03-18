@@ -3,13 +3,17 @@ import Link from 'next/link';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: '공모전 목록 — AI 영상 공모전 모아보기',
-  description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 꿈꾸는 아리랑 등 다양한 공모전에 참가하고 상금을 받아보세요.',
-  keywords: ['AI 영상 공모전', '공모전 목록', '꿈꾸는 아리랑', 'AI꿈', '영상 공모전 접수'],
+  title: '공모전 목록 — 꿈꾸는 아리랑 AI 영상 공모전 접수중',
+  description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 제1회 꿈꾸는 아리랑 AI 영상 공모전 접수중! 헐버트 아리랑 채보 130주년 기념, 총 상금 1,300만원. 지금 참가하세요.',
+  keywords: [
+    'AI 영상 공모전', '공모전 목록', '꿈꾸는 아리랑', '꿈꾸는 아리랑 공모전', 'AI꿈',
+    '영상 공모전 접수', '아리랑 공모전', '헐버트 아리랑', '아리랑 AI 영상', '생성형AI 공모전',
+    'Dreaming Arirang', '영상 공모전 상금',
+  ],
   alternates: { canonical: '/contests' },
   openGraph: {
-    title: '공모전 목록 — AI 영상 공모전 모아보기',
-    description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 꿈꾸는 아리랑 등 다양한 공모전에 참가하고 상금을 받아보세요.',
+    title: '공모전 목록 — 꿈꾸는 아리랑 AI 영상 공모전 접수중',
+    description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 제1회 꿈꾸는 아리랑 AI 영상 공모전 접수중! 헐버트 아리랑 채보 130주년 기념, 총 상금 1,300만원.',
     url: '/contests',
     type: 'website',
   },
@@ -23,6 +27,8 @@ import { ContestCountdown } from '@/components/contest/contest-countdown';
 import type { AwardTier } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
 /**
  * 공모전 목록 페이지
@@ -170,8 +176,24 @@ export default async function ContestsPage({
   const hasMore = sortedContests.length > displayedContests.length;
   const remainingCount = sortedContests.length - displayedContests.length;
 
+  const contestsJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '공모전 목록',
+    itemListElement: contests.slice(0, 10).map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${SITE_URL}/contests/${c.id}`,
+      name: c.title,
+    })),
+  };
+
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contestsJsonLd) }}
+      />
 
       {/* 배경 장식 (모던한 그라데이션) */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />

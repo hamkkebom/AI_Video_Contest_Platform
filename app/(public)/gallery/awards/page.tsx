@@ -1,8 +1,27 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getCompletedContests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
+
+export const metadata: Metadata = {
+  title: '수상작 갤러리 — AI 영상 공모전 수상작',
+  description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
+  keywords: ['수상작', 'AI 영상 수상작', '공모전 수상작', 'AI꿈 갤러리'],
+  alternates: { canonical: '/gallery/awards' },
+  openGraph: {
+    title: '수상작 갤러리 — AI 영상 공모전 수상작',
+    description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
+    url: '/gallery/awards',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '수상작 갤러리 — AI 영상 공모전 수상작',
+    description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
+  },
+};
 
 /**
  * 수상작 갤러리 메인 페이지

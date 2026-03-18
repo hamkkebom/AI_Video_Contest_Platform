@@ -117,6 +117,7 @@ export default async function LandingPage() {
         '@type': 'Organization',
         name: 'AI꿈',
         url: SITE_URL,
+        logo: `${SITE_URL}/icon`,
         description: 'AI를 활용한 영상 공모전을 개최하는 플랫폼',
       },
     ],

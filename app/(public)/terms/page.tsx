@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText } from 'lucide-react';
@@ -6,6 +7,19 @@ import { FileText } from 'lucide-react';
  * 이용약관 페이지
  * CSS 변수 기반 테마, Card 섹션 구분
  */
+
+export const metadata: Metadata = {
+  title: '이용약관 — AI꿈',
+  description: 'AI꿈(AI꿈허브) 서비스 이용약관입니다. 회원가입, 서비스 이용, 공모전 참가에 관한 약관을 확인하세요.',
+  keywords: ['이용약관', 'AI꿈 약관', '서비스 약관'],
+  alternates: { canonical: '/terms' },
+  openGraph: {
+    title: '이용약관 — AI꿈',
+    description: 'AI꿈(AI꿈허브) 서비스 이용약관입니다. 회원가입, 서비스 이용, 공모전 참가에 관한 약관을 확인하세요.',
+    url: '/terms',
+    type: 'website',
+  },
+};
 
 const sections = [
   { id: 'article-1', title: '제1조 (목적)' },

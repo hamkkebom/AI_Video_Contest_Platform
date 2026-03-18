@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
@@ -6,6 +7,19 @@ import { Shield } from 'lucide-react';
  * 개인정보처리방침 페이지
  * CSS 변수 기반 테마, Card 섹션 구분
  */
+
+export const metadata: Metadata = {
+  title: '개인정보처리방침 — AI꿈',
+  description: 'AI꿈(AI꿈허브)의 개인정보처리방침입니다. 수집 항목, 이용 목적, 보유 기간 등을 확인하세요.',
+  keywords: ['개인정보처리방침', 'AI꿈 개인정보', '개인정보 보호'],
+  alternates: { canonical: '/privacy' },
+  openGraph: {
+    title: '개인정보처리방침 — AI꿈',
+    description: 'AI꿈(AI꿈허브)의 개인정보처리방침입니다. 수집 항목, 이용 목적, 보유 기간 등을 확인하세요.',
+    url: '/privacy',
+    type: 'website',
+  },
+};
 
 const sections = [
   { id: 'privacy-1', title: '1. 수집 및 이용 목적' },

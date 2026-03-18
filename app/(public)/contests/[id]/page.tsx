@@ -217,6 +217,16 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       name: 'AI꿈',
       url: SITE_URL,
     },
+    ...(contest.awardTiers.length > 0 ? {
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'KRW',
+        availability: 'https://schema.org/InStock',
+        url: `${SITE_URL}/contests/${id}`,
+        validFrom: contest.submissionStartAt,
+      },
+    } : {}),
     url: `${SITE_URL}/contests/${id}`,
     inLanguage: 'ko',
   };

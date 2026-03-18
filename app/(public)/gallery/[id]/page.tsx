@@ -105,6 +105,12 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
     uploadDate: submission.submittedAt,
     ...(submission.videoDuration > 0 ? { duration: `PT${Math.floor(submission.videoDuration / 60)}M${Math.floor(submission.videoDuration % 60)}S` } : {}),
     contentUrl: submission.videoUrl ? `https://iframe.videodelivery.net/${submission.videoUrl}` : undefined,
+    embedUrl: submission.videoUrl ? `https://iframe.videodelivery.net/${submission.videoUrl}` : undefined,
+    publisher: {
+      '@type': 'Organization',
+      name: 'AI꿈',
+      url: SITE_URL,
+    },
     interactionStatistic: [
       { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: submission.views },
       { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: submission.likeCount },

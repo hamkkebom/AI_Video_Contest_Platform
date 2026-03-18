@@ -1,15 +1,55 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Calendar, Tag } from 'lucide-react';
 import { getArticles } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
 import { formatDate } from '@/lib/utils';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
 type NewsDetailPageProps = {
   params: Promise<{
     slug: string;
   }>;
 };
+
+export async function generateMetadata({ params }: NewsDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const articles = await getArticles();
+  const article = articles.find((a) => a.slug === slug);
+
+  if (!article) {
+    return { title: '스토리를 찾을 수 없습니다' };
+  }
+
+  const title = `${article.title} — AI꿈 스토리`;
+  const description = article.excerpt.slice(0, 155);
+  const url = `${SITE_URL}/story/${slug}`;
+  const images = article.thumbnailUrl
+    ? [{ url: article.thumbnailUrl, width: 1200, height: 630, alt: article.title }]
+    : undefined;
+
+  return {
+    title,
+    description,
+    keywords: article.tags,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'article',
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: article.thumbnailUrl ? [article.thumbnailUrl] : undefined,
+    },
+  };
+}
 
 /**
  * 뉴스 상세 페이지
@@ -64,8 +104,37 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
           return 'bg-muted-foreground text-background';
       }
     };
-return (
+
+    const articleJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: article.title,
+      description: article.excerpt,
+      datePublished: article.publishedAt,
+      image: article.thumbnailUrl || undefined,
+      author: {
+        '@type': 'Organization',
+        name: 'AI꿈',
+        url: SITE_URL,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'AI꿈',
+        url: SITE_URL,
+      },
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': `${SITE_URL}/story/${article.slug}`,
+      },
+      inLanguage: 'ko',
+    };
+
+    return (
       <div className="w-full">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        />
         {/* Back Button */}
         <div className="py-4 px-4 bg-background border-b border-border">
           <div className="container mx-auto max-w-6xl">

@@ -5,7 +5,7 @@ import { Eye, Heart } from 'lucide-react';
 export const metadata: Metadata = {
   title: '갤러리 — AI 영상 작품 감상',
   description: 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요. 공모전 수상작과 출품작을 확인할 수 있습니다.',
-  keywords: ['AI 영상 갤러리', 'AI 영상 작품', '공모전 수상작', 'AI꿈'],
+  keywords: ['AI 영상 갤러리', 'AI 영상 작품', '공모전 수상작', 'AI꿈', '꿈꾸는 아리랑', '꿈꾸는 아리랑 영상', '꿈꾸는 아리랑 공모전', '아리랑 AI 작품'],
   alternates: { canonical: '/gallery/all' },
   openGraph: {
     title: '갤러리 — AI 영상 작품 감상',
@@ -17,6 +17,8 @@ export const metadata: Metadata = {
 import { getGallerySubmissions, getFeaturedSubmissions } from '@/lib/data';
 import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
 import { SearchInput } from '@/components/ui/search-input';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
 /**
  * 전체 갤러리 페이지
@@ -68,8 +70,24 @@ export default async function GalleryAllPage({
   const hasMore = sortedSubmissions.length > displayedSubmissions.length;
   const remainingCount = sortedSubmissions.length - displayedSubmissions.length;
 
+  const galleryJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '갤러리 작품 목록',
+    itemListElement: allSubmissions.slice(0, 10).map((submission, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `${SITE_URL}/gallery/${submission.id}`,
+      name: submission.title,
+    })),
+  };
+
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }}
+      />
 
       {/* 배경 장식 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />

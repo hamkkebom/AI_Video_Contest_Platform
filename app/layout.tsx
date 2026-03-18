@@ -7,10 +7,15 @@ import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/common/floating-buttons";
 import { AuthProvider } from '@/lib/supabase/auth-context';
 import { Suspense } from 'react';
+import Script from 'next/script';
 import { UtmTracker } from '@/components/tracking/utm-tracker';
 import { ActivityTracker } from '@/components/tracking/activity-tracker';
 import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 import { createClient } from '@/lib/supabase/server';
+
+/** GTM/GA4 환경변수 — .env.local에 설정하면 자동 활성화 */
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 
 /** viewport — Next.js 15 권장 분리 export */
 export const viewport: Viewport = {
@@ -34,10 +39,12 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
-  keywords: ['AI 영상 공모전', 'AI꿈', 'AI꿈허브', '꿈꾸는 아리랑', '영상 공모전', 'AI 영상 제작', '공모전 플랫폼'],
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
-  },
+  keywords: [
+    'AI 영상 공모전', 'AI꿈', 'AI꿈허브', '꿈꾸는 아리랑', '꿈꾸는 아리랑 공모전',
+    '영상 공모전', 'AI 영상 제작', '공모전 플랫폼', '아리랑 AI 영상', '생성형AI 영상',
+    '헐버트 아리랑', '아리랑 공모전', 'Dreaming Arirang', 'AI video contest',
+  ],
+  /* icon.tsx, apple-icon.tsx가 자동 생성 — 인라인 정의 불필요 */
   alternates: {
     canonical: SITE_URL,
   },
@@ -115,6 +122,34 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html lang="ko" suppressHydrationWarning>
       <head>
         <meta name="naver-site-verification" content="41bf8699fb8e5b02f679b4c97b4661a2df984dc8" />
+
+        {/* Google Tag Manager — head 스니펫 */}
+        {GTM_ID && (
+          <Script id="gtm-head" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${GTM_ID}');
+          `}} />
+        )}
+
+        {/* Google Analytics 4 — GTM 없이 단독 사용 시 */}
+        {GA4_ID && !GTM_ID && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} strategy="afterInteractive" />
+            <Script id="ga4-init" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA4_ID}', {
+                page_path: window.location.pathname,
+                cookie_flags: 'SameSite=None;Secure',
+              });
+            `}} />
+          </>
+        )}
+
         {/* Meta Pixel Code */}
         <script dangerouslySetInnerHTML={{ __html: `
           !function(f,b,e,v,n,t,s)
@@ -129,13 +164,25 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           fbq('track', 'PageView');
         `}} />
         <noscript>
-          <img height="1" width="1" style={{ display: 'none' }}
+          <img height="1" width="1" style={{ display: 'none' }} alt=""
             src="https://www.facebook.com/tr?id=746341501072587&ev=PageView&noscript=1"
           />
         </noscript>
         {/* End Meta Pixel Code */}
       </head>
       <body>
+        {/* GTM noscript — body 최상단 */}
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
           <AuthProvider serverUser={serverUser} serverProfile={serverProfile}>
             <SessionTimeoutGuard>

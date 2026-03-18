@@ -88,5 +88,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...contestRoutes, ...awardRoutes, ...galleryRoutes, ...storyRoutes];
+  // 크리에이터 (활성 사용자)
+  const { data: creators } = await supabase
+    .from('profiles')
+    .select('id, updated_at')
+    .contains('roles', ['participant'])
+    .eq('status', 'active')
+    .order('updated_at', { ascending: false })
+    .limit(500);
+
+  const creatorRoutes: MetadataRoute.Sitemap = (creators ?? []).map((u) => ({
+    url: `${BASE_URL}/creators/${u.id}`,
+    lastModified: u.updated_at ? new Date(u.updated_at as string) : undefined,
+    changeFrequency: 'monthly' as const,
+    priority: 0.5,
+  }));
+
+  return [...staticRoutes, ...contestRoutes, ...awardRoutes, ...galleryRoutes, ...storyRoutes, ...creatorRoutes];
 }

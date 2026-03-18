@@ -1,6 +1,25 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { getUsers } from '@/lib/data';
+
+export const metadata: Metadata = {
+  title: '크리에이터 — AI 영상 크리에이터 모아보기',
+  description: 'AI꿈에서 활동하는 AI 영상 크리에이터들을 만나보세요. 다양한 창작자들의 프로필과 작품을 확인할 수 있습니다.',
+  keywords: ['AI 크리에이터', 'AI 영상 제작자', 'AI꿈 크리에이터'],
+  alternates: { canonical: '/creators' },
+  openGraph: {
+    title: '크리에이터 — AI 영상 크리에이터 모아보기',
+    description: 'AI꿈에서 활동하는 AI 영상 크리에이터들을 만나보세요. 다양한 창작자들의 프로필과 작품을 확인할 수 있습니다.',
+    url: '/creators',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '크리에이터 — AI 영상 크리에이터 모아보기',
+    description: 'AI꿈에서 활동하는 AI 영상 크리에이터들을 만나보세요. 다양한 창작자들의 프로필과 작품을 확인할 수 있습니다.',
+  },
+};
 
 /**
  * 크리에이터 프로필 목록 페이지

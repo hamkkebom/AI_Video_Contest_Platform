@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +7,47 @@ import { getUserById, getSubmissions, getContests } from '@/lib/data';
 import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
 type CreatorDetailPageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({ params }: CreatorDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const user = await getUserById(id);
+
+  if (!user) {
+    return { title: '크리에이터를 찾을 수 없습니다' };
+  }
+
+  const title = `${user.name} — AI꿈 크리에이터`;
+  const description = user.introduction || `AI꿈 크리에이터 ${user.name}님의 프로필입니다.`;
+  const url = `${SITE_URL}/creators/${id}`;
+  const images = user.avatarUrl
+    ? [{ url: user.avatarUrl, width: 1200, height: 630, alt: user.name }]
+    : undefined;
+
+  return {
+    title,
+    description,
+    keywords: [user.name, 'AI꿈 크리에이터', 'AI 영상 크리에이터'],
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'profile',
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: user.avatarUrl ? [user.avatarUrl] : undefined,
+    },
+  };
+}
 
 function getRoleLabel(role: string) {
   switch (role) {
@@ -111,8 +150,24 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
     .map(contestId => contestById.get(contestId))
     .filter((contest): contest is NonNullable<typeof contest> => Boolean(contest));
 
+  const profileJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      name: user.name,
+      description: user.introduction || undefined,
+      image: user.avatarUrl || undefined,
+      url: `${SITE_URL}/creators/${user.id}`,
+    },
+  };
+
   return (
     <div className="w-full">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileJsonLd) }}
+      />
       {/* 프로필 헤더 섹션 */}
       <section className="py-12 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">
         <div className="container mx-auto max-w-6xl">
