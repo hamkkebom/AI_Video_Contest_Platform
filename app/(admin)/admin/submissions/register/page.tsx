@@ -346,14 +346,26 @@ export default function AdminSubmissionRegisterPage() {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', uploadUrlResult.uploadURL!);
-        xhr.timeout = 5 * 60 * 1000;
+        xhr.timeout = 10 * 60 * 1000;
+        let uploadDoneTimer: ReturnType<typeof setTimeout> | null = null;
         xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
+        /* 전송 100% 완료 → 서버 응답 대기 타이머 시작 */
+        xhr.upload.onload = () => {
+          setUploadProgress(100);
+          uploadDoneTimer = setTimeout(async () => {
+            try {
+              const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
+              if (statusRes.ok) { xhr.abort(); resolve(); return; }
+            } catch { /* 계속 대기 */ }
+          }, 2 * 60 * 1000);
+        };
         xhr.onload = () => {
+          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
           else reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
         };
-        xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
-        xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+        xhr.onerror = () => { if (uploadDoneTimer) clearTimeout(uploadDoneTimer); reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')); };
+        xhr.ontimeout = () => { if (uploadDoneTimer) clearTimeout(uploadDoneTimer); reject(new Error('영상 업로드 시간이 초과되었습니다.')); };
         const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
 
@@ -949,6 +961,9 @@ export default function AdminSubmissionRegisterPage() {
                           )}>
                             {step.label}{isCompleted && ' ✓'}{isFailed && ' ✕'}
                           </p>
+                          {isActive && step.key === 'video' && uploadProgress >= 100 && !isFailed && (
+                            <p className="text-xs text-orange-500 animate-pulse">서버에서 처리 중입니다. 잠시 기다려주세요...</p>
+                          )}
                         </div>
                         {isActive && step.showProgress && !isFailed && (
                           <span className="text-sm font-mono font-semibold text-violet-600 dark:text-violet-400 tabular-nums">{uploadProgress}%</span>

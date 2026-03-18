@@ -568,8 +568,9 @@ export default function ContestSubmitPage() {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', uploadUrlResult.uploadURL!);
-        /* 5분 타임아웃 (200MB 기준 느린 네트워크 고려) */
-        xhr.timeout = 5 * 60 * 1000;
+        xhr.timeout = 10 * 60 * 1000;
+        /* 전송 완료 후 응답 대기 타이머 — Cloudflare가 응답을 안 보내는 경우 대비 */
+        let uploadDoneTimer: ReturnType<typeof setTimeout> | null = null;
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             const pct = Math.round((ev.loaded / ev.total) * 100);
@@ -577,7 +578,26 @@ export default function ContestSubmitPage() {
             setUploadProgress(pct);
           }
         };
+        /* 전송 100% 완료 이벤트 — 서버 응답 대기 타이머 시작 */
+        xhr.upload.onload = () => {
+          console.log('[제출] 파일 전송 완료, Cloudflare 응답 대기 중...');
+          setUploadProgress(100);
+          uploadDoneTimer = setTimeout(async () => {
+            console.log('[제출] 2분 응답 없음 — Cloudflare API로 영상 존재 여부 확인');
+            try {
+              const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
+              if (statusRes.ok) {
+                console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
+                xhr.abort();
+                resolve();
+                return;
+              }
+            } catch { /* API 실패 시 계속 대기 */ }
+            console.warn('[제출] Cloudflare에 영상 미확인 — 계속 대기');
+          }, 2 * 60 * 1000);
+        };
         xhr.onload = () => {
+          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
           console.log('[제출] 영상 업로드 완료, status:', xhr.status);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
           else {
@@ -586,10 +606,12 @@ export default function ContestSubmitPage() {
           }
         };
         xhr.onerror = () => {
+          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
           console.error('[제출] 영상 업로드 네트워크 오류');
           reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
         };
         xhr.ontimeout = () => {
+          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
           console.error('[제출] 영상 업로드 타임아웃');
           reject(new Error('영상 업로드 시간이 초과되었습니다.'));
         };
@@ -1672,6 +1694,9 @@ export default function ContestSubmitPage() {
                             <p className="text-xs text-muted-foreground truncate">
                               {step.file.name} ({(step.file.size / 1024 / 1024).toFixed(1)}MB)
                             </p>
+                          )}
+                          {isActive && step.key === 'video' && uploadProgress >= 100 && !isFailed && (
+                            <p className="text-xs text-orange-500 animate-pulse">서버에서 처리 중입니다. 잠시 기다려주세요...</p>
                           )}
                         </div>
                         {isActive && step.showProgress && !isFailed && (
