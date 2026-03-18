@@ -9,6 +9,8 @@ import type { AwardTier } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 import { SitePopup } from '@/components/popup/site-popup';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
 /**
  * 랜딩 페이지
  * 히어로 캐러셀 → 진행 중 공모전(리스트) → 대행 CTA
@@ -94,8 +96,38 @@ export default async function LandingPage() {
   const isBeforeStart = (c: typeof openContests[number]) =>
     c.status === 'open' && new Date(c.submissionStartAt).getTime() > nowMs;
 
+  /* JSON-LD 구조화 데이터 — WebSite + Organization 스키마 */
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        name: 'AI꿈',
+        alternateName: 'AI꿈허브',
+        url: SITE_URL,
+        description: 'AI 영상 공모전 전문 플랫폼',
+        inLanguage: 'ko',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${SITE_URL}/search?query={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+      {
+        '@type': 'Organization',
+        name: 'AI꿈',
+        url: SITE_URL,
+        description: 'AI를 활용한 영상 공모전을 개최하는 플랫폼',
+      },
+    ],
+  };
+
   return (
     <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+    />
     <div className="w-full">
       {/* ══ 히어로 캐러셀 ══ */}
       <HeroCarousel slides={heroSlides} />

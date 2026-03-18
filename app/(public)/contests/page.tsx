@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: '공모전 목록 — AI 영상 공모전 모아보기',
+  description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 꿈꾸는 아리랑 등 다양한 공모전에 참가하고 상금을 받아보세요.',
+  keywords: ['AI 영상 공모전', '공모전 목록', '꿈꾸는 아리랑', 'AI꿈', '영상 공모전 접수'],
+  alternates: { canonical: '/contests' },
+  openGraph: {
+    title: '공모전 목록 — AI 영상 공모전 모아보기',
+    description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 꿈꾸는 아리랑 등 다양한 공모전에 참가하고 상금을 받아보세요.',
+    url: '/contests',
+    type: 'website',
+  },
+};
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getContests } from '@/lib/data';
