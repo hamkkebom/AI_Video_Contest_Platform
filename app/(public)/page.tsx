@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getContests, getFeaturedSubmissions } from '@/lib/data';
+import { getContests } from '@/lib/data';
 import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
-import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
+// import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel'; /* 갤러리 오픈 전까지 숨김 */
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { Clapperboard, ArrowRight } from 'lucide-react';
@@ -26,8 +26,8 @@ export default async function LandingPage() {
     contestsFetchError = true;
   }
 
-  /* 추천 작품 (갤러리 캐러셀용) */
-  const featuredSubmissions = await getFeaturedSubmissions(12);
+  /* 추천 작품 — 갤러리 오픈 전까지 비활성 */
+  // const featuredSubmissions = await getFeaturedSubmissions(12);
   const openContests = contests.filter(c => c.status === 'open').slice(0, 8);
 
   /* ── 히어로 슬라이드: 공모전만 (heroImageUrl 우선, 없으면 posterUrl) ── */
@@ -254,14 +254,14 @@ export default async function LandingPage() {
       )}
 
 
-      {/* ══ 추천 작품 캐러셀 ══ */}
-      {featuredSubmissions.length > 0 && (
+      {/* ══ 추천 작품 캐러셀 (갤러리 오픈 전까지 숨김) ══ */}
+      {/* {featuredSubmissions.length > 0 && (
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-6xl">
             <FeaturedWorksCarousel submissions={featuredSubmissions} />
           </div>
         </section>
-      )}
+      )} */}
 
       {/* ══ 영상 제작 대행 CTA ══ */}
       <section className="py-20 px-4">
