@@ -49,6 +49,7 @@ export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) 
           <iframe
             src={videoUrls[activeIndex]}
             title={`${title} 예시영상 ${activeIndex + 1}`}
+            loading="lazy"
             className="w-full h-full border-0"
             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
             allowFullScreen

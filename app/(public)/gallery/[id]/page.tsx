@@ -148,6 +148,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               <iframe
                 src={`https://iframe.videodelivery.net/${submission.videoUrl}?poster=${encodeURIComponent(submission.thumbnailUrl || '')}`}
                 title={submission.title}
+                loading="lazy"
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full border-0"
