@@ -44,6 +44,8 @@ type BonusFormEntry = {
 type AdminCreateSubmissionPayload = {
   contestId: string;
   userId: string;
+  submitterName?: string;
+  submitterPhone?: string;
   title: string;
   description: string;
   videoUrl: string;
@@ -92,6 +94,8 @@ export default function AdminSubmissionRegisterPage() {
   const [submittedAt, setSubmittedAt] = useState(toDateTimeLocalValue(new Date()));
 
   /* ── 영상 정보 (기존 출품폼과 동일) ── */
+  const [submitterName, setSubmitterName] = useState('');
+  const [submitterPhone, setSubmitterPhone] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [productionProcess, setProductionProcess] = useState('');
@@ -117,9 +121,15 @@ export default function AdminSubmissionRegisterPage() {
   const [agree, setAgree] = useState(false);
   const [uploadStep, setUploadStep] = useState<'preparing' | 'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadLogs, setUploadLogs] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showValidationPopup, setShowValidationPopup] = useState(false);
+
+  const addLog = (msg: string) => {
+    const time = new Date().toLocaleTimeString('ko-KR');
+    setUploadLogs((prev) => [...prev, `[${time}] ${msg}`]);
+  };
 
   /* 선택된 공모전 */
   const selectedContest = useMemo(
@@ -308,6 +318,8 @@ export default function AdminSubmissionRegisterPage() {
       return;
     }
 
+    setUploadLogs([]);
+    addLog('제출 프로세스 시작');
     setSubmitting(true);
     setErrorMessage(null);
     setUploadStep('preparing');
@@ -321,6 +333,7 @@ export default function AdminSubmissionRegisterPage() {
       /* 단계: 영상 업로드 */
       setUploadStep('video');
       setUploadProgress(0);
+      addLog('영상 업로드 시작');
 
       /* 1) 영상 업로드 → Cloudflare Stream */
       const uploadUrlController = new AbortController();
@@ -342,18 +355,38 @@ export default function AdminSubmissionRegisterPage() {
       if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
         throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
       }
+      addLog('Cloudflare 업로드 URL 발급 완료');
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        const progressMilestones = [25, 50, 75, 100] as const;
+        const loggedMilestones = new Set<number>();
         xhr.open('POST', uploadUrlResult.uploadURL!);
         xhr.timeout = 10 * 60 * 1000;
         let uploadDoneTimer: ReturnType<typeof setTimeout> | null = null;
-        xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
+        xhr.upload.onprogress = (ev) => {
+          if (!ev.lengthComputable) return;
+          const progress = Math.round((ev.loaded / ev.total) * 100);
+          setUploadProgress(progress);
+          for (const milestone of progressMilestones) {
+            if (progress >= milestone && !loggedMilestones.has(milestone)) {
+              loggedMilestones.add(milestone);
+              addLog(`영상 전송 ${milestone}%`);
+            }
+          }
+        };
         /* 전송 100% 완료 → 서버 응답 대기 타이머 시작 */
         xhr.upload.onload = () => {
           setUploadProgress(100);
+          if (!loggedMilestones.has(100)) {
+            loggedMilestones.add(100);
+            addLog('영상 전송 100%');
+          }
+          addLog('파일 전송 완료, 서버 응답 대기 중...');
+          addLog('2분 응답 대기 타이머 시작');
           uploadDoneTimer = setTimeout(async () => {
             try {
+              addLog('Cloudflare API로 영상 존재 확인 중...');
               const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
               if (statusRes.ok) { xhr.abort(); resolve(); return; }
             } catch { /* 계속 대기 */ }
@@ -361,10 +394,15 @@ export default function AdminSubmissionRegisterPage() {
         };
         xhr.onload = () => {
           if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          addLog(`Cloudflare 응답 수신 (${xhr.status})`);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
           else reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
         };
-        xhr.onerror = () => { if (uploadDoneTimer) clearTimeout(uploadDoneTimer); reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')); };
+        xhr.onerror = () => {
+          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          addLog('네트워크 오류 발생');
+          reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+        };
         xhr.ontimeout = () => { if (uploadDoneTimer) clearTimeout(uploadDoneTimer); reject(new Error('영상 업로드 시간이 초과되었습니다.')); };
         const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
@@ -376,12 +414,14 @@ export default function AdminSubmissionRegisterPage() {
         const { data: { session: refreshedSession } } = await supabase.auth.getSession();
         if (refreshedSession?.access_token) {
           accessToken = refreshedSession.access_token;
+          addLog('JWT 토큰 갱신 완료');
         }
       } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
       /* 단계: 썸네일 업로드 */
       setUploadStep('thumbnail');
       setUploadProgress(0);
+      addLog('썸네일 업로드 시작');
 
       /* 2) 썸네일 업로드 → Supabase Storage */
       const safeName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -452,11 +492,14 @@ export default function AdminSubmissionRegisterPage() {
       /* 단계: 출품작 등록 */
       setUploadStep('submission');
       setUploadProgress(0);
+      addLog('출품작 등록 API 호출');
 
       /* 4) 출품작 등록 API 호출 */
       const payload: AdminCreateSubmissionPayload = {
         contestId,
         userId: selectedUser.id,
+        submitterName: submitterName.trim() || undefined,
+        submitterPhone: submitterPhone.trim() || undefined,
         title: title.trim(),
         description: description.trim(),
         videoUrl: streamUid,
@@ -609,6 +652,28 @@ export default function AdminSubmissionRegisterPage() {
             </div>
           </div>
           <div className="space-y-5">
+            <div className="grid gap-2">
+              <Label htmlFor="submitter-name" className="text-sm font-semibold">이름</Label>
+              <Input
+                id="submitter-name"
+                value={submitterName}
+                onChange={(e) => setSubmitterName(e.target.value)}
+                placeholder="이름을 입력하세요"
+                className="bg-background/50 border-border"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="submitter-phone" className="text-sm font-semibold">전화번호</Label>
+              <Input
+                id="submitter-phone"
+                value={submitterPhone}
+                onChange={(e) => setSubmitterPhone(e.target.value)}
+                placeholder="010-0000-0000"
+                className="bg-background/50 border-border"
+              />
+            </div>
+
             {/* 영상 제목 */}
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-semibold">
@@ -978,6 +1043,16 @@ export default function AdminSubmissionRegisterPage() {
                   );
                 })}
               </div>
+              {uploadLogs.length > 0 && (
+                <details className="mt-4" open>
+                  <summary className="text-xs text-muted-foreground cursor-pointer">업로드 상세 로그</summary>
+                  <div className="mt-2 max-h-40 overflow-y-auto bg-muted/50 rounded p-2 font-mono text-xs space-y-0.5">
+                    {uploadLogs.map((log) => (
+                      <p key={log} className="text-muted-foreground">{log}</p>
+                    ))}
+                  </div>
+                </details>
+              )}
               {errorMessage && (
                 <div className="text-center space-y-3">
                   <p className="text-sm text-red-500">{errorMessage}</p>

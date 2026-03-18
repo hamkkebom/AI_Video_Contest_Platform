@@ -12,6 +12,8 @@ interface BonusEntryBody {
 interface AdminCreateSubmissionBody {
   contestId?: string;
   userId?: string;
+  submitterName?: string;
+  submitterPhone?: string;
   title?: string;
   description?: string;
   videoUrl?: string;
@@ -67,6 +69,8 @@ export async function POST(request: Request) {
 
     const contestId = body.contestId?.trim();
     const targetUserId = body.userId?.trim();
+    const submitterName = body.submitterName?.trim();
+    const submitterPhone = body.submitterPhone?.trim();
     const title = body.title?.trim();
     const description = body.description?.trim();
     const videoUrl = body.videoUrl?.trim();
@@ -116,6 +120,8 @@ export async function POST(request: Request) {
         tags,
         ai_tools: aiTools || null,
         production_process: productionProcess,
+        submitter_name: submitterName || null,
+        submitter_phone: submitterPhone || null,
         terms_agreed: body.termsAgreed ?? true,
         registered_by: user.id,
       })
