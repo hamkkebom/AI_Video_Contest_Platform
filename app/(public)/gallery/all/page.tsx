@@ -89,9 +89,8 @@ export default async function GalleryAllPage({
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
       <script
         type="application/ld+json"
-      >
-        {safeJsonLd(galleryJsonLd)}
-      </script>
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryJsonLd) }}
+      />
 
       {/* 배경 장식 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
