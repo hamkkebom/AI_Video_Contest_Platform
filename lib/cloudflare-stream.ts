@@ -58,9 +58,15 @@ export function extractStreamVideoUid(url: string): string | null {
 }
 
 /** CF Stream 영상 상세 정보 (에러 진단용) */
-interface StreamVideoInfo {
+export interface StreamVideoInfo {
   name: string | null;
   readyToStream: boolean;
+  status: {
+    state: 'uploading' | 'inprogress' | 'ready' | 'error';
+    pctComplete?: number;
+    errorReasonCode?: string;
+    errorReasonText?: string;
+  } | null;
   errorReasonCode: string | null;
   errorReasonText: string | null;
 }
@@ -68,7 +74,7 @@ interface StreamVideoInfo {
 /**
  * CF Stream 영상 상세 정보 조회 (원본 파일명, 인코딩 상태 등)
  */
-async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoInfo | null> {
+export async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoInfo | null> {
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) return null;
 
   try {
@@ -80,9 +86,24 @@ async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoInfo | n
 
     const data = await res.json();
     const r = data.result;
+    const state = r?.status?.state;
+    const normalizedState =
+      state === 'uploading' || state === 'inprogress' || state === 'ready' || state === 'error'
+        ? state
+        : null;
+
     return {
       name: r?.meta?.name ?? null,
       readyToStream: r?.readyToStream ?? false,
+      status: normalizedState
+        ? {
+            state: normalizedState,
+            pctComplete:
+              typeof r?.status?.pctComplete === 'number' ? Math.min(100, Math.max(0, r.status.pctComplete)) : undefined,
+            errorReasonCode: r?.status?.errorReasonCode ?? undefined,
+            errorReasonText: r?.status?.errorReasonText ?? undefined,
+          }
+        : null,
       errorReasonCode: r?.status?.errorReasonCode ?? null,
       errorReasonText: r?.status?.errorReasonText ?? null,
     };

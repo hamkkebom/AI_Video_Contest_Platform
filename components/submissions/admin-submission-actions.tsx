@@ -266,6 +266,10 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         throw new Error(data.error ?? '수정에 실패했습니다.');
       }
 
+      if (shouldUploadVideo) {
+        alert('영상이 업로드되었습니다. 인코딩 처리에 수 분이 소요될 수 있습니다.');
+      }
+
       setEditOpen(false);
       router.refresh();
     } catch (err) {

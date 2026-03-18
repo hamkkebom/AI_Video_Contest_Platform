@@ -6,6 +6,7 @@ import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'luc
 import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked } from '@/lib/data';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
+import { StreamVideoPlayer } from './stream-video-player';
 import { SubmissionActions } from '@/components/submissions/submission-actions';
 import { AdminSubmissionActions } from '@/components/submissions/admin-submission-actions';
 import { LikeButton } from '@/components/common/like-button';
@@ -121,10 +122,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
   return (
     <div className="w-full min-h-screen bg-background">
       {/* 구조화 데이터 */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(videoJsonLd) }}
-      />
+      <script type="application/ld+json">{safeJsonLd(videoJsonLd)}</script>
       {/* 상단 네비게이션 */}
       <div className="border-b border-border">
         <div className="container mx-auto max-w-4xl px-4 py-3">
@@ -145,13 +143,10 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
           {/* 1. 영상 플레이어 (풀 너비) */}
           <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
             {submission.videoUrl ? (
-              <iframe
-                src={`https://iframe.videodelivery.net/${submission.videoUrl}?poster=${encodeURIComponent(submission.thumbnailUrl || '')}`}
+              <StreamVideoPlayer
+                videoUid={submission.videoUrl}
                 title={submission.title}
-                loading="lazy"
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
+                posterUrl={submission.thumbnailUrl || undefined}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
