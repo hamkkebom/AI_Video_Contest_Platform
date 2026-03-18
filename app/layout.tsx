@@ -1,5 +1,5 @@
 ﻿import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/layout/header";
@@ -12,27 +12,61 @@ import { ActivityTracker } from '@/components/tracking/activity-tracker';
 import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 import { createClient } from '@/lib/supabase/server';
 
+/** viewport — Next.js 15 권장 분리 export */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+  ],
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+const SITE_NAME = 'AI꿈';
+const DEFAULT_TITLE = 'AI꿈 — AI와 함께 꿈을 설계하고 완성하다';
+const DEFAULT_DESCRIPTION = 'AI꿈(AI꿈허브)은 AI 영상 공모전 전문 플랫폼입니다. AI를 활용한 창작 영상 공모전에 참가하고, 꿈꾸는 아리랑 등 다양한 공모전의 수상작을 감상해 보세요.';
+
 export const metadata: Metadata = {
-  title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
-  description: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  keywords: ['AI 영상 공모전', 'AI꿈', 'AI꿈허브', '꿈꾸는 아리랑', '영상 공모전', 'AI 영상 제작', '공모전 플랫폼'],
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>",
   },
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
-    title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
-    description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
-    siteName: "AI꿈",
-    type: "website",
-    images: [],
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    siteName: SITE_NAME,
+    type: 'website',
+    locale: 'ko_KR',
+    url: SITE_URL,
   },
   twitter: {
-    card: "summary",
-    title: "AI꿈 — AI와 함께 꿈을 설계하고 완성하다",
-    description: "AI 영상 공모전 플랫폼 · 꿈꾸는 아리랑",
-    images: [],
+    card: 'summary_large_image',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   verification: {
-    google: "UHtj0SGkSHBwH2OJr5foPs3Y3diFWF2i9qyEIC9xOkc",
+    google: 'UHtj0SGkSHBwH2OJr5foPs3Y3diFWF2i9qyEIC9xOkc',
   },
 };
 
