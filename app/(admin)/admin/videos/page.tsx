@@ -38,6 +38,7 @@ export default async function AdminVideosPage({ searchParams }: AdminVideosPageP
 
   return (
     <VideoPlayerView
+      key={currentContestId}
       contests={contests}
       submissions={submissions}
       currentContestId={currentContestId}

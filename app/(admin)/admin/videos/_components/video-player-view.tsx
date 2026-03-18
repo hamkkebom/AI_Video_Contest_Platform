@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { Film, Eye, Heart, Clock, Inbox, PlayCircle } from 'lucide-react';
+import {
+  Film, Eye, Heart, Clock, Inbox, PlayCircle, Pause, Play,
+  SkipBack, SkipForward, Repeat, Maximize, Minimize,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
@@ -34,6 +38,20 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+/** Cloudflare Stream SDK 타입 (최소) */
+interface StreamPlayer {
+  addEventListener: (event: string, handler: () => void) => void;
+  removeEventListener: (event: string, handler: () => void) => void;
+  play: () => void;
+  pause: () => void;
+  currentTime: number;
+}
+declare global {
+  interface Window {
+    Stream?: (iframe: HTMLIFrameElement) => StreamPlayer;
+  }
+}
+
 interface VideoPlayerViewProps {
   contests: Contest[];
   submissions: Submission[];
@@ -46,8 +64,109 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
   const [selectedId, setSelectedId] = useState<string | null>(
     submissions.length > 0 ? submissions[0].id : null,
   );
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  /* refs */
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const isAutoPlayRef = useRef(isAutoPlay);
+  const selectedIdRef = useRef(selectedId);
+
+  /* ref 동기화 — 이벤트 핸들러 내 stale closure 방지 */
+  useEffect(() => { isAutoPlayRef.current = isAutoPlay; }, [isAutoPlay]);
+  useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
   const selected = submissions.find((s) => s.id === selectedId) ?? null;
+  const currentIndex = submissions.findIndex((s) => s.id === selectedId);
+
+  /** 다음 영상으로 이동 (루프) */
+  const advanceToNext = useCallback(() => {
+    const idx = submissions.findIndex((s) => s.id === selectedIdRef.current);
+    if (idx < 0 || submissions.length === 0) return;
+    const nextIdx = (idx + 1) % submissions.length;
+    setSelectedId(submissions[nextIdx].id);
+  }, [submissions]);
+
+  /** 이전 영상으로 이동 */
+  const advanceToPrev = useCallback(() => {
+    const idx = submissions.findIndex((s) => s.id === selectedIdRef.current);
+    if (idx < 0 || submissions.length === 0) return;
+    const prevIdx = (idx - 1 + submissions.length) % submissions.length;
+    setSelectedId(submissions[prevIdx].id);
+  }, [submissions]);
+
+  /** Cloudflare Stream SDK 로드 (1회) */
+  useEffect(() => {
+    if (typeof window.Stream === 'function') return;
+    if (document.querySelector('script[src*="embed/sdk.latest.js"]')) return;
+    const script = document.createElement('script');
+    script.src = 'https://embed.videodelivery.net/embed/sdk.latest.js';
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+
+  /** iframe에 Stream SDK 연결 — ended 이벤트로 자동 다음 영상 */
+  useEffect(() => {
+    if (!selected?.videoUrl || !iframeRef.current) return;
+
+    let player: StreamPlayer | null = null;
+    let cancelled = false;
+
+    const handleEnded = () => {
+      if (!isAutoPlayRef.current) return;
+      advanceToNext();
+    };
+
+    const tryAttach = async () => {
+      /* SDK 로드 대기 (최대 5초) */
+      for (let i = 0; i < 25; i++) {
+        if (cancelled) return;
+        if (typeof window.Stream === 'function') break;
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      if (cancelled || !iframeRef.current || typeof window.Stream !== 'function') return;
+
+      /* iframe 렌더 대기 */
+      await new Promise((r) => setTimeout(r, 600));
+      if (cancelled || !iframeRef.current) return;
+
+      try {
+        player = window.Stream(iframeRef.current);
+        player.addEventListener('ended', handleEnded);
+      } catch {
+        /* SDK 연결 실패 — 치명적이지 않음, 수동 재생은 동작 */
+      }
+    };
+
+    tryAttach();
+
+    return () => {
+      cancelled = true;
+      if (player) {
+        try { player.removeEventListener('ended', handleEnded); } catch { /* noop */ }
+      }
+    };
+  }, [selected?.videoUrl, advanceToNext]);
+
+  /** 전체화면 토글 */
+  const toggleFullScreen = useCallback(async () => {
+    if (!playerContainerRef.current) return;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await playerContainerRef.current.requestFullscreen();
+      }
+    } catch { /* 전체화면 미지원 환경 */ }
+  }, []);
+
+  /** 전체화면 변경 감지 */
+  useEffect(() => {
+    const handler = () => setIsFullScreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   /** 공모전 변경 */
   const handleContestChange = (contestId: string) => {
@@ -113,7 +232,7 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
               </p>
             </div>
             <div className="max-h-[calc(100vh-320px)] overflow-y-auto">
-              {submissions.map((sub) => {
+              {submissions.map((sub, idx) => {
                 const isActive = sub.id === selectedId;
                 const statusInfo = statusBadgeMap[sub.status];
                 return (
@@ -126,6 +245,13 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                       isActive && 'bg-primary/5 border-l-2 border-l-primary',
                     )}
                   >
+                    {/* 순번 */}
+                    <span className={cn(
+                      'mt-1 shrink-0 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+                      isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                    )}>
+                      {idx + 1}
+                    </span>
                     {/* 썸네일 */}
                     <div className="relative shrink-0">
                       <img
@@ -158,15 +284,25 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
           </Card>
 
           {/* 우측: 영상 플레이어 */}
-          <div className="space-y-4">
+          <div
+            ref={playerContainerRef}
+            className={cn(
+              'space-y-4',
+              isFullScreen && 'bg-black flex flex-col items-center justify-center p-4',
+            )}
+          >
             {selected ? (
               <>
                 {/* 플레이어 */}
-                <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
+                <div className={cn(
+                  'aspect-video bg-black rounded-xl overflow-hidden shadow-lg',
+                  isFullScreen && 'w-full max-w-[90vw] max-h-[75vh] rounded-none',
+                )}>
                   {selected.videoUrl ? (
                     <iframe
+                      ref={iframeRef}
                       key={selected.id}
-                      src={`https://iframe.videodelivery.net/${selected.videoUrl}?poster=${encodeURIComponent(selected.thumbnailUrl || '')}`}
+                      src={`https://iframe.videodelivery.net/${selected.videoUrl}?poster=${encodeURIComponent(selected.thumbnailUrl || '')}&autoplay=true`}
                       title={selected.title}
                       allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                       allowFullScreen
@@ -179,46 +315,93 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                   )}
                 </div>
 
-                {/* 영상 정보 */}
-                <Card className="border-border">
-                  <CardContent className="p-5 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-lg font-bold text-foreground leading-snug">{selected.title}</h2>
-                      <Badge className={cn('shrink-0', statusBadgeMap[selected.status].className)}>
-                        {statusBadgeMap[selected.status].label}
-                      </Badge>
-                    </div>
+                {/* 재생 컨트롤 바 */}
+                <div className={cn(
+                  'flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5',
+                  isFullScreen && 'max-w-[90vw] w-full bg-white/10 border-white/20',
+                )}>
+                  {/* 좌: 이전/다음 + 위치 */}
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={advanceToPrev}>
+                      <SkipBack className="h-4 w-4" />
+                    </Button>
+                    <span className={cn(
+                      'text-sm font-bold tabular-nums min-w-[3rem] text-center',
+                      isFullScreen ? 'text-white' : 'text-foreground',
+                    )}>
+                      {currentIndex + 1} / {submissions.length}
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={advanceToNext}>
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                    {selected.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">{selected.description}</p>
-                    )}
+                  {/* 중: 자동재생 토글 */}
+                  <Button
+                    variant={isAutoPlay ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={() => setIsAutoPlay((prev) => !prev)}
+                  >
+                    <Repeat className="h-3.5 w-3.5" />
+                    자동재생 {isAutoPlay ? 'ON' : 'OFF'}
+                  </Button>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
-                      </span>
-                      <span className="hidden sm:inline">·</span>
-                      <span>{formatDateTime(selected.submittedAt)}</span>
-                    </div>
+                  {/* 우: 전체화면 */}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFullScreen}>
+                    {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  </Button>
+                </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <Eye className="h-4 w-4" />
-                        <span className="font-medium text-foreground">{selected.views}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Heart className="h-4 w-4" />
-                        <span className="font-medium text-foreground">{selected.likeCount}</span>
-                      </span>
-                      {selected.videoDuration > 0 && (
-                        <span className="flex items-center gap-1.5">
-                          <Clock className="h-4 w-4" />
-                          <span className="font-medium text-foreground">{formatDuration(selected.videoDuration)}</span>
-                        </span>
+                {/* 영상 정보 (전체화면에서는 간략 표시) */}
+                {isFullScreen ? (
+                  <div className="max-w-[90vw] w-full text-center">
+                    <p className="text-white font-bold text-lg">{selected.title}</p>
+                    <p className="text-white/60 text-sm">
+                      {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
+                    </p>
+                  </div>
+                ) : (
+                  <Card className="border-border">
+                    <CardContent className="p-5 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="text-lg font-bold text-foreground leading-snug">{selected.title}</h2>
+                        <Badge className={cn('shrink-0', statusBadgeMap[selected.status].className)}>
+                          {statusBadgeMap[selected.status].label}
+                        </Badge>
+                      </div>
+
+                      {selected.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">{selected.description}</p>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
+                        </span>
+                        <span className="hidden sm:inline">·</span>
+                        <span>{formatDateTime(selected.submittedAt)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Eye className="h-4 w-4" />
+                          <span className="font-medium text-foreground">{selected.views}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Heart className="h-4 w-4" />
+                          <span className="font-medium text-foreground">{selected.likeCount}</span>
+                        </span>
+                        {selected.videoDuration > 0 && (
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            <span className="font-medium text-foreground">{formatDuration(selected.videoDuration)}</span>
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             ) : (
               <Card className="border-border">
