@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'lucide-react';
 import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked } from '@/lib/data';
-import { formatDateCompact } from '@/lib/utils';
+import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { SubmissionActions } from '@/components/submissions/submission-actions';
 import { AdminSubmissionActions } from '@/components/submissions/admin-submission-actions';
@@ -123,7 +123,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
       {/* 구조화 데이터 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(videoJsonLd) }}
       />
       {/* 상단 네비게이션 */}
       <div className="border-b border-border">

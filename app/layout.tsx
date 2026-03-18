@@ -44,7 +44,13 @@ export const metadata: Metadata = {
     '영상 공모전', 'AI 영상 제작', '공모전 플랫폼', '아리랑 AI 영상', '생성형AI 영상',
     '헐버트 아리랑', '아리랑 공모전', 'Dreaming Arirang', 'AI video contest',
   ],
-  /* icon.tsx, apple-icon.tsx가 자동 생성 — 인라인 정의 불필요 */
+  /* icon.tsx → /icon, apple-icon.tsx → /apple-icon 자동 생성 */
+  /* /favicon.ico 요청도 /icon으로 매핑 */
+  icons: {
+    icon: '/icon',
+    shortcut: '/icon',
+    apple: '/apple-icon',
+  },
   alternates: {
     canonical: SITE_URL,
   },

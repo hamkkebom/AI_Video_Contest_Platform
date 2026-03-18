@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getUserById, getSubmissions, getContests } from '@/lib/data';
 import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
-import { formatDateCompact } from '@/lib/utils';
+import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -166,7 +166,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
     <div className="w-full">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(profileJsonLd) }}
       />
       {/* 프로필 헤더 섹션 */}
       <section className="py-12 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">

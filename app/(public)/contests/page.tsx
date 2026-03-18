@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
+import { safeJsonLd } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: '공모전 목록 — 꿈꾸는 아리랑 AI 영상 공모전 접수중',
@@ -192,7 +193,7 @@ export default async function ContestsPage({
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(contestsJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(contestsJsonLd) }}
       />
 
       {/* 배경 장식 (모던한 그라데이션) */}

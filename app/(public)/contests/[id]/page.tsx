@@ -8,7 +8,7 @@ import { RelatedContestCarousel } from '@/components/contest/related-contest-car
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import type { AwardTier } from '@/lib/types';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
-import { formatDateCompact } from '@/lib/utils';
+import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
 type ContestDetailPageProps = {
@@ -236,7 +236,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       {/* 구조화 데이터 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       {/* 히어로 섹션: 포스터(좌) + 공모전 정보(우) */}
       <section className="relative py-10 sm:py-16 px-4 bg-gradient-to-b from-primary/8 via-primary/3 to-background border-b border-border overflow-hidden">

@@ -4,7 +4,7 @@ import { Calendar, Tag } from 'lucide-react';
 import { getArticles } from '@/lib/data';
 import type { Article } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
-import { formatDate } from '@/lib/utils';
+import { formatDate, safeJsonLd } from '@/lib/utils';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -133,7 +133,7 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
       <div className="w-full">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }}
         />
         {/* Back Button */}
         <div className="py-4 px-4 bg-background border-b border-border">

@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getContests } from '@/lib/data';
+import { getContests, getFeaturedSubmissions } from '@/lib/data';
 import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
+import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { Clapperboard, ArrowRight } from 'lucide-react';
 import type { AwardTier } from '@/lib/types';
-import { formatDate } from '@/lib/utils';
+import { formatDate, safeJsonLd } from '@/lib/utils';
 import { SitePopup } from '@/components/popup/site-popup';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
@@ -24,6 +25,9 @@ export default async function LandingPage() {
     console.error('[LandingPage] getContests 실패:', e);
     contestsFetchError = true;
   }
+
+  /* 추천 작품 (갤러리 캐러셀용) */
+  const featuredSubmissions = await getFeaturedSubmissions(12);
   const openContests = contests.filter(c => c.status === 'open').slice(0, 8);
 
   /* ── 히어로 슬라이드: 공모전만 (heroImageUrl 우선, 없으면 posterUrl) ── */
@@ -127,7 +131,7 @@ export default async function LandingPage() {
     <>
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
     />
     <div className="w-full">
       {/* ══ 히어로 캐러셀 ══ */}
@@ -249,6 +253,15 @@ export default async function LandingPage() {
         </section>
       )}
 
+
+      {/* ══ 추천 작품 캐러셀 ══ */}
+      {featuredSubmissions.length > 0 && (
+        <section className="py-20 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <FeaturedWorksCarousel submissions={featuredSubmissions} />
+          </div>
+        </section>
+      )}
 
       {/* ══ 영상 제작 대행 CTA ══ */}
       <section className="py-20 px-4">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getFaqs } from '@/lib/data';
+import { safeJsonLd } from '@/lib/utils';
 import { FaqContent } from './faq-content';
 
 /**
@@ -39,7 +40,7 @@ export default async function FaqPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }}
       />
       <FaqContent faqs={faqs} />
     </>

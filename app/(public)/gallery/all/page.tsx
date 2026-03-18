@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Eye, Heart } from 'lucide-react';
+import { safeJsonLd } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: '갤러리 — AI 영상 작품 감상',
@@ -86,7 +87,7 @@ export default async function GalleryAllPage({
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryJsonLd) }}
       />
 
       {/* 배경 장식 */}

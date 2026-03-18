@@ -987,12 +987,12 @@ export const getGallerySubmissions = unstable_cache(
   async (): Promise<GallerySubmission[]> => {
     const supabase = createPublicClient();
 
-    // 승인된 출품작 조회
+    // 승인된 출품작 조회 (먼저 제출한 작품이 앞에 오도록 오래된순 정렬)
     const { data: submissions } = await supabase
       .from('submissions')
       .select('*')
       .eq('status', 'approved')
-      .order('submitted_at', { ascending: false });
+      .order('submitted_at', { ascending: true });
     if (!submissions || submissions.length === 0) return [];
 
     // 관련 공모전 제목 조회
@@ -1199,14 +1199,14 @@ export function getRelatedSubmissions(
     async (): Promise<GallerySubmission[]> => {
       const supabase = createPublicClient();
 
-      // 같은 공모전의 승인된 출품작만 조회 (현재 작품 제외)
+      // 같은 공모전의 승인된 출품작만 조회 (현재 작품 제외, 오래된순)
       const { data: submissions } = await supabase
         .from('submissions')
         .select('*')
         .eq('contest_id', contestId)
         .eq('status', 'approved')
         .neq('id', excludeId)
-        .order('submitted_at', { ascending: false })
+        .order('submitted_at', { ascending: true })
         .limit(limit);
       if (!submissions || submissions.length === 0) return [];
 

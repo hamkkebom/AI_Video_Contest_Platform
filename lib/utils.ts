@@ -6,6 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
+/**
+ * JSON-LD를 <script> 태그에 안전하게 삽입하기 위한 직렬화
+ * - `</script>` 패턴 방지 (XSS 및 파싱 에러 방지)
+ * - 특수 유니코드 문자 이스케이프
+ */
+export function safeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
 /* ─── 한국시간(KST) 날짜 포맷 유틸 ─── */
 
 const KST: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Seoul' };
