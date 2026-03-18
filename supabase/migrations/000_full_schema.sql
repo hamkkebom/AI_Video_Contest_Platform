@@ -635,6 +635,8 @@ DROP POLICY IF EXISTS "storage: 누구나 조회" ON storage.objects;
 CREATE POLICY "storage: 누구나 조회" ON storage.objects FOR SELECT USING (true);
 DROP POLICY IF EXISTS "storage: 인증 사용자 업로드" ON storage.objects;
 CREATE POLICY "storage: 인증 사용자 업로드" ON storage.objects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "storage: 인증 사용자 파일 수정" ON storage.objects;
+CREATE POLICY "storage: 인증 사용자 파일 수정" ON storage.objects FOR UPDATE USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
 DROP POLICY IF EXISTS "storage: 본인 파일 삭제" ON storage.objects;
 CREATE POLICY "storage: 본인 파일 삭제" ON storage.objects FOR DELETE USING (auth.uid()::text = (storage.foldername(name))[1]);
 

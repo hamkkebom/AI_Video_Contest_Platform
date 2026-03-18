@@ -421,11 +421,20 @@ export default function ContestSubmitPage() {
         setUploadStep('submission');
         setUploadProgress(0);
 
-        const accessToken = authSession?.access_token;
+        let accessToken = authSession?.access_token;
         const currentUser = authSession?.user;
         if (!accessToken || !currentUser) {
           throw new Error('로그인 세션이 만료되었습니다.');
         }
+
+        /* 폼 편집 중 토큰이 만료되었을 수 있으므로 갱신 */
+        const supabase = createBrowserClient()!;
+        try {
+          const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+          if (refreshedSession?.access_token) {
+            accessToken = refreshedSession.access_token;
+          }
+        } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
         /* 가산점 인증 이미지 처리 */
         const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
@@ -436,7 +445,6 @@ export default function ContestSubmitPage() {
         if (editBonusFormEntries.length > 0) {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
           const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-          const supabase = createBrowserClient()!;
 
           for (const [configId, entry] of editBonusFormEntries) {
             let proofImageUrl: string | undefined;
@@ -522,11 +530,10 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* ── 1단계: AuthContext의 세션 사용 (네트워크 호출 없음) ──
-         Supabase 클라이언트의 getSession()/getUser() 호출 없이
-         AuthProvider가 이미 확보한 session을 직접 사용한다.
-         어떤 Supabase Auth HTTP 요청도 발생하지 않으므로 hang 불가. */
-      const accessToken = authSession?.access_token;
+      /* ── 1단계: AuthContext 세션으로 초기 인증 확인 ──
+         초기 토큰은 AuthProvider 세션을 사용 (getSession/getUser 호출 없이 hang 방지).
+         영상 업로드 완료 후 getSession()으로 최신 토큰을 재획득한다. */
+      let accessToken = authSession?.access_token;
       const currentUser = authSession?.user;
       if (!accessToken || !currentUser) {
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
@@ -589,10 +596,22 @@ export default function ContestSubmitPage() {
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
-      /* ── 3단계: 썸네일 업로드 (사전 확보한 인증 사용) ── */
+      /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
+      const supabase = createBrowserClient()!;
+      try {
+        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+        if (refreshedSession?.access_token) {
+          accessToken = refreshedSession.access_token;
+          console.log('[제출] 영상 업로드 후 토큰 갱신 완료');
+        }
+      } catch (e) {
+        console.warn('[제출] 토큰 갱신 실패, 기존 토큰 유지:', e);
+      }
+
+      /* ── 3단계: 썸네일 업로드 ── */
       setUploadStep('thumbnail');
       setUploadProgress(0);
-      console.log('[제출] 썸네일 업로드 시작 (사전 확보 토큰 사용)');
+      console.log('[제출] 썸네일 업로드 시작');
 
       const safeThumbnailName = selectedThumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
@@ -638,9 +657,6 @@ export default function ContestSubmitPage() {
       });
       console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
 
-      /* Storage SDK용 클라이언트 (인증 호출 없이 클라이언트만 생성) */
-      const supabase = createBrowserClient()!;
-
       const { data: thumbnailPublicData } = supabase.storage
         .from('thumbnails')
         .getPublicUrl(thumbnailData.path);
@@ -663,7 +679,7 @@ export default function ContestSubmitPage() {
           if (entry.proofImageFile) {
             const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
-            /* SDK 대신 raw XHR + AuthContext 토큰 사용 (SDK 내부 auth 호출 hang 방지) */
+            /* raw XHR + 갱신된 토큰 사용 (SDK storage.upload() 내부 auth 호출 hang 방지) */
             const proofUploadUrl = `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`;
             await new Promise<void>((resolve, reject) => {
               const xhr = new XMLHttpRequest();

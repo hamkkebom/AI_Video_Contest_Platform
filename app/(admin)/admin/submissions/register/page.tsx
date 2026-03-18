@@ -302,7 +302,7 @@ export default function AdminSubmissionRegisterPage() {
       return;
     }
 
-    const accessToken = authSession?.access_token;
+    let accessToken = authSession?.access_token;
     if (!accessToken) {
       setErrorMessage('로그인 세션이 만료되었습니다. 새로고침 후 다시 시도해 주세요.');
       return;
@@ -358,6 +358,14 @@ export default function AdminSubmissionRegisterPage() {
       });
 
       const streamUid = uploadUrlResult.uid;
+
+      /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 */
+      try {
+        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+        if (refreshedSession?.access_token) {
+          accessToken = refreshedSession.access_token;
+        }
+      } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
       /* 단계: 썸네일 업로드 */
       setUploadStep('thumbnail');
