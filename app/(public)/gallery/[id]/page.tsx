@@ -2,8 +2,9 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'lucide-react';
-import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked } from '@/lib/data';
+import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked, getSubmissions } from '@/lib/data';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { StreamVideoPlayer } from './stream-video-player';
@@ -95,6 +96,15 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
   const profile = await getAuthProfile();
   const isAdmin = profile?.roles?.includes('admin') ?? false;
   const userLiked = profile ? await hasUserLiked(profile.id, id) : false;
+  const contestSubmissions = isAdmin
+    ? await getSubmissions({ contestId: submission.contestId })
+    : [];
+  const currentIndex = contestSubmissions.findIndex((item) => item.id === submission.id);
+  const prevSubmission = currentIndex > 0 ? contestSubmissions[currentIndex - 1] : null;
+  const nextSubmission =
+    currentIndex >= 0 && currentIndex < contestSubmissions.length - 1
+      ? contestSubmissions[currentIndex + 1]
+      : null;
 
   /* JSON-LD 구조화 데이터 — VideoObject 스키마 */
   const videoJsonLd = {
@@ -141,6 +151,25 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
         <div className="container mx-auto max-w-4xl space-y-6">
 
           {/* 1. 영상 플레이어 (풀 너비) */}
+          {isAdmin && contestSubmissions.length > 1 && (
+            <div className="flex items-center justify-between px-1 py-2">
+              <Link href={prevSubmission ? `/gallery/${prevSubmission.id}` : '#'}>
+                <Button variant="ghost" size="sm" disabled={!prevSubmission} className="gap-1">
+                  <ChevronLeft className="h-4 w-4" />
+                  이전
+                </Button>
+              </Link>
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} / {contestSubmissions.length}
+              </span>
+              <Link href={nextSubmission ? `/gallery/${nextSubmission.id}` : '#'}>
+                <Button variant="ghost" size="sm" disabled={!nextSubmission} className="gap-1">
+                  다음
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
           <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
             {submission.videoUrl ? (
               <StreamVideoPlayer
@@ -203,7 +232,11 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
           {/* 관리자 전용: 승인/거절 버튼 (검수대기 또는 자동반려 상태) */}
           {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
             <div className="flex items-center gap-2">
-              <SubmissionActions submissionId={String(submission.id)} submissionTitle={submission.title} />
+              <SubmissionActions
+                submissionId={String(submission.id)}
+                submissionTitle={submission.title}
+                nextSubmissionId={nextSubmission?.id}
+              />
             </div>
           )}
 

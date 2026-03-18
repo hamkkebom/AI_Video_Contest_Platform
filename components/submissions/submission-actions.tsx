@@ -20,6 +20,8 @@ interface SubmissionActionsProps {
   submissionId: string;
   /** 제출물 제목 (모달 표시용) */
   submissionTitle: string;
+  /** 다음 제출물 ID (관리자 검수 연속 처리용) */
+  nextSubmissionId?: string;
 }
 
 const ACTION_CONFIG: Record<ActionType, {
@@ -55,7 +57,7 @@ const ACTION_CONFIG: Record<ActionType, {
  * 제출물 승인/거절 액션 버튼 + 확인 모달
  * 서버 컴포넌트 페이지에서 사용하는 클라이언트 컴포넌트
  */
-export function SubmissionActions({ submissionId, submissionTitle }: SubmissionActionsProps) {
+export function SubmissionActions({ submissionId, submissionTitle, nextSubmissionId }: SubmissionActionsProps) {
   const router = useRouter();
   const [currentAction, setCurrentAction] = useState<ActionType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,11 @@ export function SubmissionActions({ submissionId, submissionTitle }: SubmissionA
       }
 
       setCurrentAction(null);
-      router.refresh();
+      if (nextSubmissionId) {
+        router.push(`/gallery/${nextSubmissionId}`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
