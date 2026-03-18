@@ -1983,3 +1983,44 @@ export async function resolveAbuseFlag(flagId: string, resolvedByUserId: string)
   }
   return true;
 }
+
+/**
+ * 사이트 설정 전체 조회 (캐시)
+ * @returns Record<string, boolean> 형태의 key-value 맵
+ */
+export const getSiteSettings = unstable_cache(
+  async (): Promise<Record<string, boolean>> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.from('site_settings').select('key, value');
+    if (error || !data) return {};
+    return Object.fromEntries(
+      data.map((row) => [row.key, row.value === true || row.value === 'true']),
+    );
+  },
+  ['site-settings'],
+  { tags: ['site-settings'], revalidate: 60 },
+);
+
+/** 사이트 설정 단일 업데이트 */
+export async function updateSiteSetting(
+  key: string,
+  value: boolean,
+  updatedBy?: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('site_settings')
+    .update({ value, updated_at: new Date().toISOString(), updated_by: updatedBy ?? null })
+    .eq('key', key);
+
+  if (error) {
+    console.error('[updateSiteSetting] 실패:', error.message);
+    return false;
+  }
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('site-settings');
+  return true;
+}

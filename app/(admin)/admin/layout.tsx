@@ -30,6 +30,7 @@ const adminDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIc
   { href: '/admin/submissions/register', label: '출품작 수동 등록', icon: FilePlus },
   { href: '/admin/articles', label: '아티클', icon: Newspaper },
   { href: '/admin/popups', label: '팝업 관리', icon: Megaphone },
+  { href: '/admin/settings' as Route, label: '사이트 설정', icon: Settings },
   { href: '/admin/profile', label: '프로필', icon: UserCircle },
   { href: '/admin/dashboard', label: '대시보드 - 준비중', icon: LayoutDashboard },
   { href: '/admin/companies', label: '기업 관리 - 준비중', icon: Building2 },

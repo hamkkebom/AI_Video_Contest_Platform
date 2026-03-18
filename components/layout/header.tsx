@@ -23,15 +23,19 @@ import { useAuth } from '@/lib/supabase/auth-context';
 interface MenuItem {
   label: string;
   href: string;
+  settingKey?: string;
   children?: { label: string; href: string }[];
 }
 
-const commonMenuItems: MenuItem[] = [
+const allMenuItems: MenuItem[] = [
   { label: '공모전', href: '/contests?status=open' },
-  // { label: '갤러리', href: '/gallery/all' },
-  // { label: '스토리', href: '/story' },
-  // { label: '고객센터', href: '/support/inquiry' },
+  { label: '갤러리', href: '/gallery/all', settingKey: 'menu.gallery' },
+  { label: '스토리', href: '/story', settingKey: 'menu.story' },
 ];
+
+interface HeaderProps {
+  siteSettings?: Record<string, boolean>;
+}
 
 /**
  * 호버로 열리는 드롭다운 메뉴 컴포넌트
@@ -104,10 +108,13 @@ function getInitial(name: string | undefined | null): string {
  * 글로벌 헤더 컴포넌트
  * Supabase Auth 기반 인증 상태 반영
  */
-export function Header() {
+export function Header({ siteSettings = {} }: HeaderProps) {
   const { user, profile, loading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const commonMenuItems = allMenuItems.filter(
+    (item) => !item.settingKey || siteSettings[item.settingKey],
+  );
 
   const pathname = usePathname();
   const router = useRouter();

@@ -12,6 +12,7 @@ import { UtmTracker } from '@/components/tracking/utm-tracker';
 import { ActivityTracker } from '@/components/tracking/activity-tracker';
 import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 import { createClient } from '@/lib/supabase/server';
+import { getSiteSettings } from '@/lib/data';
 
 /** GTM/GA4 환경변수 — .env.local에 설정하면 자동 활성화 */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -86,6 +87,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   // 미들웨어가 이미 JWT 검증 완료 → getSession()으로 쿠키에서 읽기 (네트워크 호출 없음)
   let serverUser: Parameters<typeof AuthProvider>[0]['serverUser'];
   let serverProfile: Parameters<typeof AuthProvider>[0]['serverProfile'];
+  let siteSettings: Record<string, boolean> = {};
 
   try {
     const supabase = await createClient();
@@ -116,6 +118,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     }
   } catch {
     // 서버 인증 조회 실패 — 클라이언트에서 재시도 (serverUser=undefined)
+  }
+
+  try {
+    siteSettings = await getSiteSettings();
+  } catch {
+    // 사이트 설정 조회 실패 시 기본값(모두 숨김) 유지
   }
 
   return (
@@ -186,7 +194,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
           <AuthProvider serverUser={serverUser} serverProfile={serverProfile}>
             <SessionTimeoutGuard>
-              <Header />
+              <Header siteSettings={siteSettings} />
               <main className="min-h-screen">
                 {children}
               </main>
