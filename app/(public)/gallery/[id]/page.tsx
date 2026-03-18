@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film } from 'lucide-react';
@@ -13,6 +14,44 @@ import { ViewTracker } from '@/components/common/view-tracker';
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;
 };
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
+/** 영상 상세 페이지 동적 메타데이터 */
+export async function generateMetadata({ params }: SubmissionDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const submission = await getSubmissionById(id);
+  if (!submission) {
+    return { title: '영상을 찾을 수 없습니다' };
+  }
+
+  const title = `${submission.title} — AI 영상 작품`;
+  const description = submission.description
+    ? submission.description.slice(0, 155)
+    : `AI꿈 갤러리에서 '${submission.title}' 영상을 감상하세요.`;
+  const url = `${SITE_URL}/gallery/${id}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'video.other',
+      images: submission.thumbnailUrl
+        ? [{ url: submission.thumbnailUrl, width: 1280, height: 720, alt: submission.title }]
+        : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: submission.thumbnailUrl ? [submission.thumbnailUrl] : undefined,
+    },
+  };
+}
 
 /**
  * 영상 상세 페이지
@@ -55,8 +94,31 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
   const profile = await getAuthProfile();
   const isAdmin = profile?.roles?.includes('admin') ?? false;
   const userLiked = profile ? await hasUserLiked(profile.id, id) : false;
+
+  /* JSON-LD 구조화 데이터 — VideoObject 스키마 */
+  const videoJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: submission.title,
+    description: submission.description || submission.title,
+    thumbnailUrl: submission.thumbnailUrl,
+    uploadDate: submission.submittedAt,
+    ...(submission.videoDuration > 0 ? { duration: `PT${Math.floor(submission.videoDuration / 60)}M${Math.floor(submission.videoDuration % 60)}S` } : {}),
+    contentUrl: submission.videoUrl ? `https://iframe.videodelivery.net/${submission.videoUrl}` : undefined,
+    interactionStatistic: [
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: submission.views },
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: submission.likeCount },
+    ],
+    inLanguage: 'ko',
+  };
+
   return (
     <div className="w-full min-h-screen bg-background">
+      {/* 구조화 데이터 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
+      />
       {/* 상단 네비게이션 */}
       <div className="border-b border-border">
         <div className="container mx-auto max-w-4xl px-4 py-3">

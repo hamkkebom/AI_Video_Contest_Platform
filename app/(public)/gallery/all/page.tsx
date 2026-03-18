@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Eye, Heart } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: '갤러리 — AI 영상 작품 감상',
+  description: 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요. 공모전 수상작과 출품작을 확인할 수 있습니다.',
+  keywords: ['AI 영상 갤러리', 'AI 영상 작품', '공모전 수상작', 'AI꿈'],
+  alternates: { canonical: '/gallery/all' },
+  openGraph: {
+    title: '갤러리 — AI 영상 작품 감상',
+    description: 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요.',
+    url: '/gallery/all',
+    type: 'website',
+  },
+};
 import { getGallerySubmissions, getFeaturedSubmissions } from '@/lib/data';
 import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
 import { SearchInput } from '@/components/ui/search-input';
