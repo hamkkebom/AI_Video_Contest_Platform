@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { REVIEW_TABS } from '@/config/constants';
-import { getContestById, getSubmissions, getUsersByIds } from '@/lib/data';
+import { getAdminSubmissions, getContestById, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
@@ -42,10 +42,10 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const { id } = await params;
     const { tab, sort } = await searchParams;
     const activeTab = VALID_TABS.includes(tab ?? '') ? tab! : 'all';
-    const activeSort = sort === 'oldest' ? 'oldest' : 'newest';
+    const activeSort = sort === 'newest' ? 'newest' : 'oldest';
 
     const [allSubmissions, contest] = await Promise.all([
-      getSubmissions({ contestId: id }),
+      getAdminSubmissions({ contestId: id }),
       getContestById(id),
     ]);
 
@@ -81,7 +81,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const buildTabUrl = (tabValue: string) => {
       const p = new URLSearchParams();
       if (tabValue !== 'all') p.set('tab', tabValue);
-      if (activeSort !== 'newest') p.set('sort', activeSort);
+      if (activeSort !== 'oldest') p.set('sort', activeSort);
       const qs = p.toString();
       return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
     };
@@ -90,7 +90,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const buildSortUrl = (sortValue: string) => {
       const p = new URLSearchParams();
       if (activeTab !== 'all') p.set('tab', activeTab);
-      if (sortValue !== 'newest') p.set('sort', sortValue);
+      if (sortValue !== 'oldest') p.set('sort', sortValue);
       const qs = p.toString();
       return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
     };

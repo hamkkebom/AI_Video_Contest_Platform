@@ -293,6 +293,21 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
           >
             {selected ? (
               <>
+                {/* 상단: 영상 제목 + 창작자 */}
+                {!isFullScreen && selected && (
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-foreground truncate">{selected.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
+                      </p>
+                    </div>
+                    <Badge className={cn('shrink-0', statusBadgeMap[selected.status].className)}>
+                      {statusBadgeMap[selected.status].label}
+                    </Badge>
+                  </div>
+                )}
+
                 {/* 플레이어 */}
                 <div className={cn(
                   'aspect-video bg-black rounded-xl overflow-hidden shadow-lg',
@@ -336,21 +351,21 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                     </Button>
                   </div>
 
-                  {/* 중: 자동재생 토글 */}
-                  <Button
-                    variant={isAutoPlay ? 'default' : 'outline'}
-                    size="sm"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={() => setIsAutoPlay((prev) => !prev)}
-                  >
-                    <Repeat className="h-3.5 w-3.5" />
-                    자동재생 {isAutoPlay ? 'ON' : 'OFF'}
-                  </Button>
-
-                  {/* 우: 전체화면 */}
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFullScreen}>
-                    {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                  </Button>
+                  {/* 우: 자동재생 + 전체화면 */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={isAutoPlay ? 'default' : 'outline'}
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                      onClick={() => setIsAutoPlay((prev) => !prev)}
+                    >
+                      <Repeat className="h-3.5 w-3.5" />
+                      자동재생 {isAutoPlay ? 'ON' : 'OFF'}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFullScreen}>
+                      {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 영상 정보 (전체화면에서는 간략 표시) */}

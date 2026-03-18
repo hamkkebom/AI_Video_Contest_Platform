@@ -727,6 +727,36 @@ export const getSubmissions = unstable_cache(
   { tags: ['submissions'], revalidate: 30 },
 );
 
+/** 관리자/인증 세션 기반 출품작 목록 조회 (RLS 세션 의존 이슈 대응) */
+export async function getAdminSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  let query = supabase
+    .from('submissions')
+    .select('*')
+    .order('submitted_at', { ascending: true });
+
+  if (filters?.contestId) {
+    query = query.eq('contest_id', filters.contestId);
+  }
+  if (filters?.userId) {
+    query = query.eq('user_id', filters.userId);
+  }
+  if (filters?.status) {
+    query = query.eq('status', filters.status);
+  }
+  if (filters?.search) {
+    query = query.or(
+      `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
+    );
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data.map((row) => toSubmission(row as Record<string, unknown>));
+}
+
 export async function getLikes(): Promise<Like[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

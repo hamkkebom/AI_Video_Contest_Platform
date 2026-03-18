@@ -12,7 +12,6 @@ import type { Contest, SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Award, Image as ImageIcon } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
 import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
-import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 type AdminContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -165,31 +164,13 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   useEffect(() => {
     const loadSubmissionCounts = async () => {
       try {
-        const supabase = createBrowserClient();
-        if (!supabase) {
-          console.error('[submissionCounts] Supabase 클라이언트 초기화 실패');
-          setCountsError(true);
-          return;
+        const response = await fetch(`/api/admin/contests/${id}/submissions-count`);
+        if (!response.ok) {
+          throw new Error('카운트 조회 실패');
         }
-        const { data, error } = await supabase
-          .from('submissions')
-          .select('status')
-          .eq('contest_id', id);
-        if (error) {
-          console.error('[submissionCounts] 쿼리 실패:', error.message);
-          setCountsError(true);
-          return;
-        }
-        if (!data) return;
+        const data = (await response.json()) as typeof submissionCounts;
         setCountsError(false);
-        setSubmissionCounts({
-          total: data.length,
-          pendingReview: data.filter((s) => s.status === 'pending_review').length,
-          approved: data.filter((s) => s.status === 'approved').length,
-          rejected: data.filter((s) => s.status === 'rejected' || s.status === 'auto_rejected').length,
-          judging: data.filter((s) => s.status === 'judging').length,
-          judged: data.filter((s) => s.status === 'judged').length,
-        });
+        setSubmissionCounts(data);
       } catch (err) {
         console.error('[submissionCounts] 예외 발생:', err);
         setCountsError(true);

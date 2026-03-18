@@ -34,7 +34,7 @@ export default async function GalleryAllPage({
   const featuredSubmissions = await getFeaturedSubmissions(12);
   const { sort, page, search } = await searchParams;
 
-  const currentSort = sort || 'latest';
+  const currentSort = sort || 'oldest';
   const currentPage = Math.max(1, Number(page) || 1);
   const ITEMS_PER_PAGE = 12;
 
@@ -57,6 +57,8 @@ export default async function GalleryAllPage({
   // 정렬
   const sortedSubmissions = [...searchFiltered].sort((a, b) => {
     switch (currentSort) {
+      case 'oldest':
+        return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
       case 'latest':
         return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
       case 'popular':
@@ -87,8 +89,9 @@ export default async function GalleryAllPage({
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryJsonLd) }}
-      />
+      >
+        {safeJsonLd(galleryJsonLd)}
+      </script>
 
       {/* 배경 장식 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
