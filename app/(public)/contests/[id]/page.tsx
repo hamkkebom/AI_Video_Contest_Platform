@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getContestById, getUserById, getRelatedContests } from '@/lib/data';
@@ -14,6 +15,52 @@ type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 };
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
+/** 공모전 상세 페이지 동적 메타데이터 */
+export async function generateMetadata({ params }: ContestDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const contest = await getContestById(id);
+  if (!contest) {
+    return { title: '공모전을 찾을 수 없습니다' };
+  }
+
+  const title = `${contest.title} — AI 영상 공모전`;
+  const description = contest.description
+    ? contest.description.slice(0, 155)
+    : `${contest.title} AI 영상 공모전에 참가하세요. AI꿈에서 접수, 심사, 수상작을 확인할 수 있습니다.`;
+  const url = `${SITE_URL}/contests/${id}`;
+  const keywords = [
+    contest.title,
+    'AI 영상 공모전',
+    'AI꿈',
+    ...(contest.tags ?? []),
+  ];
+  const images = contest.posterUrl
+    ? [{ url: contest.posterUrl, width: 1200, height: 630, alt: contest.title }]
+    : undefined;
+
+  return {
+    title,
+    description,
+    keywords,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: contest.posterUrl ? [contest.posterUrl] : undefined,
+    },
+  };
+}
 
 /** 공개 페이지용 상태 메타 — 색상은 공통 상수, 라벨은 사용자 노출용 */
 function getStatusMeta(status: string) {
@@ -150,8 +197,37 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   const isAdminHost = hostUser?.roles?.includes('admin');
   const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
 
+  /* JSON-LD 구조화 데이터 — Event 스키마 */
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: contest.title,
+    description: contest.description ?? `${contest.title} AI 영상 공모전`,
+    startDate: contest.submissionStartAt,
+    endDate: contest.submissionEndAt,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+    location: {
+      '@type': 'VirtualLocation',
+      url: `${SITE_URL}/contests/${id}`,
+    },
+    image: contest.posterUrl || undefined,
+    organizer: {
+      '@type': 'Organization',
+      name: 'AI꿈',
+      url: SITE_URL,
+    },
+    url: `${SITE_URL}/contests/${id}`,
+    inLanguage: 'ko',
+  };
+
   return (
     <div className="w-full min-h-screen bg-background">
+      {/* 구조화 데이터 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* 히어로 섹션: 포스터(좌) + 공모전 정보(우) */}
       <section className="relative py-10 sm:py-16 px-4 bg-gradient-to-b from-primary/8 via-primary/3 to-background border-b border-border overflow-hidden">
         {/* 배경 장식 */}
