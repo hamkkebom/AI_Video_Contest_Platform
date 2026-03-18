@@ -122,7 +122,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
   return (
     <div className="w-full min-h-screen bg-background">
       {/* 구조화 데이터 */}
-      <script type="application/ld+json">{safeJsonLd(videoJsonLd)}</script>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(videoJsonLd) }} />
       {/* 상단 네비게이션 */}
       <div className="border-b border-border">
         <div className="container mx-auto max-w-4xl px-4 py-3">
