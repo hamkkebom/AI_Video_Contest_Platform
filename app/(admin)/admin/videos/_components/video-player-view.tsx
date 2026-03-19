@@ -314,7 +314,7 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                 {/* 플레이어 */}
                 <div className={cn(
                   'aspect-video bg-black rounded-xl overflow-hidden shadow-lg',
-                  isFullScreen && 'w-full max-w-[95vw] max-h-[85vh] rounded-none',
+                  isFullScreen && 'w-full max-w-[100vw] max-h-[90vh] rounded-none',
                 )}>
                   {selected.videoUrl ? (
                     <iframe
