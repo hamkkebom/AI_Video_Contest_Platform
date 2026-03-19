@@ -145,14 +145,14 @@ BEGIN
     RETURN jsonb_build_object('error', 'AUTH_REQUIRED', 'message', '로그인이 필요합니다.');
   END IF;
 
-  -- 레이트리밋: 1시간 버킷, 최대 5회 (like만 카운트)
+  -- 레이트리밋: 1시간 버킷, 최대 30회 (like만 카운트)
   v_bucket := date_trunc('hour', NOW());
 
   SELECT COALESCE(count, 0) INTO v_count
   FROM api_rate_limits
   WHERE key = v_user_id::text AND action = 'like_toggle' AND bucket_start = v_bucket;
 
-  IF v_count >= 5 THEN
+  IF v_count >= 30 THEN
     RETURN jsonb_build_object('error', 'RATE_LIMITED', 'message', '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
   END IF;
 

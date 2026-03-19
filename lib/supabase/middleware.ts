@@ -91,7 +91,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/admin') ||
     pathname.startsWith('/host') ||
     pathname.startsWith('/judging') ||
-    pathname.startsWith('/gallery') ||
+    /^\/gallery\/\d+/.test(pathname) ||
     /^\/contests\/[^/]+\/submit/.test(pathname);
 
   if (isProtectedRoute && !user) {

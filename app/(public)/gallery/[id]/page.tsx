@@ -210,8 +210,8 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             <AdminDownloadButton videoUrl={submission.videoUrl} />
           )}
 
-          {/* 조회수 추적 */}
-          <ViewTracker submissionId={id} />
+          {/* 조회수 추적 (관리자·심사위원은 제외) */}
+          {!isAdmin && !profile?.roles?.includes('judge') && <ViewTracker submissionId={id} />}
 
           {/* 2. 작품 제목 + 메타 정보 */}
           <div className="space-y-3">

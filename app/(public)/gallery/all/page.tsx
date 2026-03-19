@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Eye, Heart } from 'lucide-react';
 import { safeJsonLd } from '@/lib/utils';
+import { LoadMoreButton } from './load-more-button';
 
 export const metadata: Metadata = {
   title: '갤러리 — AI 영상 작품 감상',
@@ -204,18 +205,13 @@ export default async function GalleryAllPage({
             ))}
           </div>
 
-          {/* 더보기 버튼 — 공모전 페이지와 동일 스타일 */}
+          {/* 더보기 버튼 — 스크롤 위치 유지 */}
           {hasMore && (
             <div className="mt-10 flex flex-col items-center gap-3">
-              <Link href={`/gallery/all?sort=${currentSort}&page=${currentPage + 1}${search ? `&search=${search}` : ''}`} scroll={false}>
-                <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
-                  <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                  <span className="relative z-10 flex items-center gap-2">
-                    더보기
-                    <span className="text-sm opacity-70">+{remainingCount.toLocaleString()}</span>
-                  </span>
-                </button>
-              </Link>
+              <LoadMoreButton
+                href={`/gallery/all?sort=${currentSort}&page=${currentPage + 1}${search ? `&search=${search}` : ''}`}
+                remainingCount={remainingCount}
+              />
             </div>
           )}
         </div>
