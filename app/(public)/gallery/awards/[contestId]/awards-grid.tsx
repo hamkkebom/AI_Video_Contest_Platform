@@ -13,8 +13,8 @@ interface AwardItem {
   thumbnailUrl: string | null;
   views: number;
   likeCount: number;
-  rank: number | null;
-  prizeLabel: string | null;
+  rank?: number | null;
+  prizeLabel?: string | null;
 }
 
 interface AwardsGridProps {
