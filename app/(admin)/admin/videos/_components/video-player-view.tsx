@@ -293,20 +293,23 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
           >
             {selected ? (
               <>
-                {/* 상단: 영상 제목 + 창작자 */}
-                {!isFullScreen && selected && (
-                  <div className="flex items-center gap-3 px-1">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-foreground truncate">{selected.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
-                      </p>
-                    </div>
+                {/* 상단: 영상 제목 + 창작자 (일반/전체화면 공통) */}
+                <div className={cn(
+                  'flex items-center gap-3 px-1',
+                  isFullScreen && 'max-w-[90vw] w-full text-white',
+                )}>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn('text-sm font-bold truncate', isFullScreen ? 'text-white text-lg' : 'text-foreground')}>{selected.title}</p>
+                    <p className={cn('text-xs', isFullScreen ? 'text-white/60' : 'text-muted-foreground')}>
+                      {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
+                    </p>
+                  </div>
+                  {!isFullScreen && (
                     <Badge className={cn('shrink-0', statusBadgeMap[selected.status].className)}>
                       {statusBadgeMap[selected.status].label}
                     </Badge>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* 플레이어 */}
                 <div className={cn(
@@ -331,10 +334,15 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                 </div>
 
                 {/* 재생 컨트롤 바 */}
-                <div className={cn(
-                  'flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5',
-                  isFullScreen && 'max-w-[90vw] w-full bg-white/10 border-white/20',
-                )}>
+                {isFullScreen ? (
+                  /* 전체화면: 해제 버튼만 표시 */
+                  <div className="max-w-[90vw] w-full flex justify-end">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleFullScreen}>
+                      <Minimize className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-2.5">
                   {/* 좌: 이전/다음 + 위치 */}
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={advanceToPrev}>
@@ -367,16 +375,10 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
                     </Button>
                   </div>
                 </div>
+                )}
 
-                {/* 영상 정보 (전체화면에서는 간략 표시) */}
-                {isFullScreen ? (
-                  <div className="max-w-[90vw] w-full text-center">
-                    <p className="text-white font-bold text-lg">{selected.title}</p>
-                    <p className="text-white/60 text-sm">
-                      {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
-                    </p>
-                  </div>
-                ) : (
+                {/* 영상 정보 (전체화면에서는 숨김 — 제목/창작자는 상단에 표시) */}
+                {!isFullScreen && (
                   <Card className="border-border">
                     <CardContent className="p-5 space-y-3">
                       <div className="flex items-start justify-between gap-3">

@@ -57,8 +57,9 @@ export async function PATCH(
   }
 
   try {
-    const body = (await request.json()) as { status?: string };
+    const body = (await request.json()) as { status?: string; rejectionReason?: string };
     const newStatus = body.status?.trim() as AllowedStatus | undefined;
+    const rejectionReason = body.rejectionReason?.trim();
 
     if (!newStatus || !ALLOWED_STATUSES.includes(newStatus)) {
       return NextResponse.json(
@@ -81,7 +82,10 @@ export async function PATCH(
     /* 상태 업데이트 */
     const { error: updateError } = await supabase
       .from('submissions')
-      .update({ status: newStatus })
+      .update({
+        status: newStatus,
+        rejection_reason: newStatus === 'rejected' ? rejectionReason || null : null,
+      })
       .eq('id', submissionId);
 
     if (updateError) {

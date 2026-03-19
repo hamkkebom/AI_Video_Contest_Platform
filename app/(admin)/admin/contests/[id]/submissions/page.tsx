@@ -229,6 +229,10 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                               <Badge className={`shrink-0 ${statusInfo.className}`}>{statusInfo.label}</Badge>
                             </div>
 
+                            {submission.status === 'rejected' && submission.rejectionReason && (
+                              <p className="text-xs text-destructive mt-1 line-clamp-1">사유: {submission.rejectionReason}</p>
+                            )}
+
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                               <span className="font-medium text-foreground">{submission.submitterName || creator?.name || '알 수 없음'}</span>
                               <span className="hidden sm:inline">·</span>

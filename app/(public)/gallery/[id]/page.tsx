@@ -150,7 +150,28 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
       <section className="py-6 sm:py-8 px-4">
         <div className="container mx-auto max-w-4xl space-y-6">
 
-          {/* 1. 영상 플레이어 (풀 너비) */}
+          {/* 1. 출품 공모전 정보 카드 */}
+          <Card className="p-5 border border-border">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground mb-1">출품 공모전</p>
+                <Link
+                  href={`/contests/${submission.contestId}`}
+                  className="text-sm font-semibold text-primary hover:underline line-clamp-1"
+                >
+                  {submission.contestTitle}
+                </Link>
+              </div>
+              {submission.prizeLabel && (
+                <div className="text-right shrink-0">
+                  <p className="text-xs text-muted-foreground mb-1">수상</p>
+                  <p className="text-sm font-semibold text-amber-600">{submission.prizeLabel}</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* 2. 영상 플레이어 (풀 너비) */}
           {isAdmin && contestSubmissions.length > 1 && (
             <div className="flex items-center justify-between px-1 py-2">
               <Link href={prevSubmission ? `/gallery/${prevSubmission.id}` : '#'}>
@@ -183,12 +204,18 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               </div>
             )}
           </div>
+
+          {/* 관리자 전용: 영상 다운로드 (영상 바로 아래) */}
+          {isAdmin && submission.videoUrl && (
+            <AdminDownloadButton videoUrl={submission.videoUrl} />
+          )}
+
           {/* 조회수 추적 */}
           <ViewTracker submissionId={id} />
 
           {/* 2. 작품 제목 + 메타 정보 */}
           <div className="space-y-3">
-            {/* 수상 뱃지 + 제목 */}
+            {/* 수상 뱃지 + 제목 + 수정/삭제 */}
             <div className="space-y-2">
               {submission.prizeLabel && (
                 <Badge
@@ -204,7 +231,29 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                   {submission.prizeLabel}
                 </Badge>
               )}
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{submission.title}</h1>
+              {/* 제목 + 수정/삭제 버튼 */}
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{submission.title}</h1>
+                {isAdmin && (
+                  <div className="shrink-0">
+                    <AdminSubmissionActions
+                      submissionId={String(submission.id)}
+                      submissionTitle={submission.title}
+                      contestId={String(submission.contestId)}
+                      currentData={{
+                        title: submission.title,
+                        description: submission.description || '',
+                        aiTools: submission.aiTools || '',
+                        productionProcess: submission.productionProcess || '',
+                        submitterName: submission.submitterName || '',
+                        submitterPhone: submission.submitterPhone || '',
+                        videoUrl: submission.videoUrl || '',
+                        thumbnailUrl: submission.thumbnailUrl || '',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 메타 정보 */}
@@ -224,14 +273,9 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               <LikeButton submissionId={id} liked={userLiked} initialCount={submission.likeCount} />
             </div>
 
-          {/* 관리자 전용: 영상 다운로드 */}
-          {isAdmin && submission.videoUrl && (
-            <AdminDownloadButton videoUrl={submission.videoUrl} />
-          )}
-
           {/* 관리자 전용: 승인/거절 버튼 (검수대기 또는 자동반려 상태) */}
           {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <SubmissionActions
                 submissionId={String(submission.id)}
                 submissionTitle={submission.title}
@@ -240,23 +284,11 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             </div>
           )}
 
-          {/* 관리자 전용: 수정/삭제 (모든 상태) */}
-          {isAdmin && (
-            <AdminSubmissionActions
-              submissionId={String(submission.id)}
-              submissionTitle={submission.title}
-              contestId={String(submission.contestId)}
-              currentData={{
-                title: submission.title,
-                description: submission.description || '',
-                aiTools: submission.aiTools || '',
-                productionProcess: submission.productionProcess || '',
-                submitterName: submission.submitterName || '',
-                submitterPhone: submission.submitterPhone || '',
-                videoUrl: submission.videoUrl || '',
-                thumbnailUrl: submission.thumbnailUrl || '',
-              }}
-            />
+          {isAdmin && submission.rejectionReason && (
+            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+              <p className="text-xs font-bold text-destructive mb-1">거절 사유</p>
+              <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>
+            </div>
           )}
           </div>
 
@@ -269,26 +301,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             </div>
           )}
 
-          {/* 4. 공모전 정보 카드 */}
-          <Card className="p-5 border border-border">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground mb-1">출품 공모전</p>
-                <Link
-                  href={`/contests/${submission.contestId}`}
-                  className="text-sm font-semibold text-primary hover:underline line-clamp-1"
-                >
-                  {submission.contestTitle}
-                </Link>
-              </div>
-              {submission.prizeLabel && (
-                <div className="text-right shrink-0">
-                  <p className="text-xs text-muted-foreground mb-1">수상</p>
-                  <p className="text-sm font-semibold text-amber-600">{submission.prizeLabel}</p>
-                </div>
-              )}
-            </div>
-          </Card>
+          {/* (공모전 카드 → 상단으로 이동됨) */}
         </div>
       </section>
 

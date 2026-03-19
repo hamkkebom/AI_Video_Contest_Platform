@@ -60,6 +60,7 @@ const ACTION_CONFIG: Record<ActionType, {
 export function SubmissionActions({ submissionId, submissionTitle, nextSubmissionId }: SubmissionActionsProps) {
   const router = useRouter();
   const [currentAction, setCurrentAction] = useState<ActionType | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +74,10 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
       const response = await fetch(`/api/submissions/${submissionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: config.status }),
+        body: JSON.stringify({
+          status: config.status,
+          ...(currentAction === 'reject' && rejectionReason.trim() ? { rejectionReason: rejectionReason.trim() } : {}),
+        }),
       });
 
       const data = await response.json();
@@ -83,6 +87,7 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
       }
 
       setCurrentAction(null);
+      setRejectionReason('');
       if (nextSubmissionId) {
         router.push(`/gallery/${nextSubmissionId}`);
       } else {
@@ -101,24 +106,26 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
   return (
     <>
       <Button
-        size="sm"
-        type="button"
-        className="cursor-pointer"
-        onClick={() => setCurrentAction('approve')}
-      >
-        승인
-      </Button>
-      <Button
-        size="sm"
+        size="lg"
         variant="outline"
         type="button"
-        className="text-destructive cursor-pointer"
+        className="w-full text-destructive cursor-pointer text-base font-bold py-3"
         onClick={() => setCurrentAction('reject')}
       >
+        <XCircle className="h-5 w-5 mr-1.5" />
         거절
       </Button>
+      <Button
+        size="lg"
+        type="button"
+        className="w-full cursor-pointer text-base font-bold py-3"
+        onClick={() => setCurrentAction('approve')}
+      >
+        <CheckCircle2 className="h-5 w-5 mr-1.5" />
+        승인
+      </Button>
 
-      <Dialog open={currentAction !== null} onOpenChange={(open) => { if (!open && !loading) { setCurrentAction(null); setError(null); } }}>
+      <Dialog open={currentAction !== null} onOpenChange={(open) => { if (!open && !loading) { setCurrentAction(null); setError(null); setRejectionReason(''); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             {Icon && (
@@ -136,11 +143,28 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
+          {currentAction === 'reject' && (
+            <div className="space-y-2 pt-2">
+              <label htmlFor="rejection-reason" className="text-sm font-medium">
+                거절 사유 <span className="text-muted-foreground">(선택)</span>
+              </label>
+              <textarea
+                id="rejection-reason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="거절 사유를 입력하세요 (내부 관리용)"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-none"
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">{rejectionReason.length}/500</p>
+            </div>
+          )}
+
           <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
             <Button
               variant="outline"
               className="flex-1 cursor-pointer"
-              onClick={() => { setCurrentAction(null); setError(null); }}
+              onClick={() => { setCurrentAction(null); setError(null); setRejectionReason(''); }}
               disabled={loading}
             >
               취소

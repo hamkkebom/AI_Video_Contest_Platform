@@ -294,6 +294,7 @@ function toSubmission(row: Record<string, unknown>): Submission {
     avgWatchDuration: (row.avg_watch_duration as number) ?? 0,
     tags: (row.tags as string[]) ?? [],
     autoRejectedReason: (row.auto_rejected_reason as string) ?? undefined,
+    rejectionReason: (row.rejection_reason as string) ?? undefined,
     aiTools: (row.ai_tools as string) ?? undefined,
     productionProcess: (row.production_process as string) ?? undefined,
     submitterName: (row.submitter_name as string) ?? undefined,

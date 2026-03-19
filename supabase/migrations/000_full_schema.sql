@@ -184,6 +184,7 @@ CREATE TABLE submissions (
   avg_watch_duration INT DEFAULT 0,
   tags TEXT[] DEFAULT '{}',
   auto_rejected_reason TEXT,
+  rejection_reason TEXT,
   ai_tools TEXT,
   production_process TEXT,
   terms_agreed BOOLEAN DEFAULT false NOT NULL,

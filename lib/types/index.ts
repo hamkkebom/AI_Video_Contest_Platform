@@ -236,6 +236,7 @@ export interface Submission {
   /** 제출자 전화번호 (개인정보) */
   submitterPhone?: string;
   autoRejectedReason?: string;
+  rejectionReason?: string;
   /** 사용한 AI 도구 (예: Sora, Runway, Midjourney) */
   aiTools?: string;
   /** 제작과정 설명 (긴 서술형) */
