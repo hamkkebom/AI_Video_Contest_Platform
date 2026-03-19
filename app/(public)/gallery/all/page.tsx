@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Eye, Heart } from 'lucide-react';
 import { safeJsonLd } from '@/lib/utils';
-import { LoadMoreButton } from './load-more-button';
+import { GalleryGrid } from './gallery-grid';
 
 export const metadata: Metadata = {
   title: '갤러리 — AI 영상 작품 감상',
@@ -29,15 +28,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'
 export default async function GalleryAllPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; page?: string; search?: string }>;
+  searchParams: Promise<{ sort?: string; search?: string }>;
 }) {
   const allSubmissions = await getGallerySubmissions();
   const featuredSubmissions = await getFeaturedSubmissions(12);
-  const { sort, page, search } = await searchParams;
+  const { sort, search } = await searchParams;
 
   const currentSort = sort || 'oldest';
-  const currentPage = Math.max(1, Number(page) || 1);
-  const ITEMS_PER_PAGE = 12;
 
   // 인기순 점수: (조회수 × 0.7 + 좋아요 × 0.3) × 시청유지율 승수
   const popularityScore = (s: typeof allSubmissions[number]) => {
@@ -69,10 +66,15 @@ export default async function GalleryAllPage({
     }
   });
 
-  // 페이지네이션 (12개씩)
-  const displayedSubmissions = sortedSubmissions.slice(0, currentPage * ITEMS_PER_PAGE);
-  const hasMore = sortedSubmissions.length > displayedSubmissions.length;
-  const remainingCount = sortedSubmissions.length - displayedSubmissions.length;
+  // GalleryGrid 클라이언트 컴포넌트에 전달할 직렬화 가능한 데이터
+  const gridSubmissions = sortedSubmissions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    creatorName: s.creatorName,
+    thumbnailUrl: s.thumbnailUrl,
+    views: s.views,
+    likeCount: s.likeCount,
+  }));
 
   const galleryJsonLd = {
     '@context': 'https://schema.org',
@@ -165,55 +167,7 @@ export default async function GalleryAllPage({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {displayedSubmissions.map((submission, index) => (
-              <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
-                <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
-                  {/* 썸네일 */}
-                  <div className="aspect-video overflow-hidden relative bg-muted">
-                    {submission.thumbnailUrl && (
-                      <img
-                        src={submission.thumbnailUrl}
-                        alt={submission.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    )}
-                  </div>
-
-                  {/* 콘텐츠 */}
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-accent-foreground transition-colors">
-                      {submission.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{submission.creatorName}</p>
-
-                    {/* 통계 (숫자 쉼표 적용) */}
-                    <div className="flex gap-3 text-xs text-muted-foreground pt-2">
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3.5 w-3.5" />
-                        {submission.views.toLocaleString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-3.5 w-3.5" />
-                        {submission.likeCount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {/* 더보기 버튼 — 스크롤 위치 유지 */}
-          {hasMore && (
-            <div className="mt-10 flex flex-col items-center gap-3">
-              <LoadMoreButton
-                href={`/gallery/all?sort=${currentSort}&page=${currentPage + 1}${search ? `&search=${search}` : ''}`}
-                remainingCount={remainingCount}
-              />
-            </div>
-          )}
+          <GalleryGrid submissions={gridSubmissions} />
         </div>
       </section>
     </div>
