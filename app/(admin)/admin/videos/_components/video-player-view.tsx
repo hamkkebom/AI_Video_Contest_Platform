@@ -295,26 +295,26 @@ export function VideoPlayerView({ contests, submissions, currentContestId, users
               <>
                 {/* 상단: 영상 제목 + 창작자 (일반/전체화면 공통) */}
                 <div className={cn(
-                  'flex items-center gap-3 px-1',
-                  isFullScreen && 'max-w-[90vw] w-full text-white',
+                  'px-1 text-center',
+                  isFullScreen && 'max-w-[90vw] w-full',
                 )}>
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('text-sm font-bold truncate', isFullScreen ? 'text-white text-lg' : 'text-foreground')}>{selected.title}</p>
-                    <p className={cn('text-xs', isFullScreen ? 'text-white/60' : 'text-muted-foreground')}>
-                      {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
-                    </p>
-                  </div>
+                  <p className={cn('font-bold truncate', isFullScreen ? 'text-white text-xl' : 'text-foreground text-lg')}>{selected.title}</p>
+                  <p className={cn('mt-0.5', isFullScreen ? 'text-white/60 text-sm' : 'text-muted-foreground text-sm')}>
+                    {selected.submitterName || usersMap[selected.userId]?.name || '알 수 없음'}
+                  </p>
                   {!isFullScreen && (
-                    <Badge className={cn('shrink-0', statusBadgeMap[selected.status].className)}>
-                      {statusBadgeMap[selected.status].label}
-                    </Badge>
+                    <div className="mt-1.5">
+                      <Badge className={cn('inline-flex', statusBadgeMap[selected.status].className)}>
+                        {statusBadgeMap[selected.status].label}
+                      </Badge>
+                    </div>
                   )}
                 </div>
 
                 {/* 플레이어 */}
                 <div className={cn(
                   'aspect-video bg-black rounded-xl overflow-hidden shadow-lg',
-                  isFullScreen && 'w-full max-w-[90vw] max-h-[75vh] rounded-none',
+                  isFullScreen && 'w-full max-w-[95vw] max-h-[85vh] rounded-none',
                 )}>
                   {selected.videoUrl ? (
                     <iframe
