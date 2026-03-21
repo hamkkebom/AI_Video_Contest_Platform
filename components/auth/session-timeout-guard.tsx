@@ -53,7 +53,8 @@ function setLastActivity(time: number) {
  * - localStorage로 크로스탭 활동 시간 공유 (다른 탭이 활발하면 만료 안 됨)
  */
 export function SessionTimeoutGuard({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const isAdmin = profile?.roles?.includes('admin') ?? false;
   const router = useRouter();
 
   const lastThrottleRef = useRef(Date.now());
@@ -73,8 +74,8 @@ export function SessionTimeoutGuard({ children }: { children: React.ReactNode })
 
   /* 세션 만료 체크 타이머 */
   useEffect(() => {
-    if (!user) {
-      /* 로그아웃 상태면 타이머 초기화 */
+    if (!user || isAdmin) {
+      /* 로그아웃 상태 또는 관리자는 타임아웃 비활성화 */
       hasTriggeredRef.current = false;
       return;
     }
@@ -106,7 +107,7 @@ export function SessionTimeoutGuard({ children }: { children: React.ReactNode })
       }
       clearInterval(interval);
     };
-  }, [user, handleActivity, signOut]);
+  }, [user, isAdmin, handleActivity, signOut]);
 
   /* 카운트다운 + 리다이렉트 */
   useEffect(() => {
