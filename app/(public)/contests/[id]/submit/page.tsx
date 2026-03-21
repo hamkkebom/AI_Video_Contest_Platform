@@ -569,8 +569,25 @@ export default function ContestSubmitPage() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', uploadUrlResult.uploadURL!);
         xhr.timeout = 10 * 60 * 1000;
-        /* 전송 완료 후 응답 대기 타이머 — Cloudflare가 응답을 안 보내는 경우 대비 */
-        let uploadDoneTimer: ReturnType<typeof setTimeout> | null = null;
+        let settled = false;
+        const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
+        /* 전송 완료 후 Cloudflare 응답 대기 — 폴링으로 확인 */
+        let pollTimer: ReturnType<typeof setInterval> | null = null;
+        let hardDeadline: ReturnType<typeof setTimeout> | null = null;
+        const clearAllTimers = () => {
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
+        };
+
+        /* Cloudflare에 영상 존재 여부 확인 */
+        const checkCloudflareStatus = async (): Promise<boolean> => {
+          try {
+            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
+            return statusRes.ok;
+          } catch { return false; }
+        };
+
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             const pct = Math.round((ev.loaded / ev.total) * 100);
@@ -578,42 +595,58 @@ export default function ContestSubmitPage() {
             setUploadProgress(pct);
           }
         };
-        /* 전송 100% 완료 이벤트 — 서버 응답 대기 타이머 시작 */
+        /* 전송 100% 완료 — 30초마다 Cloudflare 폴링 시작, 최대 5분 */
         xhr.upload.onload = () => {
           console.log('[제출] 파일 전송 완료, Cloudflare 응답 대기 중...');
           setUploadProgress(100);
-          uploadDoneTimer = setTimeout(async () => {
-            console.log('[제출] 2분 응답 없음 — Cloudflare API로 영상 존재 여부 확인');
-            try {
-              const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
-              if (statusRes.ok) {
-                console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
-                xhr.abort();
-                resolve();
-                return;
-              }
-            } catch { /* API 실패 시 계속 대기 */ }
-            console.warn('[제출] Cloudflare에 영상 미확인 — 계속 대기');
-          }, 2 * 60 * 1000);
+
+          /* 30초마다 Cloudflare에 영상 존재 여부 폴링 */
+          pollTimer = setInterval(async () => {
+            console.log('[제출] Cloudflare 영상 존재 여부 확인 중...');
+            const exists = await checkCloudflareStatus();
+            if (exists) {
+              console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
+              clearAllTimers();
+              xhr.abort();
+              settle(() => resolve());
+            }
+          }, 30_000);
+
+          /* 최대 5분 대기 후 최종 확인 → 실패 처리 */
+          hardDeadline = setTimeout(async () => {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = null;
+            console.log('[제출] 5분 경과 — 최종 확인');
+            const exists = await checkCloudflareStatus();
+            if (exists) {
+              console.log('[제출] 최종 확인 성공 — 업로드 성공 처리');
+              xhr.abort();
+              settle(() => resolve());
+            } else {
+              console.error('[제출] 5분 경과 후에도 영상 미확인 — 실패 처리');
+              xhr.abort();
+              settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
+            }
+          }, 5 * 60 * 1000);
         };
         xhr.onload = () => {
-          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          clearAllTimers();
           console.log('[제출] 영상 업로드 완료, status:', xhr.status);
-          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
+          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
           else {
             console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
-            reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
+            settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
           }
         };
         xhr.onerror = () => {
-          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          clearAllTimers();
           console.error('[제출] 영상 업로드 네트워크 오류');
-          reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+          settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
         };
         xhr.ontimeout = () => {
-          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          clearAllTimers();
           console.error('[제출] 영상 업로드 타임아웃');
-          reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+          settle(() => reject(new Error('영상 업로드 시간이 초과되었습니다.')));
         };
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });

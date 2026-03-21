@@ -363,7 +363,22 @@ export default function AdminSubmissionRegisterPage() {
         const loggedMilestones = new Set<number>();
         xhr.open('POST', uploadUrlResult.uploadURL!);
         xhr.timeout = 10 * 60 * 1000;
-        let uploadDoneTimer: ReturnType<typeof setTimeout> | null = null;
+        let settled = false;
+        const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
+        let pollTimer: ReturnType<typeof setInterval> | null = null;
+        let hardDeadline: ReturnType<typeof setTimeout> | null = null;
+        const clearAllTimers = () => {
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
+        };
+        const checkCloudflareStatus = async (): Promise<boolean> => {
+          try {
+            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
+            return statusRes.ok;
+          } catch { return false; }
+        };
+
         xhr.upload.onprogress = (ev) => {
           if (!ev.lengthComputable) return;
           const progress = Math.round((ev.loaded / ev.total) * 100);
@@ -375,35 +390,57 @@ export default function AdminSubmissionRegisterPage() {
             }
           }
         };
-        /* 전송 100% 완료 → 서버 응답 대기 타이머 시작 */
+        /* 전송 100% 완료 → 30초마다 Cloudflare 폴링, 최대 5분 */
         xhr.upload.onload = () => {
           setUploadProgress(100);
           if (!loggedMilestones.has(100)) {
             loggedMilestones.add(100);
             addLog('영상 전송 100%');
           }
-          addLog('파일 전송 완료, 서버 응답 대기 중...');
-          addLog('2분 응답 대기 타이머 시작');
-          uploadDoneTimer = setTimeout(async () => {
-            try {
-              addLog('Cloudflare API로 영상 존재 확인 중...');
-              const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
-              if (statusRes.ok) { xhr.abort(); resolve(); return; }
-            } catch { /* 계속 대기 */ }
-          }, 2 * 60 * 1000);
+          addLog('파일 전송 완료, Cloudflare 응답 대기 중 (30초 간격 확인, 최대 5분)...');
+
+          pollTimer = setInterval(async () => {
+            addLog('Cloudflare 영상 존재 확인 중...');
+            const exists = await checkCloudflareStatus();
+            if (exists) {
+              addLog('Cloudflare에 영상 존재 확인 — 업로드 성공');
+              clearAllTimers();
+              xhr.abort();
+              settle(() => resolve());
+            }
+          }, 30_000);
+
+          hardDeadline = setTimeout(async () => {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = null;
+            addLog('5분 경과 — 최종 확인');
+            const exists = await checkCloudflareStatus();
+            if (exists) {
+              addLog('최종 확인 성공 — 업로드 성공');
+              xhr.abort();
+              settle(() => resolve());
+            } else {
+              addLog('5분 경과 후에도 영상 미확인 — 실패');
+              xhr.abort();
+              settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
+            }
+          }, 5 * 60 * 1000);
         };
         xhr.onload = () => {
-          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          clearAllTimers();
           addLog(`Cloudflare 응답 수신 (${xhr.status})`);
-          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
-          else reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`));
+          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
+          else settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
         };
         xhr.onerror = () => {
-          if (uploadDoneTimer) clearTimeout(uploadDoneTimer);
+          clearAllTimers();
           addLog('네트워크 오류 발생');
-          reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+          settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
         };
-        xhr.ontimeout = () => { if (uploadDoneTimer) clearTimeout(uploadDoneTimer); reject(new Error('영상 업로드 시간이 초과되었습니다.')); };
+        xhr.ontimeout = () => {
+          clearAllTimers();
+          settle(() => reject(new Error('영상 업로드 시간이 초과되었습니다.')));
+        };
         const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
       });
 

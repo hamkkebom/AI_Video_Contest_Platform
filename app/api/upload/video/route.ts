@@ -22,7 +22,10 @@ export async function POST(request: Request) {
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
   }
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  /* getSession()은 쿠키 기반(HTTP 호출 없음)으로 hang 위험이 없다.
+     getUser()는 Supabase Auth 서버 HTTP 요청 → 동시 접속 시 hang/타임아웃 위험. */
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (authError || !user) {
     return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
