@@ -159,7 +159,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         )}
 
         {/* Meta Pixel Code */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <Script id="meta-pixel" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
