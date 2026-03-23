@@ -130,8 +130,27 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html lang="ko" suppressHydrationWarning>
       <head>
         <meta name="naver-site-verification" content="41bf8699fb8e5b02f679b4c97b4661a2df984dc8" />
+        <noscript>
+          <img height="1" width="1" style={{ display: 'none' }} alt=""
+            src="https://www.facebook.com/tr?id=746341501072587&ev=PageView&noscript=1"
+          />
+        </noscript>
+      </head>
+      <body>
+        {/* GTM noscript — body 최상단 */}
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
 
-        {/* Google Tag Manager — head 스니펫 */}
+        {/* Google Tag Manager */}
         {GTM_ID && (
           <Script id="gtm-head" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -171,26 +190,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           fbq('init', '746341501072587');
           fbq('track', 'PageView');
         `}} />
-        <noscript>
-          <img height="1" width="1" style={{ display: 'none' }} alt=""
-            src="https://www.facebook.com/tr?id=746341501072587&ev=PageView&noscript=1"
-          />
-        </noscript>
-        {/* End Meta Pixel Code */}
-      </head>
-      <body>
-        {/* GTM noscript — body 최상단 */}
-        {GTM_ID && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-              height="0"
-              width="0"
-              style={{ display: 'none', visibility: 'hidden' }}
-              title="Google Tag Manager"
-            />
-          </noscript>
-        )}
         <ThemeProvider attribute="data-theme" defaultTheme="signature" enableSystem>
           <AuthProvider serverUser={serverUser} serverProfile={serverProfile}>
             <SessionTimeoutGuard>
