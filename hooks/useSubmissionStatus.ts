@@ -31,16 +31,24 @@ export function useSubmissionStatus(contestId: string) {
           setLoading(false);
           return;
         }
+
+        /* 5초 타임아웃 — hang 방지 */
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
         const { count } = await supabase
           .from('submissions')
           .select('id', { count: 'exact', head: true })
           .eq('contest_id', contestId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .abortSignal(controller.signal);
+
+        clearTimeout(timeout);
 
         /* maxSubmissionsPerUser는 현재 1로 고정된 공모전이므로 1개 이상이면 제출 완료 */
         setHasSubmitted((count ?? 0) >= 1);
       } catch {
-        /* 조회 실패 시 안전하게 false 유지 — submit 페이지/API에서 이중 검증 */
+        /* 조회 실패/타임아웃 시 안전하게 false 유지 — submit 페이지/API에서 이중 검증 */
       } finally {
         setLoading(false);
       }

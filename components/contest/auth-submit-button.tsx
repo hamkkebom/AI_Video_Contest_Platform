@@ -44,6 +44,16 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
     }
   }, [pendingSubmit, statusLoading, hasSubmitted, contestId, router]);
 
+  /* 확인 중 3초 초과 시 제출 페이지로 바로 이동 (hang 방지) */
+  useEffect(() => {
+    if (!pendingSubmit) return;
+    const fallback = setTimeout(() => {
+      setPendingSubmit(false);
+      router.push(`/contests/${contestId}/submit`);
+    }, 3000);
+    return () => clearTimeout(fallback);
+  }, [pendingSubmit, contestId, router]);
+
   const handleClick = () => {
     /* 인증 로딩 중이면 무시 */
     if (loading) return;
@@ -66,7 +76,7 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
       return;
     }
 
-    /* 쿼리 미완료 → 완료될 때까지 대기 (useEffect에서 처리) */
+    /* 쿼리 미완료 → 대기 (3초 후 자동 이동) */
     setPendingSubmit(true);
   };
 
