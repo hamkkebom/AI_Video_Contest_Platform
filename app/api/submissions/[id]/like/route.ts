@@ -25,7 +25,8 @@ export async function POST(
   }
 
   // 인증 확인
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (authError || !user) {
     return NextResponse.json({ error: '로그인이 필요합니다.', code: 'AUTH_REQUIRED' }, { status: 401 });
   }

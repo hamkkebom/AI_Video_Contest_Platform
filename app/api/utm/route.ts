@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 현재 로그인 사용자 확인 (선택)
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       ?? request.headers.get('x-real-ip')

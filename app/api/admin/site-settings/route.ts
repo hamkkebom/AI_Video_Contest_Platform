@@ -8,9 +8,10 @@ export async function GET() {
   if (!supabase) return NextResponse.json({ error: '서버 오류' }, { status: 500 });
 
   const {
-    data: { user },
+    data: { session },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (authError || !user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
 
   const { data, error } = await supabase.from('site_settings').select('*');
@@ -25,9 +26,10 @@ export async function PUT(request: Request) {
   if (!supabase) return NextResponse.json({ error: '서버 오류' }, { status: 500 });
 
   const {
-    data: { user },
+    data: { session },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (authError || !user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
 
   // 관리자 역할 확인

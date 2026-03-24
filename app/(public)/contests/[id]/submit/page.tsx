@@ -1181,6 +1181,12 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground">썸네일과 영상 파일을 업로드해 주세요</p>
                 </div>
               </div>
+              <div className="mb-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  업로드가 안 될 경우 <strong>시크릿 모드(Ctrl+Shift+N)</strong>에서 다시 시도해 주세요.
+                </p>
+              </div>
               {isEditMode && existingSubmission ? (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-muted/30 border border-border">
@@ -1802,6 +1808,10 @@ export default function ContestSubmitPage() {
                       <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
                         <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                         <p>{submitError}</p>
+                      </div>
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
+                        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>브라우저 광고 차단 확장 프로그램이 업로드를 차단할 수 있습니다. <strong>시크릿 모드(Ctrl+Shift+N)</strong>에서 다시 시도해 주세요.</p>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>

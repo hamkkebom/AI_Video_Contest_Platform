@@ -9,9 +9,10 @@ export async function GET(request: Request) {
   }
 
   const {
-    data: { user },
+    data: { session },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (authError || !user) {
     return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });

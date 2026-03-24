@@ -12,7 +12,8 @@ export async function GET(request: Request) {
     // 로그인 상태면 검색 로그 기록
     const supabase = await createClient();
     if (supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
       if (user) {
         await createActivityLog({
           userId: user.id,

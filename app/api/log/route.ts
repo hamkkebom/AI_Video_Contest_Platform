@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'action은 필수입니다' }, { status: 400 });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
     // 인증된 사용자가 있으면 정상 기록
     if (user) {
