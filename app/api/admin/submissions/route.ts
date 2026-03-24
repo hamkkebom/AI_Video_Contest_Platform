@@ -156,13 +156,13 @@ export async function POST(request: Request) {
       }
     }
 
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'admin_create_submission',
       targetType: 'submission',
       targetId: data.id,
       metadata: { contestId, targetUserId, role: 'admin' },
-    });
+    }).catch(console.error);
 
     revalidateTag('submissions');
     revalidateTag('users');

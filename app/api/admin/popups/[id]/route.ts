@@ -63,13 +63,13 @@ export async function PUT(
       return NextResponse.json({ error: '팝업 수정에 실패했습니다.' }, { status: 500 });
     }
 
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'update_popup',
       targetType: 'popup',
       targetId: id,
       metadata: { title: popup.title, role: 'admin' },
-    });
+    }).catch(console.error);
 
     revalidateTag('popups');
     return NextResponse.json({ popup });
@@ -95,13 +95,13 @@ export async function DELETE(
       return NextResponse.json({ error: '팝업 삭제에 실패했습니다.' }, { status: 500 });
     }
 
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'delete_popup',
       targetType: 'popup',
       targetId: id,
       metadata: { role: 'admin' },
-    });
+    }).catch(console.error);
 
     revalidateTag('popups');
     return NextResponse.json({ success: true });

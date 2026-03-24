@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const maxDurationSeconds = body.maxDurationSeconds ?? 600; // 기본 10분
 
-    // Cloudflare Stream: direct creator upload URL 발급
+    // Cloudflare Stream: direct creator upload URL 발급 (10초 타임아웃)
+    const cfController = new AbortController();
+    const cfTimeout = setTimeout(() => cfController.abort(), 10_000);
     const cfResponse = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/direct_upload`,
       {
@@ -59,8 +61,10 @@ export async function POST(request: Request) {
             uploadedAt: new Date().toISOString(),
           },
         }),
+        signal: cfController.signal,
       },
     );
+    clearTimeout(cfTimeout);
 
     if (!cfResponse.ok) {
       const cfError = await cfResponse.text();
@@ -75,12 +79,12 @@ export async function POST(request: Request) {
     const { uploadURL, uid } = cfData.result;
 
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'upload_video',
       targetType: 'video',
       targetId: uid,
-    });
+    }).catch(console.error);
 
     return NextResponse.json({ uploadURL, uid });
   } catch (err) {

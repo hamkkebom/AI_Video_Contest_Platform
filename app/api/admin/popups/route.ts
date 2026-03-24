@@ -29,13 +29,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '팝업 생성에 실패했습니다.' }, { status: 500 });
     }
 
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'create_popup',
       targetType: 'popup',
       targetId: popup.id,
       metadata: { title: popup.title, role: 'admin' },
-    });
+    }).catch(console.error);
 
     revalidateTag('popups');
     return NextResponse.json({ popup }, { status: 201 });

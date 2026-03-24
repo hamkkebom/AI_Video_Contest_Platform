@@ -29,13 +29,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '공모전 생성에 실패했습니다. (반환값 null)' }, { status: 500 });
     }
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'create_contest',
       targetType: 'contest',
       targetId: contest.id,
       metadata: { title: contest.title, role: 'admin' },
-    });
+    }).catch(console.error);
 
     // 예시영상 CF Stream 다운로드 자동 삭제 (사용자 다운로드 방지)
     if (body.promotionVideoUrls && body.promotionVideoUrls.length > 0) {

@@ -59,13 +59,13 @@ export async function PUT(request: Request) {
     }
 
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'update_profile',
       targetType: 'profile',
       targetId: user.id,
       metadata: { updatedFields: Object.keys(updateData).filter(k => k !== 'updated_at') },
-    });
+    }).catch(console.error);
 
     // 캐시 무효화
     revalidateTag('users');

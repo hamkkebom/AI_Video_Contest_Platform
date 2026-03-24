@@ -95,7 +95,7 @@ export async function PATCH(
     }
 
     /* 활동 로그 기록 */
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: newStatus === 'approved' ? 'approve_submission' : 'reject_submission',
       targetType: 'submission',
@@ -105,7 +105,7 @@ export async function PATCH(
         previousStatus: submission.status,
         newStatus,
       },
-    });
+    }).catch(console.error);
 
     /* 캐시 무효화 */
     revalidateTag('submissions');
@@ -341,13 +341,13 @@ export async function PUT(
     }
 
     /* 활동 로그 기록 */
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'update_submission',
       targetType: 'submission',
       targetId: submissionId,
       metadata: { contestId: submission.contest_id as string, title: title ?? '' },
-    });
+    }).catch(console.error);
 
     /* 캐시 무효화 */
     revalidateTag('submissions');
@@ -403,7 +403,7 @@ export async function DELETE(
   }
 
   /* 활동 로그 */
-  await createActivityLog({
+  createActivityLog({
     userId: user.id,
     action: 'delete_submission',
     targetType: 'submission',
@@ -413,7 +413,7 @@ export async function DELETE(
       title: submission.title as string,
       deletedUserId: submission.user_id as string,
     },
-  });
+  }).catch(console.error);
 
   /* 캐시 무효화 */
   revalidateTag('submissions');

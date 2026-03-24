@@ -50,13 +50,13 @@ export async function POST(request: Request) {
     }
 
     // 활동 로그 기록 (로그아웃 전에 기록)
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'withdraw_account',
       targetType: 'profile',
       targetId: user.id,
       metadata: { reason },
-    });
+    }).catch(console.error);
 
     // 로그아웃 처리
     await supabase.auth.signOut();

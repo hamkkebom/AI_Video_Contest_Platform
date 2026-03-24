@@ -15,11 +15,11 @@ export async function GET(request: Request) {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user ?? null;
       if (user) {
-        await createActivityLog({
+        createActivityLog({
           userId: user.id,
           action: 'search',
           metadata: { query },
-        });
+        }).catch(console.error);
       }
     }
 

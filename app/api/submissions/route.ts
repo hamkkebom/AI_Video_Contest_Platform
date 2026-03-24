@@ -204,13 +204,13 @@ export async function POST(request: Request) {
     }
 
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'create_submission',
       targetType: 'submission',
       targetId: data.id,
       metadata: { contestId, title: title ?? '', role: 'participant' },
-    });
+    }).catch(console.error);
 
     // 캐시 무효화
     revalidateTag('submissions');

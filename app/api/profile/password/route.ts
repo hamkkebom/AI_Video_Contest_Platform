@@ -57,12 +57,12 @@ export async function PUT(request: Request) {
     }
 
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'change_password',
       targetType: 'profile',
       targetId: user.id,
-    });
+    }).catch(console.error);
 
     return NextResponse.json({ success: true });
   } catch (error) {

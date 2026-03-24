@@ -19,6 +19,13 @@ function cfHeaders() {
   };
 }
 
+/** 10초 타임아웃 시그널 생성 */
+function cfTimeout(ms = 10_000): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 /**
  * Cloudflare Stream URL에서 비디오 UID 추출
  *
@@ -78,10 +85,13 @@ export async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoI
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) return null;
 
   try {
+    const t = cfTimeout();
     const res = await fetch(cfStreamUrl(videoUid, ''), {
       method: 'GET',
       headers: cfHeaders(),
+      signal: t.signal,
     });
+    t.clear();
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -122,10 +132,13 @@ export async function deleteStreamDownloads(videoUid: string): Promise<boolean> 
   }
 
   try {
+    const t = cfTimeout();
     const res = await fetch(cfStreamUrl(videoUid, '/downloads'), {
       method: 'DELETE',
       headers: cfHeaders(),
+      signal: t.signal,
     });
+    t.clear();
 
     if (!res.ok) {
       const text = await res.text();
@@ -153,11 +166,14 @@ export async function createStreamDownload(
   }
 
   try {
+    const t = cfTimeout();
     const res = await fetch(cfStreamUrl(videoUid, '/downloads'), {
       method: 'POST',
       headers: cfHeaders(),
       body: JSON.stringify({}),
+      signal: t.signal,
     });
+    t.clear();
 
     if (!res.ok) {
       const text = await res.text();
@@ -206,10 +222,13 @@ export async function getStreamDownloads(
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) return null;
 
   try {
+    const t = cfTimeout();
     const res = await fetch(cfStreamUrl(videoUid, '/downloads'), {
       method: 'GET',
       headers: cfHeaders(),
+      signal: t.signal,
     });
+    t.clear();
 
     if (!res.ok) return null;
 

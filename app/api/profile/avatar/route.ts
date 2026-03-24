@@ -72,12 +72,12 @@ export async function POST(request: Request) {
     }
 
     // 활동 로그 기록
-    await createActivityLog({
+    createActivityLog({
       userId: user.id,
       action: 'update_avatar',
       targetType: 'profile',
       targetId: user.id,
-    });
+    }).catch(console.error);
 
     // 캐시 무효화
     revalidateTag('users');

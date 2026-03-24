@@ -65,13 +65,13 @@ export async function PUT(
 
     // 활동 로그 기록
     if (user) {
-      await createActivityLog({
+      createActivityLog({
         userId: user.id,
         action: 'update_contest',
         targetType: 'contest',
         targetId: id,
         metadata: { title: contest.title, role: 'admin' },
-      });
+      }).catch(console.error);
     }
 
     // 예시영상 CF Stream 다운로드 자동 삭제 (사용자 다운로드 방지)
@@ -107,13 +107,13 @@ export async function DELETE(
 
     // 활동 로그 기록
     if (user) {
-      await createActivityLog({
+      createActivityLog({
         userId: user.id,
         action: 'delete_contest',
         targetType: 'contest',
         targetId: id,
         metadata: { role: 'admin' },
-      });
+      }).catch(console.error);
     }
 
     revalidateTag('contests');
