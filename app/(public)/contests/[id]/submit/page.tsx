@@ -606,7 +606,8 @@ export default function ContestSubmitPage() {
       try {
         uploadUrlResponse = await fetchUploadUrl();
       } catch {
-        console.warn('[제출] 업로드 URL 1차 실패, 재시도...');
+        console.warn('[제출] 업로드 URL 1차 실패, 2초 후 재시도...');
+        await new Promise((r) => setTimeout(r, 2000));
         uploadUrlResponse = await fetchUploadUrl();
       }
 

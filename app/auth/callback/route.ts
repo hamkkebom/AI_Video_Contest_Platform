@@ -83,6 +83,10 @@ export async function GET(request: Request) {
       const type = searchParams.get('type');
       if (type === 'recovery') {
         const recoveryResponse = NextResponse.redirect(`${origin}/reset-password`);
+        /* successResponse에 설정된 세션 쿠키를 복사 (exchangeCodeForSession이 설정한 것) */
+        for (const cookie of successResponse.cookies.getAll()) {
+          recoveryResponse.cookies.set(cookie.name, cookie.value);
+        }
         recoveryResponse.cookies.delete('sb_redirect_to');
         recoveryResponse.cookies.delete('sb_origin');
         return recoveryResponse;
