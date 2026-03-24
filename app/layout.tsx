@@ -130,6 +130,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html lang="ko" suppressHydrationWarning>
       <head>
         <meta name="naver-site-verification" content="41bf8699fb8e5b02f679b4c97b4661a2df984dc8" />
+        <meta name="google-site-verification" content="yC3_lZ-RRahY-AjP5tIalXKVaXYGU9k6huandgzu17s" />
         <noscript>
           <img height="1" width="1" style={{ display: 'none' }} alt=""
             src="https://www.facebook.com/tr?id=746341501072587&ev=PageView&noscript=1"
