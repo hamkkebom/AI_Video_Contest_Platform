@@ -665,21 +665,39 @@ export default function ContestSubmitPage() {
             }
           }, 5 * 60 * 1000);
         };
-        xhr.onload = () => {
+        xhr.onload = async () => {
           clearAllTimers();
           console.log('[제출] 영상 업로드 완료, status:', xhr.status);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
           else {
-            console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
-            reportUploadError('video', '영상 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
-            settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
+            /* 상태 코드가 이상해도 Cloudflare에 영상이 있을 수 있음 */
+            console.warn('[제출] 비정상 응답, Cloudflare 확인:', xhr.status);
+            const existsOnCf = await checkCloudflareStatus();
+            if (existsOnCf) {
+              console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
+              setUploadProgress(100);
+              settle(() => resolve());
+            } else {
+              console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
+              reportUploadError('video', '영상 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
+              settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
+            }
           }
         };
-        xhr.onerror = () => {
-          clearAllTimers();
-          console.error('[제출] 영상 업로드 네트워크 오류');
-          reportUploadError('video', '네트워크 오류', 'NETWORK_ERROR');
-          settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
+        xhr.onerror = async () => {
+          console.warn('[제출] 영상 업로드 네트워크 오류 — Cloudflare에 영상 존재 여부 확인');
+          /* 파일 전송은 완료됐을 수 있음 (CORS 응답 차단 등) — Cloudflare 확인 후 판단 */
+          const existsOnCf = await checkCloudflareStatus();
+          if (existsOnCf) {
+            console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
+            clearAllTimers();
+            settle(() => resolve());
+          } else {
+            clearAllTimers();
+            console.error('[제출] Cloudflare에도 영상 없음 — 실제 네트워크 오류');
+            reportUploadError('video', '네트워크 오류', 'NETWORK_ERROR');
+            settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
+          }
         };
         xhr.ontimeout = () => {
           clearAllTimers();
