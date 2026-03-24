@@ -133,6 +133,17 @@ export default function ContestSubmitPage() {
   const initialFormRef = useRef<FormState | null>(null);
   const initialBonusFormsRef = useRef<Record<string, BonusFormEntry> | null>(null);
 
+  /** 업로드 에러를 서버에 보고 */
+  const reportUploadError = async (step: string, errorMessage: string, errorCode?: string, details?: string) => {
+    try {
+      await fetch('/api/upload-error-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step, errorMessage, errorCode, details }),
+      });
+    } catch { /* 에러 로그 전송 실패는 무시 */ }
+  };
+
   useEffect(() => {
     const load = async () => {
       /* 공모전 단건 조회 */
@@ -530,26 +541,49 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* ── 1단계: AuthContext 세션으로 초기 인증 확인 ──
-         초기 토큰은 AuthProvider 세션을 사용 (getSession/getUser 호출 없이 hang 방지).
-         영상 업로드 완료 후 getSession()으로 최신 토큰을 재획득한다. */
+      /* ── 1단계: 세션 갱신 + 인증 확인 ──
+         AuthContext의 토큰이 오래되었을 수 있으므로 Supabase 클라이언트에서 최신 세션을 가져온다. */
+      const supabase = createBrowserClient()!;
       let accessToken = authSession?.access_token;
       const currentUser = authSession?.user;
+
+      /* 최신 토큰으로 갱신 시도 */
+      try {
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        if (freshSession?.access_token) {
+          accessToken = freshSession.access_token;
+        }
+      } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
+
       if (!accessToken || !currentUser) {
         throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
       }
-      console.log('[제출] AuthContext 세션 확인 완료, userId:', currentUser.id);
+      console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
 
-      /* fetch에 10초 타임아웃 — 미들웨어 hang 방지 */
-      const uploadUrlController = new AbortController();
-      const uploadUrlTimeout = setTimeout(() => uploadUrlController.abort(), 10_000);
-      const uploadUrlResponse = await fetch('/api/upload/video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxDurationSeconds: 600 }),
-        signal: uploadUrlController.signal,
-      });
-      clearTimeout(uploadUrlTimeout);
+      /* 업로드 URL 요청 (30초 타임아웃, 실패 시 1회 재시도) */
+      const fetchUploadUrl = async (): Promise<Response> => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+        try {
+          const res = await fetch('/api/upload/video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maxDurationSeconds: 600 }),
+            signal: controller.signal,
+          });
+          return res;
+        } finally {
+          clearTimeout(timeout);
+        }
+      };
+
+      let uploadUrlResponse: Response;
+      try {
+        uploadUrlResponse = await fetchUploadUrl();
+      } catch {
+        console.warn('[제출] 업로드 URL 1차 실패, 재시도...');
+        uploadUrlResponse = await fetchUploadUrl();
+      }
 
       const uploadUrlResult = (await uploadUrlResponse.json()) as {
         uploadURL?: string;
@@ -558,6 +592,7 @@ export default function ContestSubmitPage() {
       };
 
       if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
+        await reportUploadError('preparing', uploadUrlResult.error ?? '영상 업로드 URL 생성 실패', String(uploadUrlResponse.status));
         throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
       }
 
@@ -625,6 +660,7 @@ export default function ContestSubmitPage() {
             } else {
               console.error('[제출] 5분 경과 후에도 영상 미확인 — 실패 처리');
               xhr.abort();
+              reportUploadError('video', '5분 대기 후 미확인', 'POLL_TIMEOUT');
               settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
             }
           }, 5 * 60 * 1000);
@@ -635,24 +671,26 @@ export default function ContestSubmitPage() {
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
           else {
             console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
+            reportUploadError('video', '영상 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
             settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
           }
         };
         xhr.onerror = () => {
           clearAllTimers();
           console.error('[제출] 영상 업로드 네트워크 오류');
+          reportUploadError('video', '네트워크 오류', 'NETWORK_ERROR');
           settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
         };
         xhr.ontimeout = () => {
           clearAllTimers();
           console.error('[제출] 영상 업로드 타임아웃');
+          reportUploadError('video', '타임아웃', 'TIMEOUT');
           settle(() => reject(new Error('영상 업로드 시간이 초과되었습니다.')));
         };
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
       /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
-      const supabase = createBrowserClient()!;
       try {
         const { data: { session: refreshedSession } } = await supabase.auth.getSession();
         if (refreshedSession?.access_token) {
@@ -699,6 +737,7 @@ export default function ContestSubmitPage() {
             }
           } else {
             const errMsg = xhr.responseText || '썸네일 업로드에 실패했습니다.';
+            reportUploadError('thumbnail', '썸네일 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
             if (errMsg.includes('security') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
               reject(new Error('썸네일 업로드 권한이 없습니다. 세션이 만료되었을 수 있으니 새로고침 후 다시 시도해 주세요.'));
             } else {
@@ -706,8 +745,8 @@ export default function ContestSubmitPage() {
             }
           }
         };
-        xhr.onerror = () => reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.'));
-        xhr.ontimeout = () => reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초).'));
+        xhr.onerror = () => { reportUploadError('thumbnail', '네트워크 오류', 'NETWORK_ERROR'); reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.')); };
+        xhr.ontimeout = () => { reportUploadError('thumbnail', '타임아웃', 'TIMEOUT'); reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초).')); };
         xhr.send(selectedThumbnailFile);
       });
       console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
@@ -825,6 +864,7 @@ export default function ContestSubmitPage() {
       setSubmitted(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : '영상 제출 중 오류가 발생했습니다.';
+      reportUploadError(uploadStep ?? 'unknown', message, 'CATCH_ALL');
       setSubmitError(message);
       setErrorType('general');
     } finally {
