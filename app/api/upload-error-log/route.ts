@@ -27,14 +27,14 @@ export async function POST(request: Request) {
       user_id: user?.id ?? null,
       action: 'upload_error',
       target_type: step ?? 'unknown',
-      target_id: null,
-      details: JSON.stringify({
+      target_id: errorCode ?? null,
+      metadata: {
         errorMessage,
         errorCode,
         details,
         userAgent: request.headers.get('user-agent'),
         timestamp: new Date().toISOString(),
-      }),
+      },
     };
 
     // activity_logs 테이블에 기록

@@ -133,6 +133,28 @@ export default function ContestSubmitPage() {
   const initialFormRef = useRef<FormState | null>(null);
   const initialBonusFormsRef = useRef<Record<string, BonusFormEntry> | null>(null);
 
+  /** 사용자 친화적 에러 메시지 생성 */
+  const userFriendlyError = (code: string, detail?: string): string => {
+    const guides: Record<string, string> = {
+      'AUTH-EXPIRED': '로그인 세션이 만료되었습니다.\n\n페이지를 새로고침 후 다시 로그인해 주세요.',
+      'VIDEO-URL': '영상 업로드 준비에 실패했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
+      'VIDEO-NETWORK': '영상 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
+      'VIDEO-TIMEOUT': '영상 업로드 시간이 초과되었습니다.\n\n파일 크기가 크면 Wi-Fi 환경에서 다시 시도해 주세요.',
+      'VIDEO-STATUS': '영상 업로드 중 문제가 발생했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
+      'THUMB-AUTH': '썸네일 업로드 권한 오류가 발생했습니다.\n\n페이지를 새로고침 후 다시 로그인해 주세요.',
+      'THUMB-NETWORK': '썸네일 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
+      'THUMB-TIMEOUT': '썸네일 업로드 시간이 초과되었습니다.\n\n이미지 크기를 줄이거나 다시 시도해 주세요.',
+      'THUMB-STATUS': '썸네일 업로드에 실패했습니다.\n\n다른 이미지로 변경하거나 다시 시도해 주세요.',
+      'THUMB-URL': '썸네일 처리 중 오류가 발생했습니다.\n\n다시 시도해 주세요.',
+      'PROOF-NETWORK': '인증 이미지 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
+      'PROOF-TIMEOUT': '인증 이미지 업로드 시간이 초과되었습니다.\n\n이미지 크기를 줄이거나 다시 시도해 주세요.',
+      'PROOF-STATUS': '인증 이미지 업로드에 실패했습니다.\n\n다시 시도해 주세요.',
+      'SUBMIT-FAIL': '출품작 저장에 실패했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
+    };
+    const msg = guides[code] || '업로드 중 문제가 발생했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.';
+    return `${msg}\n\n계속 실패할 경우 시크릿 모드(Ctrl+Shift+N)에서 시도해 주세요.\n문제가 지속되면 문의해 주세요. (오류 코드: ${code})`;
+  };
+
   /** 업로드 에러를 서버에 보고 */
   const reportUploadError = async (step: string, errorMessage: string, errorCode?: string, details?: string) => {
     try {
@@ -547,16 +569,19 @@ export default function ContestSubmitPage() {
       let accessToken = authSession?.access_token;
       const currentUser = authSession?.user;
 
-      /* 최신 토큰으로 갱신 시도 */
+      /* 최신 토큰으로 갱신 시도 (5초 타임아웃 — hang 방지) */
       try {
-        const { data: { session: freshSession } } = await supabase.auth.getSession();
-        if (freshSession?.access_token) {
-          accessToken = freshSession.access_token;
+        const initRefresh = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
+        if (initRefresh && 'data' in initRefresh && initRefresh.data.session?.access_token) {
+          accessToken = initRefresh.data.session.access_token;
         }
       } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
       if (!accessToken || !currentUser) {
-        throw new Error('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 로그인해 주세요.');
+        throw new Error(userFriendlyError('AUTH-EXPIRED'));
       }
       console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
 
@@ -593,7 +618,7 @@ export default function ContestSubmitPage() {
 
       if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
         await reportUploadError('preparing', uploadUrlResult.error ?? '영상 업로드 URL 생성 실패', String(uploadUrlResponse.status));
-        throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
+        throw new Error(userFriendlyError('VIDEO-URL'));
       }
 
       /* 영상 업로드 — XMLHttpRequest로 진행률 추적 */
@@ -661,7 +686,7 @@ export default function ContestSubmitPage() {
               console.error('[제출] 5분 경과 후에도 영상 미확인 — 실패 처리');
               xhr.abort();
               reportUploadError('video', '5분 대기 후 미확인', 'POLL_TIMEOUT');
-              settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
+              settle(() => reject(new Error(userFriendlyError('VIDEO-TIMEOUT'))));
             }
           }, 5 * 60 * 1000);
         };
@@ -680,7 +705,7 @@ export default function ContestSubmitPage() {
             } else {
               console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
               reportUploadError('video', '영상 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
-              settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
+              settle(() => reject(new Error(userFriendlyError('VIDEO-STATUS'))));
             }
           }
         };
@@ -696,24 +721,29 @@ export default function ContestSubmitPage() {
             clearAllTimers();
             console.error('[제출] Cloudflare에도 영상 없음 — 실제 네트워크 오류');
             reportUploadError('video', '네트워크 오류', 'NETWORK_ERROR');
-            settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
+            settle(() => reject(new Error(userFriendlyError('VIDEO-NETWORK'))));
           }
         };
         xhr.ontimeout = () => {
           clearAllTimers();
           console.error('[제출] 영상 업로드 타임아웃');
           reportUploadError('video', '타임아웃', 'TIMEOUT');
-          settle(() => reject(new Error('영상 업로드 시간이 초과되었습니다.')));
+          settle(() => reject(new Error(userFriendlyError('VIDEO-TIMEOUT'))));
         };
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
       /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
       try {
-        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-        if (refreshedSession?.access_token) {
-          accessToken = refreshedSession.access_token;
+        const refreshResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
+        if (refreshResult && 'data' in refreshResult && refreshResult.data.session?.access_token) {
+          accessToken = refreshResult.data.session.access_token;
           console.log('[제출] 영상 업로드 후 토큰 갱신 완료');
+        } else {
+          console.warn('[제출] 토큰 갱신 타임아웃(5초), 기존 토큰 유지');
         }
       } catch (e) {
         console.warn('[제출] 토큰 갱신 실패, 기존 토큰 유지:', e);
@@ -757,14 +787,14 @@ export default function ContestSubmitPage() {
             const errMsg = xhr.responseText || '썸네일 업로드에 실패했습니다.';
             reportUploadError('thumbnail', '썸네일 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
             if (errMsg.includes('security') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
-              reject(new Error('썸네일 업로드 권한이 없습니다. 세션이 만료되었을 수 있으니 새로고침 후 다시 시도해 주세요.'));
+              reject(new Error(userFriendlyError('THUMB-AUTH')));
             } else {
-              reject(new Error(`썸네일 업로드 실패 (${xhr.status})`));
+              reject(new Error(userFriendlyError('THUMB-STATUS')));
             }
           }
         };
-        xhr.onerror = () => { reportUploadError('thumbnail', '네트워크 오류', 'NETWORK_ERROR'); reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.')); };
-        xhr.ontimeout = () => { reportUploadError('thumbnail', '타임아웃', 'TIMEOUT'); reject(new Error('썸네일 업로드 시간이 초과되었습니다(30초).')); };
+        xhr.onerror = () => { reportUploadError('thumbnail', '네트워크 오류', 'NETWORK_ERROR'); reject(new Error(userFriendlyError('THUMB-NETWORK'))); };
+        xhr.ontimeout = () => { reportUploadError('thumbnail', '타임아웃', 'TIMEOUT'); reject(new Error(userFriendlyError('THUMB-TIMEOUT'))); };
         xhr.send(selectedThumbnailFile);
       });
       console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
@@ -774,7 +804,7 @@ export default function ContestSubmitPage() {
         .getPublicUrl(thumbnailData.path);
 
       if (!thumbnailPublicData.publicUrl) {
-        throw new Error('썸네일 공개 URL 생성에 실패했습니다.');
+        throw new Error(userFriendlyError('THUMB-URL'));
       }
 
       /* 가산점 인증 이미지 업로드 */
@@ -805,11 +835,11 @@ export default function ContestSubmitPage() {
                 if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
                 else {
                   console.error('인증 이미지 업로드 실패:', xhr.status, xhr.responseText);
-                  reject(new Error(`인증 이미지 업로드에 실패했습니다. (${xhr.status})`));
+                  reject(new Error(userFriendlyError('PROOF-STATUS')));
                 }
               };
-              xhr.onerror = () => reject(new Error('네트워크 오류로 인증 이미지 업로드에 실패했습니다.'));
-              xhr.ontimeout = () => reject(new Error('인증 이미지 업로드 시간이 초과되었습니다(30초).'));
+              xhr.onerror = () => reject(new Error(userFriendlyError('PROOF-NETWORK')));
+              xhr.ontimeout = () => reject(new Error(userFriendlyError('PROOF-TIMEOUT')));
               xhr.send(entry.proofImageFile);
             });
             const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofPath);
@@ -876,7 +906,7 @@ export default function ContestSubmitPage() {
           setSubmitError(serverError);
           return;
         }
-        throw new Error(serverError);
+        throw new Error(userFriendlyError('SUBMIT-FAIL'));
       }
 
       setSubmitted(true);
@@ -1861,17 +1891,16 @@ export default function ContestSubmitPage() {
                       </DialogFooter>
                     </>
                   ) : (
-                    /* 일반 오류 (기존 동작) */
+                    /* 일반 오류 — 사용자 친화적 안내 */
                     <>
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
-                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>{submitError}</p>
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
                       </div>
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
-                        <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>브라우저 광고 차단 확장 프로그램이 업로드를 차단할 수 있습니다. <strong>시크릿 모드(Ctrl+Shift+N)</strong>에서 다시 시도해 주세요.</p>
+                      <div className="p-4 rounded-lg bg-muted/50 text-sm whitespace-pre-line leading-relaxed">
+                        {submitError}
                       </div>
-                      <DialogFooter>
+                      <DialogFooter className="flex-col gap-2">
+                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => window.location.reload()}>페이지 새로고침</Button>
                         <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
                       </DialogFooter>
                     </>
