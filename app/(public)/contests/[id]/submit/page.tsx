@@ -35,6 +35,7 @@ import {
 
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { refreshAccessToken } from '@/lib/supabase/refresh-token';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 import { formatDate, cn } from '@/lib/utils';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -572,16 +573,14 @@ export default function ContestSubmitPage() {
       let accessToken = authSession?.access_token;
       const currentUser = authSession?.user;
 
-      /* 최신 토큰으로 갱신 시도 (5초 타임아웃 — hang 방지) */
-      try {
-        const initRefresh = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-        ]);
-        if (initRefresh && 'data' in initRefresh && initRefresh.data.session?.access_token) {
-          accessToken = initRefresh.data.session.access_token;
-        }
-      } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
+      /* 최신 토큰으로 갱신 시도 (최대 3회 재시도 + 백오프) */
+      const initResult = await refreshAccessToken(supabase, {
+        maxRetries: 3,
+        log: (msg) => console.log(`[제출] ${msg}`),
+      });
+      if (initResult.ok) {
+        accessToken = initResult.accessToken;
+      }
 
       if (!accessToken || !currentUser) {
         throw new Error(userFriendlyError('AUTH-EXPIRED'));
@@ -738,37 +737,13 @@ export default function ContestSubmitPage() {
       });
 
       /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
-      try {
-        const refreshResult = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-        ]);
-        if (refreshResult && 'data' in refreshResult && refreshResult.data.session?.access_token) {
-          accessToken = refreshResult.data.session.access_token;
-          console.log('[제출] 영상 업로드 후 토큰 갱신 완료');
-        } else {
-          /* getSession 타임아웃 — refreshSession으로 재시도 */
-          console.warn('[제출] getSession 타임아웃, refreshSession 시도...');
-          try {
-            const retryResult = await Promise.race([
-              supabase.auth.refreshSession(),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-            ]);
-            const retrySession = retryResult && 'data' in retryResult ? retryResult.data.session : null;
-            if (retrySession?.access_token) {
-              accessToken = retrySession.access_token;
-              console.log('[제출] refreshSession 성공');
-            } else {
-              throw new Error('refresh failed');
-            }
-          } catch {
-            console.error('[제출] 토큰 갱신 완전 실패');
-            throw new Error(userFriendlyError('AUTH-EXPIRED'));
-          }
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message.includes('로그인 세션')) throw e;
-        console.error('[제출] 토큰 갱신 실패:', e);
+      const tokenResult = await refreshAccessToken(supabase, {
+        maxRetries: 3,
+        log: (msg) => console.log(`[제출] ${msg}`),
+      });
+      if (tokenResult.ok) {
+        accessToken = tokenResult.accessToken;
+      } else {
         throw new Error(userFriendlyError('AUTH-EXPIRED'));
       }
 

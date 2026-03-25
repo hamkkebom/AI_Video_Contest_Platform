@@ -19,6 +19,7 @@ import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constant
 import type { Contest } from '@/lib/types';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { refreshAccessToken } from '@/lib/supabase/refresh-token';
 
 const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_PROOF_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -464,38 +465,15 @@ export default function AdminSubmissionRegisterPage() {
 
       const streamUid = uploadUrlResult.uid;
 
-      /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 (5초 타임아웃) */
-      try {
-        const refreshResult = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-        ]);
-        if (refreshResult && 'data' in refreshResult && refreshResult.data.session?.access_token) {
-          accessToken = refreshResult.data.session.access_token;
-          addLog('JWT 토큰 갱신 완료');
-        } else {
-          /* getSession 타임아웃 — refreshSession으로 재시도 */
-          addLog('getSession 타임아웃, refreshSession 시도...');
-          try {
-            const retryResult = await Promise.race([
-              supabase.auth.refreshSession(),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-            ]);
-            const retrySession = retryResult && 'data' in retryResult ? retryResult.data.session : null;
-            if (retrySession?.access_token) {
-              accessToken = retrySession.access_token;
-              addLog('refreshSession 성공');
-            } else {
-              throw new Error('refresh failed');
-            }
-          } catch {
-            addLog('토큰 갱신 완전 실패 — 페이지 새로고침 필요');
-            throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
-          }
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message.includes('인증 세션')) throw e;
-        addLog('토큰 갱신 실패 — 페이지 새로고침 필요');
+      /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 (최대 3회 재시도) */
+      const tokenResult = await refreshAccessToken(supabase, {
+        maxRetries: 3,
+        log: (msg) => addLog(msg),
+      });
+      if (tokenResult.ok) {
+        accessToken = tokenResult.accessToken;
+      } else {
+        addLog('토큰 갱신 완전 실패 — 페이지 새로고침 필요');
         throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
       }
 
