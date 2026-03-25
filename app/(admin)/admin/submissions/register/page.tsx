@@ -498,10 +498,13 @@ export default function AdminSubmissionRegisterPage() {
         xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
-          else reject(new Error(`썸네일 업로드 실패 (${xhr.status})`));
+          else {
+            addLog(`썸네일 업로드 실패: ${xhr.status} ${xhr.responseText?.slice(0, 200)}`);
+            reject(new Error(`썸네일 업로드 실패 (${xhr.status}). 페이지를 새로고침 후 다시 시도해 주세요.`));
+          }
         };
-        xhr.onerror = () => reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.'));
-        xhr.ontimeout = () => reject(new Error('썸네일 업로드 시간이 초과되었습니다.'));
+        xhr.onerror = () => { addLog('썸네일 네트워크 오류'); reject(new Error('네트워크 오류로 썸네일 업로드에 실패했습니다.')); };
+        xhr.ontimeout = () => { addLog('썸네일 타임아웃'); reject(new Error('썸네일 업로드 시간이 초과되었습니다.')); };
         xhr.send(thumbnailFile);
       });
 

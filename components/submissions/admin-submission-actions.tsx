@@ -171,25 +171,41 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
         }
 
+        const checkCfStatus = async (): Promise<boolean> => {
+          try {
+            const res = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
+            return res.ok;
+          } catch { return false; }
+        };
+
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open('POST', uploadUrlResult.uploadURL!);
           xhr.timeout = 10 * 60 * 1000;
+          let settled = false;
+          const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
           xhr.upload.onprogress = (ev) => {
             if (ev.lengthComputable) {
               setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
             }
           };
-          xhr.onload = () => {
+          xhr.onload = async () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               setUploadProgress(100);
-              resolve();
+              settle(() => resolve());
             } else {
-              reject(new Error(`영상 업로드 실패 (${xhr.status})`));
+              const exists = await checkCfStatus();
+              if (exists) { setUploadProgress(100); settle(() => resolve()); }
+              else settle(() => reject(new Error(`영상 업로드 실패 (${xhr.status})`)));
             }
           };
-          xhr.onerror = () => reject(new Error('네트워크 오류'));
-          xhr.ontimeout = () => reject(new Error('시간 초과'));
+          xhr.onerror = async () => {
+            const exists = await checkCfStatus();
+            if (exists) { setUploadProgress(100); settle(() => resolve()); }
+            else settle(() => reject(new Error('네트워크 오류')));
+          };
+          xhr.ontimeout = () => settle(() => reject(new Error('시간 초과')));
           const fd = new FormData();
           fd.append('file', form.videoFile!);
           xhr.send(fd);
@@ -203,12 +219,18 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         setUploadProgress(0);
 
         const supabase = createBrowserClient()!;
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const accessToken = session?.access_token;
+        let accessToken: string | undefined;
+        try {
+          const refreshResult = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+          ]);
+          if (refreshResult && 'data' in refreshResult) {
+            accessToken = refreshResult.data.session?.access_token;
+          }
+        } catch { /* 타임아웃 시 무시 */ }
         if (!accessToken) {
-          throw new Error('인증 세션이 만료되었습니다.');
+          throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침해 주세요.');
         }
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
