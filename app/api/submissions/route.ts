@@ -214,6 +214,7 @@ export async function POST(request: Request) {
 
     // 캐시 무효화
     revalidateTag('submissions');
+    revalidateTag('gallery');
     revalidateTag('users');
 
     console.log('[submissions API] 전체 완료, ID:', data.id);

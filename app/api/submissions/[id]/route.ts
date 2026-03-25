@@ -109,6 +109,7 @@ export async function PATCH(
 
     /* 캐시 무효화 */
     revalidateTag('submissions');
+    revalidateTag('gallery');
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {
@@ -353,6 +354,8 @@ export async function PUT(
 
     /* 캐시 무효화 */
     revalidateTag('submissions');
+    revalidateTag('gallery');
+    revalidateTag('gallery');
 
     return NextResponse.json({ success: true });
   } catch (error) {
