@@ -53,9 +53,14 @@ async function uploadPopupImage(
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
-  const { data: { session } } = await supabase.auth.getSession();
+  /* getSession() + 5초 타임아웃 — hang 방지 */
+  const refreshResult = await Promise.race([
+    supabase.auth.getSession(),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+  ]);
+  const session = refreshResult && 'data' in refreshResult ? refreshResult.data.session : null;
   const user = session?.user;
-  if (!user) throw new Error('인증이 필요합니다.');
+  if (!user || !session?.access_token) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
   const accessToken = session.access_token;
 
   /* 이미지 검증: 10MB 제한, JPEG/PNG/WebP/GIF */

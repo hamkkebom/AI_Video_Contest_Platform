@@ -162,10 +162,14 @@ async function uploadContestAsset(
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
-  /* getUser()는 Supabase Auth 서버에 HTTP 요청 → 프로덕션 hang 위험. getSession()은 쿠키 기반 */
-  const { data: { session } } = await supabase.auth.getSession();
+  /* getSession() + 5초 타임아웃 — hang 방지 */
+  const refreshResult = await Promise.race([
+    supabase.auth.getSession(),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+  ]);
+  const session = refreshResult && 'data' in refreshResult ? refreshResult.data.session : null;
   const user = session?.user;
-  if (!user) throw new Error('인증이 필요합니다.');
+  if (!user || !session?.access_token) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
   const accessToken = session.access_token;
 
   /* 타입별 검증 */
