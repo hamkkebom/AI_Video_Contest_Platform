@@ -1728,18 +1728,21 @@ export default function ContestSubmitPage() {
         open={uploadStep !== null || submitted}
         onOpenChange={(open) => {
           if (!open && !isSubmitting) {
-            setUploadStep(null);
-            setSubmitError(null);
-            setUploadProgress(0);
-            setErrorType(null);
-            if (submitted) router.back();
+            if (submitted) {
+              router.push('/my/submissions');
+            } else {
+              setUploadStep(null);
+              setSubmitError(null);
+              setUploadProgress(0);
+              setErrorType(null);
+            }
           }
         }}
       >
         <DialogContent
-          className={cn('sm:max-w-md', isSubmitting && '[&>button]:hidden')}
-          onPointerDownOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
-          onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
+          className={cn('sm:max-w-md', (isSubmitting || submitted) && '[&>button]:hidden')}
+          onPointerDownOutside={(e) => { if (isSubmitting || submitted) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isSubmitting || submitted) e.preventDefault(); }}
         >
           {submitted ? (
             <>
