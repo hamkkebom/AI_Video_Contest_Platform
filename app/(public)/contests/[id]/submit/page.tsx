@@ -460,12 +460,15 @@ export default function ContestSubmitPage() {
           throw new Error('로그인 세션이 만료되었습니다.');
         }
 
-        /* 폼 편집 중 토큰이 만료되었을 수 있으므로 갱신 */
+        /* 폼 편집 중 토큰이 만료되었을 수 있으므로 갱신 (5초 타임아웃) */
         const supabase = createBrowserClient()!;
         try {
-          const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-          if (refreshedSession?.access_token) {
-            accessToken = refreshedSession.access_token;
+          const editRefresh = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+          ]);
+          if (editRefresh && 'data' in editRefresh && editRefresh.data.session?.access_token) {
+            accessToken = editRefresh.data.session.access_token;
           }
         } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
