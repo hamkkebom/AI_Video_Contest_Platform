@@ -2,29 +2,15 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { REVIEW_TABS } from '@/config/constants';
 import { getContests, getSubmissions, getUsers } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
-import { Inbox } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
-import { SubmissionRow } from '@/app/(admin)/admin/contests/[id]/submissions/submission-row';
+import { SubmissionsSearchTable } from './submissions-search-table';
 
 type AdminSubmissionsPageProps = {
   searchParams: Promise<{ tab?: string }>;
-};
-
-/** 제출물 상태별 뱃지 스타일 */
-const statusBadgeMap: Record<SubmissionStatus, { label: string; className: string }> = {
-  pending_review: { label: '검수대기', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-  approved: { label: '승인', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
-  rejected: { label: '반려', className: 'bg-destructive/10 text-destructive' },
-  auto_rejected: { label: '자동반려', className: 'bg-destructive/10 text-destructive' },
-  judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
-  judged: { label: '심사완료', className: 'bg-primary/10 text-primary' },
 };
 
 export default async function AdminSubmissionsPage({ searchParams }: AdminSubmissionsPageProps) {
@@ -82,89 +68,24 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
         </section>
 
         {/* 제출물 테이블 */}
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">제출물 목록</h2>
-            <p className="text-sm text-muted-foreground">총 <span className="font-bold text-primary">{filteredSubmissions.length}</span>건</p>
-          </div>
-          {filteredSubmissions.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="space-y-3 py-14 text-center">
-                <Inbox className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">선택한 상태의 제출물이 없습니다.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-border">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>작품</TableHead>
-                      <TableHead>공모전</TableHead>
-                      <TableHead>제출자</TableHead>
-                      <TableHead>계정</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead>제출일</TableHead>
-                      <TableHead>반응</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubmissions.slice(0, 50).map((submission) => {
-                      const creator = usersMap.get(submission.userId);
-                      const contest = contestsMap.get(submission.contestId);
-                      const statusInfo = statusBadgeMap[submission.status];
-
-                      return (
-                        <SubmissionRow key={submission.id} href={`/gallery/${submission.id}`}>
-                          <TableCell>
-                            <div className="flex min-w-[220px] items-center gap-3">
-                              <img
-                                src={submission.thumbnailUrl}
-                                alt={submission.title}
-                                className="h-14 w-24 rounded-md border border-border object-cover"
-                              />
-                              <div className="min-w-0">
-                                <p className="truncate font-semibold text-foreground">{submission.title}</p>
-                                <p className="line-clamp-1 text-xs text-muted-foreground">{submission.description}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <p className="max-w-[160px] truncate text-sm text-muted-foreground">
-                              {contest?.title ?? submission.contestId}
-                            </p>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{submission.submitterName || '-'}</p>
-                              <p className="text-xs text-muted-foreground">{submission.submitterPhone || '-'}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{creator?.name ?? '알 수 없음'}</p>
-                              <p className="text-xs text-muted-foreground">{creator?.email ?? '-'}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDate(submission.submittedAt)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            조회 {submission.views} · 좋아요 {submission.likeCount}
-                          </TableCell>
-                        </SubmissionRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </section>
+        <SubmissionsSearchTable
+          submissions={filteredSubmissions.map((s) => ({
+            id: s.id,
+            title: s.title,
+            description: s.description,
+            thumbnailUrl: s.thumbnailUrl,
+            submitterName: s.submitterName,
+            submitterPhone: s.submitterPhone,
+            userId: s.userId,
+            contestId: s.contestId,
+            status: s.status,
+            submittedAt: s.submittedAt,
+            views: s.views,
+            likeCount: s.likeCount,
+          }))}
+          contestsMap={Object.fromEntries([...contestsMap].map(([k, v]) => [k, { title: v.title }]))}
+          usersMap={Object.fromEntries([...usersMap].map(([k, v]) => [k, { name: v.name, email: v.email }]))}
+        />
       </div>
     );
   } catch (error) {
