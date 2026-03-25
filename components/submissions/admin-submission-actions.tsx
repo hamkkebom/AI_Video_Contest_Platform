@@ -93,6 +93,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [form, setForm] = useState<FormState>(() => toFormState(currentData));
   const [bonusConfigs, setBonusConfigs] = useState<Array<{ id: string; label: string; description?: string }>>([]);
   const [bonusForms, setBonusForms] = useState<Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }>>({});
+  const [submitterAccount, setSubmitterAccount] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (editOpen) {
@@ -104,6 +105,14 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         .then(([submissionData, contestData]) => {
           const configs = contestData.bonusConfigs || [];
           setBonusConfigs(configs);
+          /* 제출자 계정 정보 */
+          const userId = submissionData.submission?.userId;
+          if (userId) {
+            fetch(`/api/admin/users/search?q=${userId}`).then(r => r.json()).then(users => {
+              const u = Array.isArray(users) ? users[0] : null;
+              if (u) setSubmitterAccount({ name: u.name || u.nickname || '알 수 없음', email: u.email || '' });
+            }).catch(() => {});
+          }
           const entries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> =
             submissionData.submission?.bonusEntries || [];
           const forms: Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }> = {};
@@ -507,6 +516,13 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
+            {submitterAccount && (
+              <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">제출자 계정: </span>
+                <span className="font-medium">{submitterAccount.name}</span>
+                <span className="text-muted-foreground ml-1.5">({submitterAccount.email})</span>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="admin-submission-title">제목</Label>
               <Input
