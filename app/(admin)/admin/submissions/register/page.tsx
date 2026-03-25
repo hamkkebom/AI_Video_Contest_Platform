@@ -468,6 +468,7 @@ export default function AdminSubmissionRegisterPage() {
       /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 (최대 3회 재시도) */
       const tokenResult = await refreshAccessToken(supabase, {
         maxRetries: 3,
+        initialDelayMs: 2000,
         log: (msg) => addLog(msg),
       });
       if (tokenResult.ok) {

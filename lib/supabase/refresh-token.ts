@@ -53,46 +53,72 @@ export async function refreshAccessToken(
   options?: {
     maxRetries?: number;
     timeoutMs?: number;
+    /** 첫 시도 전 대기 시간 (ms). 대용량 업로드 직후 네트워크 안정 대기용 */
+    initialDelayMs?: number;
     log?: (msg: string) => void;
   },
 ): Promise<RefreshResult> {
   const maxRetries = options?.maxRetries ?? 3;
-  const timeoutMs = options?.timeoutMs ?? 8000;
+  const timeoutMs = options?.timeoutMs ?? 15000;
+  const initialDelayMs = options?.initialDelayMs ?? 0;
   const log = options?.log ?? ((msg: string) => console.log(`[토큰갱신] ${msg}`));
+
+  /* 업로드 직후 네트워크 포화 상태 완화를 위한 대기 */
+  if (initialDelayMs > 0) {
+    log(`네트워크 안정 대기 ${initialDelayMs}ms...`);
+    await new Promise((r) => setTimeout(r, initialDelayMs));
+  }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     /* 1) getSession — 캐시된 토큰이 아직 유효한지 확인 */
     try {
+      log(`[${attempt}/${maxRetries}] getSession 호출 중...`);
       const result = await raceTimeout(supabase.auth.getSession(), timeoutMs);
-      const cachedToken = result && 'data' in result ? result.data.session?.access_token : null;
 
-      if (cachedToken && !isTokenExpired(cachedToken)) {
-        log(`getSession 성공 — 토큰 유효 (시도 ${attempt}/${maxRetries})`);
-        return { accessToken: cachedToken, ok: true };
-      }
+      if (!result) {
+        log(`[${attempt}/${maxRetries}] getSession ${timeoutMs}ms 타임아웃`);
+      } else {
+        const cachedToken = 'data' in result ? result.data.session?.access_token : null;
+        const hasSession = 'data' in result ? !!result.data.session : false;
 
-      if (cachedToken) {
-        log(`getSession 토큰 만료됨 — refreshSession 진행 (시도 ${attempt}/${maxRetries})`);
+        if (cachedToken && !isTokenExpired(cachedToken)) {
+          log(`[${attempt}/${maxRetries}] getSession 성공 — 토큰 유효`);
+          return { accessToken: cachedToken, ok: true };
+        }
+
+        if (cachedToken) {
+          log(`[${attempt}/${maxRetries}] getSession 토큰 만료됨 — refreshSession 진행`);
+        } else {
+          log(`[${attempt}/${maxRetries}] getSession 세션 없음 (session=${hasSession}) — refreshSession 진행`);
+        }
       }
-    } catch {
-      log(`getSession 예외 — refreshSession 진행 (시도 ${attempt}/${maxRetries})`);
+    } catch (e) {
+      log(`[${attempt}/${maxRetries}] getSession 예외: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     /* 2) refreshSession — 서버에서 새 토큰 발급 */
     try {
+      log(`[${attempt}/${maxRetries}] refreshSession 호출 중...`);
       const result = await raceTimeout(supabase.auth.refreshSession(), timeoutMs);
-      const newToken = result && 'data' in result ? result.data.session?.access_token : null;
 
-      if (newToken && !isTokenExpired(newToken)) {
-        log(`refreshSession 성공 (시도 ${attempt}/${maxRetries})`);
-        return { accessToken: newToken, ok: true };
-      }
+      if (!result) {
+        log(`[${attempt}/${maxRetries}] refreshSession ${timeoutMs}ms 타임아웃`);
+      } else {
+        const newToken = 'data' in result ? result.data.session?.access_token : null;
 
-      if (result && 'error' in result && result.error) {
-        log(`refreshSession 오류: ${result.error.message} (시도 ${attempt}/${maxRetries})`);
+        if (newToken && !isTokenExpired(newToken)) {
+          log(`[${attempt}/${maxRetries}] refreshSession 성공`);
+          return { accessToken: newToken, ok: true };
+        }
+
+        if ('error' in result && result.error) {
+          log(`[${attempt}/${maxRetries}] refreshSession 오류: ${result.error.message}`);
+        } else {
+          log(`[${attempt}/${maxRetries}] refreshSession 토큰 없음 (newToken=${!!newToken})`);
+        }
       }
-    } catch {
-      log(`refreshSession 예외 (시도 ${attempt}/${maxRetries})`);
+    } catch (e) {
+      log(`[${attempt}/${maxRetries}] refreshSession 예외: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     /* 마지막 시도가 아니면 백오프 후 재시도 */

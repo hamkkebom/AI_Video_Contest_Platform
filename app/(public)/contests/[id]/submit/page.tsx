@@ -739,6 +739,7 @@ export default function ContestSubmitPage() {
       /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
       const tokenResult = await refreshAccessToken(supabase, {
         maxRetries: 3,
+        initialDelayMs: 2000,
         log: (msg) => console.log(`[제출] ${msg}`),
       });
       if (tokenResult.ok) {
