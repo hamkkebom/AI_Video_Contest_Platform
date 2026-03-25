@@ -477,7 +477,11 @@ export default function AdminSubmissionRegisterPage() {
           /* getSession 타임아웃 — refreshSession으로 재시도 */
           addLog('getSession 타임아웃, refreshSession 시도...');
           try {
-            const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+            const retryResult = await Promise.race([
+              supabase.auth.refreshSession(),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+            ]);
+            const retrySession = retryResult && 'data' in retryResult ? retryResult.data.session : null;
             if (retrySession?.access_token) {
               accessToken = retrySession.access_token;
               addLog('refreshSession 성공');
