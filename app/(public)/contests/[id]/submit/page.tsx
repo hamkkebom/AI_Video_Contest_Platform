@@ -496,7 +496,7 @@ export default function ContestSubmitPage() {
                 xhr.setRequestHeader('x-upsert', 'false');
                 xhr.setRequestHeader('apikey', anonKey);
                 xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-                xhr.timeout = 30_000;
+                xhr.timeout = 60_000;
                 xhr.onload = () => {
                   if (xhr.status >= 200 && xhr.status < 300) resolve();
                   else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));
@@ -772,7 +772,7 @@ export default function ContestSubmitPage() {
         xhr.setRequestHeader('x-upsert', 'false');
         xhr.setRequestHeader('apikey', anonKey);
         xhr.setRequestHeader('Content-Type', selectedThumbnailFile.type || 'application/octet-stream');
-        xhr.timeout = 30_000;
+        xhr.timeout = 60_000;
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
@@ -834,7 +834,7 @@ export default function ContestSubmitPage() {
               xhr.setRequestHeader('x-upsert', 'false');
               xhr.setRequestHeader('apikey', anonKey);
               xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-              xhr.timeout = 30_000;
+              xhr.timeout = 60_000;
               xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
                 else {

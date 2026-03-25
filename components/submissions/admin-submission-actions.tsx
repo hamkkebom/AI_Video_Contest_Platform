@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ImageIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -80,12 +80,36 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => toFormState(currentData));
+  const [bonusConfigs, setBonusConfigs] = useState<Array<{ id: string; label: string; description?: string }>>([]);
+  const [bonusForms, setBonusForms] = useState<Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }>>({});
 
   useEffect(() => {
     if (editOpen) {
       setForm(toFormState(currentData));
+      Promise.all([
+        fetch(`/api/submissions/${submissionId}`).then((r) => r.json()),
+        fetch(`/api/contests/${contestId}`).then((r) => r.json()),
+      ])
+        .then(([submissionData, contestData]) => {
+          const configs = contestData.bonusConfigs || [];
+          setBonusConfigs(configs);
+          const entries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> =
+            submissionData.submission?.bonusEntries || [];
+          const forms: Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }> = {};
+          for (const entry of entries) {
+            forms[entry.bonusConfigId] = {
+              snsUrl: entry.snsUrl || '',
+              proofImageFile: null,
+              proofImagePreview: entry.proofImageUrl || null,
+            };
+          }
+          setBonusForms(forms);
+        })
+        .catch(() => {
+          // 실패 시 무시 — 가산점 없이 수정 가능
+        });
     }
-  }, [editOpen, currentData]);
+  }, [editOpen, currentData, submissionId, contestId]);
 
   useEffect(() => {
     if (!form.videoFile) {
@@ -245,7 +269,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           xhr.setRequestHeader('x-upsert', 'false');
           xhr.setRequestHeader('apikey', anonKey);
           xhr.setRequestHeader('Content-Type', form.thumbnailFile!.type || 'application/octet-stream');
-          xhr.timeout = 30_000;
+          xhr.timeout = 60_000;
           xhr.upload.onprogress = (ev) => {
             if (ev.lengthComputable) {
               setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
@@ -268,6 +292,68 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         thumbnailUrlToSubmit = publicData.publicUrl;
       }
 
+      // Upload any new bonus proof images
+      const bonusFormsToSubmit: typeof bonusForms = {};
+      for (const [configId, entry] of Object.entries(bonusForms)) {
+        if (entry.proofImageFile) {
+          setUploadStep('가산점 증빙 이미지 업로드 중...');
+          setUploadProgress(0);
+          setUploading(true);
+
+          // Reuse supabase auth token (get fresh if not already obtained)
+          const supabaseClient = createBrowserClient()!;
+          let proofAccessToken: string | undefined;
+          try {
+            const refreshResult = await Promise.race([
+              supabaseClient.auth.getSession(),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+            ]);
+            if (refreshResult && 'data' in refreshResult) {
+              proofAccessToken = refreshResult.data.session?.access_token;
+            }
+          } catch { /* 타임아웃 시 무시 */ }
+          if (!proofAccessToken) {
+            throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침해 주세요.');
+          }
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          const safeName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const proofPath = `bonus/${crypto.randomUUID()}-${safeName}`;
+
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${proofPath}`);
+            xhr.setRequestHeader('Authorization', `Bearer ${proofAccessToken}`);
+            xhr.setRequestHeader('x-upsert', 'false');
+            xhr.setRequestHeader('apikey', anonKey);
+            xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
+            xhr.timeout = 60_000;
+            xhr.upload.onprogress = (ev) => {
+              if (ev.lengthComputable) {
+                setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                setUploadProgress(100);
+                resolve();
+              } else {
+                reject(new Error(`가산점 이미지 업로드 실패 (${xhr.status})`));
+              }
+            };
+            xhr.onerror = () => reject(new Error('네트워크 오류'));
+            xhr.ontimeout = () => reject(new Error('시간 초과'));
+            xhr.send(entry.proofImageFile);
+          });
+
+          const { data: proofPublicData } = supabaseClient.storage.from('thumbnails').getPublicUrl(proofPath);
+          bonusFormsToSubmit[configId] = { ...entry, proofImagePreview: proofPublicData.publicUrl };
+        } else {
+          bonusFormsToSubmit[configId] = entry;
+        }
+      }
+
       const response = await fetch(`/api/submissions/${submissionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -280,6 +366,15 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           submitterPhone: form.submitterPhone,
           videoUrl: videoUrlToSubmit,
           thumbnailUrl: thumbnailUrlToSubmit,
+          bonusEntries: bonusConfigs.length > 0
+            ? Object.entries(bonusFormsToSubmit)
+                .filter(([, entry]) => entry.snsUrl?.trim() || entry.proofImagePreview)
+                .map(([configId, entry]) => ({
+                  bonusConfigId: configId,
+                  snsUrl: entry.snsUrl?.trim() || undefined,
+                  proofImageUrl: entry.proofImagePreview || undefined,
+                }))
+            : undefined,
         }),
       });
       const data = await response.json();
@@ -579,6 +674,75 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
               </div>
             </div>
           </div>
+
+          {bonusConfigs.length > 0 && (
+            <div className="grid gap-3">
+              <Label className="text-base font-semibold">가산점 항목</Label>
+              {bonusConfigs.map((config) => {
+                const entry = bonusForms[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                return (
+                  <div key={config.id} className="rounded-lg border p-3 grid gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{config.label}</p>
+                      {config.description && (
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor={`bonus-sns-${config.id}`} className="text-xs">SNS URL</Label>
+                      <Input
+                        id={`bonus-sns-${config.id}`}
+                        value={entry.snsUrl}
+                        placeholder="https://..."
+                        onChange={(ev) =>
+                          setBonusForms((prev) => ({
+                            ...prev,
+                            [config.id]: { ...entry, snsUrl: ev.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label className="text-xs">증빙 이미지</Label>
+                      <label className="flex h-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(ev) => {
+                            const file = ev.target.files?.[0] ?? null;
+                            const preview = file ? URL.createObjectURL(file) : entry.proofImagePreview;
+                            setBonusForms((prev) => ({
+                              ...prev,
+                              [config.id]: { ...entry, proofImageFile: file, proofImagePreview: preview },
+                            }));
+                          }}
+                        />
+                        {entry.proofImageFile ? (
+                          <span className="text-xs text-muted-foreground">
+                            {entry.proofImageFile.name} ({(entry.proofImageFile.size / 1024 / 1024).toFixed(1)}MB)
+                          </span>
+                        ) : (
+                          <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                            <ImageIcon className="h-4 w-4" />
+                            클릭하여 이미지 선택
+                          </span>
+                        )}
+                      </label>
+                      {(entry.proofImagePreview) && (
+                        <div
+                          role="img"
+                          className="h-16 w-16 rounded border bg-cover bg-center"
+                          style={{ backgroundImage: `url(${entry.proofImagePreview})` }}
+                          aria-label="증빙 이미지 미리보기"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {uploading && (
             <div className="space-y-2">
