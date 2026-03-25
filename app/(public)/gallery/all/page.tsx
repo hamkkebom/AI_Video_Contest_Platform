@@ -15,9 +15,10 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
-import { getGallerySubmissions, getFeaturedSubmissions } from '@/lib/data';
-import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
+import { getGallerySubmissions } from '@/lib/data';
 import { SearchInput } from '@/components/ui/search-input';
+import { DateRangeFilter } from './date-range-filter';
+import { DurationFilter } from './duration-filter';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -28,20 +29,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'
 export default async function GalleryAllPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; search?: string }>;
+  searchParams: Promise<{ sort?: string; search?: string; from?: string; to?: string; minDur?: string; maxDur?: string }>;
 }) {
   const allSubmissions = await getGallerySubmissions();
-  const featuredSubmissions = await getFeaturedSubmissions(12);
-  const { sort, search } = await searchParams;
+  const { sort, search, from, to, minDur, maxDur } = await searchParams;
 
   const currentSort = sort || 'oldest';
-
-  // 인기순 점수: (조회수 × 0.7 + 좋아요 × 0.3) × 시청유지율 승수
-  const popularityScore = (s: typeof allSubmissions[number]) => {
-    const rate = s.videoDuration > 0 ? Math.min(s.avgWatchDuration / s.videoDuration, 1) : 0;
-    const retentionMul = 0.5 + rate * 0.5;
-    return (s.views * 0.7 + s.likeCount * 0.3) * retentionMul;
-  };
 
   // 검색 필터링
   const searchFiltered = search
@@ -51,16 +44,29 @@ export default async function GalleryAllPage({
       s.creatorName.toLowerCase().includes(search.toLowerCase())
     )
     : allSubmissions;
+  // 시간대 + 영상 길이 필터링
+  const minDurSec = minDur ? Number(minDur) : 0;
+  const maxDurSec = maxDur ? Number(maxDur) : Infinity;
+  const timeFiltered = searchFiltered.filter(s => {
+    const date = new Date(s.submittedAt);
+    if (from && date < new Date(from)) return false;
+    if (to) {
+      const toEnd = new Date(to);
+      toEnd.setHours(23, 59, 59, 999);
+      if (date > toEnd) return false;
+    }
+    if (s.videoDuration < minDurSec) return false;
+    if (s.videoDuration > maxDurSec) return false;
+    return true;
+  });
 
   // 정렬
-  const sortedSubmissions = [...searchFiltered].sort((a, b) => {
+  const sortedSubmissions = [...timeFiltered].sort((a, b) => {
     switch (currentSort) {
       case 'oldest':
         return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
       case 'latest':
         return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
-      case 'popular':
-        return popularityScore(b) - popularityScore(a);
       default:
         return 0;
     }
@@ -113,21 +119,20 @@ export default async function GalleryAllPage({
         </div>
       </section>
 
-      {/* 주목할 작품 캐러셀 */}
-      <FeaturedWorksCarousel submissions={featuredSubmissions} showGalleryLink={false} />
-
       {/* 필터 바 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-8 pt-12">
         <div className="container mx-auto max-w-6xl">
           <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               {[
+                { id: 'oldest', label: '오래된순' },
                 { id: 'latest', label: '최신순' },
-                { id: 'popular', label: '인기순' },
               ].map((tab) => {
                 const params = new URLSearchParams();
                 params.set('sort', tab.id);
                 if (search) params.set('search', search);
+                if (from) params.set('from', from);
+                if (to) params.set('to', to);
                 return (
                   <Link key={tab.id} href={`/gallery/all?${params.toString()}`} scroll={false}>
                     <button
@@ -142,10 +147,14 @@ export default async function GalleryAllPage({
                   </Link>
                 );
               })}
+              {/* 기간 필터 */}
+              <DateRangeFilter from={from} to={to} />
+              {/* 영상 길이 필터 */}
+              <DurationFilter minDur={minDur} maxDur={maxDur} />
             </div>
 
             {/* 검색 입력 */}
-            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ sort: currentSort }} placeholder="작품 검색..." />
+            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ sort: currentSort, ...(from ? { from } : {}), ...(to ? { to } : {}) }} placeholder="작품 검색..." />
           </div>
         </div>
       </section>

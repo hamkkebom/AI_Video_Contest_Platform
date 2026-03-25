@@ -255,14 +255,14 @@ export default async function LandingPage() {
       )}
 
 
-      {/* ══ 추천 작품 캐러셀 ══ */}
-      {showFeaturedCarousel && featuredSubmissions.length > 0 && (
+      {/* ══ 추천 작품 캐러셀 — 심사 공정성 위해 비활성화 ══ */}
+      {/* {showFeaturedCarousel && featuredSubmissions.length > 0 && (
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-6xl">
             <FeaturedWorksCarousel submissions={featuredSubmissions} />
           </div>
         </section>
-      )}
+      )} */}
 
       {/* ══ 영상 제작 대행 CTA ══ */}
       <section className="py-20 px-4">
