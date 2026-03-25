@@ -426,16 +426,34 @@ export default function AdminSubmissionRegisterPage() {
             }
           }, 5 * 60 * 1000);
         };
-        xhr.onload = () => {
+        xhr.onload = async () => {
           clearAllTimers();
           addLog(`Cloudflare 응답 수신 (${xhr.status})`);
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
-          else settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
+          else {
+            addLog('비정상 응답, Cloudflare 확인 중...');
+            const existsOnCf = await checkCloudflareStatus();
+            if (existsOnCf) {
+              addLog('Cloudflare에 영상 존재 확인 — 업로드 성공');
+              setUploadProgress(100);
+              settle(() => resolve());
+            } else {
+              settle(() => reject(new Error(`영상 파일 업로드에 실패했습니다. (${xhr.status})`)));
+            }
+          }
         };
-        xhr.onerror = () => {
-          clearAllTimers();
-          addLog('네트워크 오류 발생');
-          settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
+        xhr.onerror = async () => {
+          addLog('네트워크 오류 — Cloudflare 확인 중...');
+          const existsOnCf = await checkCloudflareStatus();
+          if (existsOnCf) {
+            addLog('Cloudflare에 영상 존재 확인 — 업로드 성공');
+            clearAllTimers();
+            settle(() => resolve());
+          } else {
+            clearAllTimers();
+            addLog('Cloudflare에도 영상 없음 — 실제 네트워크 오류');
+            settle(() => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.')));
+          }
         };
         xhr.ontimeout = () => {
           clearAllTimers();
@@ -446,12 +464,17 @@ export default function AdminSubmissionRegisterPage() {
 
       const streamUid = uploadUrlResult.uid;
 
-      /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 */
+      /* 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있으므로 토큰 갱신 (5초 타임아웃) */
       try {
-        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-        if (refreshedSession?.access_token) {
-          accessToken = refreshedSession.access_token;
+        const refreshResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
+        if (refreshResult && 'data' in refreshResult && refreshResult.data.session?.access_token) {
+          accessToken = refreshResult.data.session.access_token;
           addLog('JWT 토큰 갱신 완료');
+        } else {
+          addLog('토큰 갱신 타임아웃(5초), 기존 토큰 유지');
         }
       } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 

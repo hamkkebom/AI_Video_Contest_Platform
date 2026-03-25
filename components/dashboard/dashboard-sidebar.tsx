@@ -21,19 +21,25 @@ interface DashboardSidebarProps {
   roleLabel: string;
 }
 
-function isItemActive(pathname: string, href: Route): boolean {
-  if (href === '/host/dashboard') {
-    return pathname === href;
+function isItemActive(pathname: string, href: Route, allHrefs: Route[]): boolean {
+  if (pathname === href) return true;
+  if (pathname.startsWith(`${href}/`)) {
+    /* 더 구체적인 href가 있으면 그쪽이 우선 (예: /admin/submissions vs /admin/submissions/register) */
+    const hasMoreSpecific = allHrefs.some(
+      (other) => other !== href && other.startsWith(`${href}/`) && pathname.startsWith(other as string),
+    );
+    return !hasMoreSpecific;
   }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return false;
 }
 
 function SidebarNav({ items, pathname }: { items: DashboardSidebarItem[]; pathname: string }) {
+  const allHrefs = items.map((item) => item.href);
   return (
     <nav className="space-y-1">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = isItemActive(pathname, item.href);
+        const isActive = isItemActive(pathname, item.href, allHrefs);
 
         return (
           <Link
