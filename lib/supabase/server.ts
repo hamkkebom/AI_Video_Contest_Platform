@@ -5,7 +5,7 @@
  */
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { SESSION_MAX_AGE } from './client';
+import { COOKIE_MAX_AGE } from './client';
 import { getSupabaseEnv } from '@/lib/env';
 
 export async function createClient() {
@@ -35,7 +35,7 @@ export async function createClient() {
                 ...(isDeleteCookie
                   ? {} // 삭제 쿠키는 Supabase 원본 옵션 유지
                   : {
-                    maxAge: SESSION_MAX_AGE,
+                    maxAge: COOKIE_MAX_AGE,
                     path: '/',
                     sameSite: 'lax',
                     secure: process.env.NODE_ENV === 'production',

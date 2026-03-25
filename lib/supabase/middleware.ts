@@ -10,12 +10,12 @@
  */
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_MAX_AGE } from './client';
+import { COOKIE_MAX_AGE } from './client';
 import { getSupabaseEnv } from '@/lib/env';
 
 /** 쿠키 옵션 (모든 auth 쿠키에 동일 적용) */
 const COOKIE_OPTIONS = {
-  maxAge: SESSION_MAX_AGE,
+  maxAge: COOKIE_MAX_AGE,
   path: '/',
   sameSite: 'lax' as const,
   secure: process.env.NODE_ENV === 'production',

@@ -9,8 +9,16 @@
  */
 import { createBrowserClient } from '@supabase/ssr';
 
-/** 세션 만료 시간 (초) — 1시간 */
+/** 세션 타임아웃 시간 (초) — 1시간 (SessionTimeoutGuard에서 사용) */
 export const SESSION_MAX_AGE = 3600;
+
+/**
+ * 쿠키 유효기간 (초) — 7일
+ * access_token(1시간)과 별개로 refresh_token을 보존해야
+ * refreshSession()으로 새 access_token 발급이 가능하다.
+ * SESSION_MAX_AGE(1시간)로 하면 refresh_token까지 동시에 소멸되어 복구 불가.
+ */
+export const COOKIE_MAX_AGE = 7 * 24 * 3600;
 
 /** Supabase 환경변수가 설정되어 있는지 확인 */
 export function isSupabaseConfigured(): boolean {
@@ -59,9 +67,9 @@ export function createClient() {
         },
       },
       cookieOptions: {
-        // maxAge 없이 session cookie — 브라우저 종료 시 삭제
-        // (middleware에서도 maxAge: 3600 적용하여 1시간 제한)
-        maxAge: SESSION_MAX_AGE,
+        // refresh_token 보존을 위해 7일 유지
+        // 세션 타임아웃(1시간)은 SessionTimeoutGuard에서 별도 처리
+        maxAge: COOKIE_MAX_AGE,
         path: '/',
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
