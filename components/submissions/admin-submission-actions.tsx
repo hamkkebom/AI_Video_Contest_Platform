@@ -32,6 +32,7 @@ interface AdminSubmissionActionsProps {
     submitterPhone?: string;
     videoUrl?: string;
     thumbnailUrl?: string;
+    submittedAt?: string;
   };
 }
 
@@ -44,10 +45,19 @@ interface FormState {
   submitterPhone: string;
   videoUrl: string;
   thumbnailUrl: string;
+  submittedAt: string;
   videoFile: File | null;
   thumbnailFile: File | null;
   videoMode: 'file' | 'url';
   thumbnailMode: 'file' | 'url';
+}
+
+function toLocalDatetime(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 function toFormState(data: AdminSubmissionActionsProps['currentData']): FormState {
@@ -60,6 +70,7 @@ function toFormState(data: AdminSubmissionActionsProps['currentData']): FormStat
     submitterPhone: data.submitterPhone ?? '',
     videoUrl: data.videoUrl ?? '',
     thumbnailUrl: data.thumbnailUrl ?? '',
+    submittedAt: toLocalDatetime(data.submittedAt),
     videoFile: null,
     thumbnailFile: null,
     videoMode: 'url',
@@ -366,6 +377,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           submitterPhone: form.submitterPhone,
           videoUrl: videoUrlToSubmit,
           thumbnailUrl: thumbnailUrlToSubmit,
+          submittedAt: form.submittedAt ? new Date(form.submittedAt).toISOString() : undefined,
           bonusEntries: bonusConfigs.length > 0
             ? Object.entries(bonusFormsToSubmit)
                 .filter(([, entry]) => entry.snsUrl?.trim() || entry.proofImagePreview)
@@ -486,7 +498,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           }
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>출품작 수정</DialogTitle>
             <DialogDescription>
@@ -550,6 +562,16 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                   onChange={(event) => setForm((prev) => ({ ...prev, submitterPhone: event.target.value }))}
                 />
               </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="admin-submission-submitted-at">출품 시간</Label>
+              <Input
+                id="admin-submission-submitted-at"
+                type="datetime-local"
+                value={form.submittedAt}
+                onChange={(event) => setForm((prev) => ({ ...prev, submittedAt: event.target.value }))}
+              />
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">

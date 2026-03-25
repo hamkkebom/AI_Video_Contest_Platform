@@ -257,6 +257,7 @@ export async function PUT(
       videoUrl?: string;
       thumbnailUrl?: string;
       status?: string;
+      submittedAt?: string;
       bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
     };
 
@@ -283,6 +284,7 @@ export async function PUT(
       if (body.videoUrl !== undefined) updateData.video_url = body.videoUrl;
       if (body.thumbnailUrl !== undefined) updateData.thumbnail_url = body.thumbnailUrl;
       if (body.status !== undefined) updateData.status = body.status;
+      if (body.submittedAt !== undefined) updateData.submitted_at = body.submittedAt;
     }
 
     /* 출품작 정보 업데이트 */

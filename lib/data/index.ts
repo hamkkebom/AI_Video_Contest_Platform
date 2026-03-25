@@ -696,37 +696,44 @@ export function getRelatedContests(excludeId: string, limit = 6): Promise<Contes
 }
 
 /** 출품작 목록 조회 — 30초 캐시, 필터 지원 */
-export const getSubmissions = unstable_cache(
-  async (filters?: SubmissionFilters): Promise<Submission[]> => {
-    const supabase = createPublicClient();
+export function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
+  const keyParts = ['submissions'];
+  if (filters?.contestId) keyParts.push(`contest:${filters.contestId}`);
+  if (filters?.userId) keyParts.push(`user:${filters.userId}`);
+  if (filters?.status) keyParts.push(`status:${filters.status}`);
 
-    let query = supabase
-      .from('submissions')
-      .select('*')
-      .order('submitted_at', { ascending: true });
+  return unstable_cache(
+    async (filters?: SubmissionFilters): Promise<Submission[]> => {
+      const supabase = createPublicClient();
 
-    if (filters?.contestId) {
-      query = query.eq('contest_id', filters.contestId);
-    }
-    if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
-    }
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.search) {
-      query = query.or(
-        `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-      );
-    }
+      let query = supabase
+        .from('submissions')
+        .select('*')
+        .order('submitted_at', { ascending: true });
 
-    const { data, error } = await query;
-    if (error || !data) return [];
-    return data.map((row) => toSubmission(row as Record<string, unknown>));
-  },
-  ['submissions'],
-  { tags: ['submissions'], revalidate: 30 },
-);
+      if (filters?.contestId) {
+        query = query.eq('contest_id', filters.contestId);
+      }
+      if (filters?.userId) {
+        query = query.eq('user_id', filters.userId);
+      }
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.search) {
+        query = query.or(
+          `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
+        );
+      }
+
+      const { data, error } = await query;
+      if (error || !data) return [];
+      return data.map((row) => toSubmission(row as Record<string, unknown>));
+    },
+    keyParts,
+    { tags: ['submissions'], revalidate: 30 },
+  )(filters);
+}
 
 /** 관리자/인증 세션 기반 출품작 목록 조회 (RLS 세션 의존 이슈 대응) */
 export async function getAdminSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
@@ -1381,7 +1388,8 @@ export async function getDataCounts(): Promise<Record<string, number>> {
 export const getAuthProfile = cache(async function getAuthProfile(): Promise<User | null> {
   const supabase = await createClient();
 
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const authUser = session?.user ?? null;
   if (!authUser) return null;
 
   const { data } = await supabase

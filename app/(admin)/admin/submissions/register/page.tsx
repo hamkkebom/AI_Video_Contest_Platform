@@ -474,9 +474,26 @@ export default function AdminSubmissionRegisterPage() {
           accessToken = refreshResult.data.session.access_token;
           addLog('JWT 토큰 갱신 완료');
         } else {
-          addLog('토큰 갱신 타임아웃(5초), 기존 토큰 유지');
+          /* getSession 타임아웃 — refreshSession으로 재시도 */
+          addLog('getSession 타임아웃, refreshSession 시도...');
+          try {
+            const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+            if (retrySession?.access_token) {
+              accessToken = retrySession.access_token;
+              addLog('refreshSession 성공');
+            } else {
+              throw new Error('refresh failed');
+            }
+          } catch {
+            addLog('토큰 갱신 완전 실패 — 페이지 새로고침 필요');
+            throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+          }
         }
-      } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('인증 세션')) throw e;
+        addLog('토큰 갱신 실패 — 페이지 새로고침 필요');
+        throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+      }
 
       /* 단계: 썸네일 업로드 */
       setUploadStep('thumbnail');

@@ -62,7 +62,11 @@ export async function generateMetadata({ params }: SubmissionDetailPageProps): P
  */
 export default async function SubmissionDetailPage({ params }: SubmissionDetailPageProps) {
   const { id } = await params;
-  const submission = await getSubmissionById(id);
+  /* 독립적인 두 쿼리를 병렬 실행 */
+  const [submission, profile] = await Promise.all([
+    getSubmissionById(id),
+    getAuthProfile(),
+  ]);
 
   /* 존재하지 않는 출품작 */
   if (!submission) {
@@ -89,16 +93,13 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
     );
   }
 
-  /* 같은 공모전의 다른 작품 (최대 4개) — 최적화된 쿼리 사용 */
-  const relatedSubmissions = await getRelatedSubmissions(submission.contestId, submission.id, 4);
-
-  /* 관리자 여부 확인 */
-  const profile = await getAuthProfile();
+  /* submission과 profile에 의존하는 쿼리를 병렬 실행 */
   const isAdmin = profile?.roles?.includes('admin') ?? false;
-  const userLiked = profile ? await hasUserLiked(profile.id, id) : false;
-  const contestSubmissions = isAdmin
-    ? await getSubmissions({ contestId: submission.contestId })
-    : [];
+  const [relatedSubmissions, userLiked, contestSubmissions] = await Promise.all([
+    getRelatedSubmissions(submission.contestId, submission.id, 4),
+    profile ? hasUserLiked(profile.id, id) : Promise.resolve(false),
+    isAdmin ? getSubmissions({ contestId: submission.contestId }) : Promise.resolve([]),
+  ]);
   const currentIndex = contestSubmissions.findIndex((item) => item.id === submission.id);
   const prevSubmission = currentIndex > 0 ? contestSubmissions[currentIndex - 1] : null;
   const nextSubmission =
@@ -249,6 +250,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                         submitterPhone: submission.submitterPhone || '',
                         videoUrl: submission.videoUrl || '',
                         thumbnailUrl: submission.thumbnailUrl || '',
+                        submittedAt: submission.submittedAt || '',
                       }}
                     />
                   </div>

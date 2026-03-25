@@ -747,10 +747,25 @@ export default function ContestSubmitPage() {
           accessToken = refreshResult.data.session.access_token;
           console.log('[제출] 영상 업로드 후 토큰 갱신 완료');
         } else {
-          console.warn('[제출] 토큰 갱신 타임아웃(5초), 기존 토큰 유지');
+          /* getSession 타임아웃 — refreshSession으로 재시도 */
+          console.warn('[제출] getSession 타임아웃, refreshSession 시도...');
+          try {
+            const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+            if (retrySession?.access_token) {
+              accessToken = retrySession.access_token;
+              console.log('[제출] refreshSession 성공');
+            } else {
+              throw new Error('refresh failed');
+            }
+          } catch {
+            console.error('[제출] 토큰 갱신 완전 실패');
+            throw new Error(userFriendlyError('AUTH-EXPIRED'));
+          }
         }
       } catch (e) {
-        console.warn('[제출] 토큰 갱신 실패, 기존 토큰 유지:', e);
+        if (e instanceof Error && e.message.includes('로그인 세션')) throw e;
+        console.error('[제출] 토큰 갱신 실패:', e);
+        throw new Error(userFriendlyError('AUTH-EXPIRED'));
       }
 
       /* ── 3단계: 썸네일 업로드 ── */
