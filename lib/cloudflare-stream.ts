@@ -19,8 +19,8 @@ function cfHeaders() {
   };
 }
 
-/** 10초 타임아웃 시그널 생성 */
-function cfTimeout(ms = 10_000): { signal: AbortSignal; clear: () => void } {
+/** 20초 타임아웃 시그널 생성 */
+function cfTimeout(ms = 20_000): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   return { signal: controller.signal, clear: () => clearTimeout(timer) };

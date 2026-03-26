@@ -391,14 +391,14 @@ export default function AdminSubmissionRegisterPage() {
             }
           }
         };
-        /* 전송 100% 완료 → 30초마다 Cloudflare 폴링, 최대 5분 */
+        /* 전송 100% 완료 → 30초마다 Cloudflare 폴링, 최대 10분 */
         xhr.upload.onload = () => {
           setUploadProgress(100);
           if (!loggedMilestones.has(100)) {
             loggedMilestones.add(100);
             addLog('영상 전송 100%');
           }
-          addLog('파일 전송 완료, Cloudflare 응답 대기 중 (30초 간격 확인, 최대 5분)...');
+          addLog('파일 전송 완료, Cloudflare 응답 대기 중 (30초 간격 확인, 최대 10분)...');
 
           pollTimer = setInterval(async () => {
             addLog('Cloudflare 영상 존재 확인 중...');
@@ -414,18 +414,18 @@ export default function AdminSubmissionRegisterPage() {
           hardDeadline = setTimeout(async () => {
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = null;
-            addLog('5분 경과 — 최종 확인');
+            addLog('10분 경과 — 최종 확인');
             const exists = await checkCloudflareStatus();
             if (exists) {
               addLog('최종 확인 성공 — 업로드 성공');
               xhr.abort();
               settle(() => resolve());
             } else {
-              addLog('5분 경과 후에도 영상 미확인 — 실패');
+              addLog('10분 경과 후에도 영상 미확인 — 실패');
               xhr.abort();
               settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
             }
-          }, 5 * 60 * 1000);
+          }, 10 * 60 * 1000);
         };
         xhr.onload = async () => {
           clearAllTimers();
@@ -494,7 +494,7 @@ export default function AdminSubmissionRegisterPage() {
         xhr.setRequestHeader('x-upsert', 'false');
         xhr.setRequestHeader('apikey', anonKey);
         xhr.setRequestHeader('Content-Type', thumbnailFile.type || 'application/octet-stream');
-        xhr.timeout = 60_000;
+        xhr.timeout = 90_000;
         xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
@@ -533,7 +533,7 @@ export default function AdminSubmissionRegisterPage() {
             xhr.setRequestHeader('x-upsert', 'false');
             xhr.setRequestHeader('apikey', anonKey);
             xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-            xhr.timeout = 60_000;
+            xhr.timeout = 90_000;
             xhr.onload = () => {
               if (xhr.status >= 200 && xhr.status < 300) resolve();
               else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));

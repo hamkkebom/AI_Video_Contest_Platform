@@ -42,9 +42,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const maxDurationSeconds = body.maxDurationSeconds ?? 600; // 기본 10분
 
-    // Cloudflare Stream: direct creator upload URL 발급 (10초 타임아웃)
+    // Cloudflare Stream: direct creator upload URL 발급 (20초 타임아웃)
     const cfController = new AbortController();
-    const cfTimeout = setTimeout(() => cfController.abort(), 10_000);
+    const cfTimeout = setTimeout(() => cfController.abort(), 20_000);
     const cfResponse = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/direct_upload`,
       {

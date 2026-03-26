@@ -497,7 +497,7 @@ export default function ContestSubmitPage() {
                 xhr.setRequestHeader('x-upsert', 'false');
                 xhr.setRequestHeader('apikey', anonKey);
                 xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-                xhr.timeout = 60_000;
+                xhr.timeout = 90_000;
                 xhr.onload = () => {
                   if (xhr.status >= 200 && xhr.status < 300) resolve();
                   else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));
@@ -590,7 +590,7 @@ export default function ContestSubmitPage() {
       /* 업로드 URL 요청 (30초 타임아웃, 실패 시 1회 재시도) */
       const fetchUploadUrl = async (): Promise<Response> => {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30_000);
+        const timeout = setTimeout(() => controller.abort(), 60_000);
         try {
           const res = await fetch('/api/upload/video', {
             method: 'POST',
@@ -658,7 +658,7 @@ export default function ContestSubmitPage() {
             setUploadProgress(pct);
           }
         };
-        /* 전송 100% 완료 — 30초마다 Cloudflare 폴링 시작, 최대 5분 */
+        /* 전송 100% 완료 — 30초마다 Cloudflare 폴링 시작, 최대 10분 */
         xhr.upload.onload = () => {
           console.log('[제출] 파일 전송 완료, Cloudflare 응답 대기 중...');
           setUploadProgress(100);
@@ -675,23 +675,23 @@ export default function ContestSubmitPage() {
             }
           }, 30_000);
 
-          /* 최대 5분 대기 후 최종 확인 → 실패 처리 */
+          /* 최대 10분 대기 후 최종 확인 → 실패 처리 */
           hardDeadline = setTimeout(async () => {
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = null;
-            console.log('[제출] 5분 경과 — 최종 확인');
+            console.log('[제출] 10분 경과 — 최종 확인');
             const exists = await checkCloudflareStatus();
             if (exists) {
               console.log('[제출] 최종 확인 성공 — 업로드 성공 처리');
               xhr.abort();
               settle(() => resolve());
             } else {
-              console.error('[제출] 5분 경과 후에도 영상 미확인 — 실패 처리');
+              console.error('[제출] 10분 경과 후에도 영상 미확인 — 실패 처리');
               xhr.abort();
-              reportUploadError('video', '5분 대기 후 미확인', 'POLL_TIMEOUT');
+              reportUploadError('video', '10분 대기 후 미확인', 'POLL_TIMEOUT');
               settle(() => reject(new Error(userFriendlyError('VIDEO-TIMEOUT'))));
             }
-          }, 5 * 60 * 1000);
+          }, 10 * 60 * 1000);
         };
         xhr.onload = async () => {
           clearAllTimers();
@@ -767,7 +767,7 @@ export default function ContestSubmitPage() {
         xhr.setRequestHeader('x-upsert', 'false');
         xhr.setRequestHeader('apikey', anonKey);
         xhr.setRequestHeader('Content-Type', selectedThumbnailFile.type || 'application/octet-stream');
-        xhr.timeout = 60_000;
+        xhr.timeout = 90_000;
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
@@ -829,7 +829,7 @@ export default function ContestSubmitPage() {
               xhr.setRequestHeader('x-upsert', 'false');
               xhr.setRequestHeader('apikey', anonKey);
               xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-              xhr.timeout = 60_000;
+              xhr.timeout = 90_000;
               xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
                 else {
