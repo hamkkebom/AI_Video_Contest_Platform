@@ -326,10 +326,31 @@ export default function AdminSubmissionRegisterPage() {
     setUploadStep('preparing');
     setUploadProgress(0);
     setSubmitted(false);
+
+    /* 업로드 중 세션 유지 타이머 (try 외부 선언 → finally에서 정리) */
+    let activityKeepAlive: ReturnType<typeof setInterval> | undefined;
+    let tokenKeepAlive: ReturnType<typeof setInterval> | undefined;
+
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const supabase = createBrowserClient()!;
+
+      /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
+      activityKeepAlive = setInterval(() => {
+        try { localStorage.setItem('ggumple_last_activity', String(Date.now())); } catch {}
+      }, 20_000);
+      /* 업로드 중 주기적 토큰 갱신 (JWT 만료 방지) */
+      tokenKeepAlive = setInterval(async () => {
+        try {
+          const r = await refreshAccessToken(supabase, {
+            maxRetries: 1,
+            timeoutMs: 10000,
+            log: (msg) => addLog(`[keepalive] ${msg}`),
+          });
+          if (r.ok) accessToken = r.accessToken;
+        } catch { /* 백그라운드 갱신 실패는 무시 */ }
+      }, 4 * 60 * 1000);
 
       /* 단계: 영상 업로드 */
       setUploadStep('video');
@@ -590,6 +611,9 @@ export default function AdminSubmissionRegisterPage() {
       setErrorMessage(error instanceof Error ? error.message : '출품작 등록에 실패했습니다.');
       /* uploadStep은 유지하여 실패 단계 표시 */
     } finally {
+      /* 업로드 중 세션 유지 타이머 정리 */
+      if (activityKeepAlive) clearInterval(activityKeepAlive);
+      if (tokenKeepAlive) clearInterval(tokenKeepAlive);
       setSubmitting(false);
     }
   };

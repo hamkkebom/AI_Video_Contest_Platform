@@ -560,6 +560,10 @@ export default function ContestSubmitPage() {
     const selectedVideoFile = videoFile;
     const selectedThumbnailFile = thumbnailFile;
 
+    /* 업로드 중 세션 유지 타이머 (try 외부 선언 → finally에서 정리) */
+    let activityKeepAlive: ReturnType<typeof setInterval> | undefined;
+    let tokenKeepAlive: ReturnType<typeof setInterval> | undefined;
+
     try {
       setSubmitError(null);
       setErrorType(null);
@@ -583,9 +587,37 @@ export default function ContestSubmitPage() {
       }
 
       if (!accessToken || !currentUser) {
-        throw new Error(userFriendlyError('AUTH-EXPIRED'));
+        /* 세션 복구 불가 → 로그인 페이지로 리다이렉트 (데이터 보존을 위해 안내 후 이동) */
+        setIsSubmitting(false);
+        setUploadStep(null);
+        setErrorType('auth_expired');
+        setSubmitError(
+          '로그인 세션이 만료되어 다시 로그인이 필요합니다.\n\n' +
+          '작성하신 내용은 유지되지 않으니, 잠시 후 로그인 페이지로 이동합니다.'
+        );
+        await reportUploadError('auth', '세션 복구 실패 — 로그인 리다이렉트', 'AUTH-REDIRECT');
+        setTimeout(() => {
+          router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
+        }, 3000);
+        return;
       }
       console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
+
+      /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
+      activityKeepAlive = setInterval(() => {
+        try { localStorage.setItem('ggumple_last_activity', String(Date.now())); } catch {}
+      }, 20_000);
+      /* 업로드 중 주기적 토큰 갱신 (JWT 만료 방지) */
+      tokenKeepAlive = setInterval(async () => {
+        try {
+          const r = await refreshAccessToken(supabase, {
+            maxRetries: 1,
+            timeoutMs: 10000,
+            log: (msg) => console.log(`[제출:keepalive] ${msg}`),
+          });
+          if (r.ok) accessToken = r.accessToken;
+        } catch { /* 백그라운드 갱신 실패는 무시 — 나중에 재시도 */ }
+      }, 4 * 60 * 1000); // 4분마다
 
       /* 업로드 URL 요청 (30초 타임아웃, 실패 시 1회 재시도) */
       const fetchUploadUrl = async (): Promise<Response> => {
@@ -745,7 +777,21 @@ export default function ContestSubmitPage() {
       if (tokenResult.ok) {
         accessToken = tokenResult.accessToken;
       } else {
-        throw new Error(userFriendlyError('AUTH-EXPIRED'));
+        /* keepalive 정리 후 로그인 리다이렉트 */
+        if (activityKeepAlive) clearInterval(activityKeepAlive);
+        if (tokenKeepAlive) clearInterval(tokenKeepAlive);
+        setIsSubmitting(false);
+        setUploadStep(null);
+        setErrorType('auth_expired');
+        setSubmitError(
+          '영상 업로드는 완료되었으나 로그인 세션이 만료되었습니다.\n\n' +
+          '다시 로그인 후 같은 영상으로 재제출해 주세요.'
+        );
+        await reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
+        setTimeout(() => {
+          router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
+        }, 4000);
+        return;
       }
 
       /* ── 3단계: 썸네일 업로드 ── */
@@ -915,6 +961,9 @@ export default function ContestSubmitPage() {
       setSubmitError(message);
       setErrorType('general');
     } finally {
+      /* 업로드 중 세션 유지 타이머 정리 */
+      if (activityKeepAlive) clearInterval(activityKeepAlive);
+      if (tokenKeepAlive) clearInterval(tokenKeepAlive);
       setIsSubmitting(false);
     }
   };
