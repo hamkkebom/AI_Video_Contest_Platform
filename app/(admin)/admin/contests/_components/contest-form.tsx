@@ -324,6 +324,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterUploading, setPosterUploading] = useState(false);
   const [posterPreviewUrl, setPosterPreviewUrl] = useState('');
+  const [posterUploadPercent, setPosterUploadPercent] = useState(0);
+  const [posterUploadModalOpen, setPosterUploadModalOpen] = useState(false);
+  const [posterUploadError, setPosterUploadError] = useState<string | null>(null);
   const [promoInputMode, setPromoInputMode] = useState<'url' | 'file'>('url');
   const [promoUploading, setPromoUploading] = useState(false);
   const [promoUploadProgress, setPromoUploadProgress] = useState('');
@@ -342,6 +345,9 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroPreviewUrl, setHeroPreviewUrl] = useState('');
+  const [heroUploadPercent, setHeroUploadPercent] = useState(0);
+  const [heroUploadModalOpen, setHeroUploadModalOpen] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
   const heroFileRef = useRef<HTMLInputElement>(null);
   const [downloadingVideoIdx, setDownloadingVideoIdx] = useState<number | null>(null);
 
@@ -577,14 +583,16 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   /* ===== 파일 업로드 핸들러 ===== */
   const handlePosterFileSelect = async (file: File) => {
     setPosterFile(file);
-    /* 로컬 미리보기 생성 */
     setPosterPreviewUrl(URL.createObjectURL(file));
     setPosterUploading(true);
+    setPosterUploadPercent(0);
+    setPosterUploadError(null);
+    setPosterUploadModalOpen(true);
     try {
-      const url = await uploadContestAsset(file, 'poster');
+      const url = await uploadContestAsset(file, 'poster', (p) => setPosterUploadPercent(p));
       setPosterUrl(url);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '포스터 업로드 실패');
+      setPosterUploadError(err instanceof Error ? err.message : '포스터 업로드 실패');
     } finally {
       setPosterUploading(false);
     }
@@ -594,11 +602,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
     setHeroFile(file);
     setHeroPreviewUrl(URL.createObjectURL(file));
     setHeroUploading(true);
+    setHeroUploadPercent(0);
+    setHeroUploadError(null);
+    setHeroUploadModalOpen(true);
     try {
-      const url = await uploadContestAsset(file, 'hero-image');
+      const url = await uploadContestAsset(file, 'hero-image', (p) => setHeroUploadPercent(p));
       setHeroImageUrl(url);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '히어로 이미지 업로드 실패');
+      setHeroUploadError(err instanceof Error ? err.message : '히어로 이미지 업로드 실패');
     } finally {
       setHeroUploading(false);
     }
@@ -1060,6 +1071,111 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 포스터 업로드 진행 모달 */}
+      <Dialog open={posterUploadModalOpen} onOpenChange={(open) => { if (!posterUploading) setPosterUploadModalOpen(open); }}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => { if (posterUploading) e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg">
+              {posterUploadError ? '업로드 실패' : posterUploading ? '포스터 업로드 중' : '업로드 완료'}
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm">
+              {posterUploadError
+                ? '파일 업로드 중 오류가 발생했습니다.'
+                : posterUploading
+                  ? '창을 닫지 마세요.'
+                  : '포스터 이미지가 정상적으로 업로드되었습니다.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${posterUploadError ? 'bg-red-500/10 text-red-500' : posterUploading ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                {posterUploadError ? <AlertCircle className="h-5 w-5" />
+                  : posterUploading ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <CheckCircle2 className="h-5 w-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{posterUploading ? '업로드 중...' : posterUploadError ? '오류 발생' : '완료'}</p>
+                <p className="text-xs text-muted-foreground truncate">{posterFile?.name}</p>
+              </div>
+              {posterUploading && posterUploadPercent > 0 && (
+                <span className="text-sm font-mono font-semibold text-primary tabular-nums">{posterUploadPercent}%</span>
+              )}
+            </div>
+            {posterUploading && (
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-300 ease-out" style={{ width: `${posterUploadPercent}%` }} />
+              </div>
+            )}
+            {posterUploadError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                  <p className="text-sm text-red-700 dark:text-red-400 break-all">{posterUploadError}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {!posterUploading && (
+            <DialogFooter>
+              <Button className="w-full cursor-pointer" onClick={() => setPosterUploadModalOpen(false)}>확인</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 히어로 이미지 업로드 진행 모달 */}
+      <Dialog open={heroUploadModalOpen} onOpenChange={(open) => { if (!heroUploading) setHeroUploadModalOpen(open); }}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => { if (heroUploading) e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg">
+              {heroUploadError ? '업로드 실패' : heroUploading ? '히어로 이미지 업로드 중' : '업로드 완료'}
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm">
+              {heroUploadError
+                ? '파일 업로드 중 오류가 발생했습니다.'
+                : heroUploading
+                  ? '창을 닫지 마세요.'
+                  : '히어로 이미지가 정상적으로 업로드되었습니다.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${heroUploadError ? 'bg-red-500/10 text-red-500' : heroUploading ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                {heroUploadError ? <AlertCircle className="h-5 w-5" />
+                  : heroUploading ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <CheckCircle2 className="h-5 w-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{heroUploading ? '업로드 중...' : heroUploadError ? '오류 발생' : '완료'}</p>
+                <p className="text-xs text-muted-foreground truncate">{heroFile?.name}</p>
+              </div>
+              {heroUploading && heroUploadPercent > 0 && (
+                <span className="text-sm font-mono font-semibold text-primary tabular-nums">{heroUploadPercent}%</span>
+              )}
+            </div>
+            {heroUploading && (
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-300 ease-out" style={{ width: `${heroUploadPercent}%` }} />
+              </div>
+            )}
+            {heroUploadError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                  <p className="text-sm text-red-700 dark:text-red-400 break-all">{heroUploadError}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {!heroUploading && (
+            <DialogFooter>
+              <Button className="w-full cursor-pointer" onClick={() => setHeroUploadModalOpen(false)}>확인</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* 헤더 */}
       <header className="space-y-1">
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
