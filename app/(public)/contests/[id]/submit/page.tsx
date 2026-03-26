@@ -1724,6 +1724,8 @@ export default function ContestSubmitPage() {
         onOpenChange={(open) => {
           if (!open && !isSubmitting) {
             if (submitted) {
+              setSubmitted(false);
+              setUploadStep(null);
               router.push('/my/submissions');
             } else {
               setUploadStep(null);
@@ -1735,9 +1737,9 @@ export default function ContestSubmitPage() {
         }}
       >
         <DialogContent
-          className={cn('sm:max-w-md', (isSubmitting || submitted) && '[&>button]:hidden')}
-          onPointerDownOutside={(e) => { if (isSubmitting || submitted) e.preventDefault(); }}
-          onEscapeKeyDown={(e) => { if (isSubmitting || submitted) e.preventDefault(); }}
+          className={cn('sm:max-w-md', isSubmitting && '[&>button]:hidden')}
+          onPointerDownOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
         >
           {submitted ? (
             <>
@@ -1765,7 +1767,7 @@ export default function ContestSubmitPage() {
                 ))}
               </div>
               <DialogFooter>
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => router.push('/my/submissions')}>확인</Button>
+                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => { setSubmitted(false); setUploadStep(null); router.push('/my/submissions'); }}>확인</Button>
               </DialogFooter>
             </>
           ) : (
@@ -1903,7 +1905,7 @@ export default function ContestSubmitPage() {
                       </div>
                       <DialogFooter className="flex-col gap-2">
                         <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => window.location.reload()}>페이지 새로고침</Button>
-                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
+                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setIsSubmitting(false); setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
                       </DialogFooter>
                     </>
                   )}

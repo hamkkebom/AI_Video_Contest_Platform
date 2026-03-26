@@ -1004,6 +1004,7 @@ export default function AdminSubmissionRegisterPage() {
             setErrorMessage(null);
             setUploadProgress(0);
             if (submitted) {
+              setSubmitted(false);
               router.push('/admin/submissions' as Route);
               router.refresh();
             }
@@ -1035,7 +1036,7 @@ export default function AdminSubmissionRegisterPage() {
                 ))}
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => { router.push('/admin/submissions' as Route); router.refresh(); }}>출품작 목록</Button>
+                <Button variant="outline" className="cursor-pointer flex-1" onClick={() => { setSubmitted(false); setUploadStep(null); router.push('/admin/submissions' as Route); router.refresh(); }}>출품작 목록</Button>
               </DialogFooter>
             </>
           ) : (
@@ -1120,7 +1121,7 @@ export default function AdminSubmissionRegisterPage() {
                 <div className="text-center space-y-3">
                   <p className="text-sm text-red-500">{errorMessage}</p>
                   <DialogFooter>
-                    <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setUploadStep(null); setErrorMessage(null); setUploadProgress(0); }}>닫기</Button>
+                    <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setSubmitting(false); setUploadStep(null); setErrorMessage(null); setUploadProgress(0); }}>닫기</Button>
                   </DialogFooter>
                 </div>
               )}
