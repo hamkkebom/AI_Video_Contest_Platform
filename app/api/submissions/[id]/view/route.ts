@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { extractClientIp, hashForAntiAbuse } from '@/lib/utils';
 
@@ -50,6 +51,11 @@ export async function POST(
   }
 
   const result = data as { counted?: boolean; totalViews?: number; reason?: string };
+
+  if (result.counted) {
+    revalidateTag('submissions');
+    revalidateTag('gallery');
+  }
 
   return NextResponse.json({
     counted: result.counted ?? false,

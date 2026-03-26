@@ -241,6 +241,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
                       submissionId={String(submission.id)}
                       submissionTitle={submission.title}
                       contestId={String(submission.contestId)}
+                      currentStatus={submission.status}
                       currentData={{
                         title: submission.title,
                         description: submission.description || '',

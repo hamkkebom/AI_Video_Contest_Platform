@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
@@ -63,6 +64,8 @@ export async function PUT(request: Request) {
       targetType: 'profile',
       targetId: user.id,
     }).catch(console.error);
+
+    revalidateTag('users');
 
     return NextResponse.json({ success: true });
   } catch (error) {

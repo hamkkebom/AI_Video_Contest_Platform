@@ -22,6 +22,8 @@ interface AdminSubmissionActionsProps {
   submissionId: string;
   submissionTitle: string;
   contestId: string;
+  /** 현재 출품작 상태 */
+  currentStatus?: string;
   /** 현재 출품작 데이터 (수정 폼 pre-fill용) */
   currentData: {
     title: string;
@@ -36,6 +38,14 @@ interface AdminSubmissionActionsProps {
   };
 }
 
+const SUBMISSION_STATUS_OPTIONS = [
+  { value: 'pending_review', label: '검수대기' },
+  { value: 'approved', label: '검수승인' },
+  { value: 'rejected', label: '반려' },
+  { value: 'judging', label: '심사중' },
+  { value: 'judged', label: '심사완료' },
+] as const;
+
 interface FormState {
   title: string;
   description: string;
@@ -46,6 +56,7 @@ interface FormState {
   videoUrl: string;
   thumbnailUrl: string;
   submittedAt: string;
+  status: string;
   videoFile: File | null;
   thumbnailFile: File | null;
   videoMode: 'file' | 'url';
@@ -60,7 +71,7 @@ function toLocalDatetime(iso?: string): string {
   return local.toISOString().slice(0, 16);
 }
 
-function toFormState(data: AdminSubmissionActionsProps['currentData']): FormState {
+function toFormState(data: AdminSubmissionActionsProps['currentData'], status?: string): FormState {
   return {
     title: data.title,
     description: data.description,
@@ -71,6 +82,7 @@ function toFormState(data: AdminSubmissionActionsProps['currentData']): FormStat
     videoUrl: data.videoUrl ?? '',
     thumbnailUrl: data.thumbnailUrl ?? '',
     submittedAt: toLocalDatetime(data.submittedAt),
+    status: status ?? 'pending_review',
     videoFile: null,
     thumbnailFile: null,
     videoMode: 'url',
@@ -78,7 +90,7 @@ function toFormState(data: AdminSubmissionActionsProps['currentData']): FormStat
   };
 }
 
-export function AdminSubmissionActions({ submissionId, submissionTitle, contestId, currentData }: AdminSubmissionActionsProps) {
+export function AdminSubmissionActions({ submissionId, submissionTitle, contestId, currentStatus, currentData }: AdminSubmissionActionsProps) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -90,14 +102,14 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(() => toFormState(currentData));
+  const [form, setForm] = useState<FormState>(() => toFormState(currentData, currentStatus));
   const [bonusConfigs, setBonusConfigs] = useState<Array<{ id: string; label: string; description?: string }>>([]);
   const [bonusForms, setBonusForms] = useState<Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }>>({});
   const [submitterAccount, setSubmitterAccount] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (editOpen) {
-      setForm(toFormState(currentData));
+      setForm(toFormState(currentData, currentStatus));
       Promise.all([
         fetch(`/api/submissions/${submissionId}`).then((r) => r.json()),
         fetch(`/api/contests/${contestId}`).then((r) => r.json()),
@@ -171,6 +183,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
 
       setDeleteOpen(false);
       router.push('/admin/submissions');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -386,6 +399,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           submitterPhone: form.submitterPhone,
           videoUrl: videoUrlToSubmit,
           thumbnailUrl: thumbnailUrlToSubmit,
+          status: form.status,
           submittedAt: form.submittedAt ? new Date(form.submittedAt).toISOString() : undefined,
           bonusEntries: bonusConfigs.length > 0
             ? Object.entries(bonusFormsToSubmit)
@@ -523,6 +537,19 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                 <span className="text-muted-foreground ml-1.5">({submitterAccount.email})</span>
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="admin-submission-status">출품 상태</Label>
+              <select
+                id="admin-submission-status"
+                value={form.status}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {SUBMISSION_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="admin-submission-title">제목</Label>
               <Input
