@@ -1,8 +1,12 @@
 /**
  * 견고한 토큰 갱신 유틸리티
- * - JWT 만료 시간 검증 후 getSession / refreshSession 분기
- * - 최대 3회 재시도 + 백오프
- * - 각 시도에 타임아웃 적용하여 hang 방지
+ *
+ * 전략:
+ * 1) getSession — 클라이언트 캐시에서 유효한 토큰 확인
+ * 2) 서버 API (/api/auth/refresh-token) — middleware가 쿠키 기반으로 갱신
+ *    → 클라이언트 refreshSession()과 middleware의 refresh_token 회전 충돌 방지
+ * 3) refreshSession (폴백) — 서버 API 실패 시 클라이언트 직접 갱신
+ * 4) 최대 N회 재시도 + 백오프
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -40,13 +44,9 @@ function isTokenExpired(token: string, marginSeconds = 60): boolean {
  * Supabase 세션에서 유효한(만료되지 않은) access_token을 가져온다.
  *
  * 1) getSession으로 캐시된 토큰 확인 → 만료 안 됐으면 즉시 반환
- * 2) 만료됐거나 없으면 refreshSession으로 새 토큰 발급
- * 3) 실패 시 최대 maxRetries회 재시도 + 백오프
- *
- * @param supabase - 브라우저 Supabase 클라이언트
- * @param options.maxRetries - 최대 재시도 횟수 (기본 3)
- * @param options.timeoutMs - 각 호출 타임아웃 (기본 8000ms)
- * @param options.log - 로그 함수 (기본 console.log)
+ * 2) 서버 API로 토큰 갱신 (middleware 경유, refresh_token 회전 충돌 방지)
+ * 3) 서버 API 실패 시 클라이언트 refreshSession 폴백
+ * 4) 실패 시 최대 maxRetries회 재시도 + 백오프
  */
 export async function refreshAccessToken(
   supabase: SupabaseClient,
@@ -87,18 +87,48 @@ export async function refreshAccessToken(
         }
 
         if (cachedToken) {
-          log(`[${attempt}/${maxRetries}] getSession 토큰 만료됨 — refreshSession 진행`);
+          log(`[${attempt}/${maxRetries}] getSession 토큰 만료됨 — 서버 갱신 진행`);
         } else {
-          log(`[${attempt}/${maxRetries}] getSession 세션 없음 (session=${hasSession}) — refreshSession 진행`);
+          log(`[${attempt}/${maxRetries}] getSession 세션 없음 (session=${hasSession}) — 서버 갱신 진행`);
         }
       }
     } catch (e) {
       log(`[${attempt}/${maxRetries}] getSession 예외: ${e instanceof Error ? e.message : String(e)}`);
     }
 
-    /* 2) refreshSession — 서버에서 새 토큰 발급 */
+    /* 2) 서버 API로 토큰 갱신 — middleware가 쿠키 기반으로 처리하므로
+          클라이언트 refreshSession()과의 refresh_token 회전 충돌을 방지한다. */
     try {
-      log(`[${attempt}/${maxRetries}] refreshSession 호출 중...`);
+      log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 호출 중...`);
+      const serverResult = await raceTimeout(
+        fetch('/api/auth/refresh-token', { method: 'POST' }).then(async (res) => {
+          const body = await res.json();
+          return { ok: res.ok, body };
+        }),
+        timeoutMs,
+      );
+
+      if (!serverResult) {
+        log(`[${attempt}/${maxRetries}] 서버 API ${timeoutMs}ms 타임아웃`);
+      } else if (serverResult.ok && serverResult.body?.accessToken) {
+        const serverToken = serverResult.body.accessToken as string;
+        if (!isTokenExpired(serverToken)) {
+          log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 성공`);
+          /* 클라이언트 Supabase 인스턴스의 세션도 동기화 */
+          await supabase.auth.getSession(); // 쿠키에서 최신 세션 다시 읽기
+          return { accessToken: serverToken, ok: true };
+        }
+        log(`[${attempt}/${maxRetries}] 서버 API 토큰이 이미 만료됨`);
+      } else {
+        log(`[${attempt}/${maxRetries}] 서버 API 실패: ${serverResult.body?.error ?? 'unknown'}`);
+      }
+    } catch (e) {
+      log(`[${attempt}/${maxRetries}] 서버 API 예외: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    /* 3) refreshSession 폴백 — 서버 API가 실패한 경우 클라이언트 직접 시도 */
+    try {
+      log(`[${attempt}/${maxRetries}] refreshSession 폴백 호출 중...`);
       const result = await raceTimeout(supabase.auth.refreshSession(), timeoutMs);
 
       if (!result) {
