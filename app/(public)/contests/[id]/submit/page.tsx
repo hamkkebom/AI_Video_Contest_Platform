@@ -123,6 +123,14 @@ export default function ContestSubmitPage() {
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
+  /* #10: 업로드 중 탭 닫기 경고 */
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isSubmitting]);
+
   /* 가산점 아코디언 열림 상태 */
   const [openBonuses, setOpenBonuses] = useState<string[]>([]);
   /* 가산점 폼 데이터 (bonusConfigId → 값) */
@@ -153,7 +161,7 @@ export default function ContestSubmitPage() {
       'SUBMIT-FAIL': '출품작 저장에 실패했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
     };
     const msg = guides[code] || '업로드 중 문제가 발생했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.';
-    return `${msg}\n\n계속 실패할 경우 시크릿 모드(Ctrl+Shift+N)에서 시도해 주세요.\n문제가 지속되면 문의해 주세요. (오류 코드: ${code})`;
+    return `${msg}\n\n계속 실패할 경우 페이지를 새로고침(Ctrl+Shift+R) 후 다시 시도해 주세요.\n문제가 지속되면 문의해 주세요. (오류 코드: ${code})`;
   };
 
   /** 업로드 에러를 서버에 보고 */
@@ -417,6 +425,16 @@ export default function ContestSubmitPage() {
     const selectedFile = event.target.files?.[0] ?? null;
     if (!selectedFile) return;
 
+    /* #12: MIME 타입 검증 */
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(selectedFile.type)) {
+      const message = '썸네일은 JPG, PNG, WebP, GIF 형식만 업로드할 수 있습니다.';
+      setSubmitError(message);
+      alert(message);
+      event.target.value = '';
+      return;
+    }
+
     if (selectedFile.size > MAX_THUMBNAIL_SIZE_BYTES) {
       const message = '썸네일 파일은 최대 10MB까지 업로드할 수 있습니다.';
       setSubmitError(message);
@@ -461,15 +479,16 @@ export default function ContestSubmitPage() {
           throw new Error('로그인 세션이 만료되었습니다.');
         }
 
-        /* 폼 편집 중 토큰이 만료되었을 수 있으므로 갱신 (5초 타임아웃) */
+        /* 폼 편집 중 토큰이 만료되었을 수 있으므로 갱신 (#7: refreshAccessToken 사용) */
         const supabase = createBrowserClient()!;
         try {
-          const editRefresh = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-          ]);
-          if (editRefresh && 'data' in editRefresh && editRefresh.data.session?.access_token) {
-            accessToken = editRefresh.data.session.access_token;
+          const editRefresh = await refreshAccessToken(supabase, {
+            maxRetries: 2,
+            timeoutMs: 10000,
+            log: (msg) => console.log(`[수정] ${msg}`),
+          });
+          if (editRefresh.ok) {
+            accessToken = editRefresh.accessToken;
           }
         } catch { /* 갱신 실패 시 기존 토큰 유지 */ }
 
@@ -619,7 +638,26 @@ export default function ContestSubmitPage() {
         } catch { /* 백그라운드 갱신 실패는 무시 — 나중에 재시도 */ }
       }, 4 * 60 * 1000); // 4분마다
 
-      /* 업로드 URL 요청 (30초 타임아웃, 실패 시 1회 재시도) */
+      /* ── 사전 검증: 업로드 전 공모전 상태/쿼터 확인 (Critical #1) ── */
+      try {
+        const preCheckRes = await fetch(`/api/submissions/pre-check?contestId=${contestId}`, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!preCheckRes.ok) {
+          const preCheckData = await preCheckRes.json().catch(() => ({ error: '사전 검증 실패' }));
+          const code = preCheckData.code;
+          if (code === 'QUOTA_EXCEEDED') { setErrorType('duplicate'); setSubmitError(preCheckData.error); return; }
+          if (code === 'CONTEST_NOT_OPEN') { setErrorType('contest_closed'); setSubmitError(preCheckData.error); return; }
+          if (code === 'DEADLINE_PASSED') { setErrorType('deadline_passed'); setSubmitError(preCheckData.error); return; }
+          throw new Error(preCheckData.error || '공모전 상태 확인에 실패했습니다.');
+        }
+      } catch (preCheckErr) {
+        if (preCheckErr instanceof Error && ['duplicate', 'contest_closed', 'deadline_passed'].some(t => errorType === t)) return;
+        console.warn('[제출] 사전 검증 실패 (업로드 진행):', preCheckErr);
+        /* 사전 검증 실패는 차단하지 않고 진행 — 최종 제출 API에서 재검증됨 */
+      }
+
+      /* 업로드 URL 요청 (60초 타임아웃, 실패 시 1회 재시도) */
       const fetchUploadUrl = async (): Promise<Response> => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -675,11 +713,19 @@ export default function ContestSubmitPage() {
           if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
         };
 
-        /* Cloudflare에 영상 존재 여부 확인 */
-        const checkCloudflareStatus = async (): Promise<boolean> => {
+        /* Cloudflare에 영상 존재 여부 + 처리 상태 확인 (#6: error 상태 체크, #16: 타임아웃 추가) */
+        const checkCloudflareStatus = async (): Promise<boolean | 'error'> => {
           try {
-            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
-            return statusRes.ok;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15_000);
+            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!statusRes.ok) return false;
+            try {
+              const data = await statusRes.json();
+              if (data.status?.state === 'error') return 'error';
+            } catch { /* JSON 파싱 실패 시 존재만 확인 */ }
+            return true;
           } catch { return false; }
         };
 
@@ -690,30 +736,41 @@ export default function ContestSubmitPage() {
             setUploadProgress(pct);
           }
         };
-        /* 전송 100% 완료 — 30초마다 Cloudflare 폴링 시작, 최대 10분 */
+        /* 전송 100% 완료 — 즉시 1회 + 30초마다 Cloudflare 폴링, 최대 10분 */
         xhr.upload.onload = () => {
           console.log('[제출] 파일 전송 완료, Cloudflare 응답 대기 중...');
           setUploadProgress(100);
 
-          /* 30초마다 Cloudflare에 영상 존재 여부 폴링 */
-          pollTimer = setInterval(async () => {
+          /* 폴링 공통 핸들러 (#6: error 상태 체크) */
+          const doPoll = async () => {
             console.log('[제출] Cloudflare 영상 존재 여부 확인 중...');
-            const exists = await checkCloudflareStatus();
-            if (exists) {
+            const result = await checkCloudflareStatus();
+            if (result === 'error') {
+              console.error('[제출] Cloudflare 영상 처리 오류 — 재생 불가 영상');
+              clearAllTimers(); xhr.abort();
+              reportUploadError('video', 'Cloudflare 영상 처리 실패', 'CF_ERROR');
+              settle(() => reject(new Error('영상 파일을 처리할 수 없습니다. 다른 형식의 파일로 다시 시도해 주세요.')));
+              return;
+            }
+            if (result === true) {
               console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
-              clearAllTimers();
-              xhr.abort();
+              clearAllTimers(); xhr.abort();
               settle(() => resolve());
             }
-          }, 30_000);
+          };
+
+          /* #15: 즉시 첫 폴링 실행 */
+          doPoll();
+          /* 이후 30초마다 폴링 */
+          pollTimer = setInterval(doPoll, 30_000);
 
           /* 최대 10분 대기 후 최종 확인 → 실패 처리 */
           hardDeadline = setTimeout(async () => {
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = null;
             console.log('[제출] 10분 경과 — 최종 확인');
-            const exists = await checkCloudflareStatus();
-            if (exists) {
+            const result = await checkCloudflareStatus();
+            if (result === true) {
               console.log('[제출] 최종 확인 성공 — 업로드 성공 처리');
               xhr.abort();
               settle(() => resolve());
@@ -777,6 +834,14 @@ export default function ContestSubmitPage() {
       if (tokenResult.ok) {
         accessToken = tokenResult.accessToken;
       } else {
+        /* Critical #2: UID를 localStorage에 저장하여 재로그인 후 복구 가능하게 함 */
+        try {
+          localStorage.setItem('ggumple_pending_upload', JSON.stringify({
+            uid: uploadUrlResult.uid,
+            contestId,
+            timestamp: Date.now(),
+          }));
+        } catch {}
         /* keepalive 정리 후 로그인 리다이렉트 */
         if (activityKeepAlive) clearInterval(activityKeepAlive);
         if (tokenKeepAlive) clearInterval(tokenKeepAlive);
@@ -785,7 +850,7 @@ export default function ContestSubmitPage() {
         setErrorType('auth_expired');
         setSubmitError(
           '영상 업로드는 완료되었으나 로그인 세션이 만료되었습니다.\n\n' +
-          '다시 로그인 후 같은 영상으로 재제출해 주세요.'
+          '다시 로그인 후 이 페이지로 돌아오면 업로드된 영상으로 이어서 제출할 수 있습니다.'
         );
         await reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
         setTimeout(() => {
@@ -803,8 +868,12 @@ export default function ContestSubmitPage() {
       const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
       console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', selectedThumbnailFile.size, 'bytes');
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      /* #13: 환경변수 안전 처리 */
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !anonKey) {
+        throw new Error('서버 설정 오류가 발생했습니다. 관리자에게 문의해 주세요.');
+      }
 
       const thumbnailData = await new Promise<{ path: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -1320,7 +1389,7 @@ export default function ContestSubmitPage() {
               <div className="mb-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
                 <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  업로드가 안 될 경우 <strong>시크릿 모드(Ctrl+Shift+N)</strong>에서 다시 시도해 주세요.
+                  업로드가 안 될 경우 <strong>페이지 새로고침(Ctrl+Shift+R)</strong> 후 다시 시도해 주세요.
                 </p>
               </div>
               {isEditMode && existingSubmission ? (

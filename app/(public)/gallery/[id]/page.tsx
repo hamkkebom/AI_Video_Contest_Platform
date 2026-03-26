@@ -95,6 +95,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
 
   /* submission과 profile에 의존하는 쿼리를 병렬 실행 */
   const isAdmin = profile?.roles?.includes('admin') ?? false;
+  const isOwner = profile?.id === submission.userId;
   /* 관리자: pending_review만 순회 (검수 워크플로우)
      일반 사용자: approved만 순회 (갤러리 탐색) */
   const navStatus = isAdmin ? 'pending_review' : 'approved';
@@ -292,7 +293,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             </div>
           )}
 
-          {isAdmin && submission.rejectionReason && (
+          {(isAdmin || isOwner) && submission.rejectionReason && (
             <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
               <p className="text-xs font-bold text-destructive mb-1">거절 사유</p>
               <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>

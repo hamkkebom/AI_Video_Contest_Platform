@@ -116,8 +116,16 @@ export default function AdminSubmissionRegisterPage() {
   const [openBonuses, setOpenBonuses] = useState<string[]>([]);
   const [bonusForms, setBonusForms] = useState<Record<string, BonusFormEntry>>({});
 
-  /* ── 제출 상태 ── */
+  /* #10: 업로드 중 탭 닫기 경고 */
   const [submitting, setSubmitting] = useState(false);
+  useEffect(() => {
+    if (!submitting) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [submitting]);
+
+  /* ── 제출 상태 ── */
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
   const [uploadStep, setUploadStep] = useState<'preparing' | 'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
@@ -204,6 +212,13 @@ export default function AdminSubmissionRegisterPage() {
   const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     if (!file) return;
+    /* #12: MIME 타입 검증 */
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setErrorMessage('썸네일은 JPG, PNG, WebP, GIF 형식만 업로드할 수 있습니다.');
+      event.target.value = '';
+      return;
+    }
     if (file.size > MAX_THUMBNAIL_SIZE_BYTES) {
       setErrorMessage('썸네일 파일은 최대 10MB까지 업로드할 수 있습니다.');
       event.target.value = '';
@@ -332,8 +347,6 @@ export default function AdminSubmissionRegisterPage() {
     let tokenKeepAlive: ReturnType<typeof setInterval> | undefined;
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const supabase = createBrowserClient()!;
 
       /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
@@ -357,16 +370,34 @@ export default function AdminSubmissionRegisterPage() {
       setUploadProgress(0);
       addLog('영상 업로드 시작');
 
-      /* 1) 영상 업로드 → Cloudflare Stream */
-      const uploadUrlController = new AbortController();
-      const uploadUrlTimeout = setTimeout(() => uploadUrlController.abort(), 10_000);
-      const uploadUrlResponse = await fetch('/api/upload/video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxDurationSeconds: 600 }),
-        signal: uploadUrlController.signal,
-      });
-      clearTimeout(uploadUrlTimeout);
+      /* #13: 환경변수 안전 처리 */
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !anonKey) {
+        throw new Error('서버 설정 오류가 발생했습니다. 관리자에게 문의해 주세요.');
+      }
+
+      /* #9: 업로드 URL 요청 (60초 타임아웃 + 1회 재시도) */
+      const fetchAdminUploadUrl = async (): Promise<Response> => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 60_000);
+        try {
+          return await fetch('/api/upload/video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maxDurationSeconds: 600 }),
+            signal: ctrl.signal,
+          });
+        } finally { clearTimeout(t); }
+      };
+      let uploadUrlResponse: Response;
+      try {
+        uploadUrlResponse = await fetchAdminUploadUrl();
+      } catch {
+        addLog('업로드 URL 1차 실패, 2초 후 재시도...');
+        await new Promise((r) => setTimeout(r, 2000));
+        uploadUrlResponse = await fetchAdminUploadUrl();
+      }
 
       const uploadUrlResult = (await uploadUrlResponse.json()) as {
         uploadURL?: string;
@@ -394,10 +425,19 @@ export default function AdminSubmissionRegisterPage() {
           if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
           if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
         };
-        const checkCloudflareStatus = async (): Promise<boolean> => {
+        /* #6: error 상태 체크 + #16: 타임아웃 추가 */
+        const checkCloudflareStatus = async (): Promise<boolean | 'error'> => {
           try {
-            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
-            return statusRes.ok;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15_000);
+            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!statusRes.ok) return false;
+            try {
+              const data = await statusRes.json();
+              if (data.status?.state === 'error') return 'error';
+            } catch {}
+            return true;
           } catch { return false; }
         };
 
@@ -412,7 +452,7 @@ export default function AdminSubmissionRegisterPage() {
             }
           }
         };
-        /* 전송 100% 완료 → 30초마다 Cloudflare 폴링, 최대 10분 */
+        /* 전송 100% 완료 → 즉시 1회 + 30초마다 Cloudflare 폴링, 최대 10분 */
         xhr.upload.onload = () => {
           setUploadProgress(100);
           if (!loggedMilestones.has(100)) {
@@ -421,23 +461,33 @@ export default function AdminSubmissionRegisterPage() {
           }
           addLog('파일 전송 완료, Cloudflare 응답 대기 중 (30초 간격 확인, 최대 10분)...');
 
-          pollTimer = setInterval(async () => {
+          /* 폴링 공통 핸들러 (#6: error 상태 체크) */
+          const doPoll = async () => {
             addLog('Cloudflare 영상 존재 확인 중...');
-            const exists = await checkCloudflareStatus();
-            if (exists) {
+            const result = await checkCloudflareStatus();
+            if (result === 'error') {
+              addLog('Cloudflare 영상 처리 오류 — 재생 불가 영상');
+              clearAllTimers(); xhr.abort();
+              settle(() => reject(new Error('영상 파일을 처리할 수 없습니다. 다른 형식의 파일로 다시 시도해 주세요.')));
+              return;
+            }
+            if (result === true) {
               addLog('Cloudflare에 영상 존재 확인 — 업로드 성공');
-              clearAllTimers();
-              xhr.abort();
+              clearAllTimers(); xhr.abort();
               settle(() => resolve());
             }
-          }, 30_000);
+          };
+
+          /* #15: 즉시 첫 폴링 */
+          doPoll();
+          pollTimer = setInterval(doPoll, 30_000);
 
           hardDeadline = setTimeout(async () => {
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = null;
             addLog('10분 경과 — 최종 확인');
-            const exists = await checkCloudflareStatus();
-            if (exists) {
+            const result = await checkCloudflareStatus();
+            if (result === true) {
               addLog('최종 확인 성공 — 업로드 성공');
               xhr.abort();
               settle(() => resolve());
@@ -447,6 +497,11 @@ export default function AdminSubmissionRegisterPage() {
               settle(() => reject(new Error('영상 업로드 후 서버 확인에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해 주세요.')));
             }
           }, 10 * 60 * 1000);
+        };
+        /* #5: onabort 핸들러 */
+        xhr.onabort = () => {
+          clearAllTimers();
+          settle(() => {}); /* 폴링에 의한 abort는 정상 종료 */
         };
         xhr.onload = async () => {
           clearAllTimers();
@@ -555,8 +610,10 @@ export default function AdminSubmissionRegisterPage() {
             xhr.setRequestHeader('apikey', anonKey);
             xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
             xhr.timeout = 90_000;
+            /* #14: 증빙이미지 진행률 표시 */
+            xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
             xhr.onload = () => {
-              if (xhr.status >= 200 && xhr.status < 300) resolve();
+              if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
               else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));
             };
             xhr.onerror = () => reject(new Error('네트워크 오류로 인증 이미지 업로드에 실패했습니다.'));

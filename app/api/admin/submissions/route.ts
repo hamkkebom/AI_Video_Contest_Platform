@@ -91,6 +91,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '출품일시 형식이 올바르지 않습니다.' }, { status: 400 });
     }
 
+    /* #3: 공모전 상태/쿼터 검증 (관리자도 경고 표시) */
+    const { data: contestCheck } = await supabase
+      .from('contests')
+      .select('status, submission_end_at, max_submissions_per_user')
+      .eq('id', contestId)
+      .single();
+
+    if (contestCheck) {
+      if (contestCheck.status !== 'open') {
+        console.warn('[POST /api/admin/submissions] 공모전이 open 상태가 아님:', contestCheck.status);
+        /* 관리자는 차단하지 않고 경고만 로그에 남김 */
+      }
+      const maxSubs = contestCheck.max_submissions_per_user ?? 1;
+      const { count } = await supabase
+        .from('submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('contest_id', contestId)
+        .eq('user_id', targetUserId);
+      if ((count ?? 0) >= maxSubs) {
+        console.warn('[POST /api/admin/submissions] 쿼터 초과:', count, '/', maxSubs);
+        /* 관리자는 차단하지 않고 경고만 로그에 남김 */
+      }
+    }
+
     /* ====== 대상 유저 프로필 존재 확인 (외래키 제약 보호) ====== */
     const { data: existingProfile } = await supabase
       .from('profiles')
@@ -152,6 +176,20 @@ export async function POST(request: Request) {
 
         if (bonusError) {
           console.error('[POST /api/admin/submissions] 가산점 인증 저장 실패 (출품작은 생성됨):', bonusError);
+          /* #11: 보너스 실패 시 warning 포함하여 반환 */
+          createActivityLog({
+            userId: user.id,
+            action: 'admin_create_submission',
+            targetType: 'submission',
+            targetId: data.id,
+            metadata: { contestId, targetUserId, role: 'admin' },
+          }).catch(console.error);
+          revalidateTag('submissions');
+          revalidateTag('users');
+          return NextResponse.json(
+            { submission: { id: data.id }, warning: '출품작은 등록되었으나 가산점 인증 저장에 실패했습니다.' },
+            { status: 201 },
+          );
         }
       }
     }

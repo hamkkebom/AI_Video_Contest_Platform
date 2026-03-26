@@ -33,13 +33,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
   }
 
-  /* getSession()은 쿠키 기반(HTTP 호출 없음)으로 hang 위험이 없다.
-     getUser()는 Supabase Auth 서버 HTTP 요청 → 동시 접속 시 hang/타임아웃 위험. */
+  /* #8: getSession() 우선 + getUser() 폴백 (JWT 서명 검증) */
+  let user: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null = null;
   const {
     data: { session },
     error: authError,
   } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  user = session?.user ?? null;
+
+  /* getSession()이 실패하거나 토큰이 없으면 getUser()로 서버 검증 시도 */
+  if (!user) {
+    try {
+      const userResult = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+      ]);
+      if (userResult && 'data' in userResult && userResult.data.user) {
+        user = userResult.data.user;
+      }
+    } catch { /* getUser 타임아웃 — 무시 */ }
+  }
 
   if (authError || !user) {
     console.error('[submissions API] 인증 실패:', authError?.message);
@@ -144,6 +157,7 @@ export async function POST(request: Request) {
       );
     }
 
+    /* #4: INSERT 후 중복 재검증 (레이스 컨디션 방지) */
     const { data, error } = await supabase
       .from('submissions')
       .insert({
@@ -174,6 +188,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '출품작 등록에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
     }
     console.log('[submissions API] 출품작 생성 성공! ID:', data.id);
+
+    /* #4: INSERT 후 중복 재검증 (레이스 컨디션 방지 — 동시 요청으로 쿼터 초과 시 롤백) */
+    const { count: postCount } = await supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('contest_id', contestId)
+      .eq('user_id', user.id);
+    if ((postCount ?? 0) > maxSubmissions) {
+      console.warn('[submissions API] 레이스 컨디션 감지 — 초과 출품작 삭제:', data.id);
+      await supabase.from('submissions').delete().eq('id', data.id);
+      return NextResponse.json(
+        { error: `이 공모전의 최대 출품 가능 수(${maxSubmissions}개)를 초과했습니다.`, code: 'QUOTA_EXCEEDED' },
+        { status: 409 },
+      );
+    }
 
     /* 가산점 인증 저장 */
     if (Array.isArray(body.bonusEntries) && body.bonusEntries.length > 0) {
