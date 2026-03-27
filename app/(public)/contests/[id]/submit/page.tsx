@@ -1219,15 +1219,23 @@ export default function ContestSubmitPage() {
         <div className="container mx-auto max-w-3xl relative z-10">
           <form onSubmit={handleSubmit} className="space-y-8">
 
-            {/* 업로드 오류 시 새로고침 안내 배너 */}
-            <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3 text-sm shadow-sm">
-              <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
-                <span className="font-bold">업로드 오류가 발생하면</span>{' '}
-                <kbd className="inline-flex items-center gap-0.5 rounded border border-amber-300 dark:border-amber-600 bg-white/60 dark:bg-white/10 px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd>{' '}
-                (Mac: <kbd className="inline-flex items-center gap-0.5 rounded border border-amber-300 dark:border-amber-600 bg-white/60 dark:bg-white/10 px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로{' '}
-                <span className="font-bold">강력 새로고침</span> 후 다시 시도해 주세요.
-              </p>
+            {/* 업로드 오류 시 새로고침 안내 배너 — 눈에 잘 띄도록 강조 */}
+            <div className="flex items-center gap-3 rounded-xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/40 px-5 py-4 shadow-md">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-orange-900 dark:text-orange-100">
+                  ⚠️ 업로드 전 필독!
+                </p>
+                <p className="mt-1 text-sm text-orange-800 dark:text-orange-200 leading-relaxed">
+                  오류 발생 시{' '}
+                  <kbd className="inline-flex items-center rounded border-2 border-orange-400 bg-white dark:bg-orange-900 px-2 py-0.5 text-xs font-mono font-bold text-orange-700 dark:text-orange-200">Ctrl+Shift+R</kbd>{' '}
+                  (Mac:{' '}
+                  <kbd className="inline-flex items-center rounded border-2 border-orange-400 bg-white dark:bg-orange-900 px-2 py-0.5 text-xs font-mono font-bold text-orange-700 dark:text-orange-200">⌘+Shift+R</kbd>
+                  )로 <span className="font-bold underline">강력 새로고침</span> 후 다시 시도해 주세요.
+                </p>
+              </div>
             </div>
 
             {/* 공모전 정보 요약 배너 */}
@@ -1417,10 +1425,10 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground">썸네일과 영상 파일을 업로드해 주세요</p>
                 </div>
               </div>
-              <div className="mb-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
-                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  업로드가 안 될 경우 <strong>페이지 새로고침(Ctrl+Shift+R)</strong> 후 다시 시도해 주세요.
+              <div className="mb-6 p-3 rounded-lg bg-orange-100 dark:bg-orange-950/40 border-2 border-orange-400 flex items-start gap-2">
+                <Info className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
+                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
+                  ⚠️ 업로드가 안 될 경우 <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd> (Mac: <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로 <strong className="underline">강력 새로고침</strong> 후 다시 시도해 주세요.
                 </p>
               </div>
               {isEditMode && existingSubmission ? (
@@ -1802,6 +1810,24 @@ export default function ContestSubmitPage() {
                 </label>
               </div>
               {fieldErrors.agree && <p className="text-xs text-red-500 mt-1 ml-8">{fieldErrors.agree}</p>}
+
+              {/* 개인 SNS 업로드 자제 안내 */}
+              <div className="mt-4 rounded-xl border-2 border-blue-400 bg-blue-50 dark:bg-blue-950/30 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-bold">!</div>
+                  <div>
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-100">📢 제출 작품 개인 SNS 업로드 자제 안내</p>
+                    <p className="mt-1.5 text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                      제출하신 작품은 <strong>공모전 페이지에 게시되어 대중평가(좋아요) 점수가 심사에 반영</strong>됩니다.
+                      수상 발표 전까지 동일한 영상을 <strong>개인 SNS에 업로드하시는 것을 자제</strong>해 주세요.
+                    </p>
+                    <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                      ※ 가산점 인증을 위한 포스터·링크 공유는 해당되지 않습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* 제출 버튼 */}
               {submitError && (
                 <p className="text-sm text-red-500 mt-4">{submitError}</p>

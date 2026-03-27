@@ -470,6 +470,20 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               </Card>
             )}
 
+            {/* 개인 SNS 업로드 자제 안내 */}
+            <Card className="p-6 border-2 border-blue-400 bg-blue-50 dark:bg-blue-950/30 space-y-3">
+              <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">📢 제출 작품 개인 SNS 업로드 자제 안내</h3>
+              <div className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed space-y-2">
+                <p>
+                  제출된 작품은 <strong>공모전 페이지에 게시되어 대중평가(좋아요) 점수가 심사에 반영</strong>됩니다.
+                  공정한 심사를 위해 수상 발표 전까지 동일한 영상을 <strong>개인 SNS에 업로드하시는 것을 자제</strong>해 주세요.
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-300">
+                  ※ 가산점 인증을 위한 공식 포스터·링크 공유는 해당되지 않습니다.
+                </p>
+              </div>
+            </Card>
+
             {/* 태그 */}
             <Card className="p-6 border border-border space-y-3">
               <h3 className="text-lg font-bold">태그</h3>
