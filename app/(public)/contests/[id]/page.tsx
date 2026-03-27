@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getContestById, getUserById, getRelatedContests } from '@/lib/data';
-import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon } from 'lucide-react';
+import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import type { AwardTier } from '@/lib/types';
@@ -261,7 +261,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           {/* 포스터 + 정보 2컬럼 레이아웃 */}
           <div className="flex flex-col lg:flex-row gap-8 items-start">
             {/* 좌측: 포스터 */}
-            <div className="w-full lg:w-80 shrink-0">
+            <div className="w-full lg:w-80 shrink-0 space-y-3">
               {contest.posterUrl ? (
                 <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4]">
                   <img
@@ -274,6 +274,18 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <div className="overflow-hidden rounded-xl bg-muted/50 border border-dashed border-border shadow-lg aspect-[3/4] flex items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
                 </div>
+              )}
+              {contest.posterUrl && (
+                <a
+                  href={contest.posterUrl}
+                  download={`${contest.title}_포스터`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-lg border border-border bg-background/80 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <Download className="h-4 w-4" />
+                  포스터 다운로드
+                </a>
               )}
             </div>
 
