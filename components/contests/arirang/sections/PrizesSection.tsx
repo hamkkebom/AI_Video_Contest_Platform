@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Trophy, Award, Medal, Star, Check, Gift, ChevronDown, ExternalLink } from 'lucide-react';
 import { useLang } from '@/components/contests/arirang/lang-context';
 import { t, translations } from '@/components/contests/arirang/translations';
@@ -294,9 +295,11 @@ export function PrizesSection() {
                             border: '1px solid rgba(212,168,67,0.15)',
                           }}
                         >
-                          <img
+                          <Image
                             src="/contests/arirang/hulbert.jpg"
                             alt={t(prizesTranslations, 'hulbertAlt', lang)}
+                            width={96}
+                            height={96}
                             className="w-24 h-24 rounded-full object-cover object-[center_15%] flex-shrink-0"
                             style={{ border: '2px solid rgba(212,168,67,0.3)' }}
                           />

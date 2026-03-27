@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Trophy, Film, Eye, Heart, Clock, ChevronRight, Pencil, CalendarDays } from 'lucide-react';
 import type { Contest, Submission, SubmissionStatus } from '@/lib/types';
 import { getSubmissions, getContests, getAuthProfile } from '@/lib/data';
@@ -144,10 +145,12 @@ export default async function MyContestsPage() {
                             {/* 썸네일 */}
                             <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
                               {submission.thumbnailUrl ? (
-                                <img
+                                <Image
                                   src={submission.thumbnailUrl}
                                   alt={submission.title}
-                                  className="h-full w-full object-cover"
+                                  fill
+                                  className="object-cover"
+                                  sizes="80px"
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">

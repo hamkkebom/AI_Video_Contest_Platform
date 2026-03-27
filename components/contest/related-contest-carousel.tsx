@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Carousel,
   CarouselContent,
@@ -83,10 +84,12 @@ export function RelatedContestCarousel({ contests }: RelatedContestCarouselProps
                   <Card className="border border-border overflow-hidden h-full hover:border-accent-foreground/40 hover:shadow-lg transition-all flex flex-col">
                     {/* 썸네일 */}
                     <div className="aspect-[4/3] overflow-hidden bg-muted relative">
-                      <img
+                      <Image
                         src={`/images/contest-${(index % 5) + 1}.jpg`}
                         alt={contest.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 50vw, 25vw"
                       />
                       <div className="absolute top-3 right-3">
                         <Badge className={statusMeta.className}>{statusMeta.label}</Badge>

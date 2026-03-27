@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Route } from 'next';
 import type { Contest, JudgingTemplate, Score, Submission } from '@/lib/types';
 import { ArrowLeft, CheckCircle2, MessageSquareText, Trophy } from 'lucide-react';
@@ -92,7 +93,9 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card className="border-border overflow-hidden">
-          <img src={data.submission.thumbnailUrl} alt={data.submission.title} className="h-64 w-full object-cover md:h-80" />
+          <div className="relative h-64 w-full md:h-80">
+            <Image src={data.submission.thumbnailUrl} alt={data.submission.title} fill className="object-cover" sizes="100vw" />
+          </div>
           <CardContent className="grid grid-cols-2 gap-4 p-5 text-sm md:grid-cols-4">
             <div>
               <p className="text-muted-foreground">조회수</p>

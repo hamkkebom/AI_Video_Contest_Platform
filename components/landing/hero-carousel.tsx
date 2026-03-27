@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Carousel,
@@ -132,10 +133,13 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
                 {/* 히어로 배경 이미지 — 포스터 URL 우선, 없으면 기본 이미지 */}
                 <div className="absolute inset-0 overflow-hidden">
                   {slide.imageUrl ? (
-                    <img
+                    <Image
                       src={slide.imageUrl}
                       alt=""
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                      priority
                       style={{
                         animation: `kenburns-${(index % 3) + 1} 20s ease-in-out infinite alternate`,
                       }}

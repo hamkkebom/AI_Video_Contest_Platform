@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -622,15 +623,17 @@ export default function ContestSubmitPage() {
       }
 
       if (!accessToken || !currentUser) {
-        /* 세션 복구 불가 → 로그인 페이지로 리다이렉트 (데이터 보존을 위해 안내 후 이동) */
+        /* 세션 복구 불가 → 깨진 세션 정리 후 로그인 페이지로 이동 */
         setIsSubmitting(false);
         setUploadStep(null);
         setErrorType('auth_expired');
         setSubmitError(
           '로그인 세션이 만료되어 다시 로그인이 필요합니다.\n\n' +
-          '작성하신 내용은 유지되지 않으니, 잠시 후 로그인 페이지로 이동합니다.'
+          '잠시 후 로그인 페이지로 이동합니다.'
         );
         await reportUploadError('auth', '세션 복구 실패 — 로그인 리다이렉트', 'AUTH-REDIRECT');
+        /* 깨진 세션 강제 정리 — 재로그인 시 새 토큰 발급 보장 */
+        try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => {
           router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
         }, 3000);
@@ -873,6 +876,8 @@ export default function ContestSubmitPage() {
           '다시 로그인 후 이 페이지로 돌아오면 업로드된 영상으로 이어서 제출할 수 있습니다.'
         );
         await reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
+        /* 깨진 세션 강제 정리 */
+        try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => {
           router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
         }, 4000);
@@ -1437,7 +1442,7 @@ export default function ContestSubmitPage() {
                     <p className="text-sm font-medium mb-3 text-muted-foreground">업로드된 파일 (수정 불가)</p>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="rounded-lg border border-border overflow-hidden">
-                        <img src={existingSubmission.thumbnailUrl} alt="썸네일" className="w-full h-32 object-cover" />
+                        <Image src={existingSubmission.thumbnailUrl} alt="썸네일" width={400} height={128} className="w-full h-32 object-cover" />
                         <div className="px-3 py-2 bg-muted/20">
                           <p className="text-xs text-muted-foreground">썸네일 이미지</p>
                         </div>

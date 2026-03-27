@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -115,13 +116,11 @@ export function SitePopup() {
               rel={currentPopup.linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
               className="block overflow-hidden cursor-pointer"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover transition-opacity hover:opacity-90" />
+              <Image src={currentPopup.imageUrl} alt={currentPopup.title} width={800} height={600} className="h-auto w-full object-cover transition-opacity hover:opacity-90" sizes="(max-width: 768px) 100vw, 50vw" />
             </a>
           ) : (
             <div className="overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentPopup.imageUrl} alt={currentPopup.title} className="h-auto w-full object-cover" />
+              <Image src={currentPopup.imageUrl} alt={currentPopup.title} width={800} height={600} className="h-auto w-full object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
             </div>
           )
         ) : null}

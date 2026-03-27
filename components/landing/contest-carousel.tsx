@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Carousel,
   CarouselContent,
@@ -85,10 +86,12 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
                   <Link href={`/contests/${contest.id}` as any}>
                     <div className="group border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-border/80 transition-all duration-200 cursor-pointer h-full will-change-[shadow] flex flex-col">
                       <div className="h-56 rounded-t-xl overflow-hidden relative">
-                        <img
+                        <Image
                           src={`/images/contest-${(index % 5) + 1}.jpg`}
                           alt={contest.title}
-                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 768px) 100vw, 33vw"
                         />
                         {/* D-day 뱃지 */}
                         {contest.status === 'open' && (() => {

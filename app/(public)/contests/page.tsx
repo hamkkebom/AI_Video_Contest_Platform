@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
 import { safeJsonLd } from '@/lib/utils';
 
@@ -315,10 +316,12 @@ export default async function ContestsPage({
                         {/* 왼쪽: 포스터 이미지 */}
                         <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
                           <div className="relative h-60 md:h-full min-h-[240px]">
-                            <img
+                            <Image
                               src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
                               alt={contest.title}
-                              className="absolute inset-0 w-full h-full object-cover"
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 50vw"
                             />
                             {/* 상태 뱃지: open이지만 시작 전이면 접수전(초록) */}
                             <div className="absolute top-4 left-4">
@@ -412,10 +415,12 @@ export default async function ContestsPage({
                     <Link key={contest.id} href={`/contests/${contest.id}` as any} className="group relative block">
                       <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
-                        <img
+                        <Image
                           src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
                           alt={contest.title}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 768px) 100vw, 50vw"
                         />
                         {/* 상태 뱃지 */}
                         <div className="absolute top-[18px] right-3 z-10">

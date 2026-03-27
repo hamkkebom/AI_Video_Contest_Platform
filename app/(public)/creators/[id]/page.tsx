@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -277,11 +278,13 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
 
                 return (
                   <Card key={submission.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div className="aspect-video bg-muted overflow-hidden">
-                      <img
+                    <div className="aspect-video bg-muted overflow-hidden relative">
+                      <Image
                         src={`/images/contest-${(index % 5) + 1}.jpg`}
                         alt={submission.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     </div>
                     <div className="p-4 space-y-3">

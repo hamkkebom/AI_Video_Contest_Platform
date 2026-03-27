@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -118,11 +119,15 @@ export default async function HostContestSubmissionsPage({ params, searchParams 
                         <TableRow key={submission.id}>
                           <TableCell>
                             <div className="flex min-w-[260px] items-center gap-3">
-                              <img
-                                src={submission.thumbnailUrl}
-                                alt={submission.title}
-                                className="h-14 w-24 rounded-md border border-border object-cover"
-                              />
+                              <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md border border-border">
+                                <Image
+                                  src={submission.thumbnailUrl}
+                                  alt={submission.title}
+                                  fill
+                                  className="object-cover"
+                                  sizes="80px"
+                                />
+                              </div>
                               <div className="min-w-0">
                                 <p className="truncate font-semibold text-foreground">{submission.title}</p>
                                 <p className="line-clamp-1 text-xs text-muted-foreground">{submission.description}</p>
