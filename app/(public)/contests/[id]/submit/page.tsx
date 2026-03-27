@@ -1203,6 +1203,17 @@ export default function ContestSubmitPage() {
         <div className="container mx-auto max-w-3xl relative z-10">
           <form onSubmit={handleSubmit} className="space-y-8">
 
+            {/* 업로드 오류 시 새로고침 안내 배너 */}
+            <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3 text-sm shadow-sm">
+              <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
+                <span className="font-bold">업로드 오류가 발생하면</span>{' '}
+                <kbd className="inline-flex items-center gap-0.5 rounded border border-amber-300 dark:border-amber-600 bg-white/60 dark:bg-white/10 px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd>{' '}
+                (Mac: <kbd className="inline-flex items-center gap-0.5 rounded border border-amber-300 dark:border-amber-600 bg-white/60 dark:bg-white/10 px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로{' '}
+                <span className="font-bold">강력 새로고침</span> 후 다시 시도해 주세요.
+              </p>
+            </div>
+
             {/* 공모전 정보 요약 배너 */}
             <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-border/50 p-4 sm:p-6 md:p-8 shadow-sm backdrop-blur-xl mb-6 sm:mb-8 transition-colors">
               <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
