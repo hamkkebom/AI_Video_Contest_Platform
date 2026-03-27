@@ -5,18 +5,18 @@
  *
  * 세션 정책:
  * - sessionStorage 기반 → 브라우저/탭 닫으면 토큰 소멸
- * - 쿠키 maxAge 1시간 (middleware에서 강제) → 1시간 후 자동 만료
+ * - JWT Expiry 7일 (Supabase 대시보드 설정)
+ * - 쿠키 maxAge 7일 (middleware에서 슬라이딩 연장)
+ * - 비활동 타임아웃 24시간 (SessionTimeoutGuard)
  */
 import { createBrowserClient } from '@supabase/ssr';
 
-/** 세션 타임아웃 시간 (초) — 1시간 (SessionTimeoutGuard에서 사용) */
-export const SESSION_MAX_AGE = 3600;
+/** 비활동 세션 타임아웃 (초) — 24시간 (SessionTimeoutGuard에서 사용) */
+export const SESSION_MAX_AGE = 24 * 3600;
 
 /**
  * 쿠키 유효기간 (초) — 7일
- * access_token(1시간)과 별개로 refresh_token을 보존해야
- * refreshSession()으로 새 access_token 발급이 가능하다.
- * SESSION_MAX_AGE(1시간)로 하면 refresh_token까지 동시에 소멸되어 복구 불가.
+ * JWT Expiry(7일)와 맞춰서 refresh_token을 보존.
  */
 export const COOKIE_MAX_AGE = 7 * 24 * 3600;
 
