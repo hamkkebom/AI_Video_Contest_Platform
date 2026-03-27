@@ -74,6 +74,19 @@ export async function updateSession(request: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
     user = session?.user ?? null;
   }
+
+  /* 깨진 세션 자동 정리: 쿠키는 있지만 유저 인증 불가 → 쿠키 강제 삭제
+     → 다음 요청 시 미로그인 → 보호 페이지면 자동 로그인 리다이렉트
+     → 사용자가 로그아웃 안 해도 새 세션 발급됨 */
+  const hasAuthCookies = request.cookies.getAll().some(c => c.name.startsWith('sb-'));
+  if (hasAuthCookies && !user) {
+    const expiredOptions = { path: '/', maxAge: 0 } as const;
+    for (const cookie of request.cookies.getAll()) {
+      if (cookie.name.startsWith('sb-')) {
+        supabaseResponse.cookies.set(cookie.name, '', expiredOptions);
+      }
+    }
+  }
   /* ====== 라우트 가드: 보호 경로 미인증 시 /login 리다이렉트 ====== */
   const { pathname } = request.nextUrl;
 
