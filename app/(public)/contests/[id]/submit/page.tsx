@@ -616,6 +616,9 @@ export default function ContestSubmitPage() {
       });
       if (initResult.ok) {
         accessToken = initResult.accessToken;
+      } else {
+        /* 갱신 실패 시 기존 토큰도 무효화 — 만료된 토큰으로 진행 방지 */
+        accessToken = undefined;
       }
 
       if (!accessToken || !currentUser) {
