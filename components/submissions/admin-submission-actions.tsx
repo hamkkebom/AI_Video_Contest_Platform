@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ImageIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { refreshAccessToken } from '@/lib/supabase/refresh-token';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -276,19 +277,15 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         setUploadProgress(0);
 
         const supabase = createBrowserClient()!;
-        let accessToken: string | undefined;
-        try {
-          const refreshResult = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-          ]);
-          if (refreshResult && 'data' in refreshResult) {
-            accessToken = refreshResult.data.session?.access_token;
-          }
-        } catch { /* 타임아웃 시 무시 */ }
-        if (!accessToken) {
+        const tokenResult = await refreshAccessToken(supabase, {
+          maxRetries: 2,
+          timeoutMs: 10000,
+          log: (msg) => console.log(`[출품작 수정] ${msg}`),
+        });
+        if (!tokenResult.ok) {
           throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침해 주세요.');
         }
+        const accessToken = tokenResult.accessToken;
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;

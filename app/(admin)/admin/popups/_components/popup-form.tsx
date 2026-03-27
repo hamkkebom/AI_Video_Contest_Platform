@@ -24,6 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { Popup, PopupMutationInput, PopupStatus } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { refreshAccessToken } from '@/lib/supabase/refresh-token';
 import { Upload, X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 type PopupFormMode = 'create' | 'edit';
@@ -53,15 +54,17 @@ async function uploadPopupImage(
   const supabase = createBrowserClient();
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
-  /* getSession() + 5초 타임아웃 — hang 방지 */
-  const refreshResult = await Promise.race([
-    supabase.auth.getSession(),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-  ]);
-  const session = refreshResult && 'data' in refreshResult ? refreshResult.data.session : null;
+  /* refreshAccessToken으로 토큰 갱신 (getSession만으로는 만료 토큰 반환 가능) */
+  const tokenResult = await refreshAccessToken(supabase, {
+    maxRetries: 2,
+    timeoutMs: 10000,
+    log: (msg) => console.log(`[팝업 이미지] ${msg}`),
+  });
+  if (!tokenResult.ok) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
+  const accessToken = tokenResult.accessToken;
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
-  if (!user || !session?.access_token) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
-  const accessToken = session.access_token;
+  if (!user) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
 
   /* 이미지 검증: 10MB 제한, JPEG/PNG/WebP/GIF */
   const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
