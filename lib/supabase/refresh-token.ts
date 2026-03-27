@@ -1,12 +1,11 @@
 /**
  * 견고한 토큰 갱신 유틸리티
  *
- * 전략:
- * 1) getSession — 클라이언트 캐시에서 유효한 토큰 확인
- * 2) 서버 API (/api/auth/refresh-token) — middleware가 쿠키 기반으로 갱신
- *    → 클라이언트 refreshSession()과 middleware의 refresh_token 회전 충돌 방지
- * 3) refreshSession (폴백) — 서버 API 실패 시 클라이언트 직접 갱신
- * 4) 최대 N회 재시도 + 백오프
+ * 전략 (navigator.locks 데드락 방지를 위해 서버 API 최우선):
+ * 1) 서버 API (/api/auth/refresh-token) — middleware가 쿠키 기반으로 갱신
+ *    → getSession/refreshSession의 navigator.locks 데드락 회피
+ * 2) refreshSession (폴백) — 서버 API 실패 시 클라이언트 직접 갱신
+ * 3) 최대 N회 재시도 + 백오프
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -43,10 +42,9 @@ function isTokenExpired(token: string, marginSeconds = 60): boolean {
 /**
  * Supabase 세션에서 유효한(만료되지 않은) access_token을 가져온다.
  *
- * 1) getSession으로 캐시된 토큰 확인 → 만료 안 됐으면 즉시 반환
- * 2) 서버 API로 토큰 갱신 (middleware 경유, refresh_token 회전 충돌 방지)
- * 3) 서버 API 실패 시 클라이언트 refreshSession 폴백
- * 4) 실패 시 최대 maxRetries회 재시도 + 백오프
+ * 1) 서버 API로 토큰 갱신 (navigator.locks 불필요, 데드락 회피)
+ * 2) 서버 API 실패 시 클라이언트 refreshSession 폴백
+ * 3) 실패 시 최대 maxRetries회 재시도 + 백오프
  */
 export async function refreshAccessToken(
   supabase: SupabaseClient,
@@ -70,34 +68,8 @@ export async function refreshAccessToken(
   }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    /* 1) getSession — 캐시된 토큰이 아직 유효한지 확인 */
-    try {
-      log(`[${attempt}/${maxRetries}] getSession 호출 중...`);
-      const result = await raceTimeout(supabase.auth.getSession(), timeoutMs);
-
-      if (!result) {
-        log(`[${attempt}/${maxRetries}] getSession ${timeoutMs}ms 타임아웃`);
-      } else {
-        const cachedToken = 'data' in result ? result.data.session?.access_token : null;
-        const hasSession = 'data' in result ? !!result.data.session : false;
-
-        if (cachedToken && !isTokenExpired(cachedToken)) {
-          log(`[${attempt}/${maxRetries}] getSession 성공 — 토큰 유효`);
-          return { accessToken: cachedToken, ok: true };
-        }
-
-        if (cachedToken) {
-          log(`[${attempt}/${maxRetries}] getSession 토큰 만료됨 — 서버 갱신 진행`);
-        } else {
-          log(`[${attempt}/${maxRetries}] getSession 세션 없음 (session=${hasSession}) — 서버 갱신 진행`);
-        }
-      }
-    } catch (e) {
-      log(`[${attempt}/${maxRetries}] getSession 예외: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    /* 2) 서버 API로 토큰 갱신 — middleware가 쿠키 기반으로 처리하므로
-          클라이언트 refreshSession()과의 refresh_token 회전 충돌을 방지한다. */
+    /* 1) 서버 API로 토큰 갱신 (최우선) — navigator.locks 데드락 회피
+          middleware가 쿠키 기반으로 처리하므로 클라이언트 lock 불필요 */
     try {
       log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 호출 중...`);
       const serverResult = await raceTimeout(
@@ -114,10 +86,7 @@ export async function refreshAccessToken(
         const serverToken = serverResult.body.accessToken as string;
         if (!isTokenExpired(serverToken)) {
           log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 성공`);
-          /* 클라이언트 세션 동기화: 서버가 쿠키를 갱신했으므로 다시 읽기 */
-          try {
-            await supabase.auth.getSession();
-          } catch { /* 동기화 실패해도 serverToken은 유효 */ }
+          /* getSession() 재호출 제거 — navigator.locks 데드락 방지 */
           return { accessToken: serverToken, ok: true };
         }
         log(`[${attempt}/${maxRetries}] 서버 API 토큰이 이미 만료됨`);
