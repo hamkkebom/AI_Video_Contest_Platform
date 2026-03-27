@@ -56,11 +56,24 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  /* 세션 갱신 (쿠키에서 읽기 — HTTP 호출 없음)
-     getUser()는 Supabase Auth 서버에 HTTP 요청을 보내 hang 위험이 있으므로
-     getSession()으로 쿠키 기반 세션 확인만 수행한다. */
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  /* 세션 갱신: getUser()로 서버 검증 + 자동 토큰 갱신 (5초 타임아웃)
+     getUser()는 만료된 토큰을 자동으로 갱신해주지만 hang 위험이 있어 타임아웃 적용.
+     타임아웃 시 getSession() 폴백 (캐시된 세션, 갱신 없음). */
+  let user: { id: string; email?: string } | null = null;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ]);
+    if (result && 'data' in result) {
+      user = result.data.user;
+    }
+  } catch { /* getUser 실패 시 폴백 */ }
+  /* getUser() 실패/타임아웃 시 getSession() 폴백 */
+  if (!user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    user = session?.user ?? null;
+  }
   /* ====== 라우트 가드: 보호 경로 미인증 시 /login 리다이렉트 ====== */
   const { pathname } = request.nextUrl;
 
