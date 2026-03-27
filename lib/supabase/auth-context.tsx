@@ -314,25 +314,27 @@ function AuthProviderInner({
   }, [supabase]);
 
   useEffect(() => {
-    /* 초기 세션 동기화 — refreshSession()으로 만료 토큰 자동 갱신 */
+    /* 초기 세션 동기화 — getSession() 우선, 만료된 경우에만 refreshSession() 시도 */
     const initAuth = async () => {
       try {
-        // refreshSession()으로 토큰 갱신 시도 → 실패 시 getSession() 폴백
-        let currentSession: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
-        try {
-          const { data: refreshData } = await Promise.race([
-            supabase.auth.refreshSession(),
-            new Promise<{ data: { session: null } }>((resolve) =>
-              setTimeout(() => resolve({ data: { session: null } }), 5000)
-            ),
-          ]);
-          currentSession = refreshData?.session ?? null;
-        } catch {
-          // refreshSession 실패 시 getSession 폴백
-        }
-        if (!currentSession) {
-          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
-          currentSession = fallbackSession;
+        // 1) getSession()으로 현재 쿠키에서 세션 읽기 (빠르고 안전)
+        const { data: { session: cachedSession } } = await supabase.auth.getSession();
+        let currentSession = cachedSession;
+
+        // 2) 세션은 있지만 토큰 만료 임박(5분 이내)이면 갱신 시도
+        if (currentSession?.expires_at) {
+          const expiresIn = currentSession.expires_at - Math.floor(Date.now() / 1000);
+          if (expiresIn < 300) {
+            try {
+              const { data: refreshData } = await Promise.race([
+                supabase.auth.refreshSession(),
+                new Promise<{ data: { session: null } }>((resolve) =>
+                  setTimeout(() => resolve({ data: { session: null } }), 5000)
+                ),
+              ]);
+              if (refreshData?.session) currentSession = refreshData.session;
+            } catch { /* 갱신 실패해도 기존 세션 유지 */ }
+          }
         }
         setSession(currentSession);
 
