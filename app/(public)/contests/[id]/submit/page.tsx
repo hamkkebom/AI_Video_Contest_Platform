@@ -640,9 +640,13 @@ export default function ContestSubmitPage() {
 
       /* ── 사전 검증: 업로드 전 공모전 상태/쿼터 확인 (Critical #1) ── */
       try {
+        const preCheckCtrl = new AbortController();
+        const preCheckTimeout = setTimeout(() => preCheckCtrl.abort(), 10_000);
         const preCheckRes = await fetch(`/api/submissions/pre-check?contestId=${contestId}`, {
           headers: { 'Content-Type': 'application/json' },
+          signal: preCheckCtrl.signal,
         });
+        clearTimeout(preCheckTimeout);
         if (!preCheckRes.ok) {
           const preCheckData = await preCheckRes.json().catch(() => ({ error: '사전 검증 실패' }));
           const code = preCheckData.code;
