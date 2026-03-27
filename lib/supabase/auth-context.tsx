@@ -314,11 +314,26 @@ function AuthProviderInner({
   }, [supabase]);
 
   useEffect(() => {
-    /* 초기 세션 동기화 */
+    /* 초기 세션 동기화 — refreshSession()으로 만료 토큰 자동 갱신 */
     const initAuth = async () => {
       try {
-        // getSession()은 쿠키에서 읽기 — 세션 객체 동기화용
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        // refreshSession()으로 토큰 갱신 시도 → 실패 시 getSession() 폴백
+        let currentSession: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
+        try {
+          const { data: refreshData } = await Promise.race([
+            supabase.auth.refreshSession(),
+            new Promise<{ data: { session: null } }>((resolve) =>
+              setTimeout(() => resolve({ data: { session: null } }), 5000)
+            ),
+          ]);
+          currentSession = refreshData?.session ?? null;
+        } catch {
+          // refreshSession 실패 시 getSession 폴백
+        }
+        if (!currentSession) {
+          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+          currentSession = fallbackSession;
+        }
         setSession(currentSession);
 
         if (hasServerStateRef.current) {

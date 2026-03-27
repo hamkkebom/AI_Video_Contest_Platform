@@ -124,6 +124,30 @@ export default function ContestSubmitPage() {
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
+  /* 페이지 진입 시 자동 토큰 갱신 — 깨진 세션 자동 복구 */
+  useEffect(() => {
+    if (!authSession?.access_token) return;
+    const autoRefresh = async () => {
+      try {
+        const supabase = createBrowserClient()!;
+        const result = await refreshAccessToken(supabase, {
+          maxRetries: 2,
+          timeoutMs: 8000,
+          log: (msg) => console.log(`[자동갱신] ${msg}`),
+        });
+        if (!result.ok) {
+          console.warn('[자동갱신] 토큰 갱신 실패 — 자동 재로그인 진행');
+          await supabase.auth.signOut();
+          window.location.href = `/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`;
+        }
+      } catch {
+        console.warn('[자동갱신] 예외 발생');
+      }
+    };
+    autoRefresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* #10: 업로드 중 탭 닫기 경고 */
   useEffect(() => {
     if (!isSubmitting) return;
