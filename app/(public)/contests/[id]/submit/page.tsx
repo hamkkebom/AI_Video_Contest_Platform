@@ -499,8 +499,21 @@ export default function ContestSubmitPage() {
         );
 
         if (editBonusFormEntries.length > 0) {
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          if (!supabaseUrl || !anonKey) {
+            throw new Error('서버 설정 오류가 발생했습니다. 관리자에게 문의해 주세요.');
+          }
+
+          /* 이미지 업로드 직전 토큰 한 번 더 갱신 (만료 방지) */
+          try {
+            const imgRefresh = await refreshAccessToken(supabase, {
+              maxRetries: 2,
+              timeoutMs: 10000,
+              log: (msg) => console.log(`[수정:이미지] ${msg}`),
+            });
+            if (imgRefresh.ok) accessToken = imgRefresh.accessToken;
+          } catch { /* 갱신 실패 시 기존 토큰으로 시도 */ }
 
           for (const [configId, entry] of editBonusFormEntries) {
             let proofImageUrl: string | undefined;
