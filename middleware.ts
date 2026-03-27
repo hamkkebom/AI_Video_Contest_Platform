@@ -1,7 +1,13 @@
-import { type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
+  /* 토큰 갱신 전용 API는 middleware 건너뛰기
+     — middleware가 refresh_token을 소비하면
+       Route Handler의 refreshSession()과 충돌하여 갱신 실패 */
+  if (request.nextUrl.pathname === '/api/auth/refresh-token') {
+    return NextResponse.next();
+  }
   return await updateSession(request);
 }
 
