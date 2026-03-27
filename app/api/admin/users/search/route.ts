@@ -41,12 +41,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ users: [] });
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .or(`name.ilike.%${query}%,nickname.ilike.%${query}%,email.ilike.%${query}%`)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  /* 이메일 전체 검색 vs 이름/닉네임 검색 분리 (특수문자 안전 처리) */
+  let data: Record<string, unknown>[] | null = null;
+  let error: { message: string } | null = null;
+
+  if (query.includes('@')) {
+    /* 이메일 검색: @ 포함 시 email 필드만 정확히 검색 */
+    const result = await supabase
+      .from('profiles')
+      .select('*')
+      .ilike('email', `%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    data = result.data;
+    error = result.error;
+  } else {
+    /* 이름/닉네임/이메일 접두어 검색 */
+    const result = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`name.ilike.%${query}%,nickname.ilike.%${query}%,email.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    data = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error('[GET /api/admin/users/search] 검색 실패:', error.message);
