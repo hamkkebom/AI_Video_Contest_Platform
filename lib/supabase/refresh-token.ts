@@ -114,8 +114,10 @@ export async function refreshAccessToken(
         const serverToken = serverResult.body.accessToken as string;
         if (!isTokenExpired(serverToken)) {
           log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 성공`);
-          /* 클라이언트 Supabase 인스턴스의 세션도 동기화 */
-          await supabase.auth.getSession(); // 쿠키에서 최신 세션 다시 읽기
+          /* 클라이언트 세션 동기화: 서버가 쿠키를 갱신했으므로 다시 읽기 */
+          try {
+            await supabase.auth.getSession();
+          } catch { /* 동기화 실패해도 serverToken은 유효 */ }
           return { accessToken: serverToken, ok: true };
         }
         log(`[${attempt}/${maxRetries}] 서버 API 토큰이 이미 만료됨`);

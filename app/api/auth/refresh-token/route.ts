@@ -43,29 +43,42 @@ export async function POST() {
     },
   });
 
-  /* getUser()는 Supabase Auth 서버에 검증 요청 → 세션이 유효하면 갱신된 토큰 반환 */
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  /* 1차: refreshSession()으로 직접 토큰 갱신 (가장 확실) */
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
 
-  if (userError || !user) {
-    return NextResponse.json(
-      { error: '세션이 만료되었습니다.', ok: false },
-      { status: 401 },
-    );
+  if (refreshData?.session?.access_token) {
+    return NextResponse.json({
+      ok: true,
+      accessToken: refreshData.session.access_token,
+      expiresAt: refreshData.session.expires_at,
+    });
   }
 
-  /* getUser 성공 후 getSession으로 최신 access_token 읽기 */
+  /* 2차: refreshSession 실패 시 getSession으로 기존 유효 토큰 확인 */
   const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    return NextResponse.json(
-      { error: '토큰을 가져올 수 없습니다.', ok: false },
-      { status: 401 },
-    );
+  if (session?.access_token) {
+    return NextResponse.json({
+      ok: true,
+      accessToken: session.access_token,
+      expiresAt: session.expires_at,
+    });
   }
 
-  return NextResponse.json({
-    ok: true,
-    accessToken: session.access_token,
-    expiresAt: session.expires_at,
-  });
+  /* 3차: getUser()로 서버 검증 후 다시 getSession */
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!userError && user) {
+    const { data: { session: retrySession } } = await supabase.auth.getSession();
+    if (retrySession?.access_token) {
+      return NextResponse.json({
+        ok: true,
+        accessToken: retrySession.access_token,
+        expiresAt: retrySession.expires_at,
+      });
+    }
+  }
+
+  return NextResponse.json(
+    { error: refreshError?.message ?? '세션 갱신에 실패했습니다.', ok: false },
+    { status: 401 },
+  );
 }
