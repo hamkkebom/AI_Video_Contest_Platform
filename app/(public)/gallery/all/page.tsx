@@ -17,8 +17,6 @@ export const metadata: Metadata = {
 };
 import { getGallerySubmissions } from '@/lib/data';
 import { SearchInput } from '@/components/ui/search-input';
-import { DateRangeFilter } from './date-range-filter';
-import { DurationFilter } from './duration-filter';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -29,39 +27,39 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'
 export default async function GalleryAllPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; search?: string; from?: string; to?: string; minDur?: string; maxDur?: string }>;
+  searchParams: Promise<{ sort?: string; search?: string; period?: string }>;
 }) {
   const allSubmissions = await getGallerySubmissions();
-  const { sort, search, from, to, minDur, maxDur } = await searchParams;
+  const { sort, search, period } = await searchParams;
 
   const currentSort = sort || 'oldest';
 
   // 검색 필터링
   const searchFiltered = search
-    ? allSubmissions.filter(s =>
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase()) ||
-      s.creatorName.toLowerCase().includes(search.toLowerCase())
-    )
+    ? allSubmissions.filter(s => {
+      const q = search.toLowerCase();
+      return (
+        s.title.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.creatorName.toLowerCase().includes(q) ||
+        (s.submitterName && s.submitterName.toLowerCase().includes(q))
+      );
+    })
     : allSubmissions;
-  // 시간대 + 영상 길이 필터링
-  const minDurSec = minDur ? Number(minDur) : 0;
-  const maxDurSec = maxDur ? Number(maxDur) : Infinity;
-  const timeFiltered = searchFiltered.filter(s => {
-    const date = new Date(s.submittedAt);
-    if (from && date < new Date(from)) return false;
-    if (to) {
-      const toEnd = new Date(to);
-      toEnd.setHours(23, 59, 59, 999);
-      if (date > toEnd) return false;
-    }
-    if (s.videoDuration < minDurSec) return false;
-    if (s.videoDuration > maxDurSec) return false;
-    return true;
-  });
+
+  // 기간 필터링
+  const periodFiltered = period
+    ? searchFiltered.filter(s => {
+      const days = Number(period);
+      if (!days || days <= 0) return true;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      return new Date(s.submittedAt) >= cutoff;
+    })
+    : searchFiltered;
 
   // 정렬
-  const sortedSubmissions = [...timeFiltered].sort((a, b) => {
+  const sortedSubmissions = [...periodFiltered].sort((a, b) => {
     switch (currentSort) {
       case 'oldest':
         return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
@@ -131,8 +129,7 @@ export default async function GalleryAllPage({
                 const params = new URLSearchParams();
                 params.set('sort', tab.id);
                 if (search) params.set('search', search);
-                if (from) params.set('from', from);
-                if (to) params.set('to', to);
+                if (period) params.set('period', period);
                 return (
                   <Link key={tab.id} href={`/gallery/all?${params.toString()}`} scroll={false}>
                     <button
@@ -147,14 +144,37 @@ export default async function GalleryAllPage({
                   </Link>
                 );
               })}
-              {/* 기간 필터 */}
-              <DateRangeFilter from={from} to={to} />
-              {/* 영상 길이 필터 */}
-              <DurationFilter minDur={minDur} maxDur={maxDur} />
+              {/* 기간 드롭다운 */}
+              {[
+                { id: '', label: '전체' },
+                { id: '7', label: '최근 1주' },
+                { id: '14', label: '최근 2주' },
+                { id: '21', label: '최근 3주' },
+                { id: '30', label: '최근 1개월' },
+                { id: '60', label: '최근 2개월' },
+              ].map((opt) => {
+                const params = new URLSearchParams();
+                params.set('sort', currentSort);
+                if (search) params.set('search', search);
+                if (opt.id) params.set('period', opt.id);
+                return (
+                  <Link key={opt.id} href={`/gallery/all?${params.toString()}`} scroll={false}>
+                    <button
+                      type="button"
+                      className={`px-3 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${(period || '') === opt.id
+                        ? 'text-orange-600 font-bold bg-orange-500/10'
+                        : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  </Link>
+                );
+              })}
             </div>
 
             {/* 검색 입력 */}
-            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ sort: currentSort, ...(from ? { from } : {}), ...(to ? { to } : {}) }} placeholder="작품 검색..." />
+            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ sort: currentSort, ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
           </div>
         </div>
       </section>
