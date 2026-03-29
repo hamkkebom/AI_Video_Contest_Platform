@@ -7,11 +7,12 @@ import { REVIEW_TABS } from '@/config/constants';
 import { getAdminSubmissions, getContestById, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { SearchInput } from '@/components/ui/search-input';
 import { formatDateTime } from '@/lib/utils';
 
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; sort?: string }>;
+  searchParams: Promise<{ tab?: string; sort?: string; search?: string }>;
 };
 
 /** 제출물 상태별 뱃지 스타일 (hover 반전 포함) */
@@ -40,9 +41,10 @@ const VALID_TABS = ['all', ...REVIEW_TABS.map((t) => t.value)];
 export default async function AdminContestSubmissionsPage({ params, searchParams }: ContestSubmissionsPageProps) {
   try {
     const { id } = await params;
-    const { tab, sort } = await searchParams;
+    const { tab, sort, search } = await searchParams;
     const activeTab = VALID_TABS.includes(tab ?? '') ? tab! : 'all';
     const activeSort = sort === 'newest' ? 'newest' : 'oldest';
+    const searchQuery = search?.trim().toLowerCase() || '';
 
     const [allSubmissions, contest] = await Promise.all([
       getAdminSubmissions({ contestId: id }),
@@ -66,9 +68,23 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     }
 
     /* 탭 필터링 */
-    const filteredSubmissions = activeTab === 'all'
+    let filteredSubmissions = activeTab === 'all'
       ? [...allSubmissions]
       : allSubmissions.filter((s) => s.status === activeTab);
+
+    /* 검색 필터링 (제목, 제출자 이름, 닉네임) */
+    if (searchQuery) {
+      filteredSubmissions = filteredSubmissions.filter((s) => {
+        const creator = usersMap.get(s.userId);
+        return (
+          s.title.toLowerCase().includes(searchQuery) ||
+          (s.submitterName && s.submitterName.toLowerCase().includes(searchQuery)) ||
+          (creator?.name && creator.name.toLowerCase().includes(searchQuery)) ||
+          (creator?.nickname && creator.nickname.toLowerCase().includes(searchQuery)) ||
+          (creator?.email && creator.email.toLowerCase().includes(searchQuery))
+        );
+      });
+    }
 
     /* 정렬 */
     filteredSubmissions.sort((a, b) => {
@@ -77,20 +93,22 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
       return activeSort === 'newest' ? dateB - dateA : dateA - dateB;
     });
 
-    /** 탭 URL 빌더 (현재 정렬 유지) */
+    /** 탭 URL 빌더 (현재 정렬+검색 유지) */
     const buildTabUrl = (tabValue: string) => {
       const p = new URLSearchParams();
       if (tabValue !== 'all') p.set('tab', tabValue);
       if (activeSort !== 'oldest') p.set('sort', activeSort);
+      if (searchQuery) p.set('search', searchQuery);
       const qs = p.toString();
       return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
     };
 
-    /** 정렬 URL 빌더 (현재 탭 유지) */
+    /** 정렬 URL 빌더 (현재 탭+검색 유지) */
     const buildSortUrl = (sortValue: string) => {
       const p = new URLSearchParams();
       if (activeTab !== 'all') p.set('tab', activeTab);
       if (sortValue !== 'oldest') p.set('sort', sortValue);
+      if (searchQuery) p.set('search', searchQuery);
       const qs = p.toString();
       return `/admin/contests/${id}/submissions${qs ? `?${qs}` : ''}` as Route;
     };
@@ -157,11 +175,23 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
               <h2 className="text-lg font-bold">출품 영상 목록</h2>
               <p className="text-sm text-muted-foreground">
                 {activeTabLabel} <span className="font-bold text-primary">{filteredSubmissions.length}</span>건
+                {searchQuery && (
+                  <span className="ml-2">
+                    · &apos;<span className="text-foreground font-semibold">{searchQuery}</span>&apos; 검색 결과
+                  </span>
+                )}
               </p>
             </div>
 
-            {/* 정렬 */}
-            <div className="flex items-center gap-1.5">
+            {/* 검색 + 정렬 */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <SearchInput
+                basePath={`/admin/contests/${id}/submissions`}
+                currentSearch={searchQuery}
+                extraParams={{ ...(activeTab !== 'all' ? { tab: activeTab } : {}), ...(activeSort !== 'oldest' ? { sort: activeSort } : {}) }}
+                placeholder="제목, 이름, 닉네임 검색..."
+              />
+              <div className="flex items-center gap-1.5">
               <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
               <Link href={buildSortUrl('newest')} scroll={false}>
                 <Button
@@ -183,6 +213,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                   오래된순
                 </Button>
               </Link>
+              </div>
             </div>
           </div>
 
