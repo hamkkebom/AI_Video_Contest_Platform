@@ -321,7 +321,7 @@ function AuthProviderInner({
         const { data: { session: cachedSession } } = await supabase.auth.getSession();
         let currentSession = cachedSession;
 
-        // 2) 세션은 있지만 토큰 만료 임박(5분 이내)이면 갱신 시도
+        // 2) 세션은 있지만 토큰이 이미 만료되었거나 임박(5분 이내)이면 갱신 시도
         if (currentSession?.expires_at) {
           const expiresIn = currentSession.expires_at - Math.floor(Date.now() / 1000);
           if (expiresIn < 300) {
@@ -332,8 +332,21 @@ function AuthProviderInner({
                   setTimeout(() => resolve({ data: { session: null } }), 5000)
                 ),
               ]);
-              if (refreshData?.session) currentSession = refreshData.session;
-            } catch { /* 갱신 실패해도 기존 세션 유지 */ }
+              if (refreshData?.session) {
+                currentSession = refreshData.session;
+              } else if (expiresIn <= 0) {
+                // 이미 만료 + 갱신 실패 → 강제 로그아웃 (깨진 세션 정리)
+                console.warn('[AuthContext] 만료된 세션 갱신 실패 — 자동 로그아웃');
+                await supabase.auth.signOut();
+                currentSession = null;
+              }
+            } catch {
+              if (expiresIn <= 0) {
+                console.warn('[AuthContext] 만료된 세션 예외 — 자동 로그아웃');
+                await supabase.auth.signOut();
+                currentSession = null;
+              }
+            }
           }
         }
         setSession(currentSession);

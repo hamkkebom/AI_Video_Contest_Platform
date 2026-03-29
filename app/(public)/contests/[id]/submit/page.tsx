@@ -137,7 +137,18 @@ export default function ContestSubmitPage() {
           log: (msg) => console.log(`[자동갱신] ${msg}`),
         });
         if (!result.ok) {
-          console.warn('[자동갱신] 토큰 갱신 실패 — 경고만 표시 (signOut 안 함)');
+          console.warn('[자동갱신] 토큰 갱신 실패 — 강제 로그아웃 후 재로그인');
+          await supabase.auth.signOut();
+          /* 쿠키까지 완전 삭제 */
+          document.cookie.split(';').forEach(c => {
+            const name = c.trim().split('=')[0];
+            if (name.startsWith('sb-')) {
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+            }
+          });
+          window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}&reason=session_expired`;
+          return;
         }
       } catch {
         console.warn('[자동갱신] 예외 발생');
