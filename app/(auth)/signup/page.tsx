@@ -1,14 +1,11 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import type { Route } from 'next';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Suspense, useState, type FormEvent } from 'react';
-import { TreePine, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
+import { Suspense, useState } from 'react';
+import { TreePine, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 
 /**
@@ -30,83 +27,14 @@ export default function SignupPage() {
  * useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링
  */
 function SignupForm() {
-  const { signInWithGoogle, signUpWithEmail } = useAuth();
-  const router = useRouter();
+  const { signInWithGoogle } = useAuth();
 
   /* URL에서 redirect 파라미터 읽기 (가입 후 돌아갈 경로) */
   const searchParams = useSearchParams();
   const redirectToParam = searchParams.get('redirectTo') || searchParams.get('redirect');
   const redirectTo = redirectToParam?.startsWith('/') ? redirectToParam : '/';
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  /* 이메일 인증 대기 화면 표시 여부 */
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
-
-  /* 전화번호 입력 시 자동 하이픈 포맷 */
-  const handlePhoneChange = (value: string) => {
-    const digits = value.replace(/[^0-9]/g, '');
-    let formatted = digits;
-    if (digits.length > 3 && digits.length <= 7) {
-      formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
-    } else if (digits.length > 7) {
-      formatted = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
-    }
-    setPhone(formatted);
-  };
-
-  /* 이메일/비밀번호 회원가입 */
-  const handleEmailSignup = async (e: FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    /* 클라이언트 검증 */
-    if (!name.trim()) {
-      setErrorMsg('이름을 입력해주세요.');
-      return;
-    }
-    if (password.length < 8) {
-      setErrorMsg('비밀번호는 8자 이상이어야 합니다.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrorMsg('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      /* 전화번호 정규화 (숫자만) */
-      const normalizedPhone = phone.replace(/[^0-9]/g, '');
-      const result = await signUpWithEmail(
-        email.trim(),
-        password.trim(),
-        name.trim(),
-        normalizedPhone || undefined,
-      );
-      if (result.error) {
-        setErrorMsg(result.error);
-        setIsSubmitting(false);
-        return;
-      }
-      if (result.needsConfirmation) {
-        /* 이메일 확인 대기 상태 */
-        setNeedsConfirmation(true);
-        setIsSubmitting(false);
-        return;
-      }
-      /* 자동 로그인 성공 → 원래 페이지로 이동 */
-      router.replace(redirectTo as Route);
-    } catch {
-      setErrorMsg('회원가입 중 오류가 발생했습니다.');
-      setIsSubmitting(false);
-    }
-  };
 
   /* Google 회원가입 (로그인과 동일한 플로우) */
   const handleGoogleSignup = async () => {
@@ -118,48 +46,7 @@ function SignupForm() {
     }
   };
 
-  const isAnyLoading = isSubmitting || isGoogleSubmitting;
-
-  /* 이메일 인증 대기 화면 */
-  if (needsConfirmation) {
-    return (
-      <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center px-4">
-        <div className="absolute top-0 right-1/4 w-[1000px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[800px] h-[600px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="w-full max-w-md relative z-10">
-          <Card className="backdrop-blur-xl bg-background/80 border border-border shadow-2xl">
-            <CardHeader className="text-center pb-2">
-              <div className="flex items-center justify-center gap-2 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <TreePine className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-xl font-bold">AI꿈</span>
-              </div>
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">이메일을 확인해주세요</h1>
-              <p className="text-sm text-muted-foreground mt-2">
-                <strong>{email}</strong>로 인증 이메일을 보냈습니다.<br />
-                이메일의 링크를 클릭하면 가입이 완료됩니다.
-              </p>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground text-center mb-4">
-                이메일이 보이지 않으면 스팸함을 확인해주세요.
-              </p>
-              <Link href="/login">
-                <Button variant="outline" className="w-full h-11 text-base cursor-pointer">
-                  로그인으로 돌아가기
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const isAnyLoading = isGoogleSubmitting;
 
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center px-4">
@@ -207,108 +94,10 @@ function SignupForm() {
               Google로 회원가입
             </Button>
 
-            {/* 구분선 */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">또는</span>
-              </div>
-            </div>
-
-            {/* 이메일/비밀번호 회원가입 폼 */}
-            <form onSubmit={handleEmailSignup} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-sm">이름</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="이름을 입력하세요"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                    disabled={isAnyLoading}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-sm">전화번호</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="010-0000-0000"
-                    value={phone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    className="pl-10 h-11"
-                    disabled={isAnyLoading}
-                    maxLength={13}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm">이메일</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="이메일을 입력하세요"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                    disabled={isAnyLoading}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-sm">비밀번호</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="8자 이상 입력하세요"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                    minLength={8}
-                    disabled={isAnyLoading}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-sm">비밀번호 확인</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="비밀번호를 다시 입력하세요"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                    minLength={8}
-                    disabled={isAnyLoading}
-                  />
-                </div>
-              </div>
-              <Button
-                type="submit"
-                className="w-full h-11 text-base cursor-pointer"
-                disabled={isAnyLoading || !name.trim() || !email.trim() || !password || !confirmPassword}
-              >
-                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : '회원가입'}
-              </Button>
-            </form>
+            {/* 안내 메시지 */}
+            <p className="text-sm text-center text-muted-foreground">
+              Google 계정으로 간편하게 가입하세요
+            </p>
 
             {/* 약관 동의 안내 */}
             <p className="text-xs text-center text-muted-foreground">
