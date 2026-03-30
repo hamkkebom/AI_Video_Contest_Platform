@@ -305,6 +305,7 @@ export async function PUT(
       }
       const resubUpdateData: Record<string, unknown> = {
         video_url: body.videoUrl,
+        status: 'pending_review', // 재제출 완료 → 검수대기로 변경
         resubmission_allowed_at: null, // 재제출 완료 → 버튼 비활성화
       };
       if (body.thumbnailUrl) resubUpdateData.thumbnail_url = body.thumbnailUrl;
