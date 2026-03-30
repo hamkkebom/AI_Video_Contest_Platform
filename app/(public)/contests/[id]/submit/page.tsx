@@ -198,7 +198,12 @@ export default function ContestSubmitPage() {
       await fetch('/api/upload-error-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step, errorMessage, errorCode, details }),
+        body: JSON.stringify({
+          step, errorMessage, errorCode, details,
+          /* 디버깅용 추가 정보 */
+          pageUrl: window.location.href,
+          timestamp: new Date().toISOString(),
+        }),
       });
     } catch { /* 에러 로그 전송 실패는 무시 */ }
   };
@@ -774,10 +779,25 @@ export default function ContestSubmitPage() {
         let settled = false;
         const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
 
+        /* 업로드 멈춤 감지: 2분간 진행률 변화 없으면 로그 */
+        let lastProgress = 0;
+        let lastProgressTime = Date.now();
+        let stallReported = false;
+        const stallChecker = setInterval(() => {
+          if (settled) { clearInterval(stallChecker); return; }
+          const now = Date.now();
+          if (lastProgress === uploadProgress && now - lastProgressTime > 2 * 60 * 1000 && !stallReported) {
+            stallReported = true;
+            console.error('[제출] 업로드 멈춤 감지: 2분간 진행률 변화 없음, progress:', lastProgress);
+            reportUploadError('video', `업로드 멈춤 — ${lastProgress}%에서 2분간 변화 없음`, 'UPLOAD_STALL', `fileSize: ${selectedVideoFile.size}, fileName: ${selectedVideoFile.name}`);
+          }
+        }, 30_000);
+
         /* 전송 완료 후 Cloudflare 응답 대기 — 폴링으로 확인 */
         let pollTimer: ReturnType<typeof setInterval> | null = null;
         let hardDeadline: ReturnType<typeof setTimeout> | null = null;
         const clearAllTimers = () => {
+          clearInterval(stallChecker);
           if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
           if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
         };
@@ -803,6 +823,10 @@ export default function ContestSubmitPage() {
             const pct = Math.round((ev.loaded / ev.total) * 100);
             console.log(`[제출] 영상 업로드 진행: ${pct}% (${ev.loaded}/${ev.total})`);
             setUploadProgress(pct);
+            /* 멈춤 감지용 진행률 업데이트 */
+            lastProgress = pct;
+            lastProgressTime = Date.now();
+            stallReported = false;
           }
         };
         /* 전송 100% 완료 — 즉시 1회 + 30초마다 Cloudflare 폴링, 최대 10분 */

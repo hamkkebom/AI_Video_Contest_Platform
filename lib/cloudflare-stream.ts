@@ -69,7 +69,7 @@ export interface StreamVideoInfo {
   name: string | null;
   readyToStream: boolean;
   status: {
-    state: 'uploading' | 'inprogress' | 'ready' | 'error';
+    state: 'pendingupload' | 'uploading' | 'inprogress' | 'ready' | 'error';
     pctComplete?: number;
     errorReasonCode?: string;
     errorReasonText?: string;
@@ -98,7 +98,7 @@ export async function getStreamVideoInfo(videoUid: string): Promise<StreamVideoI
     const r = data.result;
     const state = r?.status?.state;
     const normalizedState =
-      state === 'uploading' || state === 'inprogress' || state === 'ready' || state === 'error'
+      state === 'pendingupload' || state === 'uploading' || state === 'inprogress' || state === 'ready' || state === 'error'
         ? state
         : null;
 
