@@ -493,21 +493,13 @@ export default function ContestSubmitPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    /* 재제출 모드: 영상만 업로드하므로 폼 검증 건너뜀 */
-    if (isResubmitMode && resubmitSubmissionId) {
-      if (!videoFile) {
-        setSubmitError('영상 파일을 선택해 주세요.');
-        return;
-      }
-    } else {
-      const errors = validateForm();
-      if (Object.keys(errors).length > 0) {
-        setFieldErrors(errors);
-        setShowValidationPopup(true);
-        return;
-      }
-      setFieldErrors({});
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setShowValidationPopup(true);
+      return;
     }
+    setFieldErrors({});
 
     /* ── 재제출 모드: 영상만 재업로드 후 기존 출품작 업데이트 ── */
     if (isResubmitMode && resubmitSubmissionId) {
@@ -1284,8 +1276,8 @@ export default function ContestSubmitPage() {
     if (!form.title.trim()) errors.title = '영상 제목을 입력해주세요';
     if (!form.description.trim()) errors.description = '영상 설명을 입력해주세요';
     if (!form.productionProcess.trim()) errors.productionProcess = '제작과정 설명을 입력해주세요';
-    if (!isEditMode && !videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
-    if (!isEditMode && !thumbnailFile) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
+    if (!isEditMode && !isResubmitMode && !videoFile) errors.videoFile = '영상 파일을 업로드해주세요';
+    if (!isEditMode && !isResubmitMode && !thumbnailFile && !existingSubmission?.thumbnailUrl) errors.thumbnailFile = '썸네일 이미지를 업로드해주세요';
     if (!form.agree) errors.agree = '유의사항에 동의해주세요';
     return errors;
   };
