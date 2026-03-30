@@ -32,6 +32,7 @@ const statusCardConfig: Array<{ key: string; label: string; icon: typeof Clipboa
   { key: 'pending_review', label: '검수대기', icon: ClipboardCheck, color: 'text-amber-500', countColor: 'text-amber-600' },
   { key: 'approved', label: '검수완료', icon: CheckCircle2, color: 'text-emerald-500', countColor: 'text-emerald-600' },
   { key: 'rejected', label: '반려', icon: XCircle, color: 'text-rose-500', countColor: 'text-rose-600' },
+  { key: 'needs_resubmission', label: '기타', icon: ClipboardCheck, color: 'text-orange-500', countColor: 'text-orange-600' },
   { key: 'judging', label: '심사중', icon: Scale, color: 'text-sky-500', countColor: 'text-sky-600' },
   { key: 'judged', label: '심사완료', icon: Award, color: 'text-violet-500', countColor: 'text-violet-600' },
 ];
