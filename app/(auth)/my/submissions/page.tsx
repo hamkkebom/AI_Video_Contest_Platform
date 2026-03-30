@@ -139,82 +139,82 @@ export default async function MyContestsPage() {
                         const sStatus = statusMeta[submission.status];
 
                         return (
-                          <div
-                            key={submission.id}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3"
-                          >
-                            {/* 썸네일 */}
-                            <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
-                              {submission.thumbnailUrl ? (
-                                <Image
-                                  src={submission.thumbnailUrl}
-                                  alt={submission.title}
-                                  fill
-                                  className="object-cover"
-                                  sizes="80px"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                  <Film className="h-5 w-5" />
+                          <div key={submission.id} className="space-y-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3">
+                              {/* 썸네일 */}
+                              <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
+                                {submission.thumbnailUrl ? (
+                                  <Image
+                                    src={submission.thumbnailUrl}
+                                    alt={submission.title}
+                                    fill
+                                    className="object-cover"
+                                    sizes="80px"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                                    <Film className="h-5 w-5" />
+                                  </div>
+                                )}
+                              </div>
+                              {/* 제목 + 상태 + 지표 */}
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="truncate text-sm font-medium">{submission.title}</p>
+                                  <Badge className={`shrink-0 text-[10px] px-1.5 py-0 ${sStatus.className}`}>
+                                    {sStatus.label}
+                                  </Badge>
                                 </div>
-                              )}
-                            </div>
-                            {/* 제목 + 상태 + 지표 */}
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate text-sm font-medium">{submission.title}</p>
-                                <Badge className={`shrink-0 text-[10px] px-1.5 py-0 ${sStatus.className}`}>
-                                  {sStatus.label}
-                                </Badge>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    {submission.views.toLocaleString()}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3 w-3" />
+                                    {submission.likeCount.toLocaleString()}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatDateCompact(submission.submittedAt)}
+                                  </span>
+                                </div>
                               </div>
-                              {submission.status === 'needs_resubmission' && submission.rejectionReason && (
-                                <p className="text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
-                                  📌 {submission.rejectionReason}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3" />
-                                  {submission.views.toLocaleString()}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3" />
-                                  {submission.likeCount.toLocaleString()}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatDateCompact(submission.submittedAt)}
-                                </span>
-                              </div>
-                            </div>
-                            {/* 액션 버튼 */}
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              {ds === 'open' && (
+                              {/* 액션 버튼 */}
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                {ds === 'open' && (
+                                  <Link
+                                    href={`/contests/${contest.id}/submit?edit=${submission.id}`}
+                                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                    수정
+                                  </Link>
+                                )}
+                                {(submission.status === 'needs_resubmission' || ((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && !!submission.resubmissionAllowedAt)) && (
+                                  <Link
+                                    href={`/contests/${contest.id}/submit?resubmit=${submission.id}`}
+                                    className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-2 py-1 text-xs text-orange-700 font-semibold transition-colors hover:bg-orange-100"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                    재제출
+                                  </Link>
+                                )}
                                 <Link
-                                  href={`/contests/${contest.id}/submit?edit=${submission.id}`}
+                                  href={`/gallery/${submission.id}`}
                                   className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                 >
-                                  <Pencil className="h-3 w-3" />
-                                  수정
+                                  <Eye className="h-3 w-3" />
+                                  상세
                                 </Link>
-                              )}
-                              {(submission.status === 'needs_resubmission' || ((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && !!submission.resubmissionAllowedAt)) && (
-                                <Link
-                                  href={`/contests/${contest.id}/submit?resubmit=${submission.id}`}
-                                  className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-2 py-1 text-xs text-orange-700 font-semibold transition-colors hover:bg-orange-100"
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                  재제출
-                                </Link>
-                              )}
-                              <Link
-                                href={`/gallery/${submission.id}`}
-                                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                              >
-                                <Eye className="h-3 w-3" />
-                                상세
-                              </Link>
+                              </div>
                             </div>
+                            {submission.status === 'needs_resubmission' && submission.rejectionReason && (
+                              <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2">
+                                <p className="text-xs font-semibold text-orange-700 mb-0.5">📌 재제출 사유</p>
+                                <p className="text-xs text-orange-600">{submission.rejectionReason}</p>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

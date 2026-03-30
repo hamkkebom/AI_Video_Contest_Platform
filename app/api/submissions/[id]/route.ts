@@ -85,7 +85,7 @@ export async function PATCH(
       const { error: resubError } = await supabase
         .from('submissions')
         .update({
-          status: 'pending_review',
+          status: 'needs_resubmission',
           resubmission_count: (submission.resubmission_count ?? 0) + 1,
           resubmission_allowed_at: new Date().toISOString(),
           rejection_reason: rejectionReason || null,
@@ -107,7 +107,7 @@ export async function PATCH(
 
       revalidateTag('submissions');
       revalidateTag('gallery');
-      return NextResponse.json({ success: true, status: 'pending_review' });
+      return NextResponse.json({ success: true, status: 'needs_resubmission' });
     }
 
     /* 상태 업데이트 */
