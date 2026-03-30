@@ -206,6 +206,8 @@ export async function GET(
       thumbnailUrl: submission.thumbnail_url,
       aiTools: submission.ai_tools,
       productionProcess: submission.production_process,
+      resubmissionCount: submission.resubmission_count ?? 0,
+      resubmissionAllowedAt: submission.resubmission_allowed_at ?? null,
       bonusEntries: (bonusEntries ?? []).map((e: Record<string, unknown>) => ({
         bonusConfigId: e.bonus_config_id,
         snsUrl: e.sns_url,
