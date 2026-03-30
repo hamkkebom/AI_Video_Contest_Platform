@@ -582,8 +582,8 @@ export default function ContestSubmitPage() {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
           const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
           if (!supabaseUrl || !anonKey) throw new Error('서버 설정 오류');
-          const safeName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const thumbPath = `${contestId}/${crypto.randomUUID()}-${safeName}`;
+          const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
+          const thumbPath = `${contestId}/${crypto.randomUUID()}.${thumbExt}`;
           await new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbPath}`);
@@ -1092,8 +1092,8 @@ export default function ContestSubmitPage() {
       setUploadProgress(0);
       console.log('[제출] 썸네일 업로드 시작');
 
-      const safeThumbnailName = selectedThumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeThumbnailName}`;
+      const thumbExtNew = selectedThumbnailFile.name.split('.').pop() || 'png';
+      const thumbnailPath = `${contestId}/${crypto.randomUUID()}.${thumbExtNew}`;
       console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', selectedThumbnailFile.size, 'bytes');
 
       /* #13: 환경변수 안전 처리 */
@@ -1161,8 +1161,8 @@ export default function ContestSubmitPage() {
         for (const [configId, entry] of bonusFormEntries) {
           let proofImageUrl: string | undefined;
           if (entry.proofImageFile) {
-            const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
+            const proofExt = entry.proofImageFile.name.split('.').pop() || 'png';
+            const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}.${proofExt}`;
             /* raw XHR + 갱신된 토큰 사용 (SDK storage.upload() 내부 auth 호출 hang 방지) */
             const proofUploadUrl = `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`;
             await new Promise<void>((resolve, reject) => {

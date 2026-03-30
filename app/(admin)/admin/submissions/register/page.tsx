@@ -560,8 +560,8 @@ export default function AdminSubmissionRegisterPage() {
       addLog('썸네일 업로드 시작');
 
       /* 2) 썸네일 업로드 → Supabase Storage */
-      const safeName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const thumbnailPath = `${contestId}/${crypto.randomUUID()}-${safeName}`;
+      const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
+      const thumbnailPath = `${contestId}/${crypto.randomUUID()}.${thumbExt}`;
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -600,8 +600,8 @@ export default function AdminSubmissionRegisterPage() {
       for (const [configId, entry] of bonusFormEntries) {
         let proofImageUrl: string | undefined;
         if (entry.proofImageFile) {
-          const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const proofPath = `${contestId}/${selectedUser.id}/${crypto.randomUUID()}-${safeFileName}`;
+          const proofExt = entry.proofImageFile.name.split('.').pop() || 'png';
+          const proofPath = `${contestId}/${selectedUser.id}/${crypto.randomUUID()}.${proofExt}`;
           await new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
