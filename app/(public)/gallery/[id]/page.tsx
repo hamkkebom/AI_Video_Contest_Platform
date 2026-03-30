@@ -282,6 +282,34 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               <LikeButton submissionId={id} liked={userLiked} initialCount={submission.likeCount} />
             </div>
 
+          {/* 관리자 전용: 재제출 상태 표시 */}
+          {isAdmin && (submission.resubmissionCount ?? 0) > 0 && (
+            <div className={`rounded-lg p-3 flex items-center gap-2 ${
+              submission.status === 'needs_resubmission'
+                ? 'bg-orange-500/10 border border-orange-500/20'
+                : submission.resubmissionAllowedAt
+                  ? 'bg-amber-500/10 border border-amber-500/20'
+                  : 'bg-emerald-500/10 border border-emerald-500/20'
+            }`}>
+              <span className={`text-xs font-bold ${
+                submission.status === 'needs_resubmission'
+                  ? 'text-orange-600'
+                  : submission.resubmissionAllowedAt
+                    ? 'text-amber-600'
+                    : 'text-emerald-600'
+              }`}>
+                {submission.status === 'needs_resubmission'
+                  ? '🔄 재제출 필요'
+                  : submission.resubmissionAllowedAt
+                    ? '⏳ 재제출 요청됨 (대기 중)'
+                    : '✅ 재제출 완료'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                (재제출 {submission.resubmissionCount}회)
+              </span>
+            </div>
+          )}
+
           {/* 관리자 전용: 승인/거절 버튼 (검수대기, 자동반려, 거절 상태) */}
           {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected' || submission.status === 'rejected') && (
             <div className="grid grid-cols-2 gap-3">
