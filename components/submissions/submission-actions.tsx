@@ -152,7 +152,7 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             {Icon && (
-              <div className={`mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full ${currentAction === 'approve' ? 'bg-emerald-500/10' : 'bg-destructive/10'}`}>
+              <div className={`mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full ${currentAction === 'approve' ? 'bg-emerald-500/10' : currentAction === 'allow_resubmission' ? 'bg-orange-500/10' : 'bg-destructive/10'}`}>
                 <Icon className={`h-7 w-7 ${config?.iconColor}`} />
               </div>
             )}
@@ -166,16 +166,16 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          {currentAction === 'reject' && (
+          {(currentAction === 'reject' || currentAction === 'allow_resubmission') && (
             <div className="space-y-2 pt-2">
               <label htmlFor="rejection-reason" className="text-sm font-medium">
-                거절 사유 <span className="text-muted-foreground">(선택)</span>
+                {currentAction === 'allow_resubmission' ? '재제출 사유' : '거절 사유'} <span className="text-muted-foreground">{currentAction === 'allow_resubmission' ? '(참가자에게 표시됩니다)' : '(선택)'}</span>
               </label>
               <textarea
                 id="rejection-reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="거절 사유를 입력하세요 (내부 관리용)"
+                placeholder={currentAction === 'allow_resubmission' ? '재제출 사유를 입력하세요 (예: 영상 파일 오류로 재업로드 필요)' : '거절 사유를 입력하세요 (내부 관리용)'}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-none"
                 maxLength={500}
               />

@@ -167,6 +167,11 @@ export default async function MyContestsPage() {
                                   {sStatus.label}
                                 </Badge>
                               </div>
+                              {submission.status === 'needs_resubmission' && submission.rejectionReason && (
+                                <p className="text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
+                                  📌 {submission.rejectionReason}
+                                </p>
+                              )}
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Eye className="h-3 w-3" />
