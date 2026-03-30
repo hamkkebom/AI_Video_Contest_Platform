@@ -202,9 +202,9 @@ export default function LoginForm() {
             <div className="text-center text-sm space-y-2">
               <div>
                 <span className="text-muted-foreground">계정이 없으신가요? </span>
-                <span className="text-primary font-semibold cursor-pointer" onClick={handleGoogleLogin}>
-                  Google로 간편가입
-                </span>
+                <Link href={redirectTo !== '/' ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup'} className="text-primary hover:text-primary/80 font-semibold">
+                  회원가입
+                </Link>
               </div>
               <div className="flex items-center justify-center gap-3 text-sm">
                 <Link href="/find-email" className="text-muted-foreground hover:text-primary transition-colors">
