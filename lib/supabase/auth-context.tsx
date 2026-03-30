@@ -335,16 +335,13 @@ function AuthProviderInner({
               if (refreshData?.session) {
                 currentSession = refreshData.session;
               } else if (expiresIn <= 0) {
-                // 이미 만료 + 갱신 실패 → 강제 로그아웃 (깨진 세션 정리)
-                console.warn('[AuthContext] 만료된 세션 갱신 실패 — 자동 로그아웃');
-                await supabase.auth.signOut();
-                currentSession = null;
+                // 만료 + 갱신 실패 → signOut 하지 않고 기존 세션 유지 시도
+                // 7일 JWT이므로 middleware가 갱신해줄 수 있음
+                console.warn('[AuthContext] 만료된 세션 갱신 실패 — 기존 세션 유지 (signOut 안 함)');
               }
             } catch {
               if (expiresIn <= 0) {
-                console.warn('[AuthContext] 만료된 세션 예외 — 자동 로그아웃');
-                await supabase.auth.signOut();
-                currentSession = null;
+                console.warn('[AuthContext] 만료된 세션 예외 — 기존 세션 유지 (signOut 안 함)');
               }
             }
           }

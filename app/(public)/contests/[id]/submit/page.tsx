@@ -125,51 +125,29 @@ export default function ContestSubmitPage() {
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
   /* 페이지 진입 시 토큰 상태 확인 — 만료된 경우에만 갱신 시도 */
-  const [tokenReady, setTokenReady] = useState(false);
+  /* 페이지 진입 시 토큰 만료 임박하면 백그라운드 갱신 (실패해도 signOut 안 함) */
   useEffect(() => {
-    if (!authSession?.access_token) { setTokenReady(true); return; }
-    const checkAndRefresh = async () => {
-      try {
-        /* JWT의 exp 클레임 확인 — 만료되지 않았으면 갱신 건너뜀 */
-        try {
-          const payload = JSON.parse(atob(authSession.access_token.split('.')[1]));
-          const expiresAt = payload.exp * 1000;
-          const bufferMs = 5 * 60 * 1000; // 5분 여유
-          if (Date.now() < expiresAt - bufferMs) {
-            console.log('[자동갱신] 토큰 유효 — 갱신 불필요, 남은시간:', Math.round((expiresAt - Date.now()) / 60000), '분');
-            return; // 토큰 아직 유효 → 갱신하지 않음
-          }
-          console.log('[자동갱신] 토큰 만료 임박 또는 만료됨 — 갱신 시도');
-        } catch {
-          console.warn('[자동갱신] JWT 파싱 실패 — 갱신 시도');
-        }
-
-        const supabase = createBrowserClient()!;
-        const result = await refreshAccessToken(supabase, {
-          maxRetries: 2,
-          timeoutMs: 8000,
-          log: (msg) => console.log(`[자동갱신] ${msg}`),
-        });
-        if (!result.ok) {
-          console.warn('[자동갱신] 토큰 갱신 실패 — 로그인 페이지로 이동');
-          await supabase.auth.signOut();
-          document.cookie.split(';').forEach(c => {
-            const name = c.trim().split('=')[0];
-            if (name.startsWith('sb-')) {
-              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-            }
-          });
-          window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}&reason=session_expired`;
-          return;
-        }
-      } catch {
-        console.warn('[자동갱신] 예외 발생');
-      } finally {
-        setTokenReady(true);
+    if (!authSession?.access_token) return;
+    try {
+      const payload = JSON.parse(atob(authSession.access_token.split('.')[1]));
+      const expiresAt = payload.exp * 1000;
+      const bufferMs = 5 * 60 * 1000;
+      if (Date.now() < expiresAt - bufferMs) {
+        console.log('[자동갱신] 토큰 유효 — 갱신 불필요, 남은시간:', Math.round((expiresAt - Date.now()) / 60000), '분');
+        return;
       }
-    };
-    checkAndRefresh();
+    } catch { /* JWT 파싱 실패 — 갱신 시도 */ }
+
+    const supabase = createBrowserClient()!;
+    refreshAccessToken(supabase, {
+      maxRetries: 2,
+      timeoutMs: 8000,
+      log: (msg) => console.log(`[자동갱신] ${msg}`),
+    }).then(result => {
+      if (!result.ok) console.warn('[자동갱신] 갱신 실패 — 기존 토큰으로 진행');
+    }).catch(() => {
+      console.warn('[자동갱신] 예외 발생 — 기존 토큰으로 진행');
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
