@@ -150,16 +150,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '출품작 확인에 실패했습니다.' }, { status: 500 });
     }
 
-    /* 재제출 허용된 출품작이 있으면 쿼터 제외 */
-    const { count: resubmissionCount } = await supabase
-      .from('submissions')
-      .select('id', { count: 'exact', head: true })
-      .eq('contest_id', contestId)
-      .eq('user_id', user.id)
-      .gt('resubmission_count', 0);
-    const effectiveCount = (existingCount ?? 0) - (resubmissionCount ?? 0);
-
-    if (effectiveCount >= maxSubmissions) {
+    if ((existingCount ?? 0) >= maxSubmissions) {
       return NextResponse.json(
         { error: `이 공모전의 최대 출품 가능 수(${maxSubmissions}개)를 초과했습니다.`, code: 'QUOTA_EXCEEDED' },
         { status: 409 },
