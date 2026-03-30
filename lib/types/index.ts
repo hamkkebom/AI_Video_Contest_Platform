@@ -211,6 +211,7 @@ export type SubmissionStatus =
   | "approved"
   | "rejected"
   | "auto_rejected"
+  | "needs_resubmission"
   | "judging"
   | "judged";
 

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
 /** 허용되는 상태 값 */
-const ALLOWED_STATUSES = ['approved', 'rejected', 'allow_resubmission'] as const;
+const ALLOWED_STATUSES = ['approved', 'rejected', 'allow_resubmission', 'needs_resubmission'] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
 
 function hasPermission(roles: unknown): boolean {
@@ -241,7 +241,7 @@ export async function PUT(
   /* 출품작 존재 + 소유권 확인 */
   const { data: submission, error: fetchError } = await supabase
     .from('submissions')
-    .select('id, user_id, contest_id, resubmission_count, resubmission_allowed_at')
+    .select('id, user_id, contest_id, status, resubmission_count, resubmission_allowed_at')
     .eq('id', submissionId)
     .single();
 
@@ -257,7 +257,7 @@ export async function PUT(
   }
 
   /* 재제출 허용된 출품작은 공모전 마감과 무관하게 수정 가능 */
-  const isResubmissionAllowed = (submission.resubmission_count ?? 0) > 0 && !!submission.resubmission_allowed_at;
+  const isResubmissionAllowed = ((submission.resubmission_count ?? 0) > 0 && !!submission.resubmission_allowed_at) || submission.status === 'needs_resubmission';
 
   if (!callerIsAdmin && !isResubmissionAllowed) {
     /* 공모전 상태 확인 (open일 때만 수정 가능) — 참가자만 */

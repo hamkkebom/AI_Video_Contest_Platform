@@ -43,6 +43,7 @@ const SUBMISSION_STATUS_OPTIONS = [
   { value: 'pending_review', label: '검수대기' },
   { value: 'approved', label: '검수승인' },
   { value: 'rejected', label: '반려' },
+  { value: 'needs_resubmission', label: '재제출 필요' },
   { value: 'judging', label: '심사중' },
   { value: 'judged', label: '심사완료' },
 ] as const;

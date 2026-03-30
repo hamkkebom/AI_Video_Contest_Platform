@@ -22,6 +22,7 @@ const statusBadgeMap: Record<SubmissionStatus, { label: string; className: strin
   approved: { label: '승인', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   rejected: { label: '반려', className: 'bg-destructive/10 text-destructive' },
   auto_rejected: { label: '자동반려', className: 'bg-destructive/10 text-destructive' },
+  needs_resubmission: { label: '재제출 필요', className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300' },
   judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
   judged: { label: '심사완료', className: 'bg-primary/10 text-primary' },
 };

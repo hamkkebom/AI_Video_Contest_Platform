@@ -15,6 +15,7 @@ const statusMeta: Record<SubmissionStatus, { label: string; className: string }>
   approved: { label: '승인됨', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   rejected: { label: '거절됨', className: 'bg-destructive/10 text-destructive' },
   auto_rejected: { label: '자동 거절', className: 'bg-destructive/10 text-destructive' },
+  needs_resubmission: { label: '재제출 필요', className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300' },
   judging: { label: '심사 중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },
   judged: { label: '심사 완료', className: 'bg-primary/10 text-primary' },
 };
@@ -192,7 +193,7 @@ export default async function MyContestsPage() {
                                   수정
                                 </Link>
                               )}
-                              {(submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && (
+                              {((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' || submission.status === 'needs_resubmission') && (
                                 <Link
                                   href={`/contests/${contest.id}/submit?resubmit=${submission.id}`}
                                   className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-2 py-1 text-xs text-orange-700 font-semibold transition-colors hover:bg-orange-100"

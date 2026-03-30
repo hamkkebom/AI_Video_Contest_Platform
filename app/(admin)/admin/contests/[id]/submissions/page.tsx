@@ -21,6 +21,7 @@ const statusBadgeMap: Record<SubmissionStatus, { label: string; className: strin
   approved: { label: '검수완료', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white' },
   rejected: { label: '반려', className: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white' },
   auto_rejected: { label: '자동반려', className: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white' },
+  needs_resubmission: { label: '재제출 필요', className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 hover:bg-orange-600 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white' },
   judging: { label: '심사중', className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-500 dark:hover:text-white' },
   judged: { label: '심사완료', className: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-500 dark:hover:text-white' },
 };
