@@ -11,9 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
 
-type ActionType = 'approve' | 'reject';
+type ActionType = 'approve' | 'reject' | 'allow_resubmission';
 
 interface SubmissionActionsProps {
   /** 제출물 ID */
@@ -22,6 +22,8 @@ interface SubmissionActionsProps {
   submissionTitle: string;
   /** 다음 제출물 ID (관리자 검수 연속 처리용) */
   nextSubmissionId?: string;
+  /** 현재 제출물 상태 */
+  submissionStatus?: string;
 }
 
 const ACTION_CONFIG: Record<ActionType, {
@@ -51,13 +53,22 @@ const ACTION_CONFIG: Record<ActionType, {
     icon: XCircle,
     iconColor: 'text-destructive',
   },
+  allow_resubmission: {
+    label: '재제출 허용',
+    modalTitle: '재제출을 허용하시겠습니까?',
+    modalDescription: (title) => `"${title}" 출품작의 영상을 다시 제출할 수 있도록 허용합니다. 참가자에게 재제출 버튼이 표시됩니다.`,
+    confirmLabel: '재제출 허용',
+    status: 'allow_resubmission',
+    icon: RefreshCw,
+    iconColor: 'text-orange-500',
+  },
 };
 
 /**
  * 제출물 승인/거절 액션 버튼 + 확인 모달
  * 서버 컴포넌트 페이지에서 사용하는 클라이언트 컴포넌트
  */
-export function SubmissionActions({ submissionId, submissionTitle, nextSubmissionId }: SubmissionActionsProps) {
+export function SubmissionActions({ submissionId, submissionTitle, nextSubmissionId, submissionStatus }: SubmissionActionsProps) {
   const router = useRouter();
   const [currentAction, setCurrentAction] = useState<ActionType | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -124,6 +135,18 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
         <CheckCircle2 className="h-5 w-5 mr-1.5" />
         승인
       </Button>
+      {submissionStatus === 'rejected' && (
+        <Button
+          size="lg"
+          variant="outline"
+          type="button"
+          className="w-full col-span-2 text-orange-600 border-orange-300 hover:bg-orange-50 cursor-pointer text-base font-bold py-3"
+          onClick={() => setCurrentAction('allow_resubmission')}
+        >
+          <RefreshCw className="h-5 w-5 mr-1.5" />
+          재제출 허용
+        </Button>
+      )}
 
       <Dialog open={currentAction !== null} onOpenChange={(open) => { if (!open && !loading) { setCurrentAction(null); setError(null); setRejectionReason(''); } }}>
         <DialogContent className="sm:max-w-md">

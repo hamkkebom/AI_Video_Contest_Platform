@@ -85,7 +85,9 @@ export default function ContestSubmitPage() {
   const searchParams = useSearchParams();
   const contestId = params.id as string;
   const editSubmissionId = searchParams.get('edit'); // 수정 모드: 기존 출품작 ID
+  const resubmitSubmissionId = searchParams.get('resubmit'); // 재제출 모드: 영상만 재업로드
   const isEditMode = !!editSubmissionId;
+  const isResubmitMode = !!resubmitSubmissionId;
   const router = useRouter();
   const { session: authSession } = useAuth();
   const currentUserId = authSession?.user?.id;
@@ -216,9 +218,10 @@ export default function ContestSubmitPage() {
       const found: Contest = await res.json();
       setContest(found);
 
-      if (isEditMode && editSubmissionId) {
+      const loadTargetId = isEditMode ? editSubmissionId : isResubmitMode ? resubmitSubmissionId : null;
+      if (loadTargetId) {
         try {
-          const submissionRes = await fetch(`/api/submissions/${editSubmissionId}`);
+          const submissionRes = await fetch(`/api/submissions/${loadTargetId}`);
           if (!submissionRes.ok) {
             throw new Error('기존 출품작 정보를 불러오지 못했습니다.');
           }
@@ -324,7 +327,7 @@ export default function ContestSubmitPage() {
       }
     };
     load();
-  }, [contestId, currentUserId, isEditMode, editSubmissionId]);
+  }, [contestId, currentUserId, isEditMode, editSubmissionId, isResubmitMode, resubmitSubmissionId]);
 
   /** 수정 모드: 폼 데이터가 초기 로드 시점과 달라졌는지 판별 */
   const hasFormChanges = (() => {
@@ -496,6 +499,135 @@ export default function ContestSubmitPage() {
       return;
     }
     setFieldErrors({});
+
+    /* ── 재제출 모드: 영상만 재업로드 후 기존 출품작 업데이트 ── */
+    if (isResubmitMode && resubmitSubmissionId) {
+      try {
+        setSubmitError(null);
+        setErrorType(null);
+        setIsSubmitting(true);
+        setUploadStep('preparing');
+        setUploadProgress(0);
+
+        if (!videoFile) {
+          setSubmitError('영상 파일을 선택해 주세요.');
+          setIsSubmitting(false);
+          setUploadStep(null);
+          return;
+        }
+        if (!thumbnailFile && !existingSubmission?.thumbnailUrl) {
+          setSubmitError('썸네일 이미지를 선택해 주세요.');
+          setIsSubmitting(false);
+          setUploadStep(null);
+          return;
+        }
+
+        const supabase = createBrowserClient()!;
+        let accessToken = authSession?.access_token;
+        const currentUser = authSession?.user;
+        if (!accessToken || !currentUser) {
+          throw new Error('로그인 세션이 만료되었습니다.');
+        }
+
+        const resubRefresh = await refreshAccessToken(supabase, { maxRetries: 2, timeoutMs: 10000 });
+        if (resubRefresh.ok) accessToken = resubRefresh.accessToken;
+
+        /* 영상 업로드 — 새 제출과 동일한 플로우 사용 */
+        setUploadStep('video');
+        setUploadProgress(0);
+
+        const fetchUploadUrl = async (): Promise<Response> => {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60_000);
+          try {
+            return await fetch('/api/upload/video', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ maxDurationSeconds: 600 }),
+              signal: controller.signal,
+            });
+          } finally { clearTimeout(timeout); }
+        };
+
+        let uploadUrlResponse: Response;
+        try { uploadUrlResponse = await fetchUploadUrl(); }
+        catch { await new Promise(r => setTimeout(r, 2000)); uploadUrlResponse = await fetchUploadUrl(); }
+
+        const uploadUrlResult = await uploadUrlResponse.json() as { uploadURL?: string; uid?: string; error?: string };
+        if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
+          throw new Error('영상 업로드 준비에 실패했습니다. 다시 시도해 주세요.');
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', uploadUrlResult.uploadURL!);
+          xhr.timeout = 10 * 60 * 1000;
+          xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
+          xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); } else reject(new Error('영상 업로드에 실패했습니다.')); };
+          xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
+          xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
+          const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
+        });
+
+        /* 토큰 갱신 */
+        const tokenResult = await refreshAccessToken(supabase, { maxRetries: 3, initialDelayMs: 2000 });
+        if (tokenResult.ok) accessToken = tokenResult.accessToken;
+
+        /* 썸네일 업로드 (새 파일 선택 시) */
+        let finalThumbnailUrl = existingSubmission?.thumbnailUrl || '';
+        if (thumbnailFile) {
+          setUploadStep('thumbnail');
+          setUploadProgress(0);
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          if (!supabaseUrl || !anonKey) throw new Error('서버 설정 오류');
+          const safeName = thumbnailFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const thumbPath = `${contestId}/${crypto.randomUUID()}-${safeName}`;
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbPath}`);
+            xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+            xhr.setRequestHeader('x-upsert', 'false');
+            xhr.setRequestHeader('apikey', anonKey);
+            xhr.setRequestHeader('Content-Type', thumbnailFile.type || 'application/octet-stream');
+            xhr.timeout = 90_000;
+            xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
+            xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); } else reject(new Error('썸네일 업로드 실패')); };
+            xhr.onerror = () => reject(new Error('썸네일 네트워크 오류'));
+            xhr.ontimeout = () => reject(new Error('썸네일 타임아웃'));
+            xhr.send(thumbnailFile);
+          });
+          const { data: thumbPublic } = supabase.storage.from('thumbnails').getPublicUrl(thumbPath);
+          finalThumbnailUrl = thumbPublic.publicUrl;
+        }
+
+        /* 기존 출품작 업데이트 (영상 + 썸네일만) */
+        setUploadStep('submission');
+        setUploadProgress(0);
+        const response = await fetch(`/api/submissions/${resubmitSubmissionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videoUrl: uploadUrlResult.uid,
+            thumbnailUrl: finalThumbnailUrl,
+            isResubmission: true,
+          }),
+        });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error((errData as { error?: string }).error || '재제출에 실패했습니다.');
+        }
+
+        setSubmitted(true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '재제출 중 오류가 발생했습니다.';
+        setSubmitError(message);
+        setErrorType('general');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     /* ── 수정 모드 ── */
     if (isEditMode && editSubmissionId) {

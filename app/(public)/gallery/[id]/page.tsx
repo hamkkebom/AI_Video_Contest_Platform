@@ -282,13 +282,14 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
               <LikeButton submissionId={id} liked={userLiked} initialCount={submission.likeCount} />
             </div>
 
-          {/* 관리자 전용: 승인/거절 버튼 (검수대기 또는 자동반려 상태) */}
-          {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected') && (
+          {/* 관리자 전용: 승인/거절 버튼 (검수대기, 자동반려, 거절 상태) */}
+          {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected' || submission.status === 'rejected') && (
             <div className="grid grid-cols-2 gap-3">
               <SubmissionActions
                 submissionId={String(submission.id)}
                 submissionTitle={submission.title}
                 nextSubmissionId={nextSubmission?.id}
+                submissionStatus={submission.status}
               />
             </div>
           )}

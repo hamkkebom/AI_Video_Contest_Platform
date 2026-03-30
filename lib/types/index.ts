@@ -243,6 +243,10 @@ export interface Submission {
   productionProcess?: string;
   /** 가산점 인증 내역 */
   bonusEntries?: BonusEntry[];
+  /** 재제출 횟수 (0이면 재제출 아님) */
+  resubmissionCount?: number;
+  /** 재제출 허용 시각 */
+  resubmissionAllowedAt?: string;
 }
 
 /** 참가자가 제출하는 가산점 인증 */

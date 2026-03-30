@@ -299,6 +299,8 @@ function toSubmission(row: Record<string, unknown>): Submission {
     productionProcess: (row.production_process as string) ?? undefined,
     submitterName: (row.submitter_name as string) ?? undefined,
     submitterPhone: (row.submitter_phone as string) ?? undefined,
+    resubmissionCount: (row.resubmission_count as number) ?? 0,
+    resubmissionAllowedAt: (row.resubmission_allowed_at as string) ?? undefined,
   };
 }
 

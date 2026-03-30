@@ -192,6 +192,15 @@ export default async function MyContestsPage() {
                                   수정
                                 </Link>
                               )}
+                              {(submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && (
+                                <Link
+                                  href={`/contests/${contest.id}/submit?resubmit=${submission.id}`}
+                                  className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-2 py-1 text-xs text-orange-700 font-semibold transition-colors hover:bg-orange-100"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  재제출
+                                </Link>
+                              )}
                               <Link
                                 href={`/gallery/${submission.id}`}
                                 className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

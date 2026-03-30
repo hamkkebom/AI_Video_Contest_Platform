@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createActivityLog } from '@/lib/data';
 
 /** 허용되는 상태 값 */
-const ALLOWED_STATUSES = ['approved', 'rejected'] as const;
+const ALLOWED_STATUSES = ['approved', 'rejected', 'allow_resubmission'] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
 
 function hasPermission(roles: unknown): boolean {
@@ -72,12 +72,42 @@ export async function PATCH(
     /* 제출물 존재 확인 */
     const { data: submission, error: fetchError } = await supabase
       .from('submissions')
-      .select('id, status, contest_id')
+      .select('id, status, contest_id, resubmission_count')
       .eq('id', submissionId)
       .single();
 
     if (fetchError || !submission) {
       return NextResponse.json({ error: '제출물을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    /* 재제출 허용 처리 */
+    if (newStatus === 'allow_resubmission') {
+      const { error: resubError } = await supabase
+        .from('submissions')
+        .update({
+          status: 'pending_review',
+          resubmission_count: (submission.resubmission_count ?? 0) + 1,
+          resubmission_allowed_at: new Date().toISOString(),
+          rejection_reason: rejectionReason || null,
+        })
+        .eq('id', submissionId);
+
+      if (resubError) {
+        console.error('[PATCH /api/submissions/[id]] 재제출 허용 실패:', resubError.message);
+        return NextResponse.json({ error: '재제출 허용에 실패했습니다.' }, { status: 500 });
+      }
+
+      createActivityLog({
+        userId: user.id,
+        action: 'allow_resubmission',
+        targetType: 'submission',
+        targetId: submissionId,
+        metadata: { contestId: submission.contest_id, previousStatus: submission.status },
+      }).catch(console.error);
+
+      revalidateTag('submissions');
+      revalidateTag('gallery');
+      return NextResponse.json({ success: true, status: 'pending_review' });
     }
 
     /* 상태 업데이트 */
@@ -209,7 +239,7 @@ export async function PUT(
   /* 출품작 존재 + 소유권 확인 */
   const { data: submission, error: fetchError } = await supabase
     .from('submissions')
-    .select('id, user_id, contest_id')
+    .select('id, user_id, contest_id, resubmission_count, resubmission_allowed_at')
     .eq('id', submissionId)
     .single();
 
@@ -224,7 +254,10 @@ export async function PUT(
     return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
   }
 
-  if (!callerIsAdmin) {
+  /* 재제출 허용된 출품작은 공모전 마감과 무관하게 수정 가능 */
+  const isResubmissionAllowed = (submission.resubmission_count ?? 0) > 0 && !!submission.resubmission_allowed_at;
+
+  if (!callerIsAdmin && !isResubmissionAllowed) {
     /* 공모전 상태 확인 (open일 때만 수정 가능) — 참가자만 */
     const { data: contest } = await supabase
       .from('contests')
@@ -260,7 +293,41 @@ export async function PUT(
       status?: string;
       submittedAt?: string;
       bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
+      isResubmission?: boolean;
     };
+
+    /* 재제출 모드: 영상+썸네일만 업데이트 */
+    if (body.isResubmission && isResubmissionAllowed) {
+      if (!body.videoUrl) {
+        return NextResponse.json({ error: '영상 URL이 필요합니다.' }, { status: 400 });
+      }
+      const resubUpdateData: Record<string, unknown> = {
+        video_url: body.videoUrl,
+        resubmission_allowed_at: null, // 재제출 완료 → 버튼 비활성화
+      };
+      if (body.thumbnailUrl) resubUpdateData.thumbnail_url = body.thumbnailUrl;
+
+      const { error: resubUpdateError } = await supabase
+        .from('submissions')
+        .update(resubUpdateData)
+        .eq('id', submissionId);
+
+      if (resubUpdateError) {
+        return NextResponse.json({ error: '재제출에 실패했습니다.' }, { status: 500 });
+      }
+
+      createActivityLog({
+        userId: user.id,
+        action: 'resubmit_submission',
+        targetType: 'submission',
+        targetId: submissionId,
+        metadata: { contestId: submission.contest_id },
+      }).catch(console.error);
+
+      revalidateTag('submissions');
+      revalidateTag('gallery');
+      return NextResponse.json({ success: true });
+    }
 
     const title = body.title?.trim();
     const description = body.description?.trim();
