@@ -1638,7 +1638,7 @@ export default function ContestSubmitPage() {
                   ⚠️ 업로드가 안 될 경우 <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd> (Mac: <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로 <strong className="underline">강력 새로고침</strong> 후 다시 시도해 주세요.
                 </p>
               </div>
-              {isEditMode && existingSubmission ? (
+              {isEditMode && !isResubmitMode && existingSubmission ? (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-muted/30 border border-border">
                     <p className="text-sm font-medium mb-3 text-muted-foreground">업로드된 파일 (수정 불가)</p>
@@ -1702,6 +1702,22 @@ export default function ContestSubmitPage() {
                             <X className="h-4 w-4 text-muted-foreground" />
                           </button>
                         </div>
+                      </div>
+                    ) : isResubmitMode && existingSubmission?.thumbnailUrl ? (
+                      <div className="space-y-2">
+                        <div className="rounded-lg border border-border overflow-hidden">
+                          <Image src={existingSubmission.thumbnailUrl} alt="기존 썸네일" width={400} height={128} className="w-full h-32 object-cover" />
+                          <div className="px-3 py-2 bg-muted/20 flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground">기존 썸네일 (변경하려면 아래 클릭)</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => thumbnailInputRef.current?.click()}
+                          className="w-full border border-dashed border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer text-center"
+                        >
+                          새 썸네일로 변경
+                        </button>
                       </div>
                     ) : (
                       <button
