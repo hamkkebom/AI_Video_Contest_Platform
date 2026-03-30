@@ -193,7 +193,7 @@ export default async function MyContestsPage() {
                                   수정
                                 </Link>
                               )}
-                              {((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' || submission.status === 'needs_resubmission') && (
+                              {(submission.status === 'needs_resubmission' || ((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && !!submission.resubmissionAllowedAt)) && (
                                 <Link
                                   href={`/contests/${contest.id}/submit?resubmit=${submission.id}`}
                                   className="inline-flex items-center gap-1 rounded-md border border-orange-300 bg-orange-50 px-2 py-1 text-xs text-orange-700 font-semibold transition-colors hover:bg-orange-100"
