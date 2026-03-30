@@ -295,10 +295,17 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
           )}
 
           {(isAdmin || isOwner) && submission.rejectionReason && (
-            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
-              <p className="text-xs font-bold text-destructive mb-1">거절 사유</p>
-              <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>
-            </div>
+            submission.status === 'needs_resubmission' ? (
+              <div className="rounded-lg bg-orange-500/5 border border-orange-500/20 p-3">
+                <p className="text-xs font-bold text-orange-600 mb-1">기타 사유</p>
+                <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+                <p className="text-xs font-bold text-destructive mb-1">거절 사유</p>
+                <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>
+              </div>
+            )
           )}
           </div>
 
