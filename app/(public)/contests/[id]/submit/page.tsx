@@ -492,13 +492,22 @@ export default function ContestSubmitPage() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      setShowValidationPopup(true);
-      return;
+
+    /* 재제출 모드: 영상만 업로드하므로 폼 검증 건너뜀 */
+    if (isResubmitMode && resubmitSubmissionId) {
+      if (!videoFile) {
+        setSubmitError('영상 파일을 선택해 주세요.');
+        return;
+      }
+    } else {
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setShowValidationPopup(true);
+        return;
+      }
+      setFieldErrors({});
     }
-    setFieldErrors({});
 
     /* ── 재제출 모드: 영상만 재업로드 후 기존 출품작 업데이트 ── */
     if (isResubmitMode && resubmitSubmissionId) {
