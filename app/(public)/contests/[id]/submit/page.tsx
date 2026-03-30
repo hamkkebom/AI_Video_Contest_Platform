@@ -641,21 +641,40 @@ export default function ContestSubmitPage() {
       setUploadProgress(0);
 
       /* ── 1단계: 세션 갱신 + 인증 확인 ──
-         AuthContext의 토큰이 오래되었을 수 있으므로 Supabase 클라이언트에서 최신 세션을 가져온다. */
+         AuthContext가 아닌 Supabase 클라이언트에서 직접 최신 세션을 가져온다. */
       const supabase = createBrowserClient()!;
-      let accessToken = authSession?.access_token;
-      const currentUser = authSession?.user;
 
-      /* 최신 토큰으로 갱신 시도 (최대 3회 재시도 + 백오프) */
+      /* refreshSession()으로 새 토큰 발급 시도 → getSession() 폴백 */
+      let accessToken: string | undefined;
+      let currentUser: { id: string; email?: string } | undefined;
+
       const initResult = await refreshAccessToken(supabase, {
         maxRetries: 3,
         log: (msg) => console.log(`[제출] ${msg}`),
       });
       if (initResult.ok) {
         accessToken = initResult.accessToken;
-      } else {
-        /* 갱신 실패 시 기존 토큰도 무효화 — 만료된 토큰으로 진행 방지 */
-        accessToken = undefined;
+      }
+
+      /* refreshAccessToken 실패 시에도 getSession()으로 한번 더 시도 */
+      if (!accessToken) {
+        try {
+          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+          if (fallbackSession?.access_token) {
+            accessToken = fallbackSession.access_token;
+          }
+        } catch {}
+      }
+
+      /* 현재 유저 정보 — AuthContext + Supabase 클라이언트 모두에서 시도 */
+      if (authSession?.user) {
+        currentUser = authSession.user;
+      }
+      if (!currentUser) {
+        try {
+          const { data: { session: sess } } = await supabase.auth.getSession();
+          if (sess?.user) currentUser = sess.user;
+        } catch {}
       }
 
       if (!accessToken || !currentUser) {
