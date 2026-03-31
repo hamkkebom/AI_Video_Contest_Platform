@@ -1072,14 +1072,33 @@ export default function ContestSubmitPage() {
       });
 
       /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
-      const tokenResult = await refreshAccessToken(supabase, {
-        maxRetries: 3,
-        initialDelayMs: 2000,
-        log: (msg) => console.log(`[제출] ${msg}`),
-      });
-      if (tokenResult.ok) {
-        accessToken = tokenResult.accessToken;
-      } else {
+      /* 업로드 후 토큰 갱신 — keepalive가 이미 갱신했을 수 있으므로 getSession() 먼저 확인 */
+      try {
+        const { data: { session: postUploadSession } } = await supabase.auth.getSession();
+        if (postUploadSession?.access_token) {
+          const payload = JSON.parse(atob(postUploadSession.access_token.split('.')[1]));
+          if (Date.now() < (payload.exp - 60) * 1000) {
+            accessToken = postUploadSession.access_token;
+            console.log('[제출] keepalive가 갱신한 토큰 사용');
+          }
+        }
+      } catch {}
+
+      /* getSession()으로 유효한 토큰을 못 가져왔으면 refreshAccessToken 시도 */
+      if (!accessToken || (() => { try { const p = JSON.parse(atob(accessToken.split('.')[1])); return Date.now() >= (p.exp - 60) * 1000; } catch { return true; } })()) {
+        const tokenResult = await refreshAccessToken(supabase, {
+          maxRetries: 3,
+          initialDelayMs: 2000,
+          log: (msg) => console.log(`[제출] ${msg}`),
+        });
+        if (tokenResult.ok) {
+          accessToken = tokenResult.accessToken;
+        }
+      }
+
+      /* 그래도 유효한 토큰이 없으면 에러 */
+      const stillExpired = !accessToken || (() => { try { const p = JSON.parse(atob(accessToken.split('.')[1])); return Date.now() >= (p.exp - 60) * 1000; } catch { return true; } })();
+      if (stillExpired) {
         /* Critical #2: UID를 localStorage에 저장하여 재로그인 후 복구 가능하게 함 */
         try {
           localStorage.setItem('ggumple_pending_upload', JSON.stringify({
