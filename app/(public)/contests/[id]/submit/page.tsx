@@ -769,6 +769,15 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
+      /* 제출 시작 로그 — 어디서 멈추는지 추적용 */
+      reportUploadError('submit_start', '제출 프로세스 시작', 'SUBMIT_START', JSON.stringify({
+        hasAuthSession: !!authSession?.access_token,
+        hasUser: !!authSession?.user,
+        videoFileName: videoFile?.name,
+        videoFileSize: videoFile?.size,
+        thumbnailFileName: thumbnailFile?.name,
+      }));
+
       /* ── 1단계: 세션 확인 + 필요 시에만 갱신 ──
          토큰이 유효하면 즉시 진행, 만료된 경우에만 갱신 시도 (최소 지연) */
       const supabase = createBrowserClient()!;
@@ -827,6 +836,7 @@ export default function ContestSubmitPage() {
         return;
       }
       console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
+      reportUploadError('auth_ok', '세션 확인 완료', 'AUTH_OK');
 
       /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
       activityKeepAlive = setInterval(() => {
