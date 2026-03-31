@@ -1,135 +1,71 @@
 /**
- * 견고한 토큰 갱신 유틸리티
+ * 토큰 갱신 유틸리티 (단순화)
  *
- * 전략 (navigator.locks 데드락 방지를 위해 서버 API 최우선):
- * 1) 서버 API (/api/auth/refresh-token) — middleware가 쿠키 기반으로 갱신
- *    → getSession/refreshSession의 navigator.locks 데드락 회피
- * 2) refreshSession (폴백) — 서버 API 실패 시 클라이언트 직접 갱신
- * 3) 최대 N회 재시도 + 백오프
+ * JWT 7일 설정이므로 대부분의 경우 갱신이 불필요.
+ * 만료 시: 서버 API 1회 호출 → 실패 시 실패 반환 (클라이언트 refreshSession 사용 안 함 — 레이스 컨디션 방지)
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-type RefreshResult = {
-  accessToken: string;
-  ok: true;
-} | {
-  accessToken: null;
-  ok: false;
-};
+type RefreshResult = { accessToken: string; ok: true } | { accessToken: null; ok: false };
 
-function raceTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    promise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-  ]);
-}
-
-/**
- * JWT의 exp 클레임을 읽어 만료 여부를 판단한다.
- * 만료 60초 전부터 만료로 간주 (여유 마진)
- */
-function isTokenExpired(token: string, marginSeconds = 60): boolean {
+/** JWT exp 클레임으로 만료 여부 판단 (60초 마진) */
+export function isTokenExpired(token: string, marginSeconds = 60): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    const exp = payload.exp;
-    if (typeof exp !== 'number') return true;
-    return Date.now() >= (exp - marginSeconds) * 1000;
+    return typeof payload.exp !== 'number' || Date.now() >= (payload.exp - marginSeconds) * 1000;
   } catch {
-    return true; // 파싱 실패 → 만료 취급
+    return true;
   }
 }
 
 /**
- * Supabase 세션에서 유효한(만료되지 않은) access_token을 가져온다.
+ * 유효한 access_token을 가져온다.
  *
- * 1) 서버 API로 토큰 갱신 (navigator.locks 불필요, 데드락 회피)
- * 2) 서버 API 실패 시 클라이언트 refreshSession 폴백
- * 3) 실패 시 최대 maxRetries회 재시도 + 백오프
+ * 1) getSession()으로 현재 토큰 확인 — 유효하면 즉시 반환
+ * 2) 만료된 경우 서버 API(/api/auth/refresh-token) 1회 호출
+ * 3) 실패 시 { ok: false } 반환
  */
 export async function refreshAccessToken(
   supabase: SupabaseClient,
   options?: {
-    maxRetries?: number;
     timeoutMs?: number;
-    /** 첫 시도 전 대기 시간 (ms). 대용량 업로드 직후 네트워크 안정 대기용 */
-    initialDelayMs?: number;
     log?: (msg: string) => void;
   },
 ): Promise<RefreshResult> {
-  const maxRetries = options?.maxRetries ?? 3;
-  const timeoutMs = options?.timeoutMs ?? 15000;
-  const initialDelayMs = options?.initialDelayMs ?? 0;
-  const log = options?.log ?? ((msg: string) => console.log(`[토큰갱신] ${msg}`));
+  const timeoutMs = options?.timeoutMs ?? 10000;
+  const log = options?.log ?? (() => {});
 
-  /* 업로드 직후 네트워크 포화 상태 완화를 위한 대기 */
-  if (initialDelayMs > 0) {
-    log(`네트워크 안정 대기 ${initialDelayMs}ms...`);
-    await new Promise((r) => setTimeout(r, initialDelayMs));
+  /* 1) getSession()으로 현재 토큰 확인 (네트워크 호출 없음, 즉시) */
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token && !isTokenExpired(session.access_token)) {
+      return { accessToken: session.access_token, ok: true };
+    }
+  } catch {}
+
+  /* 2) 토큰 만료/없음 → 서버 API로 갱신 (1회만, 타임아웃 적용) */
+  try {
+    log('서버 API 토큰 갱신 호출');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    const res = await fetch('/api/auth/refresh-token', {
+      method: 'POST',
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const body = await res.json();
+      if (body.accessToken && !isTokenExpired(body.accessToken)) {
+        log('토큰 갱신 성공');
+        return { accessToken: body.accessToken, ok: true };
+      }
+    }
+    log('서버 API 갱신 실패');
+  } catch (e) {
+    log(`서버 API 예외: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    /* 1) 서버 API로 토큰 갱신 (최우선) — navigator.locks 데드락 회피
-          middleware가 쿠키 기반으로 처리하므로 클라이언트 lock 불필요 */
-    try {
-      log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 호출 중...`);
-      const serverResult = await raceTimeout(
-        fetch('/api/auth/refresh-token', { method: 'POST' }).then(async (res) => {
-          const body = await res.json();
-          return { ok: res.ok, body };
-        }),
-        timeoutMs,
-      );
-
-      if (!serverResult) {
-        log(`[${attempt}/${maxRetries}] 서버 API ${timeoutMs}ms 타임아웃`);
-      } else if (serverResult.ok && serverResult.body?.accessToken) {
-        const serverToken = serverResult.body.accessToken as string;
-        if (!isTokenExpired(serverToken)) {
-          log(`[${attempt}/${maxRetries}] 서버 API 토큰 갱신 성공`);
-          /* getSession() 재호출 제거 — navigator.locks 데드락 방지 */
-          return { accessToken: serverToken, ok: true };
-        }
-        log(`[${attempt}/${maxRetries}] 서버 API 토큰이 이미 만료됨`);
-      } else {
-        log(`[${attempt}/${maxRetries}] 서버 API 실패: ${serverResult.body?.error ?? 'unknown'}`);
-      }
-    } catch (e) {
-      log(`[${attempt}/${maxRetries}] 서버 API 예외: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    /* 3) refreshSession 폴백 — 서버 API가 실패한 경우 클라이언트 직접 시도 */
-    try {
-      log(`[${attempt}/${maxRetries}] refreshSession 폴백 호출 중...`);
-      const result = await raceTimeout(supabase.auth.refreshSession(), timeoutMs);
-
-      if (!result) {
-        log(`[${attempt}/${maxRetries}] refreshSession ${timeoutMs}ms 타임아웃`);
-      } else {
-        const newToken = 'data' in result ? result.data.session?.access_token : null;
-
-        if (newToken && !isTokenExpired(newToken)) {
-          log(`[${attempt}/${maxRetries}] refreshSession 성공`);
-          return { accessToken: newToken, ok: true };
-        }
-
-        if ('error' in result && result.error) {
-          log(`[${attempt}/${maxRetries}] refreshSession 오류: ${result.error.message}`);
-        } else {
-          log(`[${attempt}/${maxRetries}] refreshSession 토큰 없음 (newToken=${!!newToken})`);
-        }
-      }
-    } catch (e) {
-      log(`[${attempt}/${maxRetries}] refreshSession 예외: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    /* 마지막 시도가 아니면 백오프 후 재시도 */
-    if (attempt < maxRetries) {
-      const delay = attempt * 1500; // 1.5s, 3s, 4.5s ...
-      log(`시도 ${attempt} 실패, ${delay}ms 후 재시도...`);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-
-  log(`${maxRetries}회 시도 모두 실패`);
   return { accessToken: null, ok: false };
 }

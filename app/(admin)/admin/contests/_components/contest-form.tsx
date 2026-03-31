@@ -165,7 +165,6 @@ async function uploadContestAsset(
 
   /* refreshAccessToken으로 확실한 토큰 갱신 */
   const tokenResult = await refreshAccessToken(supabase, {
-    maxRetries: 2,
     timeoutMs: 10000,
     log: (msg) => console.log(`[공모전 에셋] ${msg}`),
   });

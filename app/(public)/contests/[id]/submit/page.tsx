@@ -506,7 +506,7 @@ export default function ContestSubmitPage() {
           throw new Error('로그인 세션이 만료되었습니다.');
         }
 
-        const resubRefresh = await refreshAccessToken(supabase, { maxRetries: 2, timeoutMs: 10000 });
+        const resubRefresh = await refreshAccessToken(supabase, { timeoutMs: 10000 });
         if (resubRefresh.ok) accessToken = resubRefresh.accessToken;
 
         /* 영상 업로드 — 새 제출과 동일한 플로우 사용 */
@@ -547,7 +547,7 @@ export default function ContestSubmitPage() {
         });
 
         /* 토큰 갱신 */
-        const tokenResult = await refreshAccessToken(supabase, { maxRetries: 3, initialDelayMs: 2000 });
+        const tokenResult = await refreshAccessToken(supabase, {});
         if (tokenResult.ok) accessToken = tokenResult.accessToken;
 
         /* 썸네일 업로드 (새 파일 선택 시) */
@@ -625,7 +625,6 @@ export default function ContestSubmitPage() {
         const supabase = createBrowserClient()!;
         try {
           const editRefresh = await refreshAccessToken(supabase, {
-            maxRetries: 2,
             timeoutMs: 10000,
             log: (msg) => console.log(`[수정] ${msg}`),
           });
@@ -650,7 +649,6 @@ export default function ContestSubmitPage() {
           /* 이미지 업로드 직전 토큰 한 번 더 갱신 (만료 방지) */
           try {
             const imgRefresh = await refreshAccessToken(supabase, {
-              maxRetries: 2,
               timeoutMs: 10000,
               log: (msg) => console.log(`[수정:이미지] ${msg}`),
             });
@@ -782,7 +780,6 @@ export default function ContestSubmitPage() {
         currentUser = undefined;
 
         const initResult = await refreshAccessToken(supabase, {
-          maxRetries: 2,
           timeoutMs: 8000,
           log: (msg) => console.log(`[제출] ${msg}`),
         });
@@ -829,7 +826,6 @@ export default function ContestSubmitPage() {
       tokenKeepAlive = setInterval(async () => {
         try {
           const r = await refreshAccessToken(supabase, {
-            maxRetries: 1,
             timeoutMs: 10000,
             log: (msg) => console.log(`[제출:keepalive] ${msg}`),
           });
@@ -1063,8 +1059,6 @@ export default function ContestSubmitPage() {
       /* getSession()으로 유효한 토큰을 못 가져왔으면 refreshAccessToken 시도 */
       if (!accessToken || (() => { try { const p = JSON.parse(atob(accessToken.split('.')[1])); return Date.now() >= (p.exp - 60) * 1000; } catch { return true; } })()) {
         const tokenResult = await refreshAccessToken(supabase, {
-          maxRetries: 3,
-          initialDelayMs: 2000,
           log: (msg) => console.log(`[제출] ${msg}`),
         });
         if (tokenResult.ok) {

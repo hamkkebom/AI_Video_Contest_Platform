@@ -56,7 +56,6 @@ async function uploadPopupImage(
 
   /* refreshAccessToken으로 토큰 갱신 (getSession만으로는 만료 토큰 반환 가능) */
   const tokenResult = await refreshAccessToken(supabase, {
-    maxRetries: 2,
     timeoutMs: 10000,
     log: (msg) => console.log(`[팝업 이미지] ${msg}`),
   });
