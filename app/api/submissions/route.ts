@@ -41,17 +41,12 @@ export async function POST(request: Request) {
   } = await supabase.auth.getSession();
   user = session?.user ?? null;
 
-  /* getSession()이 실패하거나 토큰이 없으면 getUser()로 서버 검증 시도 */
+  /* getSession() 실패 시 refreshSession 폴백 (getUser 사용 안 함 — refresh_token 충돌 방지) */
   if (!user) {
     try {
-      const userResult = await Promise.race([
-        supabase.auth.getUser(),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
-      ]);
-      if (userResult && 'data' in userResult && userResult.data.user) {
-        user = userResult.data.user;
-      }
-    } catch { /* getUser 타임아웃 — 무시 */ }
+      const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+      if (refreshed?.user) user = refreshed.user;
+    } catch { /* refreshSession 실패 — 무시 */ }
   }
 
   if (authError || !user) {

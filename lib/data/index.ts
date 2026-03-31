@@ -1488,9 +1488,10 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
   const supabase = await createClient();
 
   const {
-    data: { user },
+    data: { session },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (authError || !user) return null;
 
