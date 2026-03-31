@@ -7,10 +7,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
-  // 1. Supabase signOut (서버사이드 — 리프레시 토큰 무효화)
+  // 1. Supabase signOut (3초 타임아웃 — hang 방지)
   try {
     const supabase = await createClient();
-    await supabase.auth.signOut();
+    await Promise.race([
+      supabase.auth.signOut(),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
   } catch {
     // signOut 실패해도 쿠키는 강제 삭제
   }
