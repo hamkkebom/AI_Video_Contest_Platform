@@ -64,18 +64,7 @@ export async function POST() {
     });
   }
 
-  /* 3차: getUser()로 서버 검증 후 다시 getSession */
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (!userError && user) {
-    const { data: { session: retrySession } } = await supabase.auth.getSession();
-    if (retrySession?.access_token) {
-      return NextResponse.json({
-        ok: true,
-        accessToken: retrySession.access_token,
-        expiresAt: retrySession.expires_at,
-      });
-    }
-  }
+  /* getUser() 제거 — navigator.locks 충돌 + refresh_token 소비 방지 */
 
   return NextResponse.json(
     { error: refreshError?.message ?? '세션 갱신에 실패했습니다.', ok: false },

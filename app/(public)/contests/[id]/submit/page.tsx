@@ -766,12 +766,9 @@ export default function ContestSubmitPage() {
         setIsSubmitting(false);
         setUploadStep(null);
         setErrorType('auth_expired');
-        setSubmitError('로그인 세션이 만료되어 다시 로그인이 필요합니다.');
-        reportUploadError('auth', '세션 복구 실패', 'AUTH-REDIRECT').catch(() => {});
-        try { await supabase.auth.signOut(); } catch {}
-        setTimeout(() => {
-          router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
-        }, 3000);
+        setSubmitError('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+        reportUploadError('auth', '세션 복구 실패', 'AUTH-NOTOKEN').catch(() => {});
+        /* signOut 하지 않음 — 사용자가 새로고침하면 자동 복구됨 */
         return;
       }
 
@@ -1011,15 +1008,11 @@ export default function ContestSubmitPage() {
         setUploadStep(null);
         setErrorType('auth_expired');
         setSubmitError(
-          '영상 업로드는 완료되었으나 로그인 세션이 만료되었습니다.\n\n' +
-          '다시 로그인 후 이 페이지로 돌아오면 업로드된 영상으로 이어서 제출할 수 있습니다.'
+          '영상 업로드는 완료되었으나 인증에 문제가 발생했습니다.\n\n' +
+          '페이지를 새로고침 후 다시 제출해 주세요. 영상은 이미 업로드되어 있습니다.'
         );
-        reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
-        /* 깨진 세션 강제 정리 */
-        try { await supabase.auth.signOut(); } catch {}
-        setTimeout(() => {
-          router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
-        }, 4000);
+        reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD').catch(() => {});
+        /* signOut 하지 않음 — 새로고침으로 복구 가능 */
         return;
       }
 
