@@ -778,26 +778,33 @@ export default function ContestSubmitPage() {
         thumbnailFileName: thumbnailFile?.name,
       }));
 
-      /* ── 1단계: 세션 확인 + 필요 시에만 갱신 ──
-         토큰이 유효하면 즉시 진행, 만료된 경우에만 갱신 시도 (최소 지연) */
+      /* ── 1단계: Supabase 클라이언트에서 직접 최신 세션 가져오기 ──
+         AuthContext(React 상태)는 오래된 토큰일 수 있으므로 항상 Supabase에서 직접 읽기 */
       const supabase = createBrowserClient()!;
       let accessToken: string | undefined;
       let currentUser: { id: string; email?: string } | undefined;
 
-      /* AuthContext에서 먼저 가져오기 (즉시, 네트워크 호출 없음) */
-      if (authSession?.access_token) accessToken = authSession.access_token;
-      if (authSession?.user) currentUser = authSession.user;
+      /* Supabase 클라이언트에서 직접 세션 가져오기 (AuthContext 대신) */
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.access_token) accessToken = currentSession.access_token;
+        if (currentSession?.user) currentUser = currentSession.user;
+      } catch {}
 
-      /* 토큰이 없거나 만료된 경우에만 갱신 시도 */
-      const needsRefresh = !accessToken || (() => {
+      /* 토큰이 없거나 만료된 경우 갱신 시도 */
+      const isExpired = accessToken ? (() => {
         try {
           const payload = JSON.parse(atob(accessToken!.split('.')[1]));
           return Date.now() >= (payload.exp - 60) * 1000;
         } catch { return true; }
-      })();
+      })() : true;
 
-      if (needsRefresh) {
-        console.log('[제출] 토큰 만료/없음 — 갱신 시도');
+      if (!accessToken || isExpired) {
+        console.log('[제출] 토큰 없음/만료 — 갱신 시도');
+        /* 갱신 실패 시 accessToken을 null로 확실히 초기화 */
+        accessToken = undefined;
+        currentUser = undefined;
+
         const initResult = await refreshAccessToken(supabase, {
           maxRetries: 2,
           timeoutMs: 8000,
@@ -806,11 +813,11 @@ export default function ContestSubmitPage() {
         if (initResult.ok) {
           accessToken = initResult.accessToken;
         }
-        /* 갱신 실패 시 getSession 폴백 */
-        if (!accessToken) {
+        /* 갱신 후 유저 정보 가져오기 */
+        if (!currentUser) {
           try {
             const { data: { session: s } } = await supabase.auth.getSession();
-            if (s?.access_token) accessToken = s.access_token;
+            if (s?.access_token && !accessToken) accessToken = s.access_token;
             if (s?.user) currentUser = s.user;
           } catch {}
         }
