@@ -769,41 +769,44 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* ── 1단계: 세션 갱신 + 인증 확인 ──
-         AuthContext가 아닌 Supabase 클라이언트에서 직접 최신 세션을 가져온다. */
+      /* ── 1단계: 세션 확인 + 필요 시에만 갱신 ──
+         토큰이 유효하면 즉시 진행, 만료된 경우에만 갱신 시도 (최소 지연) */
       const supabase = createBrowserClient()!;
-
-      /* refreshSession()으로 새 토큰 발급 시도 → getSession() 폴백 */
       let accessToken: string | undefined;
       let currentUser: { id: string; email?: string } | undefined;
 
-      const initResult = await refreshAccessToken(supabase, {
-        maxRetries: 3,
-        log: (msg) => console.log(`[제출] ${msg}`),
-      });
-      if (initResult.ok) {
-        accessToken = initResult.accessToken;
-      }
+      /* AuthContext에서 먼저 가져오기 (즉시, 네트워크 호출 없음) */
+      if (authSession?.access_token) accessToken = authSession.access_token;
+      if (authSession?.user) currentUser = authSession.user;
 
-      /* refreshAccessToken 실패 시에도 getSession()으로 한번 더 시도 */
-      if (!accessToken) {
+      /* 토큰이 없거나 만료된 경우에만 갱신 시도 */
+      const needsRefresh = !accessToken || (() => {
         try {
-          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
-          if (fallbackSession?.access_token) {
-            accessToken = fallbackSession.access_token;
-          }
-        } catch {}
-      }
+          const payload = JSON.parse(atob(accessToken!.split('.')[1]));
+          return Date.now() >= (payload.exp - 60) * 1000;
+        } catch { return true; }
+      })();
 
-      /* 현재 유저 정보 — AuthContext + Supabase 클라이언트 모두에서 시도 */
-      if (authSession?.user) {
-        currentUser = authSession.user;
-      }
-      if (!currentUser) {
-        try {
-          const { data: { session: sess } } = await supabase.auth.getSession();
-          if (sess?.user) currentUser = sess.user;
-        } catch {}
+      if (needsRefresh) {
+        console.log('[제출] 토큰 만료/없음 — 갱신 시도');
+        const initResult = await refreshAccessToken(supabase, {
+          maxRetries: 2,
+          timeoutMs: 8000,
+          log: (msg) => console.log(`[제출] ${msg}`),
+        });
+        if (initResult.ok) {
+          accessToken = initResult.accessToken;
+        }
+        /* 갱신 실패 시 getSession 폴백 */
+        if (!accessToken) {
+          try {
+            const { data: { session: s } } = await supabase.auth.getSession();
+            if (s?.access_token) accessToken = s.access_token;
+            if (s?.user) currentUser = s.user;
+          } catch {}
+        }
+      } else {
+        console.log('[제출] 토큰 유효 — 갱신 건너뜀');
       }
 
       if (!accessToken || !currentUser) {
