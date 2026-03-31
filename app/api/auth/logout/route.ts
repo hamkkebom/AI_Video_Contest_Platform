@@ -1,24 +1,12 @@
 /**
  * 서버사이드 강제 로그아웃
- * 모든 sb-* 쿠키를 서버에서 직접 삭제 후 홈으로 리다이렉트
+ * 쿠키만 삭제하고 즉시 리다이렉트 (Supabase API 호출 없음 — hang 방지)
  */
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
-  // 1. Supabase signOut (3초 타임아웃 — hang 방지)
-  try {
-    const supabase = await createClient();
-    await Promise.race([
-      supabase.auth.signOut(),
-      new Promise((resolve) => setTimeout(resolve, 3000)),
-    ]);
-  } catch {
-    // signOut 실패해도 쿠키는 강제 삭제
-  }
-
-  // 2. 모든 sb-* 쿠키 강제 삭제
+  // 모든 sb-* 쿠키 강제 삭제 (Supabase signOut 호출 안 함 — hang 원인 제거)
   const cookieStore = await cookies();
   const allCookies = cookieStore.getAll();
   for (const cookie of allCookies) {
@@ -32,6 +20,6 @@ export async function GET() {
     }
   }
 
-  // 3. 홈으로 리다이렉트
+  // 홈으로 리다이렉트
   return NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'));
 }
