@@ -816,39 +816,22 @@ export default function ContestSubmitPage() {
       activityKeepAlive = setInterval(() => {
         try { localStorage.setItem('ggumple_last_activity', String(Date.now())); } catch {}
       }, 20_000);
-      /* 업로드 중 주기적 토큰 갱신 (JWT 만료 방지) */
-      tokenKeepAlive = setInterval(async () => {
-        try {
-          const r = await refreshAccessToken(supabase, {
-            timeoutMs: 10000,
-            log: (msg) => console.log(`[제출:keepalive] ${msg}`),
-          });
-          if (r.ok) accessToken = r.accessToken;
-        } catch { /* 백그라운드 갱신 실패는 무시 — 나중에 재시도 */ }
-      }, 4 * 60 * 1000); // 4분마다
+      /* keepalive 타이머 제거 — JWT 7일이므로 불필요, refresh_token 충돌만 유발 */
 
-      /* ── 사전 검증: 업로드 전 공모전 상태/쿼터 확인 (Critical #1) ── */
+      /* 사전 검증 — 비블로킹 (쿼터/마감 체크, 실패해도 진행) */
       try {
-        const preCheckCtrl = new AbortController();
-        const preCheckTimeout = setTimeout(() => preCheckCtrl.abort(), 10_000);
-        const preCheckRes = await fetch(`/api/submissions/pre-check?contestId=${contestId}`, {
-          headers: { 'Content-Type': 'application/json' },
-          signal: preCheckCtrl.signal,
-        });
-        clearTimeout(preCheckTimeout);
-        if (!preCheckRes.ok) {
-          const preCheckData = await preCheckRes.json().catch(() => ({ error: '사전 검증 실패' }));
-          const code = preCheckData.code;
-          if (code === 'QUOTA_EXCEEDED') { setErrorType('duplicate'); setSubmitError(preCheckData.error); return; }
-          if (code === 'CONTEST_NOT_OPEN') { setErrorType('contest_closed'); setSubmitError(preCheckData.error); return; }
-          if (code === 'DEADLINE_PASSED') { setErrorType('deadline_passed'); setSubmitError(preCheckData.error); return; }
-          throw new Error(preCheckData.error || '공모전 상태 확인에 실패했습니다.');
+        const preCheckRes = await Promise.race([
+          fetch(`/api/submissions/pre-check?contestId=${contestId}`),
+          new Promise<null>((r) => setTimeout(() => r(null), 5000)),
+        ]);
+        if (preCheckRes && !preCheckRes.ok) {
+          const preCheckData = await preCheckRes.json().catch(() => ({}));
+          const code = (preCheckData as { code?: string }).code;
+          if (code === 'QUOTA_EXCEEDED') { setErrorType('duplicate'); setSubmitError(preCheckData.error); setIsSubmitting(false); setUploadStep(null); return; }
+          if (code === 'CONTEST_NOT_OPEN') { setErrorType('contest_closed'); setSubmitError(preCheckData.error); setIsSubmitting(false); setUploadStep(null); return; }
+          if (code === 'DEADLINE_PASSED') { setErrorType('deadline_passed'); setSubmitError(preCheckData.error); setIsSubmitting(false); setUploadStep(null); return; }
         }
-      } catch (preCheckErr) {
-        if (preCheckErr instanceof Error && ['duplicate', 'contest_closed', 'deadline_passed'].some(t => errorType === t)) return;
-        console.warn('[제출] 사전 검증 실패 (업로드 진행):', preCheckErr);
-        /* 사전 검증 실패는 차단하지 않고 진행 — 최종 제출 API에서 재검증됨 */
-      }
+      } catch { /* 사전 검증 실패는 무시 — 최종 제출 API에서 재검증됨 */ }
 
       /* 업로드 URL 요청 (60초 타임아웃, 실패 시 1회 재시도) */
       const fetchUploadUrl = async (): Promise<Response> => {
