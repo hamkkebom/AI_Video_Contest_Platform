@@ -67,9 +67,7 @@ function SidebarFooter({ roleLabel }: { roleLabel: string }) {
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const email = profile?.email || user?.email || '';
   const handleSignOut = () => {
-    /* 즉시 이동 — RoleGuard 스피너 노출 방지 */
-    window.location.href = '/';
-    signOut();
+    signOut(); /* /api/auth/logout → 쿠키 삭제 → 홈 리다이렉트 */
   };
 
   return (
