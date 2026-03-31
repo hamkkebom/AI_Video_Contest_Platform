@@ -748,30 +748,17 @@ export default function ContestSubmitPage() {
       /* 제출 시작 로그 — fire-and-forget (await하면 콜드스타트로 hang 가능) */
       reportUploadError('submit_start', '제출 프로세스 시작', 'SUBMIT_START').catch(() => {});
 
-      /* ── 1단계: 토큰 확인 (재제출과 동일한 단순 로직) ── */
+      /* ── 1단계: 토큰 확인 (JWT 7일 — 갱신 불필요, 있으면 사용) ── */
       const supabase = createBrowserClient()!;
-      let accessToken = authSession?.access_token;
+      const accessToken = authSession?.access_token;
       const currentUser = authSession?.user;
-
-      const tokenResult = await refreshAccessToken(supabase, {
-        timeoutMs: 10000,
-        currentToken: accessToken,
-        log: (msg) => console.log(`[제출] ${msg}`),
-      });
-      if (tokenResult.ok) {
-        accessToken = tokenResult.accessToken;
-      } else {
-        /* 갱신 실패 → 만료 토큰 무효화 (401 방지) */
-        accessToken = undefined;
-      }
 
       if (!accessToken || !currentUser) {
         setIsSubmitting(false);
         setUploadStep(null);
         setErrorType('auth_expired');
-        setSubmitError('로그인 세션이 만료되었습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
-        reportUploadError('auth', '세션 복구 실패', 'AUTH-NOTOKEN').catch(() => {});
-        /* signOut 하지 않음 — 사용자가 새로고침하면 자동 복구됨 */
+        setSubmitError('로그인이 필요합니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+        reportUploadError('auth', '토큰 없음', 'AUTH-NOTOKEN').catch(() => {});
         return;
       }
 
@@ -983,41 +970,7 @@ export default function ContestSubmitPage() {
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
-      /* ── 업로드 후 토큰 확인 (JWT 7일이므로 대부분 유효, 만료 시 서버 API 갱신) ── */
-      const postUploadToken = await refreshAccessToken(supabase, {
-        currentToken: accessToken,
-        timeoutMs: 10000,
-        log: (msg) => console.log(`[제출:업로드후] ${msg}`),
-      });
-      if (postUploadToken.ok) {
-        accessToken = postUploadToken.accessToken;
-      }
-
-      /* 그래도 유효한 토큰이 없으면 에러 */
-      const stillExpired = !accessToken || (() => { try { const p = JSON.parse(atob(accessToken.split('.')[1])); return Date.now() >= (p.exp - 60) * 1000; } catch { return true; } })();
-      if (stillExpired) {
-        /* Critical #2: UID를 localStorage에 저장하여 재로그인 후 복구 가능하게 함 */
-        try {
-          localStorage.setItem('ggumple_pending_upload', JSON.stringify({
-            uid: uploadUrlResult.uid,
-            contestId,
-            timestamp: Date.now(),
-          }));
-        } catch {}
-        /* keepalive 정리 후 로그인 리다이렉트 */
-        if (activityKeepAlive) clearInterval(activityKeepAlive);
-        if (tokenKeepAlive) clearInterval(tokenKeepAlive);
-        setIsSubmitting(false);
-        setUploadStep(null);
-        setErrorType('auth_expired');
-        setSubmitError(
-          '영상 업로드는 완료되었으나 인증에 문제가 발생했습니다.\n\n' +
-          '페이지를 새로고침 후 다시 제출해 주세요. 영상은 이미 업로드되어 있습니다.'
-        );
-        reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD').catch(() => {});
-        /* signOut 하지 않음 — 새로고침으로 복구 가능 */
-        return;
-      }
+      /* JWT 7일 — 업로드 후 토큰 갱신 불필요. 그대로 사용. */
 
       /* ── 3단계: 썸네일 업로드 ── */
       setUploadStep('thumbnail');

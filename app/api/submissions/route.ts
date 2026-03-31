@@ -41,13 +41,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getSession();
   user = session?.user ?? null;
 
-  /* getSession() 실패 시 refreshSession 폴백 (getUser 사용 안 함 — refresh_token 충돌 방지) */
-  if (!user) {
-    try {
-      const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-      if (refreshed?.user) user = refreshed.user;
-    } catch { /* refreshSession 실패 — 무시 */ }
-  }
+  /* getSession 실패 시 — refreshSession/getUser 호출 안 함 (refresh_token 충돌 방지) */
 
   if (authError || !user) {
     console.error('[submissions API] 인증 실패:', authError?.message);
@@ -134,11 +128,13 @@ export async function POST(request: Request) {
 
     const maxSubmissions = contestData.max_submissions_per_user ?? 1;
 
+    /* needs_resubmission 상태는 쿼터에서 제외 (재제출 대기 중이므로) */
     const { count: existingCount, error: countError } = await supabase
       .from('submissions')
       .select('id', { count: 'exact', head: true })
       .eq('contest_id', contestId)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .neq('status', 'needs_resubmission');
 
     if (countError) {
       console.error('기존 출품작 수 조회 실패:', countError);
