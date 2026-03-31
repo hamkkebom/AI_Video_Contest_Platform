@@ -743,14 +743,8 @@ export default function ContestSubmitPage() {
       setUploadStep('preparing');
       setUploadProgress(0);
 
-      /* 제출 시작 로그 — 어디서 멈추는지 추적용 */
-      reportUploadError('submit_start', '제출 프로세스 시작', 'SUBMIT_START', JSON.stringify({
-        hasAuthSession: !!authSession?.access_token,
-        hasUser: !!authSession?.user,
-        videoFileName: videoFile?.name,
-        videoFileSize: videoFile?.size,
-        thumbnailFileName: thumbnailFile?.name,
-      }));
+      /* 제출 시작 로그 — fire-and-forget (await하면 콜드스타트로 hang 가능) */
+      reportUploadError('submit_start', '제출 프로세스 시작', 'SUBMIT_START').catch(() => {});
 
       /* ── 1단계: Supabase 클라이언트에서 직접 최신 세션 가져오기 ──
          AuthContext(React 상태)는 오래된 토큰일 수 있으므로 항상 Supabase에서 직접 읽기 */
@@ -807,7 +801,7 @@ export default function ContestSubmitPage() {
           '로그인 세션이 만료되어 다시 로그인이 필요합니다.\n\n' +
           '잠시 후 로그인 페이지로 이동합니다.'
         );
-        await reportUploadError('auth', '세션 복구 실패 — 로그인 리다이렉트', 'AUTH-REDIRECT');
+        reportUploadError('auth', '세션 복구 실패 — 로그인 리다이렉트', 'AUTH-REDIRECT');
         /* 깨진 세션 강제 정리 — 재로그인 시 새 토큰 발급 보장 */
         try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => {
@@ -816,7 +810,7 @@ export default function ContestSubmitPage() {
         return;
       }
       console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
-      reportUploadError('auth_ok', '세션 확인 완료', 'AUTH_OK');
+      reportUploadError('auth_ok', '세션 확인 완료', 'AUTH_OK').catch(() => {});
 
       /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
       activityKeepAlive = setInterval(() => {
@@ -889,7 +883,7 @@ export default function ContestSubmitPage() {
       };
 
       if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
-        await reportUploadError('preparing', uploadUrlResult.error ?? '영상 업로드 URL 생성 실패', String(uploadUrlResponse.status));
+        reportUploadError('preparing', uploadUrlResult.error ?? '영상 업로드 URL 생성 실패', String(uploadUrlResponse.status));
         throw new Error(userFriendlyError('VIDEO-URL'));
       }
 
@@ -1087,7 +1081,7 @@ export default function ContestSubmitPage() {
           '영상 업로드는 완료되었으나 로그인 세션이 만료되었습니다.\n\n' +
           '다시 로그인 후 이 페이지로 돌아오면 업로드된 영상으로 이어서 제출할 수 있습니다.'
         );
-        await reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
+        reportUploadError('post-upload-auth', '업로드 후 세션 복구 실패', 'AUTH-POST-UPLOAD');
         /* 깨진 세션 강제 정리 */
         try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => {
