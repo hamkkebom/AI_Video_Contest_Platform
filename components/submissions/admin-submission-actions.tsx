@@ -721,8 +721,15 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                       )}
                     </label>
                     {videoPreviewUrl && (
-                      <div className="rounded border bg-muted px-3 py-2 text-xs text-muted-foreground">
-                        선택된 영상 파일이 업로드됩니다.
+                      <div className="space-y-2">
+                        <video
+                          src={videoPreviewUrl}
+                          controls
+                          className="w-full max-h-48 rounded border bg-black"
+                        />
+                        <div className="rounded border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-700">
+                          ✅ 영상이 정상적으로 선택되었습니다. 저장 시 업로드됩니다.
+                        </div>
                       </div>
                     )}
                   </div>
