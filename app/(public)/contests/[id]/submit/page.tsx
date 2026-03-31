@@ -746,71 +746,31 @@ export default function ContestSubmitPage() {
       /* 제출 시작 로그 — fire-and-forget (await하면 콜드스타트로 hang 가능) */
       reportUploadError('submit_start', '제출 프로세스 시작', 'SUBMIT_START').catch(() => {});
 
-      /* ── 1단계: Supabase 클라이언트에서 직접 최신 세션 가져오기 ──
-         AuthContext(React 상태)는 오래된 토큰일 수 있으므로 항상 Supabase에서 직접 읽기 */
+      /* ── 1단계: 토큰 확인 (재제출과 동일한 단순 로직) ── */
       const supabase = createBrowserClient()!;
-      let accessToken: string | undefined;
-      let currentUser: { id: string; email?: string } | undefined;
+      let accessToken = authSession?.access_token;
+      const currentUser = authSession?.user;
 
-      /* Supabase 클라이언트에서 직접 세션 가져오기 (AuthContext 대신) */
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession?.access_token) accessToken = currentSession.access_token;
-        if (currentSession?.user) currentUser = currentSession.user;
-      } catch {}
-
-      /* 토큰이 없거나 만료된 경우 갱신 시도 */
-      const isExpired = accessToken ? (() => {
-        try {
-          const payload = JSON.parse(atob(accessToken!.split('.')[1]));
-          return Date.now() >= (payload.exp - 60) * 1000;
-        } catch { return true; }
-      })() : true;
-
-      if (!accessToken || isExpired) {
-        console.log('[제출] 토큰 없음/만료 — 갱신 시도');
-        /* 갱신 실패 시 accessToken을 null로 확실히 초기화 */
-        accessToken = undefined;
-        currentUser = undefined;
-
-        const initResult = await refreshAccessToken(supabase, {
-          timeoutMs: 8000,
-          log: (msg) => console.log(`[제출] ${msg}`),
-        });
-        if (initResult.ok) {
-          accessToken = initResult.accessToken;
-        }
-        /* 갱신 후 유저 정보 가져오기 */
-        if (!currentUser) {
-          try {
-            const { data: { session: s } } = await supabase.auth.getSession();
-            if (s?.access_token && !accessToken) accessToken = s.access_token;
-            if (s?.user) currentUser = s.user;
-          } catch {}
-        }
-      } else {
-        console.log('[제출] 토큰 유효 — 갱신 건너뜀');
+      const tokenResult = await refreshAccessToken(supabase, {
+        timeoutMs: 10000,
+        log: (msg) => console.log(`[제출] ${msg}`),
+      });
+      if (tokenResult.ok) {
+        accessToken = tokenResult.accessToken;
       }
 
       if (!accessToken || !currentUser) {
-        /* 세션 복구 불가 → 깨진 세션 정리 후 로그인 페이지로 이동 */
         setIsSubmitting(false);
         setUploadStep(null);
         setErrorType('auth_expired');
-        setSubmitError(
-          '로그인 세션이 만료되어 다시 로그인이 필요합니다.\n\n' +
-          '잠시 후 로그인 페이지로 이동합니다.'
-        );
-        reportUploadError('auth', '세션 복구 실패 — 로그인 리다이렉트', 'AUTH-REDIRECT');
-        /* 깨진 세션 강제 정리 — 재로그인 시 새 토큰 발급 보장 */
+        setSubmitError('로그인 세션이 만료되어 다시 로그인이 필요합니다.');
+        reportUploadError('auth', '세션 복구 실패', 'AUTH-REDIRECT').catch(() => {});
         try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => {
           router.push(`/login?redirectTo=${encodeURIComponent(`/contests/${contestId}/submit`)}`);
         }, 3000);
         return;
       }
-      console.log('[제출] 세션 확인 완료, userId:', currentUser.id);
-      reportUploadError('auth_ok', '세션 확인 완료', 'AUTH_OK').catch(() => {});
 
       /* 업로드 중 세션 유지: activity keepalive (SessionTimeoutGuard 방지) */
       activityKeepAlive = setInterval(() => {
