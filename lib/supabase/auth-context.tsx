@@ -314,38 +314,12 @@ function AuthProviderInner({
   }, [supabase]);
 
   useEffect(() => {
-    /* 초기 세션 동기화 — getSession() 우선, 만료된 경우에만 refreshSession() 시도 */
+    /* 초기 세션 동기화 — getSession()만 사용 (refreshSession 호출 금지)
+       refreshSession()은 refresh_token을 소비하므로 다른 곳과 충돌 위험.
+       토큰 갱신은 제출 시점에만 필요할 때 수행. */
     const initAuth = async () => {
       try {
-        // 1) getSession()으로 현재 쿠키에서 세션 읽기 (빠르고 안전)
-        const { data: { session: cachedSession } } = await supabase.auth.getSession();
-        let currentSession = cachedSession;
-
-        // 2) 세션은 있지만 토큰이 이미 만료되었거나 임박(5분 이내)이면 갱신 시도
-        if (currentSession?.expires_at) {
-          const expiresIn = currentSession.expires_at - Math.floor(Date.now() / 1000);
-          if (expiresIn < 300) {
-            try {
-              const { data: refreshData } = await Promise.race([
-                supabase.auth.refreshSession(),
-                new Promise<{ data: { session: null } }>((resolve) =>
-                  setTimeout(() => resolve({ data: { session: null } }), 5000)
-                ),
-              ]);
-              if (refreshData?.session) {
-                currentSession = refreshData.session;
-              } else if (expiresIn <= 0) {
-                // 만료 + 갱신 실패 → signOut 하지 않고 기존 세션 유지 시도
-                // 7일 JWT이므로 middleware가 갱신해줄 수 있음
-                console.warn('[AuthContext] 만료된 세션 갱신 실패 — 기존 세션 유지 (signOut 안 함)');
-              }
-            } catch {
-              if (expiresIn <= 0) {
-                console.warn('[AuthContext] 만료된 세션 예외 — 기존 세션 유지 (signOut 안 함)');
-              }
-            }
-          }
-        }
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
 
         if (hasServerStateRef.current) {

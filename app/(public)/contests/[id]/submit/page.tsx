@@ -126,32 +126,8 @@ export default function ContestSubmitPage() {
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
-  /* 페이지 진입 시 토큰 상태 확인 — 만료된 경우에만 갱신 시도 */
-  /* 페이지 진입 시 토큰 만료 임박하면 백그라운드 갱신 (실패해도 signOut 안 함) */
-  useEffect(() => {
-    if (!authSession?.access_token) return;
-    try {
-      const payload = JSON.parse(atob(authSession.access_token.split('.')[1]));
-      const expiresAt = payload.exp * 1000;
-      const bufferMs = 5 * 60 * 1000;
-      if (Date.now() < expiresAt - bufferMs) {
-        console.log('[자동갱신] 토큰 유효 — 갱신 불필요, 남은시간:', Math.round((expiresAt - Date.now()) / 60000), '분');
-        return;
-      }
-    } catch { /* JWT 파싱 실패 — 갱신 시도 */ }
-
-    const supabase = createBrowserClient()!;
-    refreshAccessToken(supabase, {
-      maxRetries: 2,
-      timeoutMs: 8000,
-      log: (msg) => console.log(`[자동갱신] ${msg}`),
-    }).then(result => {
-      if (!result.ok) console.warn('[자동갱신] 갱신 실패 — 기존 토큰으로 진행');
-    }).catch(() => {
-      console.warn('[자동갱신] 예외 발생 — 기존 토큰으로 진행');
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* 페이지 로드 시 자동 갱신 제거 — AuthContext와 refresh_token 충돌 방지
+     토큰 갱신은 제출 버튼 클릭 시에만 수행 */
 
   /* #10: 업로드 중 탭 닫기 경고 */
   useEffect(() => {
