@@ -55,15 +55,17 @@ async function uploadPopupImage(
   if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
 
   /* refreshAccessToken으로 토큰 갱신 (getSession만으로는 만료 토큰 반환 가능) */
+  /* 현재 세션에서 토큰 가져오기 (SDK 호출 없이) */
+  const existingToken = typeof window !== 'undefined'
+    ? document.cookie.split(';').find(c => c.trim().startsWith('sb-'))?.split('=')[1] ?? null
+    : null;
   const tokenResult = await refreshAccessToken(supabase, {
     timeoutMs: 10000,
+    currentToken: existingToken,
     log: (msg) => console.log(`[팝업 이미지] ${msg}`),
   });
   if (!tokenResult.ok) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
   const accessToken = tokenResult.accessToken;
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (!user) throw new Error('인증이 필요합니다. 페이지를 새로고침해 주세요.');
 
   /* 이미지 검증: 10MB 제한, JPEG/PNG/WebP/GIF */
   const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -73,7 +75,7 @@ async function uploadPopupImage(
   /* contest-assets 버킷, popup-image/ 접두어로 분리 */
   const bucket = 'contest-assets';
   const ext = file.name.split('.').pop() || 'bin';
-  const filePath = `popup-image/${user.id}/${Date.now()}.${ext}`;
+  const filePath = `popup-image/${crypto.randomUUID()}/${Date.now()}.${ext}`;
 
   /* XHR로 Supabase Storage에 직접 업로드 — 실시간 progress 지원 */
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

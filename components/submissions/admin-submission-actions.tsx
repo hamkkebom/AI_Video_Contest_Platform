@@ -279,8 +279,8 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
 
         const supabase = createBrowserClient()!;
         const tokenResult = await refreshAccessToken(supabase, {
-          maxRetries: 2,
           timeoutMs: 10000,
+          currentToken: null,
           log: (msg) => console.log(`[출품작 수정] ${msg}`),
         });
         if (!tokenResult.ok) {

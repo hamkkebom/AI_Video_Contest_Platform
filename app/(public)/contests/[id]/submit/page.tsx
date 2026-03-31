@@ -506,7 +506,7 @@ export default function ContestSubmitPage() {
           throw new Error('로그인 세션이 만료되었습니다.');
         }
 
-        const resubRefresh = await refreshAccessToken(supabase, { timeoutMs: 10000 });
+        const resubRefresh = await refreshAccessToken(supabase, { timeoutMs: 10000, currentToken: accessToken });
         if (resubRefresh.ok) accessToken = resubRefresh.accessToken;
 
         /* 영상 업로드 — 새 제출과 동일한 플로우 사용 */
@@ -547,7 +547,7 @@ export default function ContestSubmitPage() {
         });
 
         /* 토큰 갱신 */
-        const tokenResult = await refreshAccessToken(supabase, {});
+        const tokenResult = await refreshAccessToken(supabase, { currentToken: accessToken });
         if (tokenResult.ok) accessToken = tokenResult.accessToken;
 
         /* 썸네일 업로드 (새 파일 선택 시) */
@@ -626,6 +626,7 @@ export default function ContestSubmitPage() {
         try {
           const editRefresh = await refreshAccessToken(supabase, {
             timeoutMs: 10000,
+            currentToken: accessToken,
             log: (msg) => console.log(`[수정] ${msg}`),
           });
           if (editRefresh.ok) {
@@ -650,6 +651,7 @@ export default function ContestSubmitPage() {
           try {
             const imgRefresh = await refreshAccessToken(supabase, {
               timeoutMs: 10000,
+              currentToken: accessToken,
               log: (msg) => console.log(`[수정:이미지] ${msg}`),
             });
             if (imgRefresh.ok) accessToken = imgRefresh.accessToken;
@@ -753,6 +755,7 @@ export default function ContestSubmitPage() {
 
       const tokenResult = await refreshAccessToken(supabase, {
         timeoutMs: 10000,
+        currentToken: accessToken,
         log: (msg) => console.log(`[제출] ${msg}`),
       });
       if (tokenResult.ok) {
@@ -980,27 +983,14 @@ export default function ContestSubmitPage() {
         const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
       });
 
-      /* ── 토큰 갱신: 영상 업로드에 수 분이 소요되어 JWT가 만료되었을 수 있음 ── */
-      /* 업로드 후 토큰 갱신 — keepalive가 이미 갱신했을 수 있으므로 getSession() 먼저 확인 */
-      try {
-        const { data: { session: postUploadSession } } = await supabase.auth.getSession();
-        if (postUploadSession?.access_token) {
-          const payload = JSON.parse(atob(postUploadSession.access_token.split('.')[1]));
-          if (Date.now() < (payload.exp - 60) * 1000) {
-            accessToken = postUploadSession.access_token;
-            console.log('[제출] keepalive가 갱신한 토큰 사용');
-          }
-        }
-      } catch {}
-
-      /* getSession()으로 유효한 토큰을 못 가져왔으면 refreshAccessToken 시도 */
-      if (!accessToken || (() => { try { const p = JSON.parse(atob(accessToken.split('.')[1])); return Date.now() >= (p.exp - 60) * 1000; } catch { return true; } })()) {
-        const tokenResult = await refreshAccessToken(supabase, {
-          log: (msg) => console.log(`[제출] ${msg}`),
-        });
-        if (tokenResult.ok) {
-          accessToken = tokenResult.accessToken;
-        }
+      /* ── 업로드 후 토큰 확인 (JWT 7일이므로 대부분 유효, 만료 시 서버 API 갱신) ── */
+      const postUploadToken = await refreshAccessToken(supabase, {
+        currentToken: accessToken,
+        timeoutMs: 10000,
+        log: (msg) => console.log(`[제출:업로드후] ${msg}`),
+      });
+      if (postUploadToken.ok) {
+        accessToken = postUploadToken.accessToken;
       }
 
       /* 그래도 유효한 토큰이 없으면 에러 */
