@@ -56,24 +56,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  /* 세션 갱신: getUser()로 서버 검증 + 자동 토큰 갱신 (5초 타임아웃)
-     getUser()는 만료된 토큰을 자동으로 갱신해주지만 hang 위험이 있어 타임아웃 적용.
-     타임아웃 시 getSession() 폴백 (캐시된 세션, 갱신 없음). */
-  let user: { id: string; email?: string } | null = null;
-  try {
-    const result = await Promise.race([
-      supabase.auth.getUser(),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-    ]);
-    if (result && 'data' in result) {
-      user = result.data.user;
-    }
-  } catch { /* getUser 실패 시 폴백 */ }
-  /* getUser() 실패/타임아웃 시 getSession() 폴백 */
-  if (!user) {
-    const { data: { session } } = await supabase.auth.getSession();
-    user = session?.user ?? null;
-  }
+  /* 세션 확인: getSession()만 사용 (쿠키 읽기만, HTTP 호출 없음)
+     getUser()는 매 요청마다 Auth 서버 호출 → refresh_token 소비 → 클라이언트와 충돌
+     getSession()은 쿠키에서 JWT를 읽고 서명만 검증 → 안전 */
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   /* 깨진 세션 자동 정리: 쿠키는 있지만 유저 인증 불가 → 쿠키 강제 삭제
      → 다음 요청 시 미로그인 → 보호 페이지면 자동 로그인 리다이렉트
