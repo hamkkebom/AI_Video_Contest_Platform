@@ -214,11 +214,26 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         setUploadStep('영상 업로드 중...');
         setUploadProgress(0);
 
-        const uploadUrlResponse = await fetch('/api/upload/video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ maxDurationSeconds: 600 }),
-        });
+        /* 업로드 URL 요청 (60초 타임아웃 + 1회 재시도) */
+        const fetchUploadUrl = async (): Promise<Response> => {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 60_000);
+          try {
+            return await fetch('/api/upload/video', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ maxDurationSeconds: 600 }),
+              signal: ctrl.signal,
+            });
+          } finally { clearTimeout(t); }
+        };
+        let uploadUrlResponse: Response;
+        try {
+          uploadUrlResponse = await fetchUploadUrl();
+        } catch {
+          await new Promise((r) => setTimeout(r, 2000));
+          uploadUrlResponse = await fetchUploadUrl();
+        }
 
         const uploadUrlResult = (await uploadUrlResponse.json()) as {
           uploadURL?: string;
@@ -230,10 +245,19 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           throw new Error(uploadUrlResult.error ?? '영상 업로드 URL을 생성하지 못했습니다.');
         }
 
-        const checkCfStatus = async (): Promise<boolean> => {
+        /* Cloudflare 상태 확인 (error 상태 체크 + 15초 타임아웃) */
+        const checkCfStatus = async (): Promise<boolean | 'error'> => {
           try {
-            const res = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`);
-            return res.ok;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15_000);
+            const res = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!res.ok) return false;
+            try {
+              const data = await res.json();
+              if (data.status?.state === 'error') return 'error';
+            } catch {}
+            return true;
           } catch { return false; }
         };
 
@@ -244,27 +268,60 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           let settled = false;
           const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
 
+          let pollTimer: ReturnType<typeof setInterval> | null = null;
+          let hardDeadline: ReturnType<typeof setTimeout> | null = null;
+          const clearAllTimers = () => {
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+            if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
+          };
+
           xhr.upload.onprogress = (ev) => {
             if (ev.lengthComputable) {
               setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
             }
           };
+          /* 전송 완료 → 즉시 1회 + 30초마다 폴링 */
+          xhr.upload.onload = () => {
+            setUploadProgress(100);
+            const doPoll = async () => {
+              const result = await checkCfStatus();
+              if (result === 'error') {
+                clearAllTimers(); xhr.abort();
+                settle(() => reject(new Error('영상 파일을 처리할 수 없습니다. 다른 형식으로 다시 시도해 주세요.')));
+                return;
+              }
+              if (result === true) {
+                clearAllTimers(); xhr.abort();
+                settle(() => resolve());
+              }
+            };
+            doPoll();
+            pollTimer = setInterval(doPoll, 30_000);
+            hardDeadline = setTimeout(async () => {
+              if (pollTimer) clearInterval(pollTimer);
+              const result = await checkCfStatus();
+              if (result === true) { xhr.abort(); settle(() => resolve()); }
+              else { xhr.abort(); settle(() => reject(new Error('영상 업로드 시간이 초과되었습니다.'))); }
+            }, 10 * 60 * 1000);
+          };
           xhr.onload = async () => {
+            clearAllTimers();
             if (xhr.status >= 200 && xhr.status < 300) {
               setUploadProgress(100);
               settle(() => resolve());
             } else {
-              const exists = await checkCfStatus();
-              if (exists) { setUploadProgress(100); settle(() => resolve()); }
+              const result = await checkCfStatus();
+              if (result === true) { setUploadProgress(100); settle(() => resolve()); }
               else settle(() => reject(new Error(`영상 업로드 실패 (${xhr.status})`)));
             }
           };
           xhr.onerror = async () => {
-            const exists = await checkCfStatus();
-            if (exists) { setUploadProgress(100); settle(() => resolve()); }
-            else settle(() => reject(new Error('네트워크 오류')));
+            const result = await checkCfStatus();
+            if (result === true) { clearAllTimers(); setUploadProgress(100); settle(() => resolve()); }
+            else { clearAllTimers(); settle(() => reject(new Error('네트워크 오류'))); }
           };
-          xhr.ontimeout = () => settle(() => reject(new Error('시간 초과')));
+          xhr.ontimeout = () => { clearAllTimers(); settle(() => reject(new Error('시간 초과'))); };
+          xhr.onabort = () => { clearAllTimers(); settle(() => {}); };
           const fd = new FormData();
           fd.append('file', form.videoFile!);
           xhr.send(fd);
