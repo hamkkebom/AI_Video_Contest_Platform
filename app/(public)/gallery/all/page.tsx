@@ -32,7 +32,7 @@ export default async function GalleryAllPage({
   const allSubmissions = await getGallerySubmissions();
   const { sort, search, period } = await searchParams;
 
-  const currentSort = sort || 'oldest';
+  const currentSort = sort || 'random';
 
   // 검색 필터링
   const searchFiltered = search
@@ -65,8 +65,9 @@ export default async function GalleryAllPage({
         return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
       case 'latest':
         return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
+      case 'random':
       default:
-        return 0;
+        return Math.random() - 0.5;
     }
   });
 
@@ -123,11 +124,16 @@ export default async function GalleryAllPage({
           <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             <div className="flex items-center gap-1 flex-wrap">
               {[
+                { id: 'random', label: '랜덤' },
                 { id: 'oldest', label: '오래된순' },
                 { id: 'latest', label: '최신순' },
               ].map((tab) => {
                 const params = new URLSearchParams();
-                params.set('sort', tab.id);
+                if (tab.id === 'random') {
+                  params.set('_t', String(Date.now()));
+                } else {
+                  params.set('sort', tab.id);
+                }
                 if (search) params.set('search', search);
                 if (period) params.set('period', period);
                 return (
@@ -139,7 +145,7 @@ export default async function GalleryAllPage({
                         : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
-                      {tab.label}
+                      {tab.id === 'random' ? '🔀 랜덤' : tab.label}
                     </button>
                   </Link>
                 );
@@ -174,7 +180,7 @@ export default async function GalleryAllPage({
             </div>
 
             {/* 검색 입력 */}
-            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ sort: currentSort, ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
+            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ ...(currentSort !== 'random' ? { sort: currentSort } : {}), ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
           </div>
         </div>
       </section>

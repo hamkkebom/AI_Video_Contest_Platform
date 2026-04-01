@@ -1088,7 +1088,7 @@ export const getGallerySubmissions = unstable_cache(
       return {
         ...sub,
         contestTitle: contestTitleMap.get(sub.contestId) ?? '',
-        creatorName: profileMap.get(sub.userId) ?? '익명',
+        creatorName: sub.submitterName || profileMap.get(sub.userId) || '익명',
         prizeLabel: result?.prizeLabel,
         rank: result?.rank,
       };
@@ -1153,7 +1153,7 @@ export const getAwardedSubmissions = unstable_cache(
         return {
           ...sub,
           contestTitle: contestTitleMap.get(String(r.contest_id)) ?? '',
-          creatorName: profileMap.get(sub.userId) ?? '익명',
+          creatorName: sub.submitterName || profileMap.get(sub.userId) || '익명',
           prizeLabel: r.prize_label as string,
           rank: r.rank as number,
         };
@@ -1228,7 +1228,7 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
       return {
         ...sub,
         contestTitle: (contestRes.data?.title as string) ?? '',
-        creatorName: (profileRes.data?.nickname as string) ?? (profileRes.data?.name as string) ?? '익명',
+        creatorName: sub.submitterName || (profileRes.data?.nickname as string) || (profileRes.data?.name as string) || '익명',
         prizeLabel: resultRes.data ? (resultRes.data.prize_label as string) : undefined,
         rank: resultRes.data ? (resultRes.data.rank as number) : undefined,
       };
@@ -1291,7 +1291,7 @@ export function getRelatedSubmissions(
         return {
           ...sub,
           contestTitle: '',
-          creatorName: profileMap.get(sub.userId) ?? '익명',
+          creatorName: sub.submitterName || profileMap.get(sub.userId) || '익명',
           prizeLabel: result ? (result.prize_label as string) : undefined,
           rank: result ? (result.rank as number) : undefined,
         };
