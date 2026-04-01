@@ -258,6 +258,7 @@ async function getContestRelationsByIds(
 async function getContestByIdInternal(
   supabase: Awaited<ReturnType<typeof createClient>>,
   id: string,
+  attempt = 1,
 ): Promise<Contest | null> {
   const { data: contestRow, error } = await supabase
     .from('contests')
@@ -265,7 +266,18 @@ async function getContestByIdInternal(
     .eq('id', id)
     .maybeSingle();
 
-  if (error || !contestRow) return null;
+  if (error) {
+    console.error(`[getContestById] Supabase 쿼리 실패 (시도 ${attempt}/2, id=${id}):`, error.message);
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 500));
+      const retrySupa = createPublicClient();
+      return getContestByIdInternal(retrySupa, id, attempt + 1);
+    }
+    // throw하여 unstable_cache가 에러를 캐싱하지 않도록 함
+    throw new Error(`getContestById failed after retries: ${error.message}`);
+  }
+
+  if (!contestRow) return null;
 
   const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, [id]);
 

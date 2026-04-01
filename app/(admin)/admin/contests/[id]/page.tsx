@@ -149,9 +149,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
         const data = (await response.json()) as { contest: Contest };
         setContest(data.contest);
-      } catch (error) {
-        console.error('Failed to load contest:', error);
-        setErrorMessage('공모전 정보를 불러오지 못했습니다.');
+      } catch {
+        setErrorMessage('공모전 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
       } finally {
         setLoading(false);
       }
@@ -172,7 +171,6 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
         setCountsError(false);
         setSubmissionCounts(data);
       } catch (err) {
-        console.error('[submissionCounts] 예외 발생:', err);
         setCountsError(true);
       }
     };
@@ -207,9 +205,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
       setContest(data.contest);
       router.refresh();
-    } catch (error) {
-      console.error('Failed to update contest status:', error);
-      setErrorMessage(error instanceof Error ? error.message : '상태 변경에 실패했습니다.');
+    } catch {
+      setErrorMessage('상태 변경에 실패했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setUpdatingStatus(false);
     }
@@ -236,9 +233,8 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
       router.replace('/admin/contests');
       router.refresh();
-    } catch (error) {
-      console.error('Failed to delete contest:', error);
-      setErrorMessage(error instanceof Error ? error.message : '공모전 삭제에 실패했습니다.');
+    } catch {
+      setErrorMessage('공모전 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
       setDeleting(false);
     }
   };
@@ -271,7 +267,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
       <div className="space-y-4 rounded-xl border border-border bg-card px-6 py-16 text-center">
         <Search className="mx-auto h-10 w-10 text-muted-foreground" />
         <h1 className="text-2xl font-semibold tracking-tight">공모전을 찾을 수 없습니다</h1>
-        <p className="text-sm text-muted-foreground">ID: {id}</p>
+        <p className="text-sm text-muted-foreground">요청하신 공모전이 존재하지 않거나 일시적인 오류가 발생했습니다.</p>
         <Link href={'/admin/contests' as Route}>
           <Button size="sm">목록으로 돌아가기</Button>
         </Link>
@@ -404,7 +400,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                 </div>
               </div>
               {countsError ? (
-                <p className="text-sm text-destructive">카운트 조회 실패 — 콘솔 로그를 확인하세요</p>
+                <p className="text-sm text-destructive">일시적으로 정보를 불러올 수 없습니다</p>
               ) : (
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
