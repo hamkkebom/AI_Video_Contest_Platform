@@ -76,12 +76,12 @@ export default async function AdminDashboardPage() {
         }
       />
     );
-  } catch (error) {
-    console.error('Failed to load admin dashboard data:', error);
+  } catch {
     return (
       <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-red-600">관리자 대시보드 데이터를 불러올 수 없습니다</p>
+        <div className="mx-auto max-w-3xl space-y-2">
+          <p className="text-lg font-semibold">대시보드를 불러올 수 없습니다</p>
+          <p className="text-sm text-muted-foreground">일시적인 오류가 발생했습니다. 잠시 후 새로고침 해주세요.</p>
         </div>
       </div>
     );
@@ -90,10 +90,29 @@ export default async function AdminDashboardPage() {
 
 /** 활동 피드: 별도 서버 컴포넌트로 분리 → Suspense 스트리밍 */
 async function RecentActivitiesSection() {
-  const [activityLogs, users] = await Promise.all([
-    getAllActivityLogs(10),
-    getUsers(), // unstable_cache → 위 통계 쿼리와 동일 캐시 히트
-  ]);
+  let activityLogs;
+  let users;
+  try {
+    [activityLogs, users] = await Promise.all([
+      getAllActivityLogs(10),
+      getUsers(),
+    ]);
+  } catch {
+    return (
+      <section>
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>최근 활동 피드</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+              활동 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   const usersById = new Map(users.map((user) => [user.id, user]));
 

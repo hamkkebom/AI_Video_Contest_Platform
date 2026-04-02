@@ -140,49 +140,51 @@ export default async function MyContestsPage() {
 
                         return (
                           <div key={submission.id} className="space-y-2">
-                            <Link href={`/gallery/${submission.id}`} className="block">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50 hover:border-primary/30 cursor-pointer">
-                              {/* 썸네일 */}
-                              <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
-                                {submission.thumbnailUrl ? (
-                                  <Image
-                                    src={submission.thumbnailUrl}
-                                    alt={submission.title}
-                                    fill
-                                    className="object-cover"
-                                    sizes="80px"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                    <Film className="h-5 w-5" />
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50 hover:border-primary/30">
+                              {/* 썸네일 + 정보 (클릭 시 상세로 이동) */}
+                              <Link href={`/gallery/${submission.id}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                                {/* 썸네일 */}
+                                <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
+                                  {submission.thumbnailUrl ? (
+                                    <Image
+                                      src={submission.thumbnailUrl}
+                                      alt={submission.title}
+                                      fill
+                                      className="object-cover"
+                                      sizes="80px"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                                      <Film className="h-5 w-5" />
+                                    </div>
+                                  )}
+                                </div>
+                                {/* 제목 + 상태 + 지표 */}
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="truncate text-sm font-medium">{submission.title}</p>
+                                    <Badge className={`shrink-0 text-[10px] px-1.5 py-0 ${sStatus.className}`}>
+                                      {sStatus.label}
+                                    </Badge>
                                   </div>
-                                )}
-                              </div>
-                              {/* 제목 + 상태 + 지표 */}
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="truncate text-sm font-medium">{submission.title}</p>
-                                  <Badge className={`shrink-0 text-[10px] px-1.5 py-0 ${sStatus.className}`}>
-                                    {sStatus.label}
-                                  </Badge>
+                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Eye className="h-3 w-3" />
+                                      {submission.views.toLocaleString()}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Heart className="h-3 w-3" />
+                                      {submission.likeCount.toLocaleString()}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatDateCompact(submission.submittedAt)}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    {submission.views.toLocaleString()}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3" />
-                                    {submission.likeCount.toLocaleString()}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatDateCompact(submission.submittedAt)}
-                                  </span>
-                                </div>
-                              </div>
+                              </Link>
                               {/* 액션 버튼 */}
-                              <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex shrink-0 items-center gap-1.5">
                                 {ds === 'open' && (
                                   <Link
                                     href={`/contests/${contest.id}/submit?edit=${submission.id}`}
@@ -203,7 +205,6 @@ export default async function MyContestsPage() {
                                 )}
                               </div>
                             </div>
-                            </Link>
                             {submission.status === 'needs_resubmission' && submission.rejectionReason && (
                               <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2">
                                 <p className="text-xs font-semibold text-orange-700 mb-0.5">📌 재제출 사유</p>
