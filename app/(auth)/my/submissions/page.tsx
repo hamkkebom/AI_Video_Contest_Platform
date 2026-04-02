@@ -45,10 +45,9 @@ interface ContestGroup {
 }
 
 export default async function MyContestsPage() {
-  const profile = await getAuthProfile();
-  if (!profile) redirect('/login?redirect=/my/submissions');
-
   try {
+    const profile = await getAuthProfile();
+    if (!profile) redirect('/login?redirect=/my/submissions');
     /* 내 출품작 조회 */
     const allSubmissions = await getSubmissions();
     const userSubmissions = allSubmissions.filter((s) => s.userId === profile.id);
@@ -235,9 +234,7 @@ export default async function MyContestsPage() {
         )}
       </div>
     );
-  } catch (error) {
-    console.error('Failed to load contests:', error);
-
+  } catch {
     return (
       <Card className="border-destructive/30 bg-destructive/5">
         <CardContent className="py-10 text-center">
