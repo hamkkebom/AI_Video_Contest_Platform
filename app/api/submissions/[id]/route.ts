@@ -111,12 +111,18 @@ export async function PATCH(
     }
 
     /* 상태 업데이트 */
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
+      rejection_reason: newStatus === 'rejected' || newStatus === 'needs_resubmission' ? rejectionReason || null : null,
+    };
+    /* 드롭다운에서 직접 needs_resubmission 선택 시에도 재제출 허용 데이터 자동 설정 */
+    if (newStatus === 'needs_resubmission') {
+      updateData.resubmission_count = (submission.resubmission_count ?? 0) + 1;
+      updateData.resubmission_allowed_at = new Date().toISOString();
+    }
     const { error: updateError } = await supabase
       .from('submissions')
-      .update({
-        status: newStatus,
-        rejection_reason: newStatus === 'rejected' ? rejectionReason || null : null,
-      })
+      .update(updateData)
       .eq('id', submissionId);
 
     if (updateError) {
