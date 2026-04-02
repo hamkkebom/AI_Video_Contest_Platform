@@ -310,8 +310,8 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
             </div>
           )}
 
-          {/* 관리자 전용: 승인/거절 버튼 (검수대기, 자동반려, 거절 상태) */}
-          {isAdmin && (submission.status === 'pending_review' || submission.status === 'auto_rejected' || submission.status === 'rejected') && (
+          {/* 관리자 전용: 승인/거절/재제출 버튼 */}
+          {isAdmin && (submission.status === 'pending_review' || submission.status === 'approved' || submission.status === 'auto_rejected' || submission.status === 'rejected') && (
             <div className="grid grid-cols-2 gap-3">
               <SubmissionActions
                 submissionId={String(submission.id)}
