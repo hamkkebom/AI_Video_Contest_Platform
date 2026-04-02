@@ -20,7 +20,7 @@ const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|
  * 새 비밀번호 입력 후 PUT /api/profile/password 호출
  */
 export default function ResetPasswordPage() {
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -65,7 +65,8 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      /* 성공 → 로그인 페이지로 이동 (성공 메시지 전달) */
+      /* 성공 → 로그아웃 후 로그인 페이지로 이동 (세션이 남아있으면 로그인 페이지가 자동 리다이렉트됨) */
+      await signOut();
       router.replace(('/login?message=' + encodeURIComponent('비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.')) as Route);
     } catch {
       setErrorMsg('요청 처리 중 오류가 발생했습니다.');
