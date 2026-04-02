@@ -49,7 +49,7 @@ export default function LoginForm() {
     }
 
     if (urlError === 'auth_callback_failed') {
-      setErrorMsg('로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setErrorMsg('로그인 처리 중 오류가 발생했습니다. 모바일에서는 기본 브라우저(Safari/Chrome)에서 시도해주세요.');
     } else if (urlError === 'profile_missing') {
       setErrorMsg('계정 프로필이 생성되지 않았습니다. 다시 로그인해주세요.');
     }
