@@ -12,6 +12,27 @@
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { createClient, createPublicClient } from '@/lib/supabase/server';
+
+/**
+ * Supabase 기본 조회 제한(1000건) 우회 — 전체 데이터 페이지네이션 헬퍼
+ * query는 .range() 호출 전 상태로 전달해야 합니다.
+ */
+async function fetchAll<T extends Record<string, unknown>>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const pageSize = 1000;
+  const allData: T[] = [];
+  let from = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1);
+    if (error || !data || data.length === 0) break;
+    allData.push(...data);
+    from += pageSize;
+    if (data.length < pageSize) hasMore = false;
+  }
+  return allData;
+}
 import type {
   Article,
   Company,
@@ -501,12 +522,10 @@ function toIpLog(row: Record<string, unknown>): IpLog {
 export const getUsers = unstable_cache(
   async (): Promise<User[]> => {
     const supabase = createPublicClient();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error || !data) return [];
-    return data.map((row) => toUser(row as Record<string, unknown>));
+    const allData = await fetchAll((from, to) =>
+      supabase.from('profiles').select('*').order('created_at', { ascending: true }).range(from, to),
+    );
+    return allData.map((row) => toUser(row));
   },
   ['users'],
   { tags: ['users'], revalidate: 120 },
@@ -720,29 +739,19 @@ export function getSubmissions(filters?: SubmissionFilters): Promise<Submission[
     async (filters?: SubmissionFilters): Promise<Submission[]> => {
       const supabase = createPublicClient();
 
-      let query = supabase
-        .from('submissions')
-        .select('*')
-        .order('submitted_at', { ascending: true });
-
-      if (filters?.contestId) {
-        query = query.eq('contest_id', filters.contestId);
-      }
-      if (filters?.userId) {
-        query = query.eq('user_id', filters.userId);
-      }
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.search) {
-        query = query.or(
-          `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-        );
-      }
-
-      const { data, error } = await query;
-      if (error || !data) return [];
-      return data.map((row) => toSubmission(row as Record<string, unknown>));
+      const allData = await fetchAll((from, to) => {
+        let query = supabase
+          .from('submissions')
+          .select('*')
+          .order('submitted_at', { ascending: true })
+          .range(from, to);
+        if (filters?.contestId) query = query.eq('contest_id', filters.contestId);
+        if (filters?.userId) query = query.eq('user_id', filters.userId);
+        if (filters?.status) query = query.eq('status', filters.status);
+        if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        return query;
+      });
+      return allData.map((row) => toSubmission(row));
     },
     keyParts,
     { tags: ['submissions'], revalidate: 30 },
