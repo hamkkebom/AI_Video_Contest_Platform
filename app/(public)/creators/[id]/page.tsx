@@ -233,10 +233,6 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
             <h3 className="font-semibold mb-4">빠른 정보</h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground">이메일</span>
-                <span className="text-right break-all">{user.email}</span>
-              </div>
-              <div className="flex items-start justify-between gap-3">
                 <span className="text-muted-foreground">지역</span>
                 <span>{user.region ?? '미설정'}</span>
               </div>
