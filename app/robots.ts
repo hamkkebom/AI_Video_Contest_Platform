@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
           '/judging/',
           '/api/',
           '/auth/',
+          '/creators/',
           '/login',
           '/signup',
           '/forgot-password',

@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: '크리에이터 — AI 영상 크리에이터 모아보기',
   description: 'AI꿈에서 활동하는 AI 영상 크리에이터들을 만나보세요. 다양한 창작자들의 프로필과 작품을 확인할 수 있습니다.',
   keywords: ['AI 크리에이터', 'AI 영상 제작자', 'AI꿈 크리에이터'],
+  robots: { index: false, follow: false },
   alternates: { canonical: '/creators' },
   openGraph: {
     title: '크리에이터 — AI 영상 크리에이터 모아보기',

@@ -33,6 +33,7 @@ export async function generateMetadata({ params }: CreatorDetailPageProps): Prom
     title,
     description,
     keywords: [user.name, 'AI꿈 크리에이터', 'AI 영상 크리에이터'],
+    robots: { index: false, follow: false },
     alternates: { canonical: url },
     openGraph: {
       title,
