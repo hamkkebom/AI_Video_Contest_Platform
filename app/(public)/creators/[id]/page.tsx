@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getUserById, getSubmissions, getContests } from '@/lib/data';
-import { MapPin, Film, Heart, Eye, Award, ArrowLeft, Calendar, Search } from 'lucide-react';
+import { Film, Heart, Eye, Award, ArrowLeft, Search } from 'lucide-react';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
@@ -48,25 +48,6 @@ export async function generateMetadata({ params }: CreatorDetailPageProps): Prom
       images: user.avatarUrl ? [user.avatarUrl] : undefined,
     },
   };
-}
-
-function getRoleLabel(role: string) {
-  switch (role) {
-    case 'participant':
-      return '참가자';
-    case 'host':
-      return '주최자';
-    case 'judge':
-      return '심사위원';
-    case 'admin':
-      return '관리자';
-    default:
-      return '게스트';
-  }
-}
-
-function getRoleLabels(roles: string[]) {
-  return roles.map(getRoleLabel);
 }
 
 function getContestStatusLabel(status: string) {
@@ -190,12 +171,8 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center sm:text-left">{displayName}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" />
-                    {user.region ?? '지역 미설정'}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4" />
-                    {formatDateCompact(user.createdAt)} 가입
+                    <Film className="w-4 h-4" />
+                    작품 {allSubmissions.length}개
                   </span>
                 </div>
               </div>
@@ -229,27 +206,7 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
             </p>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">빠른 정보</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground">지역</span>
-                <span>{user.region ?? '미설정'}</span>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground">가입일</span>
-                <span>{formatDateCompact(user.createdAt)}</span>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-muted-foreground">역할</span>
-                <div className="flex flex-wrap justify-end gap-1">
-                  {getRoleLabels(user.roles).map((label) => (
-                    <Badge key={label} variant="secondary">{label}</Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
+          {/* 빠른 정보 카드 — 개인정보 보호를 위해 제거됨 */}
         </div>
       </section>
 
