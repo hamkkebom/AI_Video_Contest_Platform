@@ -58,8 +58,38 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
     }));
   };
 
-  const handleSubmit = () => {
-    setIsSubmitted(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: data.submission.id,
+          contestId: data.contest.id,
+          templateId: data.template.id,
+          criteriaScores: data.template.criteria.map(c => ({
+            criterionId: c.id,
+            score: scores[c.id] ?? 0,
+          })),
+          comment: comment.trim() || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setSubmitError(result.error || '채점 저장에 실패했습니다.');
+        return;
+      }
+      setIsSubmitted(true);
+    } catch {
+      setSubmitError('채점 요청 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -194,14 +224,26 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
               <Button variant="outline" asChild>
                 <Link href={`/judging/${data.contest.id}` as Route}>목록으로</Link>
               </Button>
-              <Button onClick={handleSubmit} className="gap-1.5">
-                <CheckCircle2 className="h-4 w-4" /> 점수 제출
+              <Button onClick={handleSubmit} className="gap-1.5" disabled={isSubmitting || isSubmitted}>
+                {isSubmitting ? (
+                  <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> 저장 중...</>
+                ) : isSubmitted ? (
+                  <><CheckCircle2 className="h-4 w-4" /> 저장 완료</>
+                ) : (
+                  <><CheckCircle2 className="h-4 w-4" /> 점수 제출</>
+                )}
               </Button>
             </div>
 
+            {submitError && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
+                {submitError}
+              </div>
+            )}
+
             {isSubmitted && (
               <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
-                점수가 저장되었습니다. (데모 환경에서는 화면 상태로만 반영됩니다)
+                점수가 저장되었습니다.
               </div>
             )}
           </CardContent>

@@ -10,9 +10,11 @@ import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, 
 import { SearchInput } from '@/components/ui/search-input';
 import { formatDateTime } from '@/lib/utils';
 
+const PAGE_SIZE = 20;
+
 type ContestSubmissionsPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; sort?: string; search?: string }>;
+  searchParams: Promise<{ tab?: string; sort?: string; search?: string; page?: string }>;
 };
 
 /** 제출물 상태별 뱃지 스타일 (hover 반전 포함) */
@@ -43,18 +45,20 @@ const VALID_TABS = ['all', ...REVIEW_TABS.map((t) => t.value)];
 export default async function AdminContestSubmissionsPage({ params, searchParams }: ContestSubmissionsPageProps) {
   try {
     const { id } = await params;
-    const { tab, sort, search } = await searchParams;
+    const { tab, sort, search, page } = await searchParams;
     const activeTab = VALID_TABS.includes(tab ?? '') ? tab! : 'all';
     const activeSort = sort === 'newest' ? 'newest' : 'oldest';
     const searchQuery = search?.trim().toLowerCase() || '';
+    const currentPage = Math.max(1, Number(page) || 1);
 
     const [allSubmissions, contest] = await Promise.all([
       getAdminSubmissions({ contestId: id }),
       getContestById(id),
     ]);
 
+    /* 유저 정보를 출품작과 병렬로 조회 (순차 → 병렬) */
     const userIds = [...new Set(allSubmissions.map((s) => s.userId))];
-    const users = await getUsersByIds(userIds);
+    const users = userIds.length > 0 ? await getUsersByIds(userIds) : [];
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
     /* 상태별 카운트 (전체 포함) */
@@ -94,6 +98,11 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
       const dateB = new Date(b.submittedAt).getTime();
       return activeSort === 'newest' ? dateB - dateA : dateA - dateB;
     });
+
+    /* 페이지네이션 */
+    const totalFiltered = filteredSubmissions.length;
+    const totalPages = Math.ceil(totalFiltered / PAGE_SIZE);
+    const pagedSubmissions = filteredSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     /** 탭 URL 빌더 (현재 정렬+검색 유지) */
     const buildTabUrl = (tabValue: string) => {
@@ -176,7 +185,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
             <div>
               <h2 className="text-lg font-bold">출품 영상 목록</h2>
               <p className="text-sm text-muted-foreground">
-                {activeTabLabel} <span className="font-bold text-primary">{filteredSubmissions.length}</span>건
+                {activeTabLabel} <span className="font-bold text-primary">{totalFiltered}</span>건 (페이지 {currentPage}/{totalPages || 1})
                 {searchQuery && (
                   <span className="ml-2">
                     · &apos;<span className="text-foreground font-semibold">{searchQuery}</span>&apos; 검색 결과
@@ -219,7 +228,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
             </div>
           </div>
 
-          {filteredSubmissions.length === 0 ? (
+          {pagedSubmissions.length === 0 ? (
             <Card className="border-border">
               <CardContent className="space-y-3 py-16 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -233,7 +242,7 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
             </Card>
           ) : (
             <div className="space-y-3">
-              {filteredSubmissions.map((submission) => {
+              {pagedSubmissions.map((submission) => {
                 const creator = usersMap.get(submission.userId);
                 const statusInfo = statusBadgeMap[submission.status];
                 const showReactions = submission.status !== 'pending_review';
@@ -293,6 +302,43 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                   </Link>
                 );
               })}
+            </div>
+          )}
+
+          {/* 페이지 네비게이션 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              {currentPage > 1 && (
+                <Link href={(() => { const p = new URLSearchParams(); if (activeTab !== 'all') p.set('tab', activeTab); if (activeSort !== 'oldest') p.set('sort', activeSort); if (searchQuery) p.set('search', searchQuery); p.set('page', String(currentPage - 1)); return `/admin/contests/${id}/submissions?${p.toString()}` as Route; })()} scroll={false}>
+                  <Button variant="outline" size="sm">← 이전</Button>
+                </Link>
+              )}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                .map((p, idx, arr) => {
+                  const prev = arr[idx - 1];
+                  const showEllipsis = prev && p - prev > 1;
+                  const linkParams = new URLSearchParams();
+                  if (activeTab !== 'all') linkParams.set('tab', activeTab);
+                  if (activeSort !== 'oldest') linkParams.set('sort', activeSort);
+                  if (searchQuery) linkParams.set('search', searchQuery);
+                  linkParams.set('page', String(p));
+                  return (
+                    <span key={p}>
+                      {showEllipsis && <span className="px-1 text-muted-foreground">…</span>}
+                      <Link href={`/admin/contests/${id}/submissions?${linkParams.toString()}` as Route} scroll={false}>
+                        <Button variant={p === currentPage ? 'default' : 'outline'} size="sm" className="min-w-[2rem]">
+                          {p}
+                        </Button>
+                      </Link>
+                    </span>
+                  );
+                })}
+              {currentPage < totalPages && (
+                <Link href={(() => { const p = new URLSearchParams(); if (activeTab !== 'all') p.set('tab', activeTab); if (activeSort !== 'oldest') p.set('sort', activeSort); if (searchQuery) p.set('search', searchQuery); p.set('page', String(currentPage + 1)); return `/admin/contests/${id}/submissions?${p.toString()}` as Route; })()} scroll={false}>
+                  <Button variant="outline" size="sm">다음 →</Button>
+                </Link>
+              )}
             </div>
           )}
         </section>

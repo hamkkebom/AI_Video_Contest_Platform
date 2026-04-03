@@ -763,9 +763,10 @@ export async function getAdminSubmissions(filters?: SubmissionFilters): Promise<
   const supabase = await createClient();
   if (!supabase) return [];
 
+  /* 목록에 필요한 컬럼만 조회 (description, production_process 등 긴 텍스트 제외) */
   let query = supabase
     .from('submissions')
-    .select('*')
+    .select('id, contest_id, user_id, title, video_url, thumbnail_url, status, submitted_at, views, like_count, video_duration, avg_watch_duration, tags, submitter_name, submitter_phone, rejection_reason, ai_tools, resubmission_count, resubmission_allowed_at, terms_agreed, created_at')
     .order('submitted_at', { ascending: true });
 
   if (filters?.contestId) {

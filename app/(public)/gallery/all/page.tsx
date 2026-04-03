@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { safeJsonLd } from '@/lib/utils';
 import { GalleryGrid } from './gallery-grid';
+import { SearchInput } from '@/components/ui/search-input';
+import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
   title: '갤러리 — AI 영상 작품 감상',
@@ -15,77 +17,57 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
-import { getGallerySubmissions } from '@/lib/data';
-import { SearchInput } from '@/components/ui/search-input';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
 /**
  * 전체 갤러리 페이지
- * 결과발표된 공모전의 모든 출품작 표시
+ * 서버 사이드 페이지네이션 — 첫 페이지만 서버에서 로드, 이후 클라이언트에서 API 호출
  */
 export default async function GalleryAllPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; search?: string; period?: string }>;
+  searchParams: Promise<{ sort?: string; search?: string; period?: string; _t?: string }>;
 }) {
-  const allSubmissions = await getGallerySubmissions();
-  const { sort, search, period } = await searchParams;
-
+  const { sort, search, period, _t } = await searchParams;
   const currentSort = sort || 'random';
+  const seed = _t ? Number(_t) : Date.now();
 
-  // 검색 필터링
-  const searchFiltered = search
-    ? allSubmissions.filter(s => {
-      const q = search.toLowerCase();
-      return (
-        s.title.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        s.creatorName.toLowerCase().includes(q) ||
-        (s.submitterName && s.submitterName.toLowerCase().includes(q))
-      );
-    })
-    : allSubmissions;
+  /* 서버에서 첫 페이지 데이터를 API로 조회 */
+  const headersList = await headers();
+  const host = headersList.get('host') ?? 'localhost:3000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
 
-  // 기간 필터링
-  const periodFiltered = period
-    ? searchFiltered.filter(s => {
-      const days = Number(period);
-      if (!days || days <= 0) return true;
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - days);
-      return new Date(s.submittedAt) >= cutoff;
-    })
-    : searchFiltered;
+  const params = new URLSearchParams();
+  params.set('page', '1');
+  params.set('sort', currentSort);
+  params.set('seed', String(seed));
+  if (search) params.set('search', search);
+  if (period) params.set('period', period);
 
-  // 정렬
-  const sortedSubmissions = [...periodFiltered].sort((a, b) => {
-    switch (currentSort) {
-      case 'oldest':
-        return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
-      case 'latest':
-        return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
-      case 'random':
-      default:
-        return Math.random() - 0.5;
+  let initialItems: Array<{ id: string; title: string; creatorName: string; thumbnailUrl: string | null; views: number; likeCount: number }> = [];
+  let total = 0;
+  let hasMore = false;
+
+  try {
+    const res = await fetch(`${protocol}://${host}/api/gallery?${params.toString()}`, {
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      initialItems = data.items;
+      total = data.total;
+      hasMore = data.hasMore;
     }
-  });
-
-  // GalleryGrid 클라이언트 컴포넌트에 전달할 직렬화 가능한 데이터
-  const gridSubmissions = sortedSubmissions.map((s) => ({
-    id: s.id,
-    title: s.title,
-    creatorName: s.creatorName,
-    thumbnailUrl: s.thumbnailUrl,
-    views: s.views,
-    likeCount: s.likeCount,
-  }));
+  } catch (err) {
+    console.error('갤러리 초기 데이터 로드 실패:', err);
+  }
 
   const galleryJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: '갤러리 작품 목록',
-    itemListElement: allSubmissions.slice(0, 10).map((submission, index) => ({
+    itemListElement: initialItems.slice(0, 10).map((submission, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       url: `${SITE_URL}/gallery/${submission.id}`,
@@ -128,16 +110,16 @@ export default async function GalleryAllPage({
                 { id: 'oldest', label: '오래된순' },
                 { id: 'latest', label: '최신순' },
               ].map((tab) => {
-                const params = new URLSearchParams();
+                const linkParams = new URLSearchParams();
                 if (tab.id === 'random') {
-                  params.set('_t', String(Date.now()));
+                  linkParams.set('_t', String(Date.now()));
                 } else {
-                  params.set('sort', tab.id);
+                  linkParams.set('sort', tab.id);
                 }
-                if (search) params.set('search', search);
-                if (period) params.set('period', period);
+                if (search) linkParams.set('search', search);
+                if (period) linkParams.set('period', period);
                 return (
-                  <Link key={tab.id} href={`/gallery/all?${params.toString()}`} scroll={false}>
+                  <Link key={tab.id} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
                     <button
                       type="button"
                       className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentSort === tab.id
@@ -159,12 +141,13 @@ export default async function GalleryAllPage({
                 { id: '30', label: '최근 1개월' },
                 { id: '60', label: '최근 2개월' },
               ].map((opt) => {
-                const params = new URLSearchParams();
-                params.set('sort', currentSort);
-                if (search) params.set('search', search);
-                if (opt.id) params.set('period', opt.id);
+                const linkParams = new URLSearchParams();
+                if (currentSort !== 'random') linkParams.set('sort', currentSort);
+                else linkParams.set('_t', String(seed));
+                if (search) linkParams.set('search', search);
+                if (opt.id) linkParams.set('period', opt.id);
                 return (
-                  <Link key={opt.id} href={`/gallery/all?${params.toString()}`} scroll={false}>
+                  <Link key={opt.id} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
                     <button
                       type="button"
                       className={`px-3 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${(period || '') === opt.id
@@ -180,7 +163,7 @@ export default async function GalleryAllPage({
             </div>
 
             {/* 검색 입력 */}
-            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ ...(currentSort !== 'random' ? { sort: currentSort } : {}), ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
+            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ ...(currentSort !== 'random' ? { sort: currentSort } : { _t: String(seed) }), ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
           </div>
         </div>
       </section>
@@ -192,7 +175,7 @@ export default async function GalleryAllPage({
           <div className="flex items-center justify-between mb-5">
             <div className="flex flex-col gap-1">
               <p className="text-base text-muted-foreground">
-                총 <span className="text-[#EA580C] font-semibold">{sortedSubmissions.length.toLocaleString()}</span>개의 작품
+                총 <span className="text-[#EA580C] font-semibold">{total.toLocaleString()}</span>개의 작품
               </p>
               {search && (
                 <p className="text-sm text-muted-foreground">
@@ -202,7 +185,15 @@ export default async function GalleryAllPage({
             </div>
           </div>
 
-          <GalleryGrid submissions={gridSubmissions} />
+          <GalleryGrid
+            initialItems={initialItems}
+            total={total}
+            initialHasMore={hasMore}
+            seed={seed}
+            sort={currentSort}
+            search={search || ''}
+            period={period || ''}
+          />
         </div>
       </section>
     </div>

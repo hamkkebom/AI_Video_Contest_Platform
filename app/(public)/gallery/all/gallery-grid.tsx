@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Eye, Heart } from 'lucide-react';
-
-const ITEMS_PER_PAGE = 12;
+import { Eye, Heart, Loader2 } from 'lucide-react';
 
 interface GalleryItem {
   id: string;
@@ -16,25 +14,61 @@ interface GalleryItem {
 }
 
 interface GalleryGridProps {
-  submissions: GalleryItem[];
+  /** 서버에서 전달한 초기 데이터 (첫 페이지) */
+  initialItems: GalleryItem[];
+  /** 전체 작품 수 */
+  total: number;
+  /** 더 불러올 데이터가 있는지 */
+  initialHasMore: boolean;
+  /** seed 기반 랜덤용 */
+  seed: number;
+  /** 현재 정렬 */
+  sort: string;
+  /** 검색어 */
+  search: string;
+  /** 기간 필터 */
+  period: string;
 }
 
-/** 갤러리 그리드 — 클라이언트 상태로 더보기 처리 (스크롤 위치 유지) */
-export function GalleryGrid({ submissions }: GalleryGridProps) {
-  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+/** 갤러리 그리드 — 서버 사이드 페이지네이션 + 더보기 */
+export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, search, period }: GalleryGridProps) {
+  const [items, setItems] = useState<GalleryItem[]>(initialItems);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const displayed = submissions.slice(0, displayCount);
-  const hasMore = submissions.length > displayCount;
-  const remainingCount = submissions.length - displayCount;
+  const remainingCount = total - items.length;
 
-  const handleLoadMore = () => {
-    setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
-  };
+  const handleLoadMore = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+    setIsLoading(true);
+    try {
+      const nextPage = page + 1;
+      const params = new URLSearchParams();
+      params.set('page', String(nextPage));
+      params.set('sort', sort);
+      params.set('seed', String(seed));
+      if (search) params.set('search', search);
+      if (period) params.set('period', period);
+
+      const res = await fetch(`/api/gallery?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+
+      setItems(prev => [...prev, ...data.items]);
+      setPage(nextPage);
+      setHasMore(data.hasMore);
+    } catch (err) {
+      console.error('갤러리 더보기 실패:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, hasMore, page, sort, seed, search, period]);
 
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {displayed.map((submission) => (
+        {items.map((submission) => (
           <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
             <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
               {/* 썸네일 */}
@@ -79,12 +113,16 @@ export function GalleryGrid({ submissions }: GalleryGridProps) {
           <button
             type="button"
             onClick={handleLoadMore}
-            className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer"
+            disabled={isLoading}
+            className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer disabled:opacity-50"
           >
             <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
             <span className="relative z-10 flex items-center gap-2">
-              더보기
-              <span className="text-sm opacity-70">+{remainingCount.toLocaleString()}</span>
+              {isLoading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...</>
+              ) : (
+                <>더보기 <span className="text-sm opacity-70">+{remainingCount.toLocaleString()}</span></>
+              )}
             </span>
           </button>
         </div>
