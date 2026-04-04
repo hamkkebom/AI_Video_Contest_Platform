@@ -135,7 +135,7 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
         <CheckCircle2 className="h-5 w-5 mr-1.5" />
         승인
       </Button>
-      {(submissionStatus === 'rejected' || submissionStatus === 'pending_review') && (
+      {(submissionStatus === 'rejected' || submissionStatus === 'pending_review' || submissionStatus === 'approved') && (
         <Button
           size="lg"
           variant="outline"
