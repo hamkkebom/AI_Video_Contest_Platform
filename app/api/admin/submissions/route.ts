@@ -203,6 +203,8 @@ export async function POST(request: Request) {
     }).catch(console.error);
 
     revalidateTag('submissions');
+    revalidateTag('gallery');
+    revalidateTag('contests');
     revalidateTag('users');
 
     return NextResponse.json({ submission: { id: data.id } }, { status: 201 });

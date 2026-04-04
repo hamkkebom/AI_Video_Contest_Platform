@@ -107,6 +107,7 @@ export async function PATCH(
 
       revalidateTag('submissions');
       revalidateTag('gallery');
+      revalidateTag('contests');
       return NextResponse.json({ success: true, status: 'needs_resubmission' });
     }
 
@@ -146,6 +147,7 @@ export async function PATCH(
     /* 캐시 무효화 */
     revalidateTag('submissions');
     revalidateTag('gallery');
+    revalidateTag('contests');
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {
@@ -335,6 +337,7 @@ export async function PUT(
 
       revalidateTag('submissions');
       revalidateTag('gallery');
+      revalidateTag('contests');
       return NextResponse.json({ success: true });
     }
 
@@ -431,6 +434,7 @@ export async function PUT(
     /* 캐시 무효화 */
     revalidateTag('submissions');
     revalidateTag('gallery');
+    revalidateTag('contests');
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -498,6 +502,7 @@ export async function DELETE(
   /* 캐시 무효화 */
   revalidateTag('submissions');
   revalidateTag('gallery');
+  revalidateTag('contests');
 
   return NextResponse.json({ success: true });
 }
