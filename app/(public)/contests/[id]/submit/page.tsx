@@ -86,6 +86,7 @@ export default function ContestSubmitPage() {
   const contestId = params.id as string;
   const editSubmissionId = searchParams.get('edit'); // 수정 모드: 기존 출품작 ID
   const resubmitSubmissionId = searchParams.get('resubmit'); // 재제출 모드: 영상만 재업로드
+  const isBonusOnly = searchParams.get('bonusOnly') === 'true'; // 가산점 전용 수정 모드
   const isEditMode = !!editSubmissionId;
   const isResubmitMode = !!resubmitSubmissionId;
   const router = useRouter();
@@ -695,18 +696,21 @@ export default function ContestSubmitPage() {
 
         setUploadStep('submission');
         const aiToolsList = [...form.chatAi, ...form.imageAi, ...form.videoAi];
+        const putBody = isBonusOnly
+          ? { bonusEntries, bonusOnly: true }
+          : {
+              title: form.title,
+              description: form.description,
+              aiTools: aiToolsList.join(', '),
+              productionProcess: form.productionProcess,
+              submitterName: form.submitterName,
+              submitterPhone: form.submitterPhone,
+              bonusEntries,
+            };
         const response = await fetch(`/api/submissions/${editSubmissionId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: form.title,
-            description: form.description,
-            aiTools: aiToolsList.join(', '),
-            productionProcess: form.productionProcess,
-            submitterName: form.submitterName,
-            submitterPhone: form.submitterPhone,
-            bonusEntries,
-          }),
+          body: JSON.stringify(putBody),
         });
 
         if (!response.ok) {
@@ -1156,6 +1160,7 @@ export default function ContestSubmitPage() {
   /* 필수 필드 유효성 검사 */
   const validateForm = (): Record<string, string> => {
     const errors: Record<string, string> = {};
+    if (isBonusOnly) return errors; // 가산점 전용 모드: 본문 검증 생략
     if (!form.submitterName.trim()) errors.submitterName = '이름을 입력해주세요';
     if (!form.submitterPhone.trim()) errors.submitterPhone = '전화번호를 입력해주세요';
     if (!form.title.trim()) errors.title = '영상 제목을 입력해주세요';
@@ -1292,13 +1297,15 @@ export default function ContestSubmitPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
                   </span>
-                  {isEditMode ? 'Edit Your Work' : 'Submit Your Vision'}
+                  {isBonusOnly ? 'Bonus Points' : isEditMode ? 'Edit Your Work' : 'Submit Your Vision'}
                 </div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-sm leading-tight">
-                  {isEditMode ? '영상 수정하기' : '영상 제출하기'}
+                  {isBonusOnly ? '가산점 인증 수정' : isEditMode ? '영상 수정하기' : '영상 제출하기'}
                 </h1>
                 <p className="text-base md:text-[1.1rem] text-zinc-300 leading-relaxed font-light max-w-xl">
-                  {isEditMode
+                  {isBonusOnly
+                    ? '가산점 인증 항목만 수정할 수 있습니다. 출품작 정보는 변경할 수 없습니다.'
+                    : isEditMode
                     ? '출품작의 정보를 수정합니다. 영상과 썸네일은 변경할 수 없습니다.'
                     : '공모전에 참가할 당신만의 창의적인 영상을 세상에 선보여주세요.'}
                 </p>
@@ -1380,7 +1387,7 @@ export default function ContestSubmitPage() {
             </div>
 
             {/* ===== STEP 1: 영상 정보 ===== */}
-            <Card className="p-6 border border-border">
+            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
                 <div>
@@ -1510,7 +1517,7 @@ export default function ContestSubmitPage() {
             </Card>
 
             {/* ===== STEP 2: 파일 업로드 ===== */}
-            <Card className="p-6 border border-border">
+            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
                 <div>
@@ -1797,7 +1804,7 @@ export default function ContestSubmitPage() {
             )}
 
             {/* ===== STEP 최종: 안내 및 동의 ===== */}
-            <Card className="p-6 border border-border">
+            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-4 w-4" />
@@ -1968,7 +1975,7 @@ export default function ContestSubmitPage() {
                   disabled={isSubmitting || (isEditMode && !hasFormChanges)}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {isSubmitting ? (isEditMode ? '수정 중...' : '업로드 중...') : (isEditMode ? '수정하기' : '제출하기')}
+                  {isSubmitting ? (isBonusOnly ? '저장 중...' : isEditMode ? '수정 중...' : '업로드 중...') : (isBonusOnly ? '가산점 저장' : isEditMode ? '수정하기' : '제출하기')}
                 </Button>
               </div>
             </Card>
@@ -2031,12 +2038,14 @@ export default function ContestSubmitPage() {
                 <div className="mx-auto mb-2 w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
-                <DialogTitle className="text-center">{isEditMode ? '수정이 완료되었습니다!' : '영상이 제출되었습니다!'}</DialogTitle>
+                <DialogTitle className="text-center">{isBonusOnly ? '가산점 인증이 저장되었습니다!' : isEditMode ? '수정이 완료되었습니다!' : '영상이 제출되었습니다!'}</DialogTitle>
                 <DialogDescription className="text-center">
-                  {isEditMode
+                  {isBonusOnly
+                    ? '가산점 인증 정보가 성공적으로 수정되었습니다.'
+                    : isEditMode
                     ? `"${form.title}" 출품작이 성공적으로 수정되었습니다.`
                     : `"${form.title}" 영상이 성공적으로 접수되었습니다. 검수 완료 후 공모전 출품작 목록에 표시됩니다.`}
-                  {hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
+                  {!isBonusOnly && hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2 py-2">

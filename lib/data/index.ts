@@ -122,6 +122,7 @@ function toContest(
     landingPageUrl: (row.landing_page_url as string) ?? undefined,
     bonusConfigs: bonusConfigs.length > 0 ? bonusConfigs : undefined,
     bonusMaxScore: (row.bonus_max_score as number) ?? undefined,
+    bonusDeadlineAt: (row.bonus_deadline_at as string) ?? undefined,
     resultFormat: (row.result_format as string) ?? 'website',
     detailContent: (row.detail_content as string) ?? undefined,
     detailImageUrls: (row.detail_image_urls as string[]) ?? undefined,
@@ -180,6 +181,7 @@ export type ContestMutationInput = {
   promotionVideoUrls?: string[];
   hasLandingPage?: boolean;
   bonusMaxScore?: number;
+  bonusDeadlineAt?: string;
   awardTiers: AwardTier[];
   bonusConfigs?: Array<Omit<BonusConfig, 'id'>>;
   resultFormat?: string;
@@ -219,6 +221,7 @@ function toContestRowPayload(input: ContestMutationInput): Record<string, unknow
     promotion_video_urls: input.promotionVideoUrls ?? [],
     has_landing_page: input.hasLandingPage ?? false,
     bonus_max_score: input.bonusMaxScore ?? null,
+    bonus_deadline_at: input.bonusDeadlineAt ?? null,
     result_format: input.resultFormat ?? 'website',
     landing_page_url: input.landingPageUrl ?? null,
     detail_content: input.detailContent ?? null,
@@ -858,7 +861,7 @@ export const getArticles = unstable_cache(
     return data.map((row) => toArticle(row as Record<string, unknown>));
   },
   ['articles'],
-  { tags: ['articles'], revalidate: 600 },
+  { tags: ['articles'], revalidate: 60 },
 );
 
 export const getFaqs = unstable_cache(
@@ -872,7 +875,7 @@ export const getFaqs = unstable_cache(
     return data.map((row) => toFaq(row as Record<string, unknown>));
   },
   ['faqs'],
-  { tags: ['faqs'], revalidate: 600 },
+  { tags: ['faqs'], revalidate: 60 },
 );
 
 export async function getInquiries(): Promise<Inquiry[]> {
@@ -994,7 +997,7 @@ export const getContestResults = unstable_cache(
     return data.map((row) => toContestResult(row as Record<string, unknown>));
   },
   ['contest-results'],
-  { tags: ['results'], revalidate: 300 },
+  { tags: ['results'], revalidate: 30 },
 );
 
 export const getPricingPlans = unstable_cache(
@@ -1007,7 +1010,7 @@ export const getPricingPlans = unstable_cache(
     return data.map((row) => toPricingPlan(row as Record<string, unknown>));
   },
   ['pricing-plans'],
-  { tags: ['pricing'], revalidate: 3600 },
+  { tags: ['pricing'], revalidate: 120 },
 );
 
 export async function getActivityLogs(): Promise<ActivityLog[]> {
@@ -1105,11 +1108,11 @@ export const getGallerySubmissions = unstable_cache(
     });
   },
   ['gallery-submissions'],
-  { tags: ['gallery', 'submissions'], revalidate: 300 },
+  { tags: ['gallery', 'submissions'], revalidate: 30 },
 );
 
 /**
- * 수상작 갤러리: 결과발표된 공모전의 수상작만 — 5분 캐시
+ * 수상작 갤러리: 결과발표된 공모전의 수상작만 — 30초 캐시
  */
 export const getAwardedSubmissions = unstable_cache(
   async (): Promise<GallerySubmission[]> => {
@@ -1192,7 +1195,7 @@ export const getAwardedSubmissions = unstable_cache(
     });
   },
   ['awarded-submissions'],
-  { tags: ['gallery'], revalidate: 300 },
+  { tags: ['gallery'], revalidate: 30 },
 );
 
 /** 시청 유지율 승수: 0.5 + retentionRate × 0.5 (범위 0.5 ~ 1.0) */
@@ -1244,7 +1247,7 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
       };
     },
     [`submission-${id}`],
-    { tags: ['submissions', 'gallery'], revalidate: 300 },
+    { tags: ['submissions', 'gallery'], revalidate: 30 },
   )();
 }
 
@@ -1308,7 +1311,7 @@ export function getRelatedSubmissions(
       });
     },
     [`related-submissions-${contestId}-${excludeId}`],
-    { tags: ['submissions', 'gallery'], revalidate: 300 },
+    { tags: ['submissions', 'gallery'], revalidate: 30 },
   )();
 }
 
@@ -1910,7 +1913,7 @@ export const getActivePopups = unstable_cache(
     return data.map((row) => toPopup(row as Record<string, unknown>));
   },
   ['active-popups'],
-  { tags: ['popups'], revalidate: 300 },
+  { tags: ['popups'], revalidate: 30 },
 );
 
 /** 팝업 상세 조회 */

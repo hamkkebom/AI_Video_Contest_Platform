@@ -267,24 +267,30 @@ export async function PUT(
   /* 재제출 허용된 출품작은 공모전 마감과 무관하게 수정 가능 */
   const isResubmissionAllowed = ((submission.resubmission_count ?? 0) > 0 && !!submission.resubmission_allowed_at) || submission.status === 'needs_resubmission';
 
+  /* 가산점 전용 수정 가능 여부 (제출 마감 후 + 가산점 마감 전) */
+  let bonusOnlyMode = false;
+
   if (!callerIsAdmin && !isResubmissionAllowed) {
-    /* 공모전 상태 확인 (open일 때만 수정 가능) — 참가자만 */
     const { data: contest } = await supabase
       .from('contests')
-      .select('status, submission_end_at')
+      .select('status, submission_end_at, bonus_deadline_at')
       .eq('id', submission.contest_id)
       .single();
 
-    if (!contest || contest.status !== 'open') {
-      return NextResponse.json(
-        { error: '접수 기간이 아니라 수정할 수 없습니다.', code: 'CONTEST_NOT_OPEN' },
-        { status: 410 },
-      );
-    }
+    const now = new Date();
+    const isContestOpen = contest?.status === 'open';
+    const isBeforeSubmissionDeadline = contest?.submission_end_at && new Date(contest.submission_end_at as string) >= now;
+    const isBeforeBonusDeadline = contest?.bonus_deadline_at && new Date(contest.bonus_deadline_at as string) >= now;
 
-    if (contest.submission_end_at && new Date(contest.submission_end_at as string) < new Date()) {
+    if (isContestOpen && isBeforeSubmissionDeadline) {
+      /* 접수 기간 중 — 전체 수정 가능 */
+    } else if (isBeforeBonusDeadline) {
+      /* 제출 마감 후 + 가산점 마감 전 — 가산점만 수정 가능 */
+      bonusOnlyMode = true;
+    } else {
+      /* 모든 마감 지남 */
       return NextResponse.json(
-        { error: '접수 마감일이 지나 수정할 수 없습니다.', code: 'DEADLINE_PASSED' },
+        { error: '수정 가능한 기간이 아닙니다.', code: 'DEADLINE_PASSED' },
         { status: 403 },
       );
     }
@@ -304,7 +310,14 @@ export async function PUT(
       submittedAt?: string;
       bonusEntries?: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }>;
       isResubmission?: boolean;
+      bonusOnly?: boolean;
     };
+
+    /* 클라이언트가 bonusOnly 플래그를 보낸 경우 서버 검증과 일치 확인 */
+    if (body.bonusOnly && !bonusOnlyMode && !callerIsAdmin) {
+      return NextResponse.json({ error: '가산점만 수정할 수 있는 기간이 아닙니다.' }, { status: 403 });
+    }
+    if (body.bonusOnly) bonusOnlyMode = true;
 
     /* 재제출 모드: 영상+썸네일만 업데이트 */
     if (body.isResubmission && isResubmissionAllowed) {
@@ -341,6 +354,40 @@ export async function PUT(
       return NextResponse.json({ success: true });
     }
 
+    /* ====== 가산점 전용 수정 모드 ====== */
+    if (bonusOnlyMode) {
+      if (!Array.isArray(body.bonusEntries)) {
+        return NextResponse.json({ error: '가산점 데이터가 필요합니다.' }, { status: 400 });
+      }
+
+      const { error: deleteError } = await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
+      if (deleteError) {
+        return NextResponse.json({ error: '가산점 인증 업데이트에 실패했습니다.' }, { status: 500 });
+      }
+
+      const bonusInserts = body.bonusEntries
+        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .map((e) => ({
+          submission_id: submissionId,
+          bonus_config_id: e.bonusConfigId,
+          sns_url: e.snsUrl || null,
+          proof_image_url: e.proofImageUrl || null,
+          submitted_at: new Date().toISOString(),
+        }));
+
+      if (bonusInserts.length > 0) {
+        const { error: bonusError } = await supabase.from('bonus_entries').insert(bonusInserts);
+        if (bonusError) {
+          return NextResponse.json({ error: '가산점 인증 저장에 실패했습니다.' }, { status: 500 });
+        }
+      }
+
+      revalidateTag('submissions');
+      revalidateTag('gallery');
+      return NextResponse.json({ success: true });
+    }
+
+    /* ====== 일반 수정 모드 ====== */
     const title = body.title?.trim();
     const description = body.description?.trim();
     const aiTools = body.aiTools?.trim();
@@ -375,16 +422,12 @@ export async function PUT(
       .select('id');
 
     if (updateError) {
-      console.error('[PUT /api/submissions/[id]] 업데이트 실패:', updateError.message);
       return NextResponse.json({ error: '수정에 실패했습니다.' }, { status: 500 });
     }
 
     if (!updatedRows || updatedRows.length === 0) {
-      console.error('[PUT /api/submissions/[id]] RLS 또는 조건 불일치로 업데이트된 행 없음. submissionId:', submissionId);
       return NextResponse.json({ error: '수정 권한이 없거나 출품작을 찾을 수 없습니다.' }, { status: 403 });
     }
-
-    console.log('[PUT /api/submissions/[id]] 업데이트 성공. submissionId:', submissionId, 'title:', title);
 
     /* 가산점 인증 업데이트 (기존 삭제 → 재삽입) */
     if (Array.isArray(body.bonusEntries)) {

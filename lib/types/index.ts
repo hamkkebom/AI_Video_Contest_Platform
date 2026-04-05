@@ -180,6 +180,8 @@ export interface Contest {
   bonusConfigs?: BonusConfig[];
   /** 가산점 총 배점 */
   bonusMaxScore?: number;
+  /** 가산점 인증 마감일 (제출 마감과 별도) */
+  bonusDeadlineAt?: string;
   /** 가산점 반영 비율 (%) */
   bonusPercentage?: number;
   /** 심사위원 평가 비율 (%) */

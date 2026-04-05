@@ -69,6 +69,7 @@ type ContestMutationPayload = {
   hasLandingPage: boolean;
   resultFormat: string;
   bonusMaxScore?: number;
+  bonusDeadlineAt?: string;
   bonusPercentage?: number;
   judgeWeightPercent?: number;
   onlineVoteWeightPercent?: number;
@@ -376,6 +377,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const [judgingStartDate, setJudgingStartDate] = useState('');
   const [judgingEndDate, setJudgingEndDate] = useState('');
   const [resultDate, setResultDate] = useState('');
+  const [bonusDeadlineDate, setBonusDeadlineDate] = useState('');
 
   /* 심사 정책 — maxSubmissions를 문자열로 관리 (스피너 문제 해결) */
   const [judgingType, setJudgingType] = useState<Contest['judgingType']>('internal');
@@ -454,6 +456,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
         setJudgingStartDate(toDateInputValue(contest.judgingStartAt));
         setJudgingEndDate(toDateInputValue(contest.judgingEndAt));
         setResultDate(toDateInputValue(contest.resultAnnouncedAt));
+        if (contest.bonusDeadlineAt) setBonusDeadlineDate(toDateInputValue(contest.bonusDeadlineAt));
         setJudgingType(contest.judgingType);
         setReviewPolicy(contest.reviewPolicy);
         setMaxSubmissionsStr(String(contest.maxSubmissionsPerUser));
@@ -847,6 +850,7 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
       detailImageUrls: detailImageUrls.length > 0 ? detailImageUrls : undefined,
       guidelines: guidelines.trim() || undefined,
       notes: notes.trim() || undefined,
+      bonusDeadlineAt: bonusDeadlineDate ? toIsoDate(bonusDeadlineDate) : undefined,
       bonusPercentage: !Number.isNaN(bonusPct) && bonusPct > 0 ? bonusPct : undefined,
       judgeWeightPercent: (() => { const n = parseInt(judgeWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })(),
       onlineVoteWeightPercent: useOnlineVote ? (() => { const n = parseInt(onlineVoteWeightPercentStr, 10); return !Number.isNaN(n) && n >= 0 ? n : undefined; })() : undefined,
@@ -1685,6 +1689,15 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                     ))}
                   </select>
                   {fieldErrors.resultFormat && <p className="text-xs text-destructive">{fieldErrors.resultFormat}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
+                <div className="space-y-2">
+                  <label htmlFor="admin-contest-bonus-deadline" className="text-sm font-medium">
+                    가산점 인증 마감일 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
+                  </label>
+                  <Input id="admin-contest-bonus-deadline" type="date" value={bonusDeadlineDate} onChange={(e) => setBonusDeadlineDate(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">제출 마감 후에도 가산점 인증을 수정할 수 있는 기한입니다.</p>
                 </div>
               </div>
             </div>

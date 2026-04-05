@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trophy, Film, Eye, Heart, Clock, Pencil, CalendarDays } from 'lucide-react';
+import { Trophy, Film, Eye, Heart, Clock, Pencil, CalendarDays, Gift } from 'lucide-react';
 import type { Contest, Submission, SubmissionStatus } from '@/lib/types';
 import { getSubmissions, getContests, getAuthProfile } from '@/lib/data';
 import { redirect } from 'next/navigation';
@@ -191,6 +191,15 @@ export default async function MyContestsPage() {
                                   >
                                     <Pencil className="h-3 w-3" />
                                     수정
+                                  </Link>
+                                )}
+                                {ds !== 'open' && contest.bonusDeadlineAt && new Date(contest.bonusDeadlineAt) >= new Date() && (contest.bonusConfigs?.length ?? 0) > 0 && (
+                                  <Link
+                                    href={`/contests/${contest.id}/submit?edit=${submission.id}&bonusOnly=true`}
+                                    className="inline-flex items-center gap-1 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700 font-semibold transition-colors hover:bg-violet-100"
+                                  >
+                                    <Gift className="h-3 w-3" />
+                                    가산점 수정
                                   </Link>
                                 )}
                                 {(submission.status === 'needs_resubmission' || ((submission.resubmissionCount ?? 0) > 0 && submission.status === 'pending_review' && !!submission.resubmissionAllowedAt)) && (
