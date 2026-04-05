@@ -1944,13 +1944,15 @@ export default function ContestSubmitPage() {
                   </div>
                 </div>
               </div>
+            </Card>
 
-              {/* 제출 버튼 */}
+            {/* ===== 제출/저장 버튼 (항상 표시) ===== */}
+            <Card className="p-6 border border-border">
               {submitError && (
-                <p className="text-sm text-red-500 mt-4">{submitError}</p>
+                <p className="text-sm text-red-500 mb-4">{submitError}</p>
               )}
               {isSubmitting && (
-                <p className="text-sm text-muted-foreground mt-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   {uploadStep === 'preparing' && '업로드 준비 중...'}
                   {uploadStep === 'video' && '영상 업로드 중...'}
                   {uploadStep === 'thumbnail' && '썸네일 업로드 중...'}
@@ -1958,8 +1960,8 @@ export default function ContestSubmitPage() {
                   {uploadStep === 'submission' && '출품작 정보를 저장하는 중...'}
                 </p>
               )}
-              <div className="flex items-center gap-3 mt-5">
-                <Link href={`/contests/${contestId}/landing`} className="flex-1">
+              <div className="flex items-center gap-3">
+                <Link href={isBonusOnly ? '/my/submissions' : `/contests/${contestId}/landing`} className="flex-1">
                   <Button
                     type="button"
                     variant="outline"
