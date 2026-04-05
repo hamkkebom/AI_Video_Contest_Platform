@@ -141,7 +141,7 @@ export default async function MyContestsPage() {
                           <div key={submission.id} className="space-y-2">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50 hover:border-primary/30">
                               {/* 썸네일 + 정보 (클릭 시 상세로 이동) */}
-                              <Link href={`/gallery/${submission.id}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                              <Link href={`/gallery/${submission.id}?from=my`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
                                 {/* 썸네일 */}
                                 <div className="relative h-32 sm:h-16 w-full sm:w-28 shrink-0 overflow-hidden rounded-md bg-muted">
                                   {submission.thumbnailUrl ? (

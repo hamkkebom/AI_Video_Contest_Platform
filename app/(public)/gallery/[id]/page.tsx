@@ -15,6 +15,7 @@ import { ViewTracker } from '@/components/common/view-tracker';
 
 type SubmissionDetailPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
@@ -60,8 +61,10 @@ export async function generateMetadata({ params }: SubmissionDetailPageProps): P
  * 갤러리/내 출품작에서 영상 클릭 시 이동하는 상세 보기
  * 단일 컬럼 레이아웃: 영상 → 작품 정보 → 공모전 정보 → 관련 작품
  */
-export default async function SubmissionDetailPage({ params }: SubmissionDetailPageProps) {
+export default async function SubmissionDetailPage({ params, searchParams }: SubmissionDetailPageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const isFromMy = from === 'my';
   /* 독립적인 두 쿼리를 병렬 실행 */
   const [submission, profile] = await Promise.all([
     getSubmissionById(id),
@@ -179,7 +182,7 @@ export default async function SubmissionDetailPage({ params }: SubmissionDetailP
           </Card>
 
           {/* 2. 영상 플레이어 (풀 너비) */}
-          {contestSubmissions.length > 1 && (
+          {!isFromMy && contestSubmissions.length > 1 && (
             <div className="flex items-center justify-between px-1 py-2">
               <Link href={prevSubmission ? `/gallery/${prevSubmission.id}` : '#'}>
                 <Button variant="ghost" size="sm" disabled={!prevSubmission} className="gap-1">
