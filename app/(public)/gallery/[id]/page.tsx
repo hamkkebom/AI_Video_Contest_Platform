@@ -96,9 +96,36 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
     );
   }
 
-  /* submission과 profile에 의존하는 쿼리를 병렬 실행 */
+  /* 권한 확인 */
   const isAdmin = profile?.roles?.includes('admin') ?? false;
   const isOwner = profile?.id === submission.userId;
+
+  /* 승인되지 않은 작품은 본인 또는 관리자만 접근 가능 */
+  if (submission.status !== 'approved' && !isAdmin && !isOwner) {
+    return (
+      <div className="w-full min-h-screen bg-background">
+        <section className="py-20 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <Card className="p-12 text-center border border-border">
+              <div className="space-y-4">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+                <h1 className="text-2xl font-bold">작품을 찾을 수 없습니다</h1>
+                <p className="text-muted-foreground">요청하신 작품이 존재하지 않거나 삭제되었습니다.</p>
+                <Link
+                  href="/gallery/all"
+                  className="text-sm text-muted-foreground hover:text-primary hover:font-bold transition-all cursor-pointer"
+                >
+                  갤러리로 돌아가기 →
+                </Link>
+              </div>
+            </Card>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  /* submission과 profile에 의존하는 쿼리를 병렬 실행 */
   /* 관리자: pending_review만 순회 (검수 워크플로우)
      일반 사용자: approved만 순회 (갤러리 탐색) */
   const navStatus = isAdmin ? 'pending_review' : 'approved';
