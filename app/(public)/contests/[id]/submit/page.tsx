@@ -1215,8 +1215,9 @@ export default function ContestSubmitPage() {
     );
   }
 
-  /* 접수중이 아닌 경우 */
-  if (contest.status !== 'open') {
+  /* 접수중이 아닌 경우 (단, 가산점 전용 수정은 가산점 마감 전이면 허용) */
+  const isBonusDeadlineValid = isBonusOnly && contest.bonusDeadlineAt && new Date(contest.bonusDeadlineAt) >= new Date();
+  if (contest.status !== 'open' && !isBonusDeadlineValid) {
     return (
       <div className="w-full min-h-screen bg-background">
         <section className="py-20 px-4">
