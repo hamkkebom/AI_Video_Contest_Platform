@@ -11,7 +11,6 @@ import {
   MessageSquare,
   Newspaper,
   ShieldAlert,
-  Sparkles,
   Trophy,
   Users,
 } from 'lucide-react';
@@ -45,6 +44,12 @@ interface AdminActivityItem {
   timestamp: string;
 }
 
+interface ChartDataPoint {
+  month?: string;
+  date?: string;
+  count: number;
+}
+
 interface AdminDashboardData {
   todayLabel: string;
   totalUsers: number;
@@ -56,6 +61,11 @@ interface AdminDashboardData {
   pendingInquiries: number;
   roleDistribution: RoleDistribution;
   recentActivities: AdminActivityItem[];
+  monthlySignupData: ChartDataPoint[];
+  dailySignupData: ChartDataPoint[];
+  dailySubmissionData: ChartDataPoint[];
+  userTrend: string;
+  submissionTrend: string;
 }
 
 interface AdminDashboardContentProps {
@@ -73,17 +83,6 @@ interface StatCard {
   borderClass: string;
   iconClass: string;
 }
-
-const monthlySignupData = [
-  { month: '1월', count: 8 },
-  { month: '2월', count: 13 },
-  { month: '3월', count: 16 },
-  { month: '4월', count: 14 },
-  { month: '5월', count: 21 },
-  { month: '6월', count: 25 },
-  { month: '7월', count: 28 },
-  { month: '8월', count: 31 },
-];
 
 const pieColors = [
   'hsl(var(--primary))',
@@ -138,7 +137,7 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
     {
       label: '전체 회원',
       value: data.totalUsers,
-      trend: '전월 대비 +9%',
+      trend: data.userTrend,
       sub: `활성 ${data.activeUsers}명`,
       icon: Users,
       borderClass: 'border-l-primary',
@@ -147,8 +146,8 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
     {
       label: '전체 공모전',
       value: data.totalContests,
-      trend: '전월 대비 +6%',
-      sub: `진행중 ${data.ongoingContests}개`,
+      trend: `진행중 ${data.ongoingContests}개`,
+      sub: `총 ${data.totalContests}개 등록`,
       icon: Trophy,
       borderClass: 'border-l-amber-500',
       iconClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -156,7 +155,7 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
     {
       label: '전체 출품작',
       value: data.totalSubmissions,
-      trend: '전월 대비 +14%',
+      trend: data.submissionTrend,
       sub: `승인 ${data.approvedSubmissions}개`,
       icon: Film,
       borderClass: 'border-l-sky-500',
@@ -205,11 +204,11 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
         <Card className="border-border">
           <CardHeader>
             <CardTitle>월별 가입자 추이</CardTitle>
-            <CardDescription>최근 8개월 신규 가입자 수</CardDescription>
+            <CardDescription>최근 6개월 신규 가입자 수</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlySignupData} margin={{ left: 0, right: 12, top: 6, bottom: 0 }}>
+              <AreaChart data={data.monthlySignupData} margin={{ left: 0, right: 12, top: 6, bottom: 0 }}>
                 <defs>
                   <linearGradient id="signupGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
@@ -218,13 +217,14 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} width={36} />
+                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
                     borderRadius: 12,
                     border: '1px solid hsl(var(--border))',
                     background: 'hsl(var(--card))',
                   }}
+                  formatter={(value: number) => [`${value}명`, '가입자']}
                 />
                 <Area
                   type="monotone"
@@ -255,6 +255,7 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
                   innerRadius={70}
                   outerRadius={110}
                   paddingAngle={2}
+                  label={({ name, value }) => `${name} ${value}명`}
                 >
                   {chartRoleData.map((item, index) => (
                     <Cell key={`${item.name}-${index}`} fill={pieColors[index % pieColors.length]} />
@@ -266,8 +267,85 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
                     border: '1px solid hsl(var(--border))',
                     background: 'hsl(var(--card))',
                   }}
+                  formatter={(value: number) => [`${value}명`]}
                 />
               </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>일별 가입자 추이</CardTitle>
+            <CardDescription>최근 14일 신규 가입자 수</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.dailySignupData} margin={{ left: 0, right: 12, top: 6, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dailySignupGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--card))',
+                  }}
+                  formatter={(value: number) => [`${value}명`, '가입자']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#dailySignupGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>일별 출품작 추이</CardTitle>
+            <CardDescription>최근 14일 출품작 등록 수</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.dailySubmissionData} margin={{ left: 0, right: 12, top: 6, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dailySubmissionGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(142 76% 36%)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="hsl(142 76% 36%)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: '1px solid hsl(var(--border))',
+                    background: 'hsl(var(--card))',
+                  }}
+                  formatter={(value: number) => [`${value}개`, '출품작']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(142 76% 36%)"
+                  strokeWidth={2}
+                  fill="url(#dailySubmissionGradient)"
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

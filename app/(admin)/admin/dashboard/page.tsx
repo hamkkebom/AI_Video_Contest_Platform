@@ -50,6 +50,63 @@ export default async function AdminDashboardPage() {
       { participant: 0, host: 0, judge: 0, admin: 0 }
     );
 
+    // --- 월별 가입자 추이 (최근 6개월) ---
+    const now = new Date();
+    const monthlySignupData: Array<{ month: string; count: number }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const count = users.filter((u) => {
+        const c = new Date(u.createdAt);
+        return c.getFullYear() === year && c.getMonth() === month;
+      }).length;
+      monthlySignupData.push({ month: `${month + 1}월`, count });
+    }
+
+    // --- 일별 가입자 추이 (최근 14일) ---
+    const dailySignupData: Array<{ date: string; count: number }> = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      const ymd = d.toISOString().slice(0, 10);
+      const count = users.filter((u) => u.createdAt.slice(0, 10) === ymd).length;
+      dailySignupData.push({ date: dateStr, count });
+    }
+
+    // --- 일별 출품작 추이 (최근 14일) ---
+    const dailySubmissionData: Array<{ date: string; count: number }> = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      const ymd = d.toISOString().slice(0, 10);
+      const count = submissions.filter((s) => s.submittedAt.slice(0, 10) === ymd).length;
+      dailySubmissionData.push({ date: dateStr, count });
+    }
+
+    // --- 전월 대비 증감 계산 ---
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const prevMonthDate = new Date(thisYear, thisMonth - 1, 1);
+    const prevMonth = prevMonthDate.getMonth();
+    const prevYear = prevMonthDate.getFullYear();
+
+    const usersThisMonth = users.filter((u) => { const c = new Date(u.createdAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; }).length;
+    const usersPrevMonth = users.filter((u) => { const c = new Date(u.createdAt); return c.getFullYear() === prevYear && c.getMonth() === prevMonth; }).length;
+
+    const submissionsThisMonth = submissions.filter((s) => { const c = new Date(s.submittedAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; }).length;
+    const submissionsPrevMonth = submissions.filter((s) => { const c = new Date(s.submittedAt); return c.getFullYear() === prevYear && c.getMonth() === prevMonth; }).length;
+
+    function trendLabel(current: number, previous: number): string {
+      if (previous === 0) return current > 0 ? `이번 달 +${current}` : '변동 없음';
+      const pct = Math.round(((current - previous) / previous) * 100);
+      if (pct > 0) return `전월 대비 +${pct}%`;
+      if (pct < 0) return `전월 대비 ${pct}%`;
+      return '전월과 동일';
+    }
+
     return (
       <AdminDashboardContent
         data={{
@@ -68,6 +125,11 @@ export default async function AdminDashboardPage() {
           pendingInquiries,
           roleDistribution,
           recentActivities: [],
+          monthlySignupData,
+          dailySignupData,
+          dailySubmissionData,
+          userTrend: trendLabel(usersThisMonth, usersPrevMonth),
+          submissionTrend: trendLabel(submissionsThisMonth, submissionsPrevMonth),
         }}
         activitySlot={
           <Suspense fallback={<ActivityFeedSkeleton />}>
