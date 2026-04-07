@@ -17,7 +17,7 @@ interface JudgeLayoutProps {
 
 export default function JudgeLayout({ children }: JudgeLayoutProps) {
   return (
-    <RoleGuard allowedRoles={['judge']}>
+    <RoleGuard allowedRoles={['judge', 'admin']}>
       <div className="min-h-screen bg-background">
         <DashboardSidebar items={judgeDashboardNavItems} roleLabel="심사위원" />
         <div className="md:pl-60">

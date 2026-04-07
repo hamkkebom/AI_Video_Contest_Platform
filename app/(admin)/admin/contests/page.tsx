@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CONTEST_STATUS_TABS, STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 import { getContests, getSubmissions } from '@/lib/data';
-import type { Contest } from '@/lib/types';
+
 import { Inbox, Calendar, Gavel, Trophy } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -17,8 +17,6 @@ type AdminContestsPageProps = {
 export default async function AdminContestsPage({ searchParams }: AdminContestsPageProps) {
   try {
     const { status } = await searchParams;
-    const activeStatus = CONTEST_STATUS_TABS.some((t) => t.value === status) ? status! : 'all';
-
     const [allContests, allSubmissions] = await Promise.all([
       getContests(),
       getSubmissions(),
@@ -29,6 +27,17 @@ export default async function AdminContestsPage({ searchParams }: AdminContestsP
       acc[c.status] = (acc[c.status] ?? 0) + 1;
       return acc;
     }, {});
+
+    /* 기본 탭: URL 파라미터 우선, 없으면 컨텐츠가 있는 첫 탭 자동 선택 */
+    let activeStatus = CONTEST_STATUS_TABS.some((t) => t.value === status) ? status! : 'all';
+    if (!status && allContests.length > 0) {
+      const hasOpen = (countByStatus['open'] ?? 0) > 0;
+      if (!hasOpen) {
+        const tabOrder = ['judging', 'closed', 'completed', 'draft'];
+        const firstWithData = tabOrder.find((s) => (countByStatus[s] ?? 0) > 0);
+        if (firstWithData) activeStatus = firstWithData;
+      }
+    }
 
     /* 필터링된 공모전 목록 */
     const filteredContests = activeStatus === 'all'
