@@ -112,38 +112,42 @@ const quickActions: Array<{
   },
 ];
 
+function fmt(n: number): string {
+  return n.toLocaleString('ko-KR');
+}
+
 export function AdminDashboardContent({ data, activitySlot }: AdminDashboardContentProps) {
   const stats: StatCard[] = [
     {
       label: '전체 회원',
-      value: data.totalUsers,
+      value: fmt(data.totalUsers),
       trend: data.userTrend,
-      sub: `활성 ${data.activeUsers}명`,
+      sub: `활성 ${fmt(data.activeUsers)}명`,
       icon: Users,
       borderClass: 'border-l-primary',
       iconClass: 'bg-primary/10 text-primary',
     },
     {
       label: '전체 공모전',
-      value: data.totalContests,
-      trend: `진행중 ${data.ongoingContests}개`,
-      sub: `총 ${data.totalContests}개 등록`,
+      value: fmt(data.totalContests),
+      trend: `진행중 ${fmt(data.ongoingContests)}개`,
+      sub: `총 ${fmt(data.totalContests)}개 등록`,
       icon: Trophy,
       borderClass: 'border-l-amber-500',
       iconClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
     },
     {
       label: '전체 출품작',
-      value: data.totalSubmissions,
+      value: fmt(data.totalSubmissions),
       trend: data.submissionTrend,
-      sub: `승인 ${data.approvedSubmissions}개`,
+      sub: `승인 ${fmt(data.approvedSubmissions)}개`,
       icon: Film,
       borderClass: 'border-l-sky-500',
       iconClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
     },
     {
       label: '대기 문의',
-      value: data.pendingInquiries,
+      value: fmt(data.pendingInquiries),
       trend: '처리 필요',
       sub: '실시간 확인 권장',
       icon: ShieldAlert,
@@ -197,14 +201,14 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+                <YAxis tickLine={false} axisLine={false} width={46} allowDecimals={false} tickFormatter={(v: number) => fmt(v)} />
                 <Tooltip
                   contentStyle={{
                     borderRadius: 12,
                     border: '1px solid hsl(var(--border))',
                     background: 'hsl(var(--card))',
                   }}
-                  formatter={(value: number) => [`${value}명`, '가입자']}
+                  formatter={(value: number) => [`${fmt(value)}명`, '가입자']}
                 />
                 <Area
                   type="monotone"
@@ -234,14 +238,14 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+                <YAxis tickLine={false} axisLine={false} width={46} allowDecimals={false} tickFormatter={(v: number) => fmt(v)} />
                 <Tooltip
                   contentStyle={{
                     borderRadius: 12,
                     border: '1px solid hsl(var(--border))',
                     background: 'hsl(var(--card))',
                   }}
-                  formatter={(value: number) => [`${value}개`, '출품작']}
+                  formatter={(value: number) => [`${fmt(value)}개`, '출품작']}
                 />
                 <Area
                   type="monotone"
