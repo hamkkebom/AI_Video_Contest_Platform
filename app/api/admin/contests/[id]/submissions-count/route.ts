@@ -48,11 +48,25 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('submissions')
-      .select('status')
+      .select('id, status')
       .eq('contest_id', id);
 
     if (error || !data) {
       return NextResponse.json({ error: '출품 카운트 조회에 실패했습니다.' }, { status: 500 });
+    }
+
+    /* 가산점 인증한 출품작 수 (bonus_entries가 1건 이상 있는 submission 수) */
+    const submissionIds = data.map((s) => s.id);
+    let bonusSubmissionCount = 0;
+    if (submissionIds.length > 0) {
+      const { data: bonusEntries } = await supabase
+        .from('bonus_entries')
+        .select('submission_id')
+        .in('submission_id', submissionIds);
+      if (bonusEntries) {
+        const uniqueSubmissions = new Set(bonusEntries.map((e) => e.submission_id));
+        bonusSubmissionCount = uniqueSubmissions.size;
+      }
     }
 
     return NextResponse.json({
@@ -64,6 +78,7 @@ export async function GET(
       ).length,
       judging: data.filter((submission) => submission.status === 'judging').length,
       judged: data.filter((submission) => submission.status === 'judged').length,
+      bonusSubmissions: bonusSubmissionCount,
     });
   } catch (error) {
     console.error('[GET /api/admin/contests/[id]/submissions-count] 실패:', error);

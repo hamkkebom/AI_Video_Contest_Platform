@@ -132,7 +132,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [submissionCounts, setSubmissionCounts] = useState({ total: 0, pendingReview: 0, approved: 0, rejected: 0, judging: 0, judged: 0 });
+  const [submissionCounts, setSubmissionCounts] = useState({ total: 0, pendingReview: 0, approved: 0, rejected: 0, judging: 0, judged: 0, bonusSubmissions: 0 });
   const [countsError, setCountsError] = useState(false);
 
   useEffect(() => {
@@ -431,6 +431,11 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                   <div className="text-center">
                     <p className="text-lg font-bold text-emerald-600">{submissionCounts.judged}</p>
                     <p className="text-muted-foreground font-bold">심사완료</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-violet-600">{submissionCounts.bonusSubmissions}</p>
+                    <p className="text-muted-foreground font-bold">가산점</p>
                   </div>
                 </div>
               )}
