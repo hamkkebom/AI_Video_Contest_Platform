@@ -136,8 +136,7 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [countsError, setCountsError] = useState(false);
 
   // 심사위원 관리
-  const [judges, setJudges] = useState<Array<{ id: string; user_id: string; is_external: boolean; invited_at: string; accepted_at?: string }>>([]);
-  const [judgeUsers, setJudgeUsers] = useState<Map<string, { name: string; email: string }>>(new Map());
+  const [judges, setJudges] = useState<Array<{ id: string; user_id: string; is_external: boolean; invited_at: string; accepted_at?: string; userName?: string; userEmail?: string }>>([]);
   const [judgeSearch, setJudgeSearch] = useState('');
   const [judgeSearchResults, setJudgeSearchResults] = useState<Array<{ id: string; name: string; email: string; nickname?: string }>>([]);
   const [judgeSearching, setJudgeSearching] = useState(false);
@@ -187,28 +186,13 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
     loadSubmissionCounts();
   }, [id]);
 
-  /* 심사위원 목록 로드 */
+  /* 심사위원 목록 로드 (API에서 유저 정보 포함 반환) */
   const loadJudges = async () => {
     try {
       const res = await fetch(`/api/judges?contestId=${id}`);
       if (!res.ok) return;
       const data = (await res.json()) as { judges: typeof judges };
       setJudges(data.judges);
-
-      // 심사위원 유저 정보 조회
-      const userIds = [...new Set(data.judges.map((j: { user_id: string }) => j.user_id))];
-      if (userIds.length > 0) {
-        const usersMap = new Map<string, { name: string; email: string }>();
-        for (const uid of userIds) {
-          const userRes = await fetch(`/api/admin/users/search?q=${encodeURIComponent(uid)}`);
-          if (userRes.ok) {
-            const userData = (await userRes.json()) as { users: Array<{ id: string; name: string; email: string }> };
-            const found = userData.users.find((u) => u.id === uid);
-            if (found) usersMap.set(uid, { name: found.name, email: found.email });
-          }
-        }
-        setJudgeUsers(usersMap);
-      }
     } catch { /* ignore */ }
   };
 
@@ -608,11 +592,10 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
                 </thead>
                 <tbody>
                   {judges.map((judge) => {
-                    const userInfo = judgeUsers.get(judge.user_id);
                     return (
                       <tr key={judge.id} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3 font-medium">{userInfo?.name ?? '알 수 없음'}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{userInfo?.email ?? '-'}</td>
+                        <td className="px-4 py-3 font-medium">{judge.userName ?? '알 수 없음'}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{judge.userEmail ?? '-'}</td>
                         <td className="px-4 py-3">
                           <Badge variant="outline" className={judge.is_external ? 'border-amber-500/40 text-amber-700 dark:text-amber-300' : 'border-primary/40 text-primary'}>
                             {judge.is_external ? '외부' : '내부'}

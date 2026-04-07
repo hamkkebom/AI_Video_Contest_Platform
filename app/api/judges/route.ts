@@ -170,5 +170,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: '심사위원 목록 조회에 실패했습니다.' }, { status: 500 });
   }
 
-  return NextResponse.json({ judges: judges ?? [] });
+  /* 심사위원 유저 프로필 정보 조인 */
+  const userIds = [...new Set((judges ?? []).map((j) => j.user_id as string))];
+  let profilesMap = new Map<string, { name: string; email: string }>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', userIds);
+    if (profiles) {
+      profilesMap = new Map(profiles.map((p) => [p.id as string, { name: p.name as string, email: p.email as string }]));
+    }
+  }
+
+  const judgesWithUser = (judges ?? []).map((j) => {
+    const profile = profilesMap.get(j.user_id as string);
+    return {
+      ...j,
+      userName: profile?.name ?? null,
+      userEmail: profile?.email ?? null,
+    };
+  });
+
+  return NextResponse.json({ judges: judgesWithUser });
 }
