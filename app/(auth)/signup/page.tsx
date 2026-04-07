@@ -30,7 +30,7 @@ export default function SignupPage() {
  * useSearchParams()를 사용하므로 Suspense boundary 내에서 렌더링
  */
 function SignupForm() {
-  const { signInWithGoogle, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signUpWithEmail, verifyEmailOtp } = useAuth();
   const router = useRouter();
 
   /* URL에서 redirect 파라미터 읽기 (가입 후 돌아갈 경로) */
@@ -47,6 +47,10 @@ function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   /* 이메일 인증 대기 화면 표시 여부 */
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [isResending, setIsResending] = useState(false);
 
   /* 전화번호 입력 시 자동 하이픈 포맷 */
   const handlePhoneChange = (value: string) => {
@@ -120,7 +124,50 @@ function SignupForm() {
 
   const isAnyLoading = isSubmitting || isGoogleSubmitting;
 
-  /* 이메일 인증 대기 화면 */
+  /* OTP 인증번호 확인 */
+  const handleVerifyOtp = async () => {
+    if (!otpCode.trim() || otpCode.length !== 6) {
+      setOtpError('6자리 인증번호를 입력해주세요.');
+      return;
+    }
+    setIsVerifying(true);
+    setOtpError('');
+    try {
+      const result = await verifyEmailOtp(email.trim(), otpCode.trim());
+      if (result.error) {
+        setOtpError(result.error);
+        setIsVerifying(false);
+        return;
+      }
+      /* 인증 성공 → 자동 로그인 완료 → 리다이렉트 */
+      router.replace(redirectTo as Route);
+    } catch {
+      setOtpError('인증 처리 중 오류가 발생했습니다.');
+      setIsVerifying(false);
+    }
+  };
+
+  /* 인증번호 재발송 */
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setOtpError('');
+    try {
+      const result = await signUpWithEmail(email.trim(), password.trim(), name.trim(), phone.replace(/[^0-9]/g, '') || undefined);
+      if (result.error) {
+        setOtpError(result.error);
+      } else {
+        setOtpError('');
+        setOtpCode('');
+        alert('인증번호가 재발송되었습니다. 이메일을 확인해주세요.');
+      }
+    } catch {
+      setOtpError('재발송 중 오류가 발생했습니다.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  /* 이메일 인증번호 입력 화면 */
   if (needsConfirmation) {
     return (
       <div className="w-full min-h-screen relative overflow-hidden flex items-center justify-center px-4">
@@ -136,21 +183,59 @@ function SignupForm() {
                 </div>
                 <span className="text-xl font-bold">AI꿈</span>
               </div>
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <div className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-8 w-8 text-violet-600 dark:text-violet-400" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">이메일을 확인해주세요</h1>
+              <h1 className="text-2xl font-bold tracking-tight">인증번호를 입력해주세요</h1>
               <p className="text-sm text-muted-foreground mt-2">
-                <strong>{email}</strong>로 인증 이메일을 보냈습니다.<br />
-                이메일의 링크를 클릭하면 가입이 완료됩니다.
+                <strong>{email}</strong>로 6자리 인증번호를 보냈습니다.
               </p>
             </CardHeader>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground text-center mb-4">
-                이메일이 보이지 않으면 스팸함을 확인해주세요.
-              </p>
+            <CardContent className="pt-4 space-y-4">
+              {otpError && (
+                <p className="text-sm text-destructive text-center">{otpError}</p>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="otp-code" className="text-sm font-semibold">인증번호</Label>
+                <Input
+                  id="otp-code"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="6자리 숫자 입력"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                  className="h-12 text-center text-2xl tracking-[0.5em] font-bold"
+                  maxLength={6}
+                  disabled={isVerifying}
+                  autoFocus
+                />
+              </div>
+
+              <Button
+                className="w-full h-11 text-base cursor-pointer"
+                onClick={handleVerifyOtp}
+                disabled={isVerifying || otpCode.length !== 6}
+              >
+                {isVerifying ? <Loader2 className="h-5 w-5 animate-spin" /> : '인증하기'}
+              </Button>
+
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  이메일이 보이지 않으면 스팸함을 확인해주세요.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={isResending}
+                  className="text-sm text-primary hover:text-primary/80 font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  {isResending ? '발송 중...' : '인증번호 재발송'}
+                </button>
+              </div>
+
               <Link href="/login">
-                <Button variant="outline" className="w-full h-11 text-base cursor-pointer">
+                <Button variant="outline" className="w-full h-11 text-base cursor-pointer mt-2">
                   로그인으로 돌아가기
                 </Button>
               </Link>

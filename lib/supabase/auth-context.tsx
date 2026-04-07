@@ -44,6 +44,8 @@ interface AuthContextValue {
   signInWithPassword: (email: string, password: string) => Promise<{ error?: string }>;
   /** 이메일 회원가입 */
   signUpWithEmail: (email: string, password: string, name: string, phone?: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+  /** 이메일 OTP 인증번호 확인 */
+  verifyEmailOtp: (email: string, token: string) => Promise<{ error?: string }>;
   /** 비밀번호 재설정 이메일 발송 */
   resetPasswordForEmail: (email: string) => Promise<{ error?: string }>;
 }
@@ -66,6 +68,7 @@ const UNCONFIGURED_VALUE: AuthContextValue = {
   refreshProfile: async () => { },
   signInWithPassword: async () => ({ error: 'Supabase 미설정' }),
   signUpWithEmail: async () => ({ error: 'Supabase 미설정' }),
+  verifyEmailOtp: async () => ({ error: 'Supabase 미설정' }),
   resetPasswordForEmail: async () => ({ error: 'Supabase 미설정' }),
 };
 
@@ -276,14 +279,12 @@ function AuthProviderInner({
     return {};
   }, [supabase]);
 
-  /** 이메일 회원가입 */
+  /** 이메일 회원가입 — OTP 인증번호 방식 (링크 인증 X) */
   const signUpWithEmail = useCallback(async (email: string, password: string, name: string, phone?: string): Promise<{ error?: string; needsConfirmation?: boolean }> => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback`,
         data: { full_name: name, name, ...(phone ? { phone } : {}) },
       },
     });
@@ -294,9 +295,26 @@ function AuthProviderInner({
       }
       return { error: error.message };
     }
-    /* session이 null이면 이메일 확인 대기 중 */
+    /* session이 null이면 이메일 OTP 인증 대기 중 */
     if (data.user && !data.session) {
       return { needsConfirmation: true };
+    }
+    return {};
+  }, [supabase]);
+
+  /** 이메일 OTP 인증번호 확인 */
+  const verifyEmailOtp = useCallback(async (email: string, token: string): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('expired') || msg.includes('invalid')) {
+        return { error: '인증번호가 만료되었거나 올바르지 않습니다. 다시 시도해주세요.' };
+      }
+      return { error: error.message };
     }
     return {};
   }, [supabase]);
@@ -426,8 +444,8 @@ function AuthProviderInner({
   const value = useMemo<AuthContextValue>(() => ({
     user, profile, session, loading, isConfigured: true,
     signInWithGoogle, signOut, refreshProfile,
-    signInWithPassword, signUpWithEmail, resetPasswordForEmail,
-  }), [user, profile, session, loading, signInWithGoogle, signOut, refreshProfile, signInWithPassword, signUpWithEmail, resetPasswordForEmail]);
+    signInWithPassword, signUpWithEmail, verifyEmailOtp, resetPasswordForEmail,
+  }), [user, profile, session, loading, signInWithGoogle, signOut, refreshProfile, signInWithPassword, signUpWithEmail, verifyEmailOtp, resetPasswordForEmail]);
 
   return (
     <AuthContext.Provider value={value}>
