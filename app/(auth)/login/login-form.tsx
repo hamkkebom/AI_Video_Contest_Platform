@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState, type FormEvent } from 'react';
-import { TreePine, Loader2, Mail, Lock } from 'lucide-react';
+import { TreePine, Loader2, Mail, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 /**
  * 로그인 폼 클라이언트 컴포넌트
@@ -33,27 +34,38 @@ export default function LoginForm() {
   const successMessage = searchParams.get('message');
 
   /* URL 에러 파라미터 감지 (auth callback 실패 등) */
-  useEffect(() => {
-    const urlError = searchParams.get('error');
+  /* 모달 알림 메시지 */
+  const [noticeMsg, setNoticeMsg] = useState('');
 
-    /* 해시 fragment에서 Supabase 에러 감지 (예: #error=server_error&error_description=...) */
+  useEffect(() => {
+    /* 해시 fragment 기반 알림 감지 (#notice=xxx, #error_description=xxx) */
     if (typeof window !== 'undefined' && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+      /* Supabase 에러 (예: #error=server_error&error_description=...) */
       const hashError = hashParams.get('error_description');
       if (hashError) {
         setErrorMsg(decodeURIComponent(hashError));
-        /* 해시 정리 (유령 세션 방지) */
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
         return;
       }
+
+      /* 커스텀 알림 (URL에 코드 노출 없이 모달로 표시) */
+      const notice = hashParams.get('notice');
+      if (notice === 'email_verified') {
+        setNoticeMsg('이메일 인증이 완료되었습니다. 로그인해주세요.');
+      } else if (notice === 'email_confirm_expired') {
+        setNoticeMsg('이메일 인증 링크가 만료되었거나 이미 사용되었습니다. 다시 회원가입해주세요.');
+      }
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
+    /* URL 파라미터 기반 에러 (기존 호환) */
+    const urlError = searchParams.get('error');
     if (urlError === 'auth_callback_failed') {
       setErrorMsg('로그인 처리 중 오류가 발생했습니다. 모바일에서는 기본 브라우저(Safari/Chrome)에서 시도해주세요.');
     } else if (urlError === 'profile_missing') {
       setErrorMsg('계정 프로필이 생성되지 않았습니다. 다시 로그인해주세요.');
-    } else if (urlError === 'email_confirm_failed') {
-      setErrorMsg('이메일 인증 링크가 만료되었거나 이미 사용되었습니다. 다시 회원가입하거나 로그인해주세요.');
     }
   }, [searchParams]);
 
@@ -240,6 +252,22 @@ export default function LoginForm() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 이메일 인증 알림 모달 */}
+      <Dialog open={!!noticeMsg} onOpenChange={() => setNoticeMsg('')}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="mx-auto mb-2 w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            {noticeMsg.includes('완료') ? (
+              <CheckCircle2 className="h-7 w-7 text-green-500" />
+            ) : (
+              <AlertCircle className="h-7 w-7 text-orange-500" />
+            )}
+          </div>
+          <DialogTitle>{noticeMsg.includes('완료') ? '인증 완료' : '안내'}</DialogTitle>
+          <DialogDescription>{noticeMsg}</DialogDescription>
+          <Button onClick={() => setNoticeMsg('')} className="mt-2 cursor-pointer">확인</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

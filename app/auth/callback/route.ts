@@ -108,7 +108,7 @@ export async function GET(request: Request) {
     }
     if (type === 'signup' || type === 'email') {
       return cleanupAndRedirect(
-        NextResponse.redirect(`${origin}/login?message=${encodeURIComponent('이메일 인증이 완료되었습니다. 로그인해주세요.')}`),
+        NextResponse.redirect(`${origin}/login#notice=email_verified`),
       );
     }
   }
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     }
     if (type === 'signup' || type === 'email') {
       return cleanupAndRedirect(
-        NextResponse.redirect(`${origin}/login?error=email_confirm_failed`),
+        NextResponse.redirect(`${origin}/login#notice=email_confirm_expired`),
       );
     }
   }
