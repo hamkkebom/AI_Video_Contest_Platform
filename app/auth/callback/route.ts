@@ -100,11 +100,15 @@ export async function GET(request: Request) {
       return cleanupAndRedirect(successResponse);
     }
 
-    /* PKCE 실패 — 모바일 인앱 브라우저에서 code_verifier 쿠키 없는 경우
-       비밀번호 재설정이면 만료 안내 페이지로, 아니면 로그인 에러로 */
+    /* PKCE 실패 — 모바일 인앱 브라우저에서 code_verifier 쿠키 없는 경우 */
     if (type === 'recovery') {
       return cleanupAndRedirect(
         NextResponse.redirect(`${origin}/forgot-password?error=link_expired`),
+      );
+    }
+    if (type === 'signup' || type === 'email') {
+      return cleanupAndRedirect(
+        NextResponse.redirect(`${origin}/login?message=${encodeURIComponent('이메일 인증이 완료되었습니다. 로그인해주세요.')}`),
       );
     }
   }
@@ -138,6 +142,11 @@ export async function GET(request: Request) {
     if (type === 'recovery') {
       return cleanupAndRedirect(
         NextResponse.redirect(`${origin}/forgot-password?error=link_expired`),
+      );
+    }
+    if (type === 'signup' || type === 'email') {
+      return cleanupAndRedirect(
+        NextResponse.redirect(`${origin}/login?error=email_confirm_failed`),
       );
     }
   }

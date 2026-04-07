@@ -52,6 +52,8 @@ export default function LoginForm() {
       setErrorMsg('로그인 처리 중 오류가 발생했습니다. 모바일에서는 기본 브라우저(Safari/Chrome)에서 시도해주세요.');
     } else if (urlError === 'profile_missing') {
       setErrorMsg('계정 프로필이 생성되지 않았습니다. 다시 로그인해주세요.');
+    } else if (urlError === 'email_confirm_failed') {
+      setErrorMsg('이메일 인증 링크가 만료되었거나 이미 사용되었습니다. 다시 회원가입하거나 로그인해주세요.');
     }
   }, [searchParams]);
 
