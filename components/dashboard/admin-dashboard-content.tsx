@@ -18,9 +18,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -61,7 +58,6 @@ interface AdminDashboardData {
   pendingInquiries: number;
   roleDistribution: RoleDistribution;
   recentActivities: AdminActivityItem[];
-  monthlySignupData: ChartDataPoint[];
   dailySignupData: ChartDataPoint[];
   dailySubmissionData: ChartDataPoint[];
   userTrend: string;
@@ -83,13 +79,6 @@ interface StatCard {
   borderClass: string;
   iconClass: string;
 }
-
-const pieColors = [
-  'hsl(var(--primary))',
-  'hsl(var(--secondary-foreground))',
-  'hsl(var(--muted-foreground))',
-  'hsl(var(--accent-foreground))',
-];
 
 const quickActions: Array<{
   href: Route;
@@ -124,15 +113,6 @@ const quickActions: Array<{
 ];
 
 export function AdminDashboardContent({ data, activitySlot }: AdminDashboardContentProps) {
-  const roleChartData = [
-    { name: '참가자', value: data.roleDistribution.participant },
-    { name: '주최자', value: data.roleDistribution.host },
-    { name: '심사위원', value: data.roleDistribution.judge },
-    { name: '관리자', value: data.roleDistribution.admin },
-  ].filter((item) => item.value > 0);
-
-  const chartRoleData = roleChartData.length > 0 ? roleChartData : [{ name: '데이터 없음', value: 1 }];
-
   const stats: StatCard[] = [
     {
       label: '전체 회원',
@@ -198,81 +178,6 @@ export function AdminDashboardContent({ data, activitySlot }: AdminDashboardCont
             </CardContent>
           </Card>
         ))}
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>월별 가입자 추이</CardTitle>
-            <CardDescription>최근 6개월 신규 가입자 수</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.monthlySignupData} margin={{ left: 0, right: 12, top: 6, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="signupGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.04} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--card))',
-                  }}
-                  formatter={(value: number) => [`${value}명`, '가입자']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#signupGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>회원 역할 분포</CardTitle>
-            <CardDescription>역할별 회원 구성 비율</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartRoleData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={70}
-                  outerRadius={110}
-                  paddingAngle={2}
-                  label={({ name, value }) => `${name} ${value}명`}
-                >
-                  {chartRoleData.map((item, index) => (
-                    <Cell key={`${item.name}-${index}`} fill={pieColors[index % pieColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--card))',
-                  }}
-                  formatter={(value: number) => [`${value}명`]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">

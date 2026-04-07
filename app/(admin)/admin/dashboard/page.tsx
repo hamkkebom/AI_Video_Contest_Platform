@@ -50,19 +50,7 @@ export default async function AdminDashboardPage() {
       { participant: 0, host: 0, judge: 0, admin: 0 }
     );
 
-    // --- 월별 가입자 추이 (최근 6개월) ---
     const now = new Date();
-    const monthlySignupData: Array<{ month: string; count: number }> = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const count = users.filter((u) => {
-        const c = new Date(u.createdAt);
-        return c.getFullYear() === year && c.getMonth() === month;
-      }).length;
-      monthlySignupData.push({ month: `${month + 1}월`, count });
-    }
 
     // --- 일별 가입자 추이 (최근 14일) ---
     const dailySignupData: Array<{ date: string; count: number }> = [];
@@ -125,7 +113,6 @@ export default async function AdminDashboardPage() {
           pendingInquiries,
           roleDistribution,
           recentActivities: [],
-          monthlySignupData,
           dailySignupData,
           dailySubmissionData,
           userTrend: trendLabel(usersThisMonth, usersPrevMonth),
