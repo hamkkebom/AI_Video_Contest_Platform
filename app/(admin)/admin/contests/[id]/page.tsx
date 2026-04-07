@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Contest, SubmissionStatus } from '@/lib/types';
-import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Award, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Image as ImageIcon, UserPlus, X, Loader2 } from 'lucide-react';
 import { formatDateCompact } from '@/lib/utils';
 import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
@@ -135,6 +135,15 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [submissionCounts, setSubmissionCounts] = useState({ total: 0, pendingReview: 0, approved: 0, rejected: 0, judging: 0, judged: 0, bonusSubmissions: 0 });
   const [countsError, setCountsError] = useState(false);
 
+  // 심사위원 관리
+  const [judges, setJudges] = useState<Array<{ id: string; user_id: string; is_external: boolean; invited_at: string; accepted_at?: string }>>([]);
+  const [judgeUsers, setJudgeUsers] = useState<Map<string, { name: string; email: string }>>(new Map());
+  const [judgeSearch, setJudgeSearch] = useState('');
+  const [judgeSearchResults, setJudgeSearchResults] = useState<Array<{ id: string; name: string; email: string; nickname?: string }>>([]);
+  const [judgeSearching, setJudgeSearching] = useState(false);
+  const [addingJudge, setAddingJudge] = useState(false);
+  const [removingJudgeId, setRemovingJudgeId] = useState<string | null>(null);
+
   useEffect(() => {
     const loadContest = async () => {
       try {
@@ -177,6 +186,86 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
 
     loadSubmissionCounts();
   }, [id]);
+
+  /* 심사위원 목록 로드 */
+  const loadJudges = async () => {
+    try {
+      const res = await fetch(`/api/judges?contestId=${id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { judges: typeof judges };
+      setJudges(data.judges);
+
+      // 심사위원 유저 정보 조회
+      const userIds = [...new Set(data.judges.map((j: { user_id: string }) => j.user_id))];
+      if (userIds.length > 0) {
+        const usersMap = new Map<string, { name: string; email: string }>();
+        for (const uid of userIds) {
+          const userRes = await fetch(`/api/admin/users/search?q=${encodeURIComponent(uid)}`);
+          if (userRes.ok) {
+            const userData = (await userRes.json()) as { users: Array<{ id: string; name: string; email: string }> };
+            const found = userData.users.find((u) => u.id === uid);
+            if (found) usersMap.set(uid, { name: found.name, email: found.email });
+          }
+        }
+        setJudgeUsers(usersMap);
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => { loadJudges(); }, [id]);
+
+  /* 심사위원 검색 (디바운스) */
+  useEffect(() => {
+    if (judgeSearch.trim().length < 2) {
+      setJudgeSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setJudgeSearching(true);
+      try {
+        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(judgeSearch.trim())}`);
+        if (res.ok) {
+          const data = (await res.json()) as { users: Array<{ id: string; name: string; email: string; nickname?: string }> };
+          // 이미 배정된 심사위원 제외
+          const assignedIds = new Set(judges.map((j) => j.user_id));
+          setJudgeSearchResults(data.users.filter((u) => !assignedIds.has(u.id)));
+        }
+      } catch { /* ignore */ }
+      setJudgeSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [judgeSearch, judges]);
+
+  /* 심사위원 추가 */
+  const handleAddJudge = async (userId: string) => {
+    setAddingJudge(true);
+    try {
+      const res = await fetch('/api/judges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, contestId: id, isExternal: false }),
+      });
+      if (res.ok) {
+        setJudgeSearch('');
+        setJudgeSearchResults([]);
+        await loadJudges();
+      }
+    } catch { /* ignore */ }
+    setAddingJudge(false);
+  };
+
+  /* 심사위원 해제 */
+  const handleRemoveJudge = async (judgeId: string) => {
+    if (!window.confirm('이 심사위원을 해제하시겠습니까?')) return;
+    setRemovingJudgeId(judgeId);
+    try {
+      const res = await fetch(`/api/judges?judgeId=${judgeId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadJudges();
+      }
+    } catch { /* ignore */ }
+    setRemovingJudgeId(null);
+  };
 
   const nextStatus = useMemo(() => {
     if (!contest) return null;
@@ -442,6 +531,119 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
             </div>
           </Card>
         </Link>
+      </div>
+
+      {/* 심사위원 관리 섹션 */}
+      <div className="mb-8">
+        <Card className="p-6 border border-border space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Gavel className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground">심사위원 관리</p>
+                <p className="text-sm text-muted-foreground">배정된 심사위원 {judges.length}명</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 심사위원 추가: 검색 */}
+          <div className="relative">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="이름, 이메일로 회원 검색 (2글자 이상)"
+                  value={judgeSearch}
+                  onChange={(e) => setJudgeSearch(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                {judgeSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+            </div>
+
+            {/* 검색 결과 드롭다운 */}
+            {judgeSearchResults.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-lg max-h-48 overflow-y-auto">
+                {judgeSearchResults.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors"
+                    onClick={() => handleAddJudge(user.id)}
+                    disabled={addingJudge}
+                  >
+                    <div className="text-left">
+                      <span className="font-medium">{user.name}</span>
+                      {user.nickname && <span className="ml-1 text-muted-foreground">({user.nickname})</span>}
+                      <span className="ml-2 text-muted-foreground">{user.email}</span>
+                    </div>
+                    <UserPlus className="h-4 w-4 text-primary shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 심사위원 목록 */}
+          {judges.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+              배정된 심사위원이 없습니다. 위 검색으로 심사위원을 추가하세요.
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">심사위원</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">이메일</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">유형</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">초대일</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">액션</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {judges.map((judge) => {
+                    const userInfo = judgeUsers.get(judge.user_id);
+                    return (
+                      <tr key={judge.id} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3 font-medium">{userInfo?.name ?? '알 수 없음'}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{userInfo?.email ?? '-'}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={judge.is_external ? 'border-amber-500/40 text-amber-700 dark:text-amber-300' : 'border-primary/40 text-primary'}>
+                            {judge.is_external ? '외부' : '내부'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {formatDateCompact(judge.invited_at)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                            onClick={() => handleRemoveJudge(judge.id)}
+                            disabled={removingJudgeId === judge.id}
+                          >
+                            {removingJudgeId === judge.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <X className="h-3.5 w-3.5" />
+                            )}
+                            해제
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* 에러 메시지 */}

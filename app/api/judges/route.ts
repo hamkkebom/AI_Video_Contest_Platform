@@ -96,6 +96,58 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) {
+    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  }
+
+  /* 관리자 권한 확인 */
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('roles')
+    .eq('id', user.id)
+    .single();
+
+  const roles = Array.isArray(profile?.roles) ? profile.roles : [];
+  if (!roles.includes('admin')) {
+    return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const judgeId = searchParams.get('judgeId');
+
+  if (!judgeId) {
+    return NextResponse.json({ error: '심사위원 ID가 필요합니다.' }, { status: 400 });
+  }
+
+  try {
+    const { error } = await supabase
+      .from('judges')
+      .delete()
+      .eq('id', judgeId);
+
+    if (error) {
+      console.error('[DELETE /api/judges] 심사위원 해제 실패:', error);
+      return NextResponse.json({ error: '심사위원 해제에 실패했습니다.' }, { status: 500 });
+    }
+
+    revalidateTag('judges');
+    revalidateTag('users');
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[DELETE /api/judges] 실패:', error);
+    return NextResponse.json({ error: '심사위원 해제 중 오류가 발생했습니다.' }, { status: 500 });
+  }
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   if (!supabase) {
