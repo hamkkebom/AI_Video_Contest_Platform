@@ -3,7 +3,7 @@ import {
   getAuthProfile,
   getJudgeAssignments,
   getContestById,
-  getJudgingTemplates,
+  getContestTemplate,
   getScoresByContest,
   getSubmissions,
 } from '@/lib/data';
@@ -21,11 +21,10 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
   try {
 
     // 단건/필터 조회로 최적화 (전체 조회 제거)
-    const [contest, contestSubmissions, contestScores, templates, judgeAssignments] = await Promise.all([
+    const [contest, contestSubmissions, contestScores, judgeAssignments] = await Promise.all([
       getContestById(contestId),
       getSubmissions({ contestId }),
       getScoresByContest(contestId),
-      getJudgingTemplates(),
       getJudgeAssignments(profile.id),
     ]);
 
@@ -37,22 +36,22 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
       );
     }
 
-    const submissionIdSet = new Set(contestSubmissions.map((submission) => submission.id));
+    // 공모전별 심사 기준 → judging_templates 자동 동기화
+    const selectedTemplate = await getContestTemplate(contestId);
+
+    if (!selectedTemplate) {
+      return (
+        <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center space-y-2">
+          <p className="text-lg font-semibold">심사 기준이 설정되지 않았습니다</p>
+          <p className="text-sm text-muted-foreground">관리자에게 공모전 심사 기준 설정을 요청해주세요.</p>
+        </div>
+      );
+    }
 
     const currentJudgeAssignments = judgeAssignments.filter((judge) => judge.contestId === contest.id);
     const currentJudgeIdSet = new Set(currentJudgeAssignments.map((judge) => judge.id));
 
     const currentJudgeScores = contestScores.filter((score) => currentJudgeIdSet.has(score.judgeId));
-
-    const templateById = templates.reduce<Record<string, (typeof templates)[number]>>((acc, template) => {
-      acc[template.id] = template;
-      return acc;
-    }, {});
-
-    const contestNumber = Number(contest.id.replace('contest-', '')) || 1;
-    const fallbackTemplate = templates[(contestNumber - 1) % templates.length] ?? templates[0];
-    const templateFromScores = contestScores.length > 0 ? templateById[contestScores[0].templateId] : undefined;
-    const selectedTemplate = templateFromScores ?? fallbackTemplate;
 
     const scoreDistributionRanges = [
       { label: '0-20', min: 0, max: 20 },

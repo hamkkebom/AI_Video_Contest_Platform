@@ -3,7 +3,7 @@ import {
   getAuthProfile,
   getJudgeAssignments,
   getContests,
-  getJudgingTemplates,
+  getContestTemplate,
   getScores,
   getSubmissions,
 } from '@/lib/data';
@@ -15,12 +15,11 @@ export default async function JudgeContestsPage() {
   if (!profile) redirect('/login?redirect=/judging');
 
   try {
-    const [allContests, judgeAssignments, allSubmissions, allScores, templates] = await Promise.all([
+    const [allContests, judgeAssignments, allSubmissions, allScores] = await Promise.all([
       getContests(),
       getJudgeAssignments(profile.id),
       getSubmissions(),
       getScores(),
-      getJudgingTemplates(),
     ]);
 
     const assignedContestIds = new Set(judgeAssignments.map((judge) => judge.contestId));
@@ -97,10 +96,14 @@ export default async function JudgeContestsPage() {
       count: judgeScores.filter((score) => score.total >= range.min && score.total <= range.max).length,
     }));
 
-    const templateById = templates.reduce<Record<string, (typeof templates)[number]>>((acc, template) => {
-      acc[template.id] = template;
-      return acc;
-    }, {});
+    // 배정된 공모전들의 템플릿 로드
+    const templateResults = await Promise.all(
+      assignedContests.map((contest) => getContestTemplate(contest.id))
+    );
+    const templateById: Record<string, NonNullable<(typeof templateResults)[number]>> = {};
+    for (const t of templateResults) {
+      if (t) templateById[t.id] = t;
+    }
 
     const criteriaAccumulator = judgeScores.reduce<Record<string, { label: string; sum: number; count: number }>>(
       (acc, score) => {

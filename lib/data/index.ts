@@ -935,6 +935,108 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
   }));
 }
 
+/**
+ * 공모전의 심사 기준 템플릿 조회 (읽기 전용)
+ * 공모전 생성/수정 시 syncContestJudgingTemplate으로 동기화됨
+ */
+export async function getContestTemplate(contestId: string): Promise<JudgingTemplate | null> {
+  const supabase = await createClient();
+  const templateName = `contest-${contestId}`;
+
+  const { data: existing } = await supabase
+    .from('judging_templates')
+    .select('*')
+    .eq('name', templateName)
+    .maybeSingle();
+
+  if (!existing) return null;
+
+  const { data: criteria } = await supabase
+    .from('judging_criteria')
+    .select('*')
+    .eq('template_id', existing.id)
+    .order('sort_order', { ascending: true });
+
+  return {
+    id: String(existing.id),
+    name: existing.name as string,
+    description: (existing.description as string) ?? '',
+    criteria: (criteria ?? []).map((c) => ({
+      id: String(c.id),
+      label: c.label as string,
+      maxScore: c.max_score as number,
+      description: (c.description as string) ?? '',
+    })),
+    createdAt: existing.created_at as string,
+  };
+}
+
+/**
+ * 공모전 생성/수정 시 judgingCriteria JSONB → judging_templates + judging_criteria 동기화
+ */
+async function syncContestJudgingTemplate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  contestId: string,
+  judgingCriteria?: Array<{ label: string; maxScore: number; description?: string }>,
+): Promise<void> {
+  if (!supabase) return;
+  const templateName = `contest-${contestId}`;
+
+  // 기존 템플릿 조회
+  const { data: existing } = await supabase
+    .from('judging_templates')
+    .select('id')
+    .eq('name', templateName)
+    .maybeSingle();
+
+  // 심사 기준이 없으면 기존 템플릿 삭제
+  if (!judgingCriteria || judgingCriteria.length === 0) {
+    if (existing) {
+      await supabase.from('judging_criteria').delete().eq('template_id', existing.id);
+      await supabase.from('judging_templates').delete().eq('id', existing.id);
+    }
+    return;
+  }
+
+  let templateId: number;
+
+  if (existing) {
+    // 기존 기준 삭제 후 재생성
+    templateId = existing.id as number;
+    await supabase.from('judging_criteria').delete().eq('template_id', templateId);
+  } else {
+    // 공모전 제목 조회
+    const { data: contest } = await supabase
+      .from('contests')
+      .select('title')
+      .eq('id', contestId)
+      .maybeSingle();
+
+    const { data: newTemplate } = await supabase
+      .from('judging_templates')
+      .insert({
+        name: templateName,
+        description: `${contest?.title ?? contestId} 심사 기준`,
+      })
+      .select('id')
+      .single();
+
+    if (!newTemplate) return;
+    templateId = newTemplate.id as number;
+  }
+
+  // 기준 항목 생성
+  const criteriaInserts = judgingCriteria.map((c, i) => ({
+    template_id: templateId,
+    label: c.label,
+    max_score: c.maxScore,
+    description: c.description ?? '',
+    sort_order: i,
+  }));
+
+  await supabase.from('judging_criteria').insert(criteriaInserts);
+}
+
 export const getJudges = unstable_cache(
   async (): Promise<Judge[]> => {
     const supabase = createPublicClient();
@@ -1593,6 +1695,9 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
     }
   }
 
+  // 심사 기준 → judging_templates + judging_criteria 동기화
+  await syncContestJudgingTemplate(supabase, contestId, input.judgingCriteria);
+
   const result = await getContestByIdInternal(supabase, contestId);
   // 캐시 무효화: 공모전 데이터 변경
   const { revalidateTag } = await import('next/cache');
@@ -1654,6 +1759,9 @@ export async function updateContest(id: string, input: ContestMutationInput): Pr
     const { error: insertBonusError } = await supabase.from('contest_bonus_configs').insert(bonusRows);
     if (insertBonusError) return null;
   }
+
+  // 심사 기준 → judging_templates + judging_criteria 동기화
+  await syncContestJudgingTemplate(supabase, id, input.judgingCriteria);
 
   const result = await getContestByIdInternal(supabase, id);
   // 캐시 무효화: 공모전 데이터 변경

@@ -49,15 +49,15 @@ export async function POST(request: Request) {
 
     const judgeId = judgeAssignment.id;
 
-    /* ── 채점 템플릿 유효성 검증 ── */
+    /* ── 채점 템플릿 유효성 검증 (공모전 연결 템플릿 확인) ── */
     const { data: template } = await supabase
       .from('judging_templates')
-      .select('id')
+      .select('id, name')
       .eq('id', templateId)
       .maybeSingle();
 
     if (!template) {
-      return NextResponse.json({ error: '유효하지 않은 채점 템플릿입니다.' }, { status: 400 });
+      return NextResponse.json({ error: '유효하지 않은 채점 템플릿입니다. 공모전에 심사 기준이 설정되었는지 확인해주세요.' }, { status: 400 });
     }
 
     /* ── 기준별 점수 유효성 검증 ── */

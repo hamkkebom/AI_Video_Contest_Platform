@@ -3,7 +3,7 @@ import {
   getAuthProfile,
   getJudgeAssignments,
   getContestById,
-  getJudgingTemplates,
+  getContestTemplate,
   getScoresByContest,
   getSubmissions,
 } from '@/lib/data';
@@ -21,11 +21,10 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
   try {
 
     // 단건/필터 조회로 최적화
-    const [contest, contestSubmissions, contestScores, templates, judgeAssignments] = await Promise.all([
+    const [contest, contestSubmissions, contestScores, judgeAssignments] = await Promise.all([
       getContestById(contestId),
       getSubmissions({ contestId }),
       getScoresByContest(contestId),
-      getJudgingTemplates(),
       getJudgeAssignments(profile.id),
     ]);
 
@@ -39,6 +38,18 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
       );
     }
 
+    // 공모전별 심사 기준 → judging_templates 자동 동기화
+    const chosenTemplate = await getContestTemplate(contestId);
+
+    if (!chosenTemplate) {
+      return (
+        <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center space-y-2">
+          <p className="text-lg font-semibold">심사 기준이 설정되지 않았습니다</p>
+          <p className="text-sm text-muted-foreground">관리자에게 공모전 심사 기준 설정을 요청해주세요.</p>
+        </div>
+      );
+    }
+
     const currentJudgeAssignments = judgeAssignments.filter((judge) => judge.contestId === contestId);
     const currentJudgeIdSet = new Set(currentJudgeAssignments.map((judge) => judge.id));
 
@@ -46,18 +57,6 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
     const currentJudgeScore = submissionScores
       .filter((score) => currentJudgeIdSet.has(score.judgeId))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-
-    const templateById = templates.reduce<Record<string, (typeof templates)[number]>>((acc, template) => {
-      acc[template.id] = template;
-      return acc;
-    }, {});
-
-    const contestNumber = Number(contest.id.replace('contest-', '')) || 1;
-    const fallbackTemplate = templates[(contestNumber - 1) % templates.length] ?? templates[0];
-    const chosenTemplate =
-      (currentJudgeScore ? templateById[currentJudgeScore.templateId] : undefined) ??
-      (submissionScores.length > 0 ? templateById[submissionScores[0].templateId] : undefined) ??
-      fallbackTemplate;
 
     const criteriaAverages = chosenTemplate.criteria.map((criterion) => {
       const values = submissionScores
