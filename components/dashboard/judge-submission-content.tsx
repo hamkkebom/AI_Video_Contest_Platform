@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Route } from 'next';
-import type { Contest, JudgingTemplate, Score, Submission } from '@/lib/types';
-import { ArrowLeft, CheckCircle2, MessageSquareText, Trophy } from 'lucide-react';
+import type { Contest, JudgingTemplate, JudgingStage, Score, Submission } from '@/lib/types';
+import { ArrowLeft, CheckCircle2, MessageSquareText, Trophy, ThumbsUp, ThumbsDown, Pause } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,8 @@ interface JudgeSubmissionContentData {
     maxScore: number;
   }>;
   scoreCount: number;
+  stage?: JudgingStage;
+  existingJudgment?: 'pass' | 'fail' | 'hold';
 }
 
 interface JudgeSubmissionContentProps {
@@ -60,6 +62,39 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 간편 심사
+  const isSimpleMode = data.stage?.method === 'simple';
+  const [judgment, setJudgment] = useState<'pass' | 'fail' | 'hold' | undefined>(data.existingJudgment);
+  const [judgmentSubmitting, setJudgmentSubmitting] = useState(false);
+
+  const handleSimpleJudgment = async (value: 'pass' | 'fail' | 'hold') => {
+    if (!data.stage) return;
+    setJudgmentSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch('/api/judgments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: data.submission.id,
+          stageId: data.stage.id,
+          contestId: data.contest.id,
+          judgment: value,
+        }),
+      });
+      if (res.ok) {
+        setJudgment(value);
+        setIsSubmitted(true);
+      } else {
+        const err = await res.json();
+        setSubmitError(err.error ?? '판정 저장에 실패했습니다.');
+      }
+    } catch {
+      setSubmitError('판정 저장 중 오류가 발생했습니다.');
+    }
+    setJudgmentSubmitting(false);
+  };
 
   const handleSubmit = async () => {
     setSubmitError(null);
@@ -174,64 +209,129 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-border">
-          <CardHeader>
-            <CardTitle>채점 입력</CardTitle>
-            <CardDescription>기준별 점수를 입력하고 심사 코멘트를 남기세요.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {data.template.criteria.map((criterion) => (
-              <div key={criterion.id} className="space-y-2 rounded-lg border border-border bg-muted/20 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-foreground">{criterion.label}</p>
-                    <p className="text-xs text-muted-foreground">{criterion.description}</p>
+          {isSimpleMode ? (
+            /* 간편 심사 모드 */
+            <>
+              <CardHeader>
+                <CardTitle>간편 심사</CardTitle>
+                <CardDescription>이 출품작에 대해 합격, 불합격, 보류 중 하나를 선택하세요.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {judgment && (
+                  <div className={`rounded-lg p-4 text-center text-sm font-medium ${
+                    judgment === 'pass' ? 'bg-emerald-500/10 text-emerald-700' :
+                    judgment === 'fail' ? 'bg-rose-500/10 text-rose-700' :
+                    'bg-amber-500/10 text-amber-700'
+                  }`}>
+                    현재 판정: {judgment === 'pass' ? '합격' : judgment === 'fail' ? '불합격' : '보류'}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {scores[criterion.id] ?? 0} / {criterion.maxScore}
-                  </p>
+                )}
+
+                <div className="grid grid-cols-3 gap-3">
+                  <Button
+                    size="lg"
+                    variant={judgment === 'pass' ? 'default' : 'outline'}
+                    className={`h-20 flex-col gap-2 ${judgment === 'pass' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'text-emerald-600 border-emerald-300 hover:bg-emerald-50'}`}
+                    disabled={judgmentSubmitting}
+                    onClick={() => handleSimpleJudgment('pass')}
+                  >
+                    <ThumbsUp className="h-6 w-6" />
+                    합격
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant={judgment === 'hold' ? 'default' : 'outline'}
+                    className={`h-20 flex-col gap-2 ${judgment === 'hold' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'text-amber-600 border-amber-300 hover:bg-amber-50'}`}
+                    disabled={judgmentSubmitting}
+                    onClick={() => handleSimpleJudgment('hold')}
+                  >
+                    <Pause className="h-6 w-6" />
+                    보류
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant={judgment === 'fail' ? 'default' : 'outline'}
+                    className={`h-20 flex-col gap-2 ${judgment === 'fail' ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'text-rose-600 border-rose-300 hover:bg-rose-50'}`}
+                    disabled={judgmentSubmitting}
+                    onClick={() => handleSimpleJudgment('fail')}
+                  >
+                    <ThumbsDown className="h-6 w-6" />
+                    불합격
+                  </Button>
                 </div>
 
-                <input
-                  type="range"
-                  min={0}
-                  max={criterion.maxScore}
-                  value={scores[criterion.id] ?? 0}
-                  onChange={(event) => handleScoreChange(criterion.id, criterion.maxScore, Number(event.target.value))}
-                  className="w-full accent-primary"
-                />
-
-                <Input
-                  type="number"
-                  min={0}
-                  max={criterion.maxScore}
-                  value={scores[criterion.id] ?? 0}
-                  onChange={(event) => handleScoreChange(criterion.id, criterion.maxScore, Number(event.target.value))}
-                />
-              </div>
-            ))}
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">심사 코멘트</p>
-              <Textarea
-                rows={5}
-                placeholder="평가 근거와 개선 포인트를 남겨주세요."
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" asChild>
-                <Link href={`/judging/${data.contest.id}` as Route}>목록으로</Link>
-              </Button>
-              <Button onClick={handleSubmit} className="gap-1.5" disabled={isSubmitting || isSubmitted}>
-                {isSubmitting ? (
-                  <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> 저장 중...</>
-                ) : isSubmitted ? (
-                  <><CheckCircle2 className="h-4 w-4" /> 저장 완료</>
-                ) : (
-                  <><CheckCircle2 className="h-4 w-4" /> 점수 제출</>
+                {submitError && (
+                  <p className="text-sm text-destructive">{submitError}</p>
                 )}
+
+                <div className="flex justify-end">
+                  <Button variant="outline" asChild>
+                    <Link href={`/judging/${data.contest.id}` as Route}>목록으로</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </>
+          ) : (
+            /* 점수 심사 모드 */
+            <>
+              <CardHeader>
+                <CardTitle>채점 입력</CardTitle>
+                <CardDescription>기준별 점수를 입력하고 심사 코멘트를 남기세요.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {data.template.criteria.map((criterion) => (
+                  <div key={criterion.id} className="space-y-2 rounded-lg border border-border bg-muted/20 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-foreground">{criterion.label}</p>
+                        <p className="text-xs text-muted-foreground">{criterion.description}</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {scores[criterion.id] ?? 0} / {criterion.maxScore}
+                      </p>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={criterion.maxScore}
+                      value={scores[criterion.id] ?? 0}
+                      onChange={(event) => handleScoreChange(criterion.id, criterion.maxScore, Number(event.target.value))}
+                      className="w-full accent-primary"
+                    />
+
+                    <Input
+                      type="number"
+                      min={0}
+                      max={criterion.maxScore}
+                      value={scores[criterion.id] ?? 0}
+                      onChange={(event) => handleScoreChange(criterion.id, criterion.maxScore, Number(event.target.value))}
+                    />
+                  </div>
+                ))}
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">심사 코멘트</p>
+                  <Textarea
+                    rows={5}
+                    placeholder="평가 근거와 개선 포인트를 남겨주세요."
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" asChild>
+                    <Link href={`/judging/${data.contest.id}` as Route}>목록으로</Link>
+                  </Button>
+                  <Button onClick={handleSubmit} className="gap-1.5" disabled={isSubmitting || isSubmitted}>
+                    {isSubmitting ? (
+                      <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> 저장 중...</>
+                    ) : isSubmitted ? (
+                      <><CheckCircle2 className="h-4 w-4" /> 저장 완료</>
+                    ) : (
+                      <><CheckCircle2 className="h-4 w-4" /> 점수 제출</>
+                    )}
               </Button>
             </div>
 
@@ -246,7 +346,9 @@ export function JudgeSubmissionContent({ data }: JudgeSubmissionContentProps) {
                 점수가 저장되었습니다.
               </div>
             )}
-          </CardContent>
+              </CardContent>
+            </>
+          )}
         </Card>
 
         <Card className="border-border">

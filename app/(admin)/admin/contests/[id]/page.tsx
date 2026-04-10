@@ -143,6 +143,10 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   const [addingJudge, setAddingJudge] = useState(false);
   const [removingJudgeId, setRemovingJudgeId] = useState<string | null>(null);
 
+  // 심사 단계 관리
+  const [stages, setStages] = useState<Array<{ id: number; contest_id: number; stage_number: number; name: string; method: string; is_active: boolean; resultCounts: { pass: number; fail: number; hold: number; pending: number } }>>([]);
+  const [advancingStage, setAdvancingStage] = useState(false);
+
   useEffect(() => {
     const loadContest = async () => {
       try {
@@ -197,6 +201,34 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
   };
 
   useEffect(() => { loadJudges(); }, [id]);
+
+  /* 심사 단계 로드 */
+  const loadStages = async () => {
+    try {
+      const res = await fetch(`/api/stages?contestId=${id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { stages: typeof stages };
+      setStages(data.stages);
+    } catch { /* ignore */ }
+  };
+  useEffect(() => { loadStages(); }, [id]);
+
+  /* 다음 단계 진행 */
+  const handleAdvanceStage = async (stageId: number) => {
+    if (!window.confirm('현재 단계를 확정하고 다음 단계로 진행하시겠습니까? 합격 출품작만 다음 단계로 넘어갑니다.')) return;
+    setAdvancingStage(true);
+    try {
+      const res = await fetch('/api/stages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'advanceStage', contestId: id, stageId: String(stageId) }),
+      });
+      if (res.ok) {
+        await loadStages();
+      }
+    } catch { /* ignore */ }
+    setAdvancingStage(false);
+  };
 
   /* 심사위원 검색 (디바운스) */
   useEffect(() => {
@@ -628,6 +660,89 @@ export default function AdminContestDetailPage({ params }: AdminContestDetailPag
           )}
         </Card>
       </div>
+
+      {/* 심사 단계 관리 */}
+      {stages.length > 0 && (
+        <div className="mb-8">
+          <Card className="p-6 border border-border space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+                <Gavel className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground">심사 단계 관리</p>
+                <p className="text-sm text-muted-foreground">총 {stages.length}단계 심사</p>
+              </div>
+            </div>
+
+            {/* 파이프라인 시각화 */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {stages.map((stage, idx) => {
+                const total = stage.resultCounts.pass + stage.resultCounts.fail + stage.resultCounts.hold + stage.resultCounts.pending;
+                return (
+                  <div key={stage.id} className="flex items-center gap-2">
+                    <div className={`rounded-lg border p-4 min-w-[180px] ${stage.is_active ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${stage.is_active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                            {stage.stage_number}
+                          </span>
+                          <span className="text-sm font-medium">{stage.name}</span>
+                        </div>
+                        <Badge variant="outline" className={stage.method === 'simple' ? 'text-emerald-600 border-emerald-300' : 'text-primary border-primary/30'}>
+                          {stage.method === 'simple' ? '간편' : '점수'}
+                        </Badge>
+                      </div>
+
+                      {total > 0 ? (
+                        <div className="grid grid-cols-4 gap-1 text-center text-xs">
+                          <div>
+                            <p className="font-bold text-emerald-600">{stage.resultCounts.pass}</p>
+                            <p className="text-muted-foreground">합격</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-rose-600">{stage.resultCounts.fail}</p>
+                            <p className="text-muted-foreground">불합격</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-amber-600">{stage.resultCounts.hold}</p>
+                            <p className="text-muted-foreground">보류</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-muted-foreground">{stage.resultCounts.pending}</p>
+                            <p className="text-muted-foreground">대기</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-1">아직 심사 진행 전</p>
+                      )}
+
+                      {stage.is_active && idx < stages.length - 1 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full mt-3 gap-1.5"
+                          disabled={advancingStage || stage.resultCounts.pending > 0}
+                          onClick={() => handleAdvanceStage(stage.id)}
+                        >
+                          {advancingStage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                          다음 단계로 진행
+                        </Button>
+                      )}
+                      {stage.is_active && idx < stages.length - 1 && stage.resultCounts.pending > 0 && (
+                        <p className="text-xs text-amber-600 mt-1 text-center">대기 중인 출품작이 있어 진행할 수 없습니다</p>
+                      )}
+                    </div>
+                    {idx < stages.length - 1 && (
+                      <span className="text-muted-foreground text-lg shrink-0">→</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* 에러 메시지 */}
       {errorMessage && (

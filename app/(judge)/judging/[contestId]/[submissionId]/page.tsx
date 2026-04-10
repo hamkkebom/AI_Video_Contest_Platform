@@ -4,6 +4,8 @@ import {
   getJudgeAssignments,
   getContestById,
   getContestTemplate,
+  getJudgingStages,
+  getSimpleJudgments,
   getScoresByContest,
   getSubmissions,
 } from '@/lib/data';
@@ -20,7 +22,6 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
 
   try {
 
-    // 단건/필터 조회로 최적화
     const [contest, contestSubmissions, contestScores, judgeAssignments] = await Promise.all([
       getContestById(contestId),
       getSubmissions({ contestId }),
@@ -38,10 +39,29 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
       );
     }
 
-    // 공모전별 심사 기준 → judging_templates 자동 동기화
-    const chosenTemplate = await getContestTemplate(contestId);
+    // 심사 단계 조회
+    const stages = await getJudgingStages(contestId);
+    const activeStage = stages.find((s) => s.isActive) ?? stages[0];
 
-    if (!chosenTemplate) {
+    // 간편 심사 단계: 기존 판정 조회
+    let existingJudgment: 'pass' | 'fail' | 'hold' | undefined;
+    if (activeStage?.method === 'simple') {
+      const currentJudgeAssignment = judgeAssignments.find((j) => j.contestId === contestId);
+      if (currentJudgeAssignment) {
+        const allJudgments = await getSimpleJudgments(activeStage.id);
+        const myJudgment = allJudgments.find(
+          (j) => j.judgeId === currentJudgeAssignment.id && j.submissionId === submissionId
+        );
+        existingJudgment = myJudgment?.judgment;
+      }
+    }
+
+    // 점수 심사 템플릿 조회
+    const chosenTemplate = activeStage?.method === 'scored'
+      ? (activeStage.template ?? await getContestTemplate(contestId))
+      : await getContestTemplate(contestId);
+
+    if (!chosenTemplate && activeStage?.method === 'scored') {
       return (
         <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center space-y-2">
           <p className="text-lg font-semibold">심사 기준이 설정되지 않았습니다</p>
@@ -58,7 +78,15 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
       .filter((score) => currentJudgeIdSet.has(score.judgeId))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-    const criteriaAverages = chosenTemplate.criteria.map((criterion) => {
+    const templateForComponent = chosenTemplate ?? {
+      id: 'simple',
+      name: activeStage?.name ?? '간편 심사',
+      description: '',
+      criteria: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    const criteriaAverages = templateForComponent.criteria.map((criterion) => {
       const values = submissionScores
         .map((score) => score.criteriaScores.find((item) => item.criterionId === criterion.id)?.score)
         .filter((value): value is number => typeof value === 'number');
@@ -78,10 +106,12 @@ export default async function JudgeSubmissionPage({ params }: JudgeSubmissionPag
         data={{
           contest,
           submission,
-          template: chosenTemplate,
+          template: templateForComponent,
           currentJudgeScore: currentJudgeScore ?? null,
           criteriaAverages,
           scoreCount: submissionScores.length,
+          stage: activeStage,
+          existingJudgment,
         }}
       />
     );
