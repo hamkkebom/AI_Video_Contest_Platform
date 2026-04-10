@@ -407,11 +407,11 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
           const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
           const safeName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const proofPath = `bonus/${crypto.randomUUID()}-${safeName}`;
+          const proofPath = `admin/${crypto.randomUUID()}-${safeName}`;
 
           await new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${proofPath}`);
+            xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
             xhr.setRequestHeader('Authorization', `Bearer ${proofAccessToken}`);
             xhr.setRequestHeader('x-upsert', 'false');
             xhr.setRequestHeader('apikey', anonKey);
@@ -435,7 +435,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
             xhr.send(entry.proofImageFile);
           });
 
-          const { data: proofPublicData } = supabaseClient.storage.from('thumbnails').getPublicUrl(proofPath);
+          const { data: proofPublicData } = supabaseClient.storage.from('proof-images').getPublicUrl(proofPath);
           bonusFormsToSubmit[configId] = { ...entry, proofImagePreview: proofPublicData.publicUrl };
         } else {
           bonusFormsToSubmit[configId] = entry;
