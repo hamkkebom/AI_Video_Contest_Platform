@@ -816,12 +816,13 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                         id={`bonus-sns-${config.id}`}
                         value={entry.snsUrl}
                         placeholder="https://..."
-                        onChange={(ev) =>
-                          setBonusForms((prev) => ({
-                            ...prev,
-                            [config.id]: { ...entry, snsUrl: ev.target.value },
-                          }))
-                        }
+                        onChange={(ev) => {
+                          const value = ev.target.value;
+                          setBonusForms((prev) => {
+                            const prevEntry = prev[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                            return { ...prev, [config.id]: { ...prevEntry, snsUrl: value } };
+                          });
+                        }}
                       />
                     </div>
                     <div className="grid gap-1">
@@ -833,11 +834,11 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                           className="hidden"
                           onChange={(ev) => {
                             const file = ev.target.files?.[0] ?? null;
-                            const preview = file ? URL.createObjectURL(file) : entry.proofImagePreview;
-                            setBonusForms((prev) => ({
-                              ...prev,
-                              [config.id]: { ...entry, proofImageFile: file, proofImagePreview: preview },
-                            }));
+                            setBonusForms((prev) => {
+                              const prevEntry = prev[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                              const preview = file ? URL.createObjectURL(file) : prevEntry.proofImagePreview;
+                              return { ...prev, [config.id]: { ...prevEntry, proofImageFile: file, proofImagePreview: preview } };
+                            });
                           }}
                         />
                         {entry.proofImageFile ? (
