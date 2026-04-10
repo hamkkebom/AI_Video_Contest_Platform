@@ -637,9 +637,7 @@ export default function ContestSubmitPage() {
 
         /* 가산점 인증 이미지 처리 */
         const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
-        const editBonusFormEntries = Object.entries(bonusForms).filter(
-          ([, entry]) => entry.snsUrl?.trim() || entry.proofImageFile || entry.proofImagePreview,
-        );
+        const editBonusFormEntries = Object.entries(bonusForms);
 
         if (editBonusFormEntries.length > 0) {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

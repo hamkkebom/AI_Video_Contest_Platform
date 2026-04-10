@@ -198,7 +198,7 @@ export async function POST(request: Request) {
     /* 가산점 인증 저장 */
     if (Array.isArray(body.bonusEntries) && body.bonusEntries.length > 0) {
       const bonusInserts = body.bonusEntries
-        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .filter((e) => e.bonusConfigId)
         .map((e) => ({
           submission_id: data.id,
           bonus_config_id: e.bonusConfigId,
