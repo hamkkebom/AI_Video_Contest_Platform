@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { REVIEW_TABS } from '@/config/constants';
 import { getAdminSubmissions, getContestById, getUsersByIds } from '@/lib/data';
+import { createClient } from '@/lib/supabase/server';
 import type { SubmissionStatus } from '@/lib/types';
-import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp, Star } from 'lucide-react';
+import { BonusViewButton } from './bonus-view-button';
 import { SearchInput } from '@/components/ui/search-input';
 import { formatDateTime } from '@/lib/utils';
 
@@ -37,10 +39,11 @@ const statusCardConfig: Array<{ key: string; label: string; icon: typeof Clipboa
   { key: 'needs_resubmission', label: '기타', icon: ClipboardCheck, color: 'text-orange-500', countColor: 'text-orange-600' },
   { key: 'judging', label: '심사중', icon: Scale, color: 'text-sky-500', countColor: 'text-sky-600' },
   { key: 'judged', label: '심사완료', icon: Award, color: 'text-violet-500', countColor: 'text-violet-600' },
+  { key: 'bonus', label: '가산점', icon: Star, color: 'text-yellow-500', countColor: 'text-yellow-600' },
 ];
 
 /** 유효한 탭 값 목록 (전체 포함) */
-const VALID_TABS = ['all', ...REVIEW_TABS.map((t) => t.value)];
+const VALID_TABS = ['all', ...REVIEW_TABS.map((t) => t.value), 'bonus'];
 
 export default async function AdminContestSubmissionsPage({ params, searchParams }: ContestSubmissionsPageProps) {
   try {
@@ -61,6 +64,28 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     const users = userIds.length > 0 ? await getUsersByIds(userIds) : [];
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
+    /* 가산점 데이터 조회 */
+    const supabase = await createClient();
+    const submissionIds = allSubmissions.map((s) => Number(s.id));
+    let bonusDataMap = new Map<string, Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string; submittedAt: string }>>();
+    if (supabase && submissionIds.length > 0) {
+      const { data: bonusEntries } = await supabase
+        .from('bonus_entries')
+        .select('submission_id, bonus_config_id, sns_url, proof_image_url, submitted_at')
+        .in('submission_id', submissionIds);
+      for (const be of bonusEntries ?? []) {
+        const sid = String(be.submission_id);
+        if (!bonusDataMap.has(sid)) bonusDataMap.set(sid, []);
+        bonusDataMap.get(sid)!.push({
+          bonusConfigId: String(be.bonus_config_id),
+          snsUrl: (be.sns_url as string) ?? undefined,
+          proofImageUrl: (be.proof_image_url as string) ?? undefined,
+          submittedAt: be.submitted_at as string,
+        });
+      }
+    }
+    const bonusSubmissionIds = new Set(bonusDataMap.keys());
+
     /* 상태별 카운트 (전체 포함) */
     const countByStatus: Record<string, number> = { all: allSubmissions.length };
     for (const item of REVIEW_TABS) {
@@ -72,11 +97,14 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     if (countByStatus['rejected'] !== undefined) {
       countByStatus['rejected'] += autoRejectedCount;
     }
+    countByStatus['bonus'] = bonusSubmissionIds.size;
 
     /* 탭 필터링 */
     let filteredSubmissions = activeTab === 'all'
       ? [...allSubmissions]
-      : allSubmissions.filter((s) => s.status === activeTab);
+      : activeTab === 'bonus'
+        ? allSubmissions.filter((s) => bonusSubmissionIds.has(s.id))
+        : allSubmissions.filter((s) => s.status === activeTab);
 
     /* 검색 필터링 (제목, 제출자 이름, 닉네임) */
     if (searchQuery) {
@@ -283,18 +311,27 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                               <span>{formatDateTime(submission.submittedAt)}</span>
                             </div>
 
-                            {showReactions && (
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span className="font-medium text-foreground">{submission.views}</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3.5 w-3.5" />
-                                  <span className="font-medium text-foreground">{submission.likeCount}</span>
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {showReactions && (
+                                <>
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span className="font-medium text-foreground">{submission.views}</span>
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3.5 w-3.5" />
+                                    <span className="font-medium text-foreground">{submission.likeCount}</span>
+                                  </span>
+                                </>
+                              )}
+                              {bonusDataMap.has(submission.id) && (
+                                <BonusViewButton
+                                  submissionTitle={submission.title}
+                                  bonusEntries={bonusDataMap.get(submission.id)!}
+                                  bonusConfigs={contest?.bonusConfigs ?? []}
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
