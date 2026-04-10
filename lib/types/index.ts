@@ -269,6 +269,42 @@ export interface Score {
   criteriaScores: Array<{ criterionId: string; score: number }>;
   comment?: string;
   createdAt: string;
+  stageId?: string;
+}
+
+export type JudgingMethod = 'simple' | 'scored';
+export type StageResult = 'pass' | 'fail' | 'hold' | 'pending';
+
+export interface JudgingStage {
+  id: string;
+  contestId: string;
+  stageNumber: number;
+  name: string;
+  method: JudgingMethod;
+  templateId?: string;
+  template?: JudgingTemplate;
+  isActive: boolean;
+  sortOrder: number;
+  judgeIds?: string[];
+}
+
+export interface SubmissionStageResult {
+  id: string;
+  submissionId: string;
+  stageId: string;
+  result: StageResult;
+  decidedBy?: string;
+  decidedAt?: string;
+}
+
+export interface SimpleJudgment {
+  id: string;
+  submissionId: string;
+  stageId: string;
+  judgeId: string;
+  judgment: 'pass' | 'fail' | 'hold';
+  comment?: string;
+  createdAt: string;
 }
 
 export interface ContestResult {

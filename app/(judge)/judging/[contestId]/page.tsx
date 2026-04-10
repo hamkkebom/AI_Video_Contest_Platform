@@ -4,8 +4,11 @@ import {
   getJudgeAssignments,
   getContestById,
   getContestTemplate,
+  getJudgingStages,
+  getSimpleJudgments,
   getScoresByContest,
   getSubmissions,
+  getSubmissionsForStage,
 } from '@/lib/data';
 import { redirect } from 'next/navigation';
 
@@ -36,10 +39,36 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
       );
     }
 
-    // 공모전별 심사 기준 → judging_templates 자동 동기화
-    const selectedTemplate = await getContestTemplate(contestId);
+    // 심사 단계 조회
+    const stages = await getJudgingStages(contestId);
+    const activeStage = stages.find((s) => s.isActive) ?? stages[0];
 
-    if (!selectedTemplate) {
+    // 활성 단계의 심사 대상 출품작 조회
+    let stageSubmissions = contestSubmissions;
+    if (activeStage) {
+      stageSubmissions = await getSubmissionsForStage(contestId, activeStage.id, activeStage.stageNumber);
+    }
+
+    // 점수 심사 단계: 템플릿 조회
+    const selectedTemplate = activeStage?.method === 'scored'
+      ? (activeStage.template ?? await getContestTemplate(contestId))
+      : await getContestTemplate(contestId);
+
+    // 간편 심사 단계: 기존 판정 조회
+    let existingJudgments: Record<string, 'pass' | 'fail' | 'hold'> = {};
+    if (activeStage?.method === 'simple') {
+      const currentJudgeAssignment = judgeAssignments.find((j) => j.contestId === contest.id);
+      if (currentJudgeAssignment) {
+        const allJudgments = await getSimpleJudgments(activeStage.id);
+        for (const j of allJudgments) {
+          if (j.judgeId === currentJudgeAssignment.id) {
+            existingJudgments[j.submissionId] = j.judgment;
+          }
+        }
+      }
+    }
+
+    if (!selectedTemplate && activeStage?.method === 'scored') {
       return (
         <div className="w-full rounded-xl border border-border bg-card px-6 py-16 text-center space-y-2">
           <p className="text-lg font-semibold">심사 기준이 설정되지 않았습니다</p>
@@ -77,14 +106,25 @@ export default async function JudgeContestPage({ params }: JudgeContestPageProps
       {}
     );
 
+    // 간편 심사일 때 template이 없으면 더미 생성 (컴포넌트 렌더링용)
+    const templateForComponent = selectedTemplate ?? {
+      id: 'simple',
+      name: activeStage?.name ?? '간편 심사',
+      description: '',
+      criteria: [],
+      createdAt: new Date().toISOString(),
+    };
+
     return (
       <JudgeContestContent
         data={{
           contest,
-          submissions: contestSubmissions,
-          template: selectedTemplate,
+          submissions: stageSubmissions,
+          template: templateForComponent,
           scoreDistribution,
           scoreBySubmissionId,
+          stage: activeStage,
+          existingJudgments,
         }}
       />
     );

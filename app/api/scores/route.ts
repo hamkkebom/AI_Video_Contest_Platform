@@ -7,6 +7,7 @@ interface ScoreBody {
   submissionId?: string;
   contestId?: string;
   templateId?: string;
+  stageId?: string;
   criteriaScores?: Array<{ criterionId: string; score: number }>;
   comment?: string;
 }
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as ScoreBody;
-    const { submissionId, contestId, templateId, criteriaScores, comment } = body;
+    const { submissionId, contestId, templateId, stageId, criteriaScores, comment } = body;
 
     if (!submissionId || !contestId || !templateId || !criteriaScores || criteriaScores.length === 0) {
       return NextResponse.json({ error: '필수 입력값이 누락되었습니다.' }, { status: 400 });
@@ -92,12 +93,17 @@ export async function POST(request: Request) {
     const total = criteriaScores.reduce((sum, cs) => sum + cs.score, 0);
 
     /* ── 기존 채점 확인 (수정 vs 신규) ── */
-    const { data: existingScore } = await supabase
+    let existingQuery = supabase
       .from('scores')
       .select('id')
       .eq('judge_id', judgeId)
-      .eq('submission_id', submissionId)
-      .maybeSingle();
+      .eq('submission_id', submissionId);
+    if (stageId) {
+      existingQuery = existingQuery.eq('stage_id', stageId);
+    } else {
+      existingQuery = existingQuery.is('stage_id', null);
+    }
+    const { data: existingScore } = await existingQuery.maybeSingle();
 
     let scoreId: string;
 
@@ -129,6 +135,7 @@ export async function POST(request: Request) {
           judge_id: judgeId,
           submission_id: submissionId,
           template_id: templateId,
+          stage_id: stageId ? Number(stageId) : null,
           total,
           comment: comment?.trim() || null,
         })

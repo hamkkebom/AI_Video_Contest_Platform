@@ -59,6 +59,10 @@ import type {
   AwardTier,
   BonusConfig,
   JudgingCriterion,
+  JudgingStage,
+  SimpleJudgment,
+  SubmissionStageResult,
+  StageResult,
 } from '@/lib/types';
 import type { Popup, PopupMutationInput } from '@/lib/types';
 
@@ -197,6 +201,13 @@ export type ContestMutationInput = {
   voteLikesPercent?: number;
   voteViewsPercent?: number;
   judgingCriteria?: Array<{ label: string; maxScore: number; description?: string }>;
+  judgingStages?: Array<{
+    stageNumber: number;
+    name: string;
+    method: 'simple' | 'scored';
+    criteria?: Array<{ label: string; maxScore: number; description?: string }>;
+    judgeIds?: string[];
+  }>;
 };
 
 function toContestRowPayload(input: ContestMutationInput): Record<string, unknown> {
@@ -1037,6 +1048,98 @@ async function syncContestJudgingTemplate(
   await supabase.from('judging_criteria').insert(criteriaInserts);
 }
 
+/**
+ * 공모전 생성/수정 시 다단계 심사 설정 동기화
+ * judgingStages 배열 → judging_stages + judging_templates + judging_criteria + stage_judges
+ */
+async function syncContestJudgingStages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  contestId: string,
+  stages?: ContestMutationInput['judgingStages'],
+): Promise<void> {
+  if (!supabase) return;
+
+  // 기존 단계 조회
+  const { data: existingStages } = await supabase
+    .from('judging_stages')
+    .select('id, template_id')
+    .eq('contest_id', contestId);
+
+  // 기존 단계 삭제 (cascade로 stage_judges, submission_stage_results도 삭제)
+  if (existingStages && existingStages.length > 0) {
+    // 기존 단계별 템플릿 삭제
+    for (const es of existingStages) {
+      if (es.template_id) {
+        await supabase.from('judging_criteria').delete().eq('template_id', es.template_id);
+        await supabase.from('judging_templates').delete().eq('id', es.template_id);
+      }
+    }
+    await supabase.from('judging_stages').delete().eq('contest_id', contestId);
+  }
+
+  if (!stages || stages.length === 0) return;
+
+  // 공모전 제목 조회
+  const { data: contest } = await supabase
+    .from('contests')
+    .select('title')
+    .eq('id', contestId)
+    .maybeSingle();
+
+  for (const stage of stages) {
+    let templateId: number | null = null;
+
+    // scored 단계면 템플릿 생성
+    if (stage.method === 'scored' && stage.criteria && stage.criteria.length > 0) {
+      const tName = `contest-${contestId}-stage-${stage.stageNumber}`;
+      const { data: newTemplate } = await supabase
+        .from('judging_templates')
+        .insert({
+          name: tName,
+          description: `${contest?.title ?? contestId} ${stage.name} 심사 기준`,
+        })
+        .select('id')
+        .single();
+
+      if (newTemplate) {
+        templateId = newTemplate.id as number;
+        const criteriaInserts = stage.criteria.map((c, i) => ({
+          template_id: templateId!,
+          label: c.label,
+          max_score: c.maxScore,
+          description: c.description ?? '',
+          sort_order: i,
+        }));
+        await supabase.from('judging_criteria').insert(criteriaInserts);
+      }
+    }
+
+    // 단계 생성
+    const { data: newStage } = await supabase
+      .from('judging_stages')
+      .insert({
+        contest_id: contestId,
+        stage_number: stage.stageNumber,
+        name: stage.name,
+        method: stage.method,
+        template_id: templateId,
+        is_active: stage.stageNumber === 1,
+        sort_order: stage.stageNumber - 1,
+      })
+      .select('id')
+      .single();
+
+    // 단계별 심사위원 배정
+    if (newStage && stage.judgeIds && stage.judgeIds.length > 0) {
+      const sjInserts = stage.judgeIds.map((jid) => ({
+        stage_id: newStage.id as number,
+        judge_id: Number(jid),
+      }));
+      await supabase.from('stage_judges').insert(sjInserts);
+    }
+  }
+}
+
 export const getJudges = unstable_cache(
   async (): Promise<Judge[]> => {
     const supabase = createPublicClient();
@@ -1085,6 +1188,7 @@ export async function getScores(): Promise<Score[]> {
     criteriaScores: criteriaMap.get(String(row.id)) ?? [],
     comment: (row.comment as string) ?? undefined,
     createdAt: row.created_at as string,
+    stageId: row.stage_id ? String(row.stage_id) : undefined,
   }));
 }
 
@@ -1696,10 +1800,13 @@ export async function createContest(input: ContestMutationInput): Promise<Contes
   }
 
   // 심사 기준 → judging_templates + judging_criteria 동기화
+  // 심사 기준 동기화 (단일 단계 하위 호환 + 다단계)
   await syncContestJudgingTemplate(supabase, contestId, input.judgingCriteria);
+  if (input.judgingStages && input.judgingStages.length > 0) {
+    await syncContestJudgingStages(supabase, contestId, input.judgingStages);
+  }
 
   const result = await getContestByIdInternal(supabase, contestId);
-  // 캐시 무효화: 공모전 데이터 변경
   const { revalidateTag } = await import('next/cache');
   revalidateTag('contests');
   return result;
@@ -1761,10 +1868,13 @@ export async function updateContest(id: string, input: ContestMutationInput): Pr
   }
 
   // 심사 기준 → judging_templates + judging_criteria 동기화
+  // 심사 기준 동기화 (단일 단계 하위 호환 + 다단계)
   await syncContestJudgingTemplate(supabase, id, input.judgingCriteria);
+  if (input.judgingStages && input.judgingStages.length > 0) {
+    await syncContestJudgingStages(supabase, id, input.judgingStages);
+  }
 
   const result = await getContestByIdInternal(supabase, id);
-  // 캐시 무효화: 공모전 데이터 변경
   const { revalidateTag } = await import('next/cache');
   revalidateTag('contests');
   return result;
@@ -1890,7 +2000,188 @@ export async function getScoresByContest(contestId: string): Promise<Score[]> {
     criteriaScores: criteriaMap.get(String(row.id)) ?? [],
     comment: (row.comment as string) ?? undefined,
     createdAt: row.created_at as string,
+    stageId: row.stage_id ? String(row.stage_id) : undefined,
   }));
+}
+
+// ============================================================
+// 다단계 심사 함수
+// ============================================================
+
+/** 공모전의 심사 단계 목록 조회 (템플릿 + 심사위원 포함) */
+export async function getJudgingStages(contestId: string): Promise<JudgingStage[]> {
+  const supabase = await createClient();
+
+  const { data: stages, error } = await supabase
+    .from('judging_stages')
+    .select('*')
+    .eq('contest_id', contestId)
+    .order('stage_number', { ascending: true });
+  if (error || !stages) return [];
+
+  // 템플릿 조회 (scored 단계)
+  const templateIds = stages.map((s) => s.template_id).filter(Boolean) as number[];
+  let templatesMap = new Map<string, JudgingTemplate>();
+  if (templateIds.length > 0) {
+    const { data: templates } = await supabase
+      .from('judging_templates')
+      .select('*')
+      .in('id', templateIds);
+    const tIds = (templates ?? []).map((t) => String(t.id));
+    const { data: criteria } = await supabase
+      .from('judging_criteria')
+      .select('*')
+      .in('template_id', tIds.map(Number))
+      .order('sort_order', { ascending: true });
+
+    for (const t of templates ?? []) {
+      const tid = String(t.id);
+      const tCriteria = (criteria ?? []).filter((c) => String(c.template_id) === tid).map((c) => ({
+        id: String(c.id),
+        label: c.label as string,
+        maxScore: c.max_score as number,
+        description: (c.description as string) ?? '',
+      }));
+      templatesMap.set(tid, {
+        id: tid,
+        name: t.name as string,
+        description: (t.description as string) ?? '',
+        criteria: tCriteria,
+        createdAt: t.created_at as string,
+      });
+    }
+  }
+
+  // 단계별 심사위원 조회
+  const stageIds = stages.map((s) => s.id as number);
+  const { data: stageJudges } = await supabase
+    .from('stage_judges')
+    .select('stage_id, judge_id')
+    .in('stage_id', stageIds);
+
+  const judgeIdsMap = new Map<string, string[]>();
+  for (const sj of stageJudges ?? []) {
+    const sid = String(sj.stage_id);
+    if (!judgeIdsMap.has(sid)) judgeIdsMap.set(sid, []);
+    judgeIdsMap.get(sid)!.push(String(sj.judge_id));
+  }
+
+  return stages.map((row) => {
+    const sid = String(row.id);
+    const tid = row.template_id ? String(row.template_id) : undefined;
+    return {
+      id: sid,
+      contestId: String(row.contest_id),
+      stageNumber: row.stage_number as number,
+      name: row.name as string,
+      method: row.method as JudgingStage['method'],
+      templateId: tid,
+      template: tid ? templatesMap.get(tid) : undefined,
+      isActive: row.is_active as boolean,
+      sortOrder: row.sort_order as number,
+      judgeIds: judgeIdsMap.get(sid) ?? [],
+    };
+  });
+}
+
+/** 특정 단계의 심사 대상 출품작 조회 (1단계: approved 출품작, N>1단계: 이전 단계 pass) */
+export async function getSubmissionsForStage(contestId: string, _stageId: string, stageNumber: number): Promise<Submission[]> {
+  const supabase = await createClient();
+
+  if (stageNumber === 1) {
+    // 1단계: 승인된 출품작 전부
+    const { data, error } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('contest_id', contestId)
+      .eq('status', 'approved')
+      .order('submitted_at', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toSubmission(row as Record<string, unknown>));
+  }
+
+  // N>1단계: 이전 단계에서 pass한 출품작
+  const { data: stages } = await supabase
+    .from('judging_stages')
+    .select('id')
+    .eq('contest_id', contestId)
+    .eq('stage_number', stageNumber - 1)
+    .maybeSingle();
+
+  if (!stages) return [];
+
+  const { data: passedResults } = await supabase
+    .from('submission_stage_results')
+    .select('submission_id')
+    .eq('stage_id', stages.id)
+    .eq('result', 'pass');
+
+  if (!passedResults || passedResults.length === 0) return [];
+
+  const passedIds = passedResults.map((r) => r.submission_id as number);
+  const { data, error } = await supabase
+    .from('submissions')
+    .select('*')
+    .in('id', passedIds)
+    .order('submitted_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => toSubmission(row as Record<string, unknown>));
+}
+
+/** 특정 단계의 간편 심사 투표 조회 */
+export async function getSimpleJudgments(stageId: string): Promise<SimpleJudgment[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('simple_judgments')
+    .select('*')
+    .eq('stage_id', stageId)
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: String(row.id),
+    submissionId: String(row.submission_id),
+    stageId: String(row.stage_id),
+    judgeId: String(row.judge_id),
+    judgment: row.judgment as SimpleJudgment['judgment'],
+    comment: (row.comment as string) ?? undefined,
+    createdAt: row.created_at as string,
+  }));
+}
+
+/** 특정 단계의 출품작별 결과 조회 */
+export async function getStageResults(stageId: string): Promise<SubmissionStageResult[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('submission_stage_results')
+    .select('*')
+    .eq('stage_id', stageId);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: String(row.id),
+    submissionId: String(row.submission_id),
+    stageId: String(row.stage_id),
+    result: row.result as SubmissionStageResult['result'],
+    decidedBy: (row.decided_by as string) ?? undefined,
+    decidedAt: (row.decided_at as string) ?? undefined,
+  }));
+}
+
+/** 출품작 단계 결과 설정 (upsert) */
+export async function setSubmissionStageResult(
+  submissionId: string, stageId: string, result: StageResult, decidedBy: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('submission_stage_results')
+    .upsert({
+      submission_id: submissionId,
+      stage_id: stageId,
+      result,
+      decided_by: decidedBy,
+      decided_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'submission_id,stage_id' });
+  return !error;
 }
 
 // ============================================================

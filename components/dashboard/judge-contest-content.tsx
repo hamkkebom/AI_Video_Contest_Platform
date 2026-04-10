@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
-import type { Contest, JudgingTemplate, Score, Submission } from '@/lib/types';
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, Film } from 'lucide-react';
+import type { Contest, JudgingTemplate, JudgingStage, Score, Submission } from '@/lib/types';
+import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, Film, ThumbsUp, ThumbsDown, Pause } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,9 @@ interface JudgeContestContentData {
   template: JudgingTemplate;
   scoreDistribution: Array<{ range: string; count: number }>;
   scoreBySubmissionId: Record<string, Score>;
+  stage?: JudgingStage;
+  /** 간편 심사: 기존 판정 결과 (submissionId → judgment) */
+  existingJudgments?: Record<string, 'pass' | 'fail' | 'hold'>;
 }
 
 interface JudgeContestContentProps {
@@ -31,6 +34,35 @@ export function JudgeContestContent({ data }: JudgeContestContentProps) {
   const [submittedSubmissionIds, setSubmittedSubmissionIds] = useState<Set<string>>(
     () => new Set(Object.keys(data.scoreBySubmissionId))
   );
+
+  // 간편 심사 상태
+  const [judgments, setJudgments] = useState<Record<string, 'pass' | 'fail' | 'hold'>>(
+    () => data.existingJudgments ?? {}
+  );
+  const [submittingJudgment, setSubmittingJudgment] = useState<string | null>(null);
+
+  const isSimpleMode = data.stage?.method === 'simple';
+
+  const handleSimpleJudgment = async (submissionId: string, judgment: 'pass' | 'fail' | 'hold') => {
+    if (!data.stage) return;
+    setSubmittingJudgment(submissionId);
+    try {
+      const res = await fetch('/api/judgments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          stageId: data.stage.id,
+          contestId: data.contest.id,
+          judgment,
+        }),
+      });
+      if (res.ok) {
+        setJudgments((prev) => ({ ...prev, [submissionId]: judgment }));
+      }
+    } catch { /* ignore */ }
+    setSubmittingJudgment(null);
+  };
 
   const maxTotalScore = useMemo(
     () => data.template.criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0),
@@ -201,16 +233,53 @@ export function JudgeContestContent({ data }: JudgeContestContentProps) {
                           <p className="line-clamp-2 text-sm text-muted-foreground">{submission.description}</p>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 md:justify-end">
-                          <Link href={`/judging/${data.contest.id}/${submission.id}` as Route}>
-                            <Button variant="outline" size="sm" className="gap-1.5">
-                              상세 심사 <ArrowRight className="h-4 w-4" />
+                        {isSimpleMode ? (
+                          /* 간편 심사: 합격/불합격/보류 버튼 */
+                          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            {judgments[submission.id] && (
+                              <Badge className={
+                                judgments[submission.id] === 'pass' ? 'bg-emerald-500/10 text-emerald-700' :
+                                judgments[submission.id] === 'fail' ? 'bg-rose-500/10 text-rose-700' :
+                                'bg-amber-500/10 text-amber-700'
+                              }>
+                                {judgments[submission.id] === 'pass' ? '합격' : judgments[submission.id] === 'fail' ? '불합격' : '보류'}
+                              </Badge>
+                            )}
+                            <Button size="sm" variant={judgments[submission.id] === 'pass' ? 'default' : 'outline'}
+                              className={judgments[submission.id] === 'pass' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'text-emerald-600 border-emerald-300 hover:bg-emerald-50'}
+                              disabled={submittingJudgment === submission.id}
+                              onClick={() => handleSimpleJudgment(submission.id, 'pass')}
+                            >
+                              <ThumbsUp className="h-4 w-4 mr-1" /> 합격
                             </Button>
-                          </Link>
-                          <Button size="sm" onClick={() => openScoringForm(submission.id)}>
-                            {isSubmitted ? '재평가' : '심사하기'}
-                          </Button>
-                        </div>
+                            <Button size="sm" variant={judgments[submission.id] === 'hold' ? 'default' : 'outline'}
+                              className={judgments[submission.id] === 'hold' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'text-amber-600 border-amber-300 hover:bg-amber-50'}
+                              disabled={submittingJudgment === submission.id}
+                              onClick={() => handleSimpleJudgment(submission.id, 'hold')}
+                            >
+                              <Pause className="h-4 w-4 mr-1" /> 보류
+                            </Button>
+                            <Button size="sm" variant={judgments[submission.id] === 'fail' ? 'default' : 'outline'}
+                              className={judgments[submission.id] === 'fail' ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'text-rose-600 border-rose-300 hover:bg-rose-50'}
+                              disabled={submittingJudgment === submission.id}
+                              onClick={() => handleSimpleJudgment(submission.id, 'fail')}
+                            >
+                              <ThumbsDown className="h-4 w-4 mr-1" /> 불합격
+                            </Button>
+                          </div>
+                        ) : (
+                          /* 점수 심사: 기존 버튼 */
+                          <div className="flex flex-wrap gap-2 md:justify-end">
+                            <Link href={`/judging/${data.contest.id}/${submission.id}` as Route}>
+                              <Button variant="outline" size="sm" className="gap-1.5">
+                                상세 심사 <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button size="sm" onClick={() => openScoringForm(submission.id)}>
+                              {isSubmitted ? '재평가' : '심사하기'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       {isExpanded && (
