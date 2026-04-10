@@ -114,26 +114,34 @@ export function SubmissionActions({ submissionId, submissionTitle, nextSubmissio
   const config = currentAction ? ACTION_CONFIG[currentAction] : null;
   const Icon = config?.icon;
 
+  /* 현재 상태에 해당하는 버튼은 비활성화 (중복 처리 방지) */
+  const isAlreadyApproved = submissionStatus === 'approved';
+  const isAlreadyRejected = submissionStatus === 'rejected' || submissionStatus === 'auto_rejected';
+
   return (
     <>
       <Button
         size="lg"
         variant="outline"
         type="button"
-        className="w-full text-destructive cursor-pointer text-base font-bold py-3"
+        className="w-full text-destructive cursor-pointer text-base font-bold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => setCurrentAction('reject')}
+        disabled={isAlreadyRejected}
+        title={isAlreadyRejected ? '이미 반려된 출품작입니다' : undefined}
       >
         <XCircle className="h-5 w-5 mr-1.5" />
-        거절
+        {isAlreadyRejected ? '반려됨' : '거절'}
       </Button>
       <Button
         size="lg"
         type="button"
-        className="w-full cursor-pointer text-base font-bold py-3"
+        className="w-full cursor-pointer text-base font-bold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => setCurrentAction('approve')}
+        disabled={isAlreadyApproved}
+        title={isAlreadyApproved ? '이미 승인된 출품작입니다' : undefined}
       >
         <CheckCircle2 className="h-5 w-5 mr-1.5" />
-        승인
+        {isAlreadyApproved ? '승인됨' : '승인'}
       </Button>
       {(submissionStatus === 'rejected' || submissionStatus === 'pending_review' || submissionStatus === 'approved') && (
         <Button

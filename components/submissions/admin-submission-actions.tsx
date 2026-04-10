@@ -108,6 +108,8 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [bonusConfigs, setBonusConfigs] = useState<Array<{ id: string; label: string; description?: string }>>([]);
   const [bonusForms, setBonusForms] = useState<Record<string, { snsUrl: string; proofImageFile: File | null; proofImagePreview: string | null }>>({});
   const [submitterAccount, setSubmitterAccount] = useState<{ name: string; email: string } | null>(null);
+  const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string>('');
 
   useEffect(() => {
     if (editOpen) {
@@ -468,12 +470,13 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         throw new Error(data.error ?? '수정에 실패했습니다.');
       }
 
-      if (shouldUploadVideo) {
-        alert('영상이 업로드되었습니다. 인코딩 처리에 수 분이 소요될 수 있습니다.');
-      }
-
+      setSaveSuccessMessage(
+        shouldUploadVideo
+          ? '출품작이 수정되었습니다. 영상 인코딩 처리에 수 분이 소요될 수 있습니다.'
+          : '출품작이 수정되었습니다.'
+      );
       setEditOpen(false);
-      router.refresh();
+      setSaveSuccessOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
@@ -899,6 +902,35 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
               ) : (
                 '저장'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 저장 성공 알림 모달 */}
+      <Dialog
+        open={saveSuccessOpen}
+        onOpenChange={(open) => {
+          setSaveSuccessOpen(open);
+          if (!open) {
+            /* 모달 닫을 때 부모 리스트 새로고침 */
+            router.refresh();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>수정 완료</DialogTitle>
+            <DialogDescription>{saveSuccessMessage || '출품작이 수정되었습니다.'}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setSaveSuccessOpen(false);
+                router.refresh();
+              }}
+            >
+              확인
             </Button>
           </DialogFooter>
         </DialogContent>
