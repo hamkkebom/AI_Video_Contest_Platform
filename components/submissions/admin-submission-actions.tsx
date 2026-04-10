@@ -388,21 +388,17 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           setUploadProgress(0);
           setUploading(true);
 
-          // Reuse supabase auth token (get fresh if not already obtained)
+          // refreshAccessToken 유틸리티 사용 (navigator.locks 충돌 방지)
           const supabaseClient = createBrowserClient()!;
-          let proofAccessToken: string | undefined;
-          try {
-            const refreshResult = await Promise.race([
-              supabaseClient.auth.getSession(),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-            ]);
-            if (refreshResult && 'data' in refreshResult) {
-              proofAccessToken = refreshResult.data.session?.access_token;
-            }
-          } catch { /* 타임아웃 시 무시 */ }
-          if (!proofAccessToken) {
+          const proofTokenResult = await refreshAccessToken(supabaseClient, {
+            timeoutMs: 10000,
+            currentToken: null,
+            log: (msg) => console.log(`[가산점 이미지] ${msg}`),
+          });
+          if (!proofTokenResult.ok) {
             throw new Error('인증 세션이 만료되었습니다. 페이지를 새로고침해 주세요.');
           }
+          const proofAccessToken = proofTokenResult.accessToken;
 
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
           const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
