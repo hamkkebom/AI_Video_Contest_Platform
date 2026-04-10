@@ -366,7 +366,7 @@ export async function PUT(
       }
 
       const bonusInserts = body.bonusEntries
-        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .filter((e) => e.bonusConfigId)
         .map((e) => ({
           submission_id: submissionId,
           bonus_config_id: e.bonusConfigId,
@@ -441,7 +441,7 @@ export async function PUT(
       }
 
       const bonusInserts = body.bonusEntries
-        .filter((e) => e.bonusConfigId && (e.snsUrl || e.proofImageUrl))
+        .filter((e) => e.bonusConfigId)
         .map((e) => ({
           submission_id: submissionId,
           bonus_config_id: e.bonusConfigId,

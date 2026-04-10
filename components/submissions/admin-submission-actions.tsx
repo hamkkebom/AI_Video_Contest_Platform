@@ -458,7 +458,6 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           submittedAt: form.submittedAt ? new Date(form.submittedAt).toISOString() : undefined,
           bonusEntries: bonusConfigs.length > 0
             ? Object.entries(bonusFormsToSubmit)
-                .filter(([, entry]) => entry.snsUrl?.trim() || entry.proofImagePreview)
                 .map(([configId, entry]) => ({
                   bonusConfigId: configId,
                   snsUrl: entry.snsUrl?.trim() || undefined,

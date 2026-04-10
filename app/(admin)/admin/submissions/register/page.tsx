@@ -592,9 +592,7 @@ export default function AdminSubmissionRegisterPage() {
 
       /* 3) 가산점 인증 이미지 업로드 */
       const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
-      const bonusFormEntries = Object.entries(bonusForms).filter(
-        ([, entry]) => entry.snsUrl?.trim() || entry.proofImageFile,
-      );
+      const bonusFormEntries = Object.entries(bonusForms);
 
       for (const [configId, entry] of bonusFormEntries) {
         let proofImageUrl: string | undefined;
