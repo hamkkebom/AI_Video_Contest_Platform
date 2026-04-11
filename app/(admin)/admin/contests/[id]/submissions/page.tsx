@@ -67,20 +67,24 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
     /* 가산점 데이터 조회 */
     const supabase = await createClient();
     const submissionIds = allSubmissions.map((s) => Number(s.id));
-    let bonusDataMap = new Map<string, Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string; submittedAt: string }>>();
+    let bonusDataMap = new Map<string, Array<{ id: string; bonusConfigId: string; snsUrl?: string; proofImageUrl?: string; submittedAt: string; status?: string; rejectionReason?: string; reviewedAt?: string }>>();
     if (supabase && submissionIds.length > 0) {
       const { data: bonusEntries } = await supabase
         .from('bonus_entries')
-        .select('submission_id, bonus_config_id, sns_url, proof_image_url, submitted_at')
+        .select('id, submission_id, bonus_config_id, sns_url, proof_image_url, submitted_at, status, rejection_reason, reviewed_at')
         .in('submission_id', submissionIds);
       for (const be of bonusEntries ?? []) {
         const sid = String(be.submission_id);
         if (!bonusDataMap.has(sid)) bonusDataMap.set(sid, []);
         bonusDataMap.get(sid)!.push({
+          id: String(be.id),
           bonusConfigId: String(be.bonus_config_id),
           snsUrl: (be.sns_url as string) ?? undefined,
           proofImageUrl: (be.proof_image_url as string) ?? undefined,
           submittedAt: be.submitted_at as string,
+          status: (be.status as string) ?? 'pending',
+          rejectionReason: (be.rejection_reason as string) ?? undefined,
+          reviewedAt: (be.reviewed_at as string) ?? undefined,
         });
       }
     }
