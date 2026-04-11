@@ -80,17 +80,20 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
     <>
       <button
         type="button"
-        className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-700 hover:bg-yellow-500/20 transition-colors dark:text-yellow-300"
+        className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-1.5 text-xs font-semibold text-yellow-700 hover:bg-yellow-500/20 hover:border-yellow-500/60 transition-colors whitespace-nowrap dark:text-yellow-300 shadow-sm"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setOpen(true);
         }}
       >
-        <Star className="h-3 w-3" />
-        가산점 {entries.length}건
-        {approvedCount > 0 && <span className="text-emerald-600">·인정{approvedCount}</span>}
-        {pendingCount > 0 && <span className="text-amber-600">·대기{pendingCount}</span>}
+        <Star className="h-3.5 w-3.5" />
+        <span>가산점 확인 ({entries.length})</span>
+        {pendingCount > 0 && (
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+            {pendingCount}
+          </span>
+        )}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

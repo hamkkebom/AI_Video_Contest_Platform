@@ -300,7 +300,18 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                                 <p className="truncate font-bold text-foreground group-hover:text-primary transition-colors">{submission.title}</p>
                                 <p className="line-clamp-1 text-sm text-muted-foreground mt-0.5">{submission.description}</p>
                               </div>
-                              <Badge className={`shrink-0 ${statusInfo.className}`}>{statusInfo.label}</Badge>
+                              <div className="shrink-0 flex flex-col items-end gap-1.5">
+                                <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
+                                {bonusDataMap.has(submission.id) ? (
+                                  <BonusViewButton
+                                    submissionTitle={submission.title}
+                                    bonusEntries={bonusDataMap.get(submission.id)!}
+                                    bonusConfigs={contest?.bonusConfigs ?? []}
+                                  />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">가산점 없음</span>
+                                )}
+                              </div>
                             </div>
 
                             {submission.status === 'rejected' && submission.rejectionReason && (
@@ -315,27 +326,18 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                               <span>{formatDateTime(submission.submittedAt)}</span>
                             </div>
 
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {showReactions && (
-                                <>
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3.5 w-3.5" />
-                                    <span className="font-medium text-foreground">{submission.views}</span>
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3.5 w-3.5" />
-                                    <span className="font-medium text-foreground">{submission.likeCount}</span>
-                                  </span>
-                                </>
-                              )}
-                              {bonusDataMap.has(submission.id) && (
-                                <BonusViewButton
-                                  submissionTitle={submission.title}
-                                  bonusEntries={bonusDataMap.get(submission.id)!}
-                                  bonusConfigs={contest?.bonusConfigs ?? []}
-                                />
-                              )}
-                            </div>
+                            {showReactions && (
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="font-medium text-foreground">{submission.views}</span>
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3.5 w-3.5" />
+                                  <span className="font-medium text-foreground">{submission.likeCount}</span>
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
