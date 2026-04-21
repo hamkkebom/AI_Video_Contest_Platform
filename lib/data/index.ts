@@ -1844,27 +1844,76 @@ export async function updateContest(id: string, input: ContestMutationInput): Pr
     if (insertTierError) return null;
   }
 
-  const { error: deleteBonusError } = await supabase
+  /* 가산점 항목(contest_bonus_configs) 안전한 upsert 처리.
+   * 이전에 delete→insert 하던 방식은 FK ON DELETE CASCADE 때문에
+   * bonus_entries 전체를 전멸시키는 치명적 버그였음.
+   * 이제는 label 기준으로 기존 행을 식별해 UPDATE하고, 신규만 INSERT.
+   * 기존 입력에서 제거된 항목도 bonus_entries가 걸려있으면 보존. */
+  const { data: existingBonusConfigs, error: fetchBonusError } = await supabase
     .from('contest_bonus_configs')
-    .delete()
+    .select('id, label')
     .eq('contest_id', id);
-  if (deleteBonusError) return null;
 
-  const bonusRows = (input.bonusConfigs ?? [])
-    .filter((config) => config.label.trim().length > 0)
-    .map((config, index) => ({
+  if (fetchBonusError) return null;
+
+  const incomingBonusConfigs = (input.bonusConfigs ?? [])
+    .filter((config) => config.label.trim().length > 0);
+
+  const existingByLabel = new Map<string, { id: number; label: string }>(
+    (existingBonusConfigs ?? []).map((c) => [
+      (c.label as string).trim(),
+      { id: c.id as number, label: c.label as string },
+    ]),
+  );
+  const matchedExistingIds = new Set<number>();
+
+  for (let index = 0; index < incomingBonusConfigs.length; index += 1) {
+    const config = incomingBonusConfigs[index];
+    const trimmedLabel = config.label.trim();
+    const payload: Record<string, unknown> = {
       contest_id: id,
-      label: config.label.trim(),
+      label: trimmedLabel,
       description: config.description?.trim() || null,
       score: config.score,
       requires_url: config.requiresUrl,
       requires_image: config.requiresImage,
       sort_order: index + 1,
-    }));
+    };
 
-  if (bonusRows.length > 0) {
-    const { error: insertBonusError } = await supabase.from('contest_bonus_configs').insert(bonusRows);
-    if (insertBonusError) return null;
+    const existing = existingByLabel.get(trimmedLabel);
+    if (existing) {
+      matchedExistingIds.add(existing.id);
+      const { error: updateBonusError } = await supabase
+        .from('contest_bonus_configs')
+        .update(payload)
+        .eq('id', existing.id);
+      if (updateBonusError) return null;
+    } else {
+      const { error: insertBonusError } = await supabase
+        .from('contest_bonus_configs')
+        .insert(payload);
+      if (insertBonusError) return null;
+    }
+  }
+
+  /* 입력에서 빠진 기존 항목: bonus_entries가 없을 때만 DELETE.
+   * 있으면 고아 config로 남겨두지만 실제 가산점 데이터는 보존. */
+  for (const existing of existingBonusConfigs ?? []) {
+    const existingId = existing.id as number;
+    if (matchedExistingIds.has(existingId)) continue;
+
+    const { count: entriesCount } = await supabase
+      .from('bonus_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('bonus_config_id', existingId);
+
+    if ((entriesCount ?? 0) === 0) {
+      await supabase
+        .from('contest_bonus_configs')
+        .delete()
+        .eq('id', existingId);
+    }
+    /* entries 존재 시: 유지 (데이터 유실 방지) */
   }
 
   // 심사 기준 → judging_templates + judging_criteria 동기화
