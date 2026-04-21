@@ -209,7 +209,11 @@ export default async function ContestsPage({
               Contests
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.
+              {activeContestsCount > 0 ? (
+                <>총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.</>
+              ) : (
+                <>현재 심사중인 공모전이 있습니다. 다음 공모전을 기대해주세요!</>
+              )}
             </p>
           </div>
         </div>

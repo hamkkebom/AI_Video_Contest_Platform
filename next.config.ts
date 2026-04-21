@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'ulnrfzlpfffapkvpkegv.supabase.co', pathname: '/storage/**' },
       { protocol: 'https', hostname: 'ulnrfzlpfffapkvpkegv.storage.supabase.co', pathname: '/storage/**' },
+      { protocol: 'https', hostname: 'kanganxnalihuejfvbaq.supabase.co', pathname: '/storage/**' },
+      { protocol: 'https', hostname: 'kanganxnalihuejfvbaq.storage.supabase.co', pathname: '/storage/**' },
       { protocol: 'https', hostname: '*.cloudflarestream.com', pathname: '/**' },
       { protocol: 'https', hostname: 'customer-*.cloudflarestream.com', pathname: '/**' },
       { protocol: 'https', hostname: 'videodelivery.net', pathname: '/**' },

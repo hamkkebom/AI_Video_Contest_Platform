@@ -53,18 +53,22 @@ export async function POST(request: NextRequest) {
         console.error('[/api/log] 활동 로그 기록 실패:', logError.message, logError.details, logError.hint);
       }
 
-      // IP 로그도 함께 기록
+      // IP + Vercel geo 정보 기록
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
         ?? request.headers.get('x-real-ip')
         ?? 'unknown';
       const userAgent = request.headers.get('user-agent') ?? '';
+      const country = request.headers.get('x-vercel-ip-country') ?? null;
+      const city = request.headers.get('x-vercel-ip-city') ?? null;
+      const countryRegion = request.headers.get('x-vercel-ip-country-region') ?? null;
+      const region = city && countryRegion ? `${city} (${countryRegion})` : city ?? countryRegion ?? null;
 
       await supabase.from('ip_logs').insert({
         user_id: user.id,
         ip_address: ip,
         user_agent: userAgent,
-        country: null,
-        region: null,
+        country: country === 'KR' ? 'South Korea' : country,
+        region,
         risk_level: 'low',
       });
 
