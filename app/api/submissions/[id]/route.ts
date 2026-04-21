@@ -354,31 +354,83 @@ export async function PUT(
       return NextResponse.json({ success: true });
     }
 
-    /* ====== 가산점 전용 수정 모드 ====== */
+    /* ====== 가산점 전용 수정 모드 ======
+     * 안전한 upsert 처리:
+     * - 승인/거절된 기존 항목은 보호 (수정/삭제 불가)
+     * - pending 항목만 sns_url/proof_image_url 수정 가능
+     * - 신규 항목은 INSERT
+     * - body에서 제거된 pending 항목만 DELETE
+     * - 원본 submitted_at, status, reviewed_* 모두 보존
+     */
     if (bonusOnlyMode) {
       if (!Array.isArray(body.bonusEntries)) {
         return NextResponse.json({ error: '가산점 데이터가 필요합니다.' }, { status: 400 });
       }
 
-      const { error: deleteError } = await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
-      if (deleteError) {
+      const { data: existingEntries, error: fetchExistingError } = await supabase
+        .from('bonus_entries')
+        .select('id, bonus_config_id, status, sns_url, proof_image_url')
+        .eq('submission_id', submissionId);
+
+      if (fetchExistingError) {
+        console.error('기존 가산점 조회 실패:', fetchExistingError);
         return NextResponse.json({ error: '가산점 인증 업데이트에 실패했습니다.' }, { status: 500 });
       }
 
-      const bonusInserts = body.bonusEntries
-        .filter((e) => e.bonusConfigId)
-        .map((e) => ({
-          submission_id: submissionId,
-          bonus_config_id: e.bonusConfigId,
-          sns_url: e.snsUrl || null,
-          proof_image_url: e.proofImageUrl || null,
-          submitted_at: new Date().toISOString(),
-        }));
+      const existingByConfigId = new Map(
+        (existingEntries ?? []).map((e) => [String(e.bonus_config_id), e]),
+      );
+      const incomingConfigIds = new Set<string>();
 
-      if (bonusInserts.length > 0) {
-        const { error: bonusError } = await supabase.from('bonus_entries').insert(bonusInserts);
-        if (bonusError) {
-          return NextResponse.json({ error: '가산점 인증 저장에 실패했습니다.' }, { status: 500 });
+      /* 1) body에 있는 항목: 신규 INSERT 또는 pending UPDATE */
+      for (const entry of body.bonusEntries) {
+        if (!entry.bonusConfigId) continue;
+        const configIdStr = String(entry.bonusConfigId);
+        incomingConfigIds.add(configIdStr);
+        const existing = existingByConfigId.get(configIdStr);
+
+        if (!existing) {
+          const { error: insertError } = await supabase.from('bonus_entries').insert({
+            submission_id: submissionId,
+            bonus_config_id: entry.bonusConfigId,
+            sns_url: entry.snsUrl || null,
+            proof_image_url: entry.proofImageUrl || null,
+            submitted_at: new Date().toISOString(),
+          });
+          if (insertError) {
+            console.error('가산점 신규 등록 실패:', insertError);
+            return NextResponse.json({ error: '가산점 인증 저장에 실패했습니다.' }, { status: 500 });
+          }
+        } else if (!existing.status || existing.status === 'pending') {
+          /* pending이면서 실제 변경이 있는 경우만 UPDATE (submitted_at, status 불변) */
+          const newSns = entry.snsUrl || null;
+          const newProof = entry.proofImageUrl || null;
+          if (newSns !== existing.sns_url || newProof !== existing.proof_image_url) {
+            const { error: updateError } = await supabase
+              .from('bonus_entries')
+              .update({ sns_url: newSns, proof_image_url: newProof })
+              .eq('id', existing.id);
+            if (updateError) {
+              console.error('가산점 pending 수정 실패:', updateError);
+              return NextResponse.json({ error: '가산점 인증 저장에 실패했습니다.' }, { status: 500 });
+            }
+          }
+        }
+        /* approved/rejected: 보호 — skip */
+      }
+
+      /* 2) 기존에 있었으나 body에서 빠진 pending 항목만 DELETE (승인/거절 보호) */
+      for (const existing of existingEntries ?? []) {
+        const configIdStr = String(existing.bonus_config_id);
+        if (incomingConfigIds.has(configIdStr)) continue;
+        if (existing.status && existing.status !== 'pending') continue;
+        const { error: deleteError } = await supabase
+          .from('bonus_entries')
+          .delete()
+          .eq('id', existing.id);
+        if (deleteError) {
+          console.error('가산점 pending 삭제 실패:', deleteError);
+          return NextResponse.json({ error: '가산점 인증 업데이트에 실패했습니다.' }, { status: 500 });
         }
       }
 
@@ -429,41 +481,9 @@ export async function PUT(
       return NextResponse.json({ error: '수정 권한이 없거나 출품작을 찾을 수 없습니다.' }, { status: 403 });
     }
 
-    /* 가산점 인증 업데이트 (기존 삭제 → 재삽입) */
-    if (Array.isArray(body.bonusEntries)) {
-      const { error: deleteError } = await supabase.from('bonus_entries').delete().eq('submission_id', submissionId);
-      if (deleteError) {
-        console.error('가산점 인증 삭제 실패:', deleteError);
-        return NextResponse.json(
-          { success: true, warning: '출품작은 수정되었으나 가산점 인증 업데이트에 실패했습니다.' },
-          { status: 200 },
-        );
-      }
-
-      const bonusInserts = body.bonusEntries
-        .filter((e) => e.bonusConfigId)
-        .map((e) => ({
-          submission_id: submissionId,
-          bonus_config_id: e.bonusConfigId,
-          sns_url: e.snsUrl || null,
-          proof_image_url: e.proofImageUrl || null,
-          submitted_at: new Date().toISOString(),
-        }));
-
-      if (bonusInserts.length > 0) {
-        const { error: bonusError } = await supabase
-          .from('bonus_entries')
-          .insert(bonusInserts);
-
-        if (bonusError) {
-          console.error('가산점 인증 저장 실패:', bonusError);
-          return NextResponse.json(
-            { success: true, warning: '출품작은 수정되었으나 가산점 인증 저장에 실패했습니다.' },
-            { status: 200 },
-          );
-        }
-      }
-    }
+    /* 가산점 인증은 일반 수정 모드에서 절대 건드리지 않음.
+     * 가산점 추가/수정/삭제는 bonusOnlyMode 또는 /api/admin/bonus-entries 전용 엔드포인트로만 가능.
+     * 이전의 DELETE→재INSERT 로직은 승인 상태(status, reviewed_*)와 원본 submitted_at을 소실시켜 제거. */
 
     /* 활동 로그 기록 */
     createActivityLog({
