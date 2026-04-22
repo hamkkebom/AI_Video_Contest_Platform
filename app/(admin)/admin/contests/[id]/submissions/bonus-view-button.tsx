@@ -32,6 +32,7 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionInput, setRejectionInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
 
   const configMap = new Map(bonusConfigs.map((c) => [c.id, c]));
 
@@ -103,6 +104,21 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
+          onPointerDownOutside={(e) => {
+            /* 배경 클릭 시 모달만 닫고 상위 Link 네비게이션 방지 */
+            const originalEvent = (e as unknown as { detail?: { originalEvent?: Event } }).detail?.originalEvent;
+            if (originalEvent) {
+              originalEvent.stopPropagation();
+              originalEvent.preventDefault();
+            }
+          }}
+          onInteractOutside={(e) => {
+            const originalEvent = (e as unknown as { detail?: { originalEvent?: Event } }).detail?.originalEvent;
+            if (originalEvent) {
+              originalEvent.stopPropagation();
+              originalEvent.preventDefault();
+            }
+          }}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -198,12 +214,17 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
                     <div className="space-y-1">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <ImageIcon className="h-3.5 w-3.5" />
-                        인증 이미지
+                        인증 이미지 <span className="text-[10px] text-muted-foreground/70">(클릭하면 크게 보기)</span>
                       </div>
                       <img
                         src={entry.proofImageUrl}
                         alt="가산점 인증"
-                        className="w-full max-h-48 rounded-lg border border-border object-contain bg-muted/30"
+                        className="w-full max-h-48 rounded-lg border border-border object-contain bg-muted/30 cursor-zoom-in transition-opacity hover:opacity-90"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setZoomedImageUrl(entry.proofImageUrl!);
+                        }}
                       />
                     </div>
                   )}
@@ -327,6 +348,44 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 이미지 확대 보기 오버레이 */}
+      {zoomedImageUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
+          role="dialog"
+          aria-label="가산점 인증 이미지 크게 보기"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setZoomedImageUrl(null);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setZoomedImageUrl(null);
+            }}
+            aria-label="닫기"
+          >
+            <XCircle className="h-6 w-6" />
+          </button>
+          <img
+            src={zoomedImageUrl}
+            alt="가산점 인증 크게 보기"
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
+            이미지 밖을 클릭하면 닫힙니다
+          </p>
+        </div>
+      )}
     </>
   );
 }
