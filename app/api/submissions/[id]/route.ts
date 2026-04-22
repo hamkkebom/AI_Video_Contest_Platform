@@ -481,9 +481,68 @@ export async function PUT(
       return NextResponse.json({ error: '수정 권한이 없거나 출품작을 찾을 수 없습니다.' }, { status: 403 });
     }
 
-    /* 가산점 인증은 일반 수정 모드에서 절대 건드리지 않음.
-     * 가산점 추가/수정/삭제는 bonusOnlyMode 또는 /api/admin/bonus-entries 전용 엔드포인트로만 가능.
-     * 이전의 DELETE→재INSERT 로직은 승인 상태(status, reviewed_*)와 원본 submitted_at을 소실시켜 제거. */
+    /* 가산점 인증 업데이트 — 안전한 upsert (일반 수정 모드에서도 허용)
+     * 승인/거절된 항목은 보호: body에 있어도 덮어쓰지 않음
+     * pending 항목만 sns_url/proof_image_url 수정 가능
+     * 신규 항목은 INSERT, body에서 빠진 pending은 DELETE
+     * 승인 상태(status, reviewed_*)와 원본 submitted_at은 모두 보존 */
+    if (Array.isArray(body.bonusEntries)) {
+      const { data: existingEntries, error: fetchExistingError } = await supabase
+        .from('bonus_entries')
+        .select('id, bonus_config_id, status, sns_url, proof_image_url')
+        .eq('submission_id', submissionId);
+
+      if (!fetchExistingError) {
+        const existingByConfigId = new Map(
+          (existingEntries ?? []).map((e) => [String(e.bonus_config_id), e]),
+        );
+        const incomingConfigIds = new Set<string>();
+
+        /* 1) body 항목: 신규 INSERT 또는 pending UPDATE (승인/거절은 스킵) */
+        for (const entry of body.bonusEntries) {
+          if (!entry.bonusConfigId) continue;
+          const configIdStr = String(entry.bonusConfigId);
+          incomingConfigIds.add(configIdStr);
+          const existing = existingByConfigId.get(configIdStr);
+
+          const newSns = entry.snsUrl || null;
+          const newProof = entry.proofImageUrl || null;
+
+          if (!existing) {
+            const { error: insertError } = await supabase.from('bonus_entries').insert({
+              submission_id: submissionId,
+              bonus_config_id: entry.bonusConfigId,
+              sns_url: newSns,
+              proof_image_url: newProof,
+              submitted_at: new Date().toISOString(),
+            });
+            if (insertError) {
+              console.error('가산점 신규 등록 실패:', insertError);
+            }
+          } else if (!existing.status || existing.status === 'pending') {
+            /* pending이면 sns_url/proof_image_url만 UPDATE (다른 필드 보존) */
+            if (newSns !== existing.sns_url || newProof !== existing.proof_image_url) {
+              const { error: updateError } = await supabase
+                .from('bonus_entries')
+                .update({ sns_url: newSns, proof_image_url: newProof })
+                .eq('id', existing.id);
+              if (updateError) {
+                console.error('가산점 pending 수정 실패:', updateError);
+              }
+            }
+          }
+          /* approved/rejected: 보호 — skip (관리자가 관리자 승인 API로만 변경 가능) */
+        }
+
+        /* 2) 기존 pending 중 body에 없는 것: DELETE (승인/거절은 보존) */
+        for (const existing of existingEntries ?? []) {
+          const configIdStr = String(existing.bonus_config_id);
+          if (incomingConfigIds.has(configIdStr)) continue;
+          if (existing.status && existing.status !== 'pending') continue;
+          await supabase.from('bonus_entries').delete().eq('id', existing.id);
+        }
+      }
+    }
 
     /* 활동 로그 기록 */
     createActivityLog({
