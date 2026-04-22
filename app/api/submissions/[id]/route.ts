@@ -509,7 +509,7 @@ export async function PUT(
       );
       const incomingConfigIds = new Set<string>();
 
-      /* 1) body 항목: 신규 INSERT 또는 pending UPDATE (승인/거절은 스킵) */
+      /* 1) body 항목: 신규 INSERT / pending UPDATE / 내용 비어있으면 DELETE */
       for (const entry of body.bonusEntries) {
         if (!entry.bonusConfigId) continue;
         const configIdStr = String(entry.bonusConfigId);
@@ -518,6 +518,32 @@ export async function PUT(
 
         const newSns = entry.snsUrl || null;
         const newProof = entry.proofImageUrl || null;
+        const isEmpty = !newSns && !newProof;
+
+        /* 클라이언트가 이 슬롯을 비운 경우 → 인증 취소 의도 */
+        if (isEmpty) {
+          if (!existing) {
+            /* 원래 없었고 지금도 비어있음 — 아무 작업 없음 */
+            bonusActions.skipped += 1;
+            continue;
+          }
+          if (existing.status && existing.status !== 'pending') {
+            /* 승인/거절된 항목은 '비우기'로 삭제 불가 (보호) */
+            bonusActions.skipped += 1;
+            continue;
+          }
+          /* pending이고 비어있으면 DELETE */
+          const { error: deleteError } = await supabase
+            .from('bonus_entries')
+            .delete()
+            .eq('id', existing.id);
+          if (deleteError) {
+            bonusWarnings.push(`entry ${existing.id} DELETE(empty): ${deleteError.message}`);
+          } else {
+            bonusActions.deleted += 1;
+          }
+          continue;
+        }
 
         if (!existing) {
           const { error: insertError, data: insertData } = await supabase
