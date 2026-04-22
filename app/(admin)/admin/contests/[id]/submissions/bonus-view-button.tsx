@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,6 +34,11 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
   const [rejectionInput, setRejectionInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const configMap = new Map(bonusConfigs.map((c) => [c.id, c]));
 
@@ -349,8 +355,8 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
         </DialogContent>
       </Dialog>
 
-      {/* 이미지 확대 보기 오버레이 */}
-      {zoomedImageUrl && (
+      {/* 이미지 확대 보기 오버레이 — document.body에 Portal로 렌더링하여 상위 Link 이벤트 차단 */}
+      {isMounted && zoomedImageUrl && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
           role="dialog"
@@ -358,10 +364,18 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
             setZoomedImageUrl(null);
           }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
         >
           <button
             type="button"
@@ -369,7 +383,13 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
               setZoomedImageUrl(null);
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
             }}
             aria-label="닫기"
           >
@@ -384,7 +404,8 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
             이미지 밖을 클릭하면 닫힙니다
           </p>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Check, Clock, ImageIcon, ImagePlus, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -123,6 +124,9 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [imagePickerConfigId, setImagePickerConfigId] = useState<string | null>(null);
   /* 확대 이미지 URL */
   const [pickerZoomUrl, setPickerZoomUrl] = useState<string | null>(null);
+  /* Portal 마운트 확인 (SSR hydration 안전) */
+  const [pickerMounted, setPickerMounted] = useState(false);
+  useEffect(() => { setPickerMounted(true); }, []);
 
   useEffect(() => {
     if (editOpen) {
@@ -1121,8 +1125,8 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         </DialogContent>
       </Dialog>
 
-      {/* 이미지 확대 보기 오버레이 (픽커용) */}
-      {pickerZoomUrl && (
+      {/* 이미지 확대 보기 오버레이 (픽커용) — Portal로 document.body에 렌더링 */}
+      {pickerMounted && pickerZoomUrl && createPortal(
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
           role="dialog"
@@ -1130,7 +1134,17 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
             setPickerZoomUrl(null);
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
           }}
         >
           <img
@@ -1142,7 +1156,8 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
             이미지 밖을 클릭하면 닫힙니다
           </p>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* 저장 성공 알림 모달 */}
