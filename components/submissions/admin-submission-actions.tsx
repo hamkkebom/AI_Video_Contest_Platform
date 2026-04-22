@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ImageIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Check, Clock, ImageIcon, ImagePlus, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { refreshAccessToken } from '@/lib/supabase/refresh-token';
@@ -111,9 +111,23 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string>('');
 
+  /* 출품자가 Storage에 업로드한 proof-images 목록 (관리자가 수동 매칭용) */
+  const [availableProofImages, setAvailableProofImages] = useState<Array<{
+    name: string;
+    createdAt: string;
+    publicUrl: string;
+  }>>([]);
+  const [availableProofLoading, setAvailableProofLoading] = useState(false);
+  const [availableProofError, setAvailableProofError] = useState<string | null>(null);
+  /* 현재 이미지 picker 모달을 연 bonus_config_id (null이면 닫힘) */
+  const [imagePickerConfigId, setImagePickerConfigId] = useState<string | null>(null);
+  /* 확대 이미지 URL */
+  const [pickerZoomUrl, setPickerZoomUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (editOpen) {
       setForm(toFormState(currentData, currentStatus));
+      setAvailableProofError(null);
       Promise.all([
         fetch(`/api/submissions/${submissionId}`).then((r) => r.json()),
         fetch(`/api/contests/${contestId}`).then((r) => r.json()),
@@ -144,8 +158,26 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         .catch(() => {
           // 실패 시 무시 — 가산점 없이 수정 가능
         });
+
+      /* 해당 유저가 Storage에 업로드한 proof-images 목록 조회 */
+      setAvailableProofLoading(true);
+      fetch(`/api/admin/submissions/${submissionId}/proof-images`)
+        .then((r) => r.json())
+        .then((data: { images?: Array<{ name: string; createdAt: string; publicUrl: string }>; error?: string }) => {
+          if (data.images) {
+            setAvailableProofImages(data.images);
+          } else {
+            setAvailableProofImages([]);
+            setAvailableProofError(data.error ?? '이미지 목록을 불러오지 못했습니다.');
+          }
+        })
+        .catch((err) => {
+          setAvailableProofImages([]);
+          setAvailableProofError(err instanceof Error ? err.message : '이미지 목록 조회 실패');
+        })
+        .finally(() => setAvailableProofLoading(false));
     }
-  }, [editOpen, currentData, submissionId, contestId]);
+  }, [editOpen, currentData, submissionId, contestId, currentStatus]);
 
   useEffect(() => {
     if (!form.videoFile) {
@@ -830,38 +862,70 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                     </div>
                     <div className="grid gap-1">
                       <Label className="text-xs">증빙 이미지</Label>
-                      <label className="flex h-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(ev) => {
-                            const file = ev.target.files?.[0] ?? null;
-                            setBonusForms((prev) => {
-                              const prevEntry = prev[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
-                              const preview = file ? URL.createObjectURL(file) : prevEntry.proofImagePreview;
-                              return { ...prev, [config.id]: { ...prevEntry, proofImageFile: file, proofImagePreview: preview } };
-                            });
-                          }}
-                        />
-                        {entry.proofImageFile ? (
-                          <span className="text-xs text-muted-foreground">
-                            {entry.proofImageFile.name} ({(entry.proofImageFile.size / 1024 / 1024).toFixed(1)}MB)
-                          </span>
-                        ) : (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="flex h-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(ev) => {
+                              const file = ev.target.files?.[0] ?? null;
+                              setBonusForms((prev) => {
+                                const prevEntry = prev[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                                const preview = file ? URL.createObjectURL(file) : prevEntry.proofImagePreview;
+                                return { ...prev, [config.id]: { ...prevEntry, proofImageFile: file, proofImagePreview: preview } };
+                              });
+                            }}
+                          />
+                          {entry.proofImageFile ? (
+                            <span className="text-xs text-muted-foreground">
+                              {entry.proofImageFile.name} ({(entry.proofImageFile.size / 1024 / 1024).toFixed(1)}MB)
+                            </span>
+                          ) : (
+                            <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                              <ImageIcon className="h-4 w-4" />
+                              새 이미지 업로드
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setImagePickerConfigId(config.id)}
+                          className="flex h-20 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:border-primary cursor-pointer bg-primary/5"
+                        >
                           <span className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                            <ImageIcon className="h-4 w-4" />
-                            클릭하여 이미지 선택
+                            <ImagePlus className="h-4 w-4" />
+                            업로드된 이미지에서 선택
+                            {availableProofImages.length > 0 && (
+                              <span className="text-[10px] text-primary">
+                                ({availableProofImages.length}장 업로드됨)
+                              </span>
+                            )}
                           </span>
-                        )}
-                      </label>
+                        </button>
+                      </div>
                       {(entry.proofImagePreview) && (
-                        <div
-                          role="img"
-                          className="h-16 w-16 rounded border bg-cover bg-center"
-                          style={{ backgroundImage: `url(${entry.proofImagePreview})` }}
-                          aria-label="증빙 이미지 미리보기"
-                        />
+                        <div className="flex items-start gap-2 mt-1">
+                          <div
+                            role="img"
+                            className="h-16 w-16 rounded border bg-cover bg-center shrink-0 cursor-zoom-in"
+                            style={{ backgroundImage: `url(${entry.proofImagePreview})` }}
+                            aria-label="증빙 이미지 미리보기"
+                            onClick={() => setPickerZoomUrl(entry.proofImagePreview)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBonusForms((prev) => {
+                                const prevEntry = prev[config.id] ?? { snsUrl: '', proofImageFile: null, proofImagePreview: null };
+                                return { ...prev, [config.id]: { ...prevEntry, proofImageFile: null, proofImagePreview: null } };
+                              });
+                            }}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            이미지 제거
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -906,6 +970,180 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 업로드된 이미지에서 선택 — 픽커 모달 */}
+      <Dialog
+        open={imagePickerConfigId !== null}
+        onOpenChange={(open) => {
+          if (!open) setImagePickerConfigId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>업로드된 가산점 증빙 이미지에서 선택</DialogTitle>
+            <DialogDescription>
+              {imagePickerConfigId && bonusConfigs.find((c) => c.id === imagePickerConfigId)?.label
+                ? `"${bonusConfigs.find((c) => c.id === imagePickerConfigId)?.label}" 항목에 매칭할 이미지를 선택하세요.`
+                : '매칭할 이미지를 선택하세요.'}
+              {' '}제출자가 이 공모전에 업로드한 모든 증빙 이미지 목록입니다. 이미지 클릭 시 크게 보기.
+            </DialogDescription>
+          </DialogHeader>
+
+          {availableProofLoading && (
+            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              이미지 목록을 불러오는 중...
+            </div>
+          )}
+
+          {availableProofError && !availableProofLoading && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {availableProofError}
+            </div>
+          )}
+
+          {!availableProofLoading && !availableProofError && availableProofImages.length === 0 && (
+            <div className="rounded-lg border border-dashed py-10 text-center">
+              <ImageIcon className="mx-auto h-10 w-10 text-muted-foreground/50" />
+              <p className="mt-2 text-sm text-muted-foreground">이 제출자가 업로드한 이미지가 없습니다.</p>
+            </div>
+          )}
+
+          {!availableProofLoading && availableProofImages.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 py-2">
+              {availableProofImages.map((img) => {
+                /* 다른 config에 이미 매칭된 이미지인지 표시 */
+                const usedByConfigId = Object.entries(bonusForms).find(
+                  ([, e]) => e.proofImagePreview === img.publicUrl,
+                )?.[0];
+                const usedByLabel = usedByConfigId
+                  ? bonusConfigs.find((c) => c.id === usedByConfigId)?.label
+                  : null;
+                const isCurrent = imagePickerConfigId && usedByConfigId === imagePickerConfigId;
+
+                return (
+                  <div
+                    key={img.name}
+                    className={cn(
+                      'relative group rounded-lg border-2 overflow-hidden cursor-pointer transition-all',
+                      isCurrent
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : usedByConfigId
+                          ? 'border-amber-500/50 bg-amber-500/5'
+                          : 'border-border hover:border-primary/50',
+                    )}
+                  >
+                    <div
+                      className="aspect-square bg-cover bg-center"
+                      style={{ backgroundImage: `url(${img.publicUrl})` }}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!imagePickerConfigId) return;
+                        setBonusForms((prev) => {
+                          const prevEntry = prev[imagePickerConfigId] ?? {
+                            snsUrl: '',
+                            proofImageFile: null,
+                            proofImagePreview: null,
+                          };
+                          return {
+                            ...prev,
+                            [imagePickerConfigId]: {
+                              ...prevEntry,
+                              proofImageFile: null,
+                              proofImagePreview: img.publicUrl,
+                            },
+                          };
+                        });
+                        setImagePickerConfigId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          (e.currentTarget as HTMLElement).click();
+                        }
+                      }}
+                    />
+                    <div className="p-2 text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        <span className="truncate">
+                          {new Date(img.createdAt).toLocaleString('ko-KR', {
+                            year: '2-digit',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      {usedByLabel && (
+                        <div className={cn(
+                          'mt-1 text-[10px] font-medium truncate',
+                          isCurrent ? 'text-primary' : 'text-amber-700 dark:text-amber-400',
+                        )}>
+                          {isCurrent ? (
+                            <span className="flex items-center gap-1">
+                              <Check className="h-3 w-3" /> 현재 선택됨
+                            </span>
+                          ) : (
+                            `→ ${usedByLabel}`
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPickerZoomUrl(img.publicUrl);
+                      }}
+                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] text-white transition-opacity"
+                    >
+                      크게 보기
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setImagePickerConfigId(null)}
+            >
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 이미지 확대 보기 오버레이 (픽커용) */}
+      {pickerZoomUrl && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
+          role="dialog"
+          aria-label="증빙 이미지 크게 보기"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPickerZoomUrl(null);
+          }}
+        >
+          <img
+            src={pickerZoomUrl}
+            alt="증빙 이미지 크게 보기"
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
+            이미지 밖을 클릭하면 닫힙니다
+          </p>
+        </div>
+      )}
 
       {/* 저장 성공 알림 모달 */}
       <Dialog
