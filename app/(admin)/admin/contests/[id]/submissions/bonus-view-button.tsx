@@ -111,6 +111,12 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           onMouseUp={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onPointerDownOutside={(e) => {
+            /* 확대 이미지 오버레이 위 클릭이면 모달 유지 (확대만 닫힘) */
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[data-bonus-zoom-overlay]')) {
+              e.preventDefault();
+              return;
+            }
             /* 배경 클릭 시 모달만 닫고 상위 Link 네비게이션 방지 */
             const originalEvent = (e as unknown as { detail?: { originalEvent?: Event } }).detail?.originalEvent;
             if (originalEvent) {
@@ -119,6 +125,11 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
             }
           }}
           onInteractOutside={(e) => {
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[data-bonus-zoom-overlay]')) {
+              e.preventDefault();
+              return;
+            }
             const originalEvent = (e as unknown as { detail?: { originalEvent?: Event } }).detail?.originalEvent;
             if (originalEvent) {
               originalEvent.stopPropagation();
@@ -355,42 +366,36 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
         </DialogContent>
       </Dialog>
 
-      {/* 이미지 확대 보기 오버레이 — document.body에 Portal로 렌더링하여 상위 Link 이벤트 차단 */}
+      {/* 이미지 확대 보기 오버레이 — Portal + 모든 이벤트 핸들러에서 전파 차단
+       * React synthetic event가 포털 밖으로 버블링되어 Link까지 도달하는 것 방지.
+       * mousedown/pointerdown/touchstart까지 광범위 차단. */}
       {isMounted && zoomedImageUrl && createPortal(
         <div
+          data-bonus-zoom-overlay
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
           role="dialog"
           aria-label="가산점 인증 이미지 크게 보기"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
             setZoomedImageUrl(null);
           }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <button
             type="button"
+            data-bonus-zoom-overlay
             className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20 transition-colors"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              e.nativeEvent.stopImmediatePropagation();
               setZoomedImageUrl(null);
             }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              e.nativeEvent.stopImmediatePropagation();
-            }}
+            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             aria-label="닫기"
           >
             <XCircle className="h-6 w-6" />
@@ -398,10 +403,12 @@ export function BonusViewButton({ submissionTitle, bonusEntries: initialEntries,
           <img
             src={zoomedImageUrl}
             alt="가산점 인증 크게 보기"
+            data-bonus-zoom-overlay
             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
-          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
+          <p data-bonus-zoom-overlay className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
             이미지 밖을 클릭하면 닫힙니다
           </p>
         </div>,

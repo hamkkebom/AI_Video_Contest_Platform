@@ -1125,35 +1125,31 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
         </DialogContent>
       </Dialog>
 
-      {/* 이미지 확대 보기 오버레이 (픽커용) — Portal로 document.body에 렌더링 */}
+      {/* 이미지 확대 보기 오버레이 (픽커용) — Portal + 광범위 이벤트 차단 */}
       {pickerMounted && pickerZoomUrl && createPortal(
         <div
+          data-proof-zoom-overlay
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 p-4 sm:p-8 cursor-zoom-out animate-in fade-in"
           role="dialog"
           aria-label="증빙 이미지 크게 보기"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
             setPickerZoomUrl(null);
           }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <img
             src={pickerZoomUrl}
             alt="증빙 이미지 크게 보기"
+            data-proof-zoom-overlay
             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
-          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
+          <p data-proof-zoom-overlay className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70">
             이미지 밖을 클릭하면 닫힙니다
           </p>
         </div>,
