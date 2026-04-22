@@ -486,61 +486,102 @@ export async function PUT(
      * pending 항목만 sns_url/proof_image_url 수정 가능
      * 신규 항목은 INSERT, body에서 빠진 pending은 DELETE
      * 승인 상태(status, reviewed_*)와 원본 submitted_at은 모두 보존 */
+    const bonusWarnings: string[] = [];
+    const bonusActions: { inserted: number; updated: number; deleted: number; skipped: number } = {
+      inserted: 0, updated: 0, deleted: 0, skipped: 0,
+    };
     if (Array.isArray(body.bonusEntries)) {
       const { data: existingEntries, error: fetchExistingError } = await supabase
         .from('bonus_entries')
         .select('id, bonus_config_id, status, sns_url, proof_image_url')
         .eq('submission_id', submissionId);
 
-      if (!fetchExistingError) {
-        const existingByConfigId = new Map(
-          (existingEntries ?? []).map((e) => [String(e.bonus_config_id), e]),
+      if (fetchExistingError) {
+        console.error('[PUT] 가산점 기존 조회 실패:', fetchExistingError);
+        return NextResponse.json(
+          { error: `가산점 조회 실패: ${fetchExistingError.message}` },
+          { status: 500 },
         );
-        const incomingConfigIds = new Set<string>();
+      }
 
-        /* 1) body 항목: 신규 INSERT 또는 pending UPDATE (승인/거절은 스킵) */
-        for (const entry of body.bonusEntries) {
-          if (!entry.bonusConfigId) continue;
-          const configIdStr = String(entry.bonusConfigId);
-          incomingConfigIds.add(configIdStr);
-          const existing = existingByConfigId.get(configIdStr);
+      const existingByConfigId = new Map(
+        (existingEntries ?? []).map((e) => [String(e.bonus_config_id), e]),
+      );
+      const incomingConfigIds = new Set<string>();
 
-          const newSns = entry.snsUrl || null;
-          const newProof = entry.proofImageUrl || null;
+      /* 1) body 항목: 신규 INSERT 또는 pending UPDATE (승인/거절은 스킵) */
+      for (const entry of body.bonusEntries) {
+        if (!entry.bonusConfigId) continue;
+        const configIdStr = String(entry.bonusConfigId);
+        incomingConfigIds.add(configIdStr);
+        const existing = existingByConfigId.get(configIdStr);
 
-          if (!existing) {
-            const { error: insertError } = await supabase.from('bonus_entries').insert({
+        const newSns = entry.snsUrl || null;
+        const newProof = entry.proofImageUrl || null;
+
+        if (!existing) {
+          const { error: insertError, data: insertData } = await supabase
+            .from('bonus_entries')
+            .insert({
               submission_id: submissionId,
               bonus_config_id: entry.bonusConfigId,
               sns_url: newSns,
               proof_image_url: newProof,
               submitted_at: new Date().toISOString(),
-            });
-            if (insertError) {
-              console.error('가산점 신규 등록 실패:', insertError);
-            }
-          } else if (!existing.status || existing.status === 'pending') {
-            /* pending이면 sns_url/proof_image_url만 UPDATE (다른 필드 보존) */
-            if (newSns !== existing.sns_url || newProof !== existing.proof_image_url) {
-              const { error: updateError } = await supabase
-                .from('bonus_entries')
-                .update({ sns_url: newSns, proof_image_url: newProof })
-                .eq('id', existing.id);
-              if (updateError) {
-                console.error('가산점 pending 수정 실패:', updateError);
-              }
-            }
+            })
+            .select('id');
+          if (insertError) {
+            console.error('가산점 신규 등록 실패:', insertError);
+            bonusWarnings.push(`config ${configIdStr} INSERT: ${insertError.message}`);
+          } else if (!insertData || insertData.length === 0) {
+            bonusWarnings.push(`config ${configIdStr} INSERT: RLS 차단 가능성 (0 rows)`);
+          } else {
+            bonusActions.inserted += 1;
           }
-          /* approved/rejected: 보호 — skip (관리자가 관리자 승인 API로만 변경 가능) */
+        } else if (!existing.status || existing.status === 'pending') {
+          /* pending이면 sns_url/proof_image_url만 UPDATE */
+          if (newSns !== existing.sns_url || newProof !== existing.proof_image_url) {
+            const { error: updateError, data: updatedData } = await supabase
+              .from('bonus_entries')
+              .update({ sns_url: newSns, proof_image_url: newProof })
+              .eq('id', existing.id)
+              .select('id');
+            if (updateError) {
+              console.error('가산점 pending 수정 실패:', updateError);
+              bonusWarnings.push(`entry ${existing.id} UPDATE: ${updateError.message}`);
+            } else if (!updatedData || updatedData.length === 0) {
+              bonusWarnings.push(`entry ${existing.id} UPDATE: RLS 차단 가능성 (0 rows)`);
+            } else {
+              bonusActions.updated += 1;
+            }
+          } else {
+            bonusActions.skipped += 1;
+          }
+        } else {
+          /* approved/rejected: 보호 */
+          bonusActions.skipped += 1;
         }
+      }
 
-        /* 2) 기존 pending 중 body에 없는 것: DELETE (승인/거절은 보존) */
-        for (const existing of existingEntries ?? []) {
-          const configIdStr = String(existing.bonus_config_id);
-          if (incomingConfigIds.has(configIdStr)) continue;
-          if (existing.status && existing.status !== 'pending') continue;
-          await supabase.from('bonus_entries').delete().eq('id', existing.id);
+      /* 2) 기존 pending 중 body에 없는 것: DELETE (승인/거절은 보존) */
+      for (const existing of existingEntries ?? []) {
+        const configIdStr = String(existing.bonus_config_id);
+        if (incomingConfigIds.has(configIdStr)) continue;
+        if (existing.status && existing.status !== 'pending') continue;
+        const { error: deleteError } = await supabase
+          .from('bonus_entries')
+          .delete()
+          .eq('id', existing.id);
+        if (deleteError) {
+          bonusWarnings.push(`entry ${existing.id} DELETE: ${deleteError.message}`);
+        } else {
+          bonusActions.deleted += 1;
         }
+      }
+
+      /* 에러가 있지만 일부는 성공한 경우 — success + warning */
+      if (bonusWarnings.length > 0) {
+        console.warn('[PUT] 가산점 일부 처리 실패:', bonusWarnings, 'actions:', bonusActions);
       }
     }
 
@@ -558,7 +599,15 @@ export async function PUT(
     revalidateTag('gallery');
     revalidateTag('contests');
 
-    return NextResponse.json({ success: true });
+    if (bonusWarnings.length > 0) {
+      return NextResponse.json({
+        success: true,
+        warning: `출품작 수정은 성공했으나 가산점 처리 일부 실패: ${bonusWarnings.join(', ')}`,
+        bonusActions,
+      });
+    }
+
+    return NextResponse.json({ success: true, bonusActions });
   } catch (error) {
     console.error('[PUT /api/submissions/[id]] 실패:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: '출품작 수정에 실패했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
