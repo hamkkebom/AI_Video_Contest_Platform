@@ -107,7 +107,16 @@ export function SitePopup() {
           </button>
         </div>
 
-        {/* 이미지 (linkUrl이 있으면 클릭 시 이동) */}
+        {/* 본문 (글이 위에) */}
+        {currentPopup.content ? (
+          <div className="px-6 pt-5">
+            <div className="max-h-[260px] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+              {currentPopup.content}
+            </div>
+          </div>
+        ) : null}
+
+        {/* 이미지 (사진은 아래에 — linkUrl이 있으면 클릭 시 이동) */}
         {currentPopup.imageUrl ? (
           currentPopup.linkUrl ? (
             <a
@@ -125,15 +134,8 @@ export function SitePopup() {
           )
         ) : null}
 
-        {/* 본문 + 푸터 */}
-        <div className="space-y-4 p-6 pt-5">
-          {currentPopup.content ? (
-            <div
-              className="max-h-[260px] overflow-y-auto text-sm leading-relaxed text-foreground/90"
-              dangerouslySetInnerHTML={{ __html: currentPopup.content }}
-            />
-          ) : null}
-
+        {/* 푸터 */}
+        <div className="p-6 pt-4">
           <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">
             <Button type="button" variant="outline" onClick={handleDismissToday}>
               오늘 하루 안보기

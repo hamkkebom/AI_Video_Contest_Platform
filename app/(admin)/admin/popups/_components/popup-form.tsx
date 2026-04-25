@@ -558,7 +558,20 @@ export default function PopupForm({ mode, popupId }: PopupFormProps) {
                 </div>
               </div>
 
-              {/* 이미지 (linkUrl이 있으면 클릭 시 이동) */}
+              {/* 본문 (글이 위에) */}
+              {content ? (
+                <div className="px-6 pt-5">
+                  <div className="max-h-[260px] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                    {content}
+                  </div>
+                </div>
+              ) : (
+                <div className="px-6 pt-5">
+                  <p className="text-sm text-muted-foreground italic">내용을 입력하면 여기에 표시됩니다.</p>
+                </div>
+              )}
+
+              {/* 이미지 (사진은 아래에 — linkUrl이 있으면 클릭 시 이동) */}
               {imagePreview ? (
                 linkUrl ? (
                   <a
@@ -579,19 +592,8 @@ export default function PopupForm({ mode, popupId }: PopupFormProps) {
                 )
               ) : null}
 
-              {/* 본문 */}
-              <div className="space-y-4 p-6 pt-5">
-                {content ? (
-                  <div
-                    className="max-h-[260px] overflow-y-auto text-sm leading-relaxed text-foreground/90"
-                    dangerouslySetInnerHTML={{ __html: content }}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">내용을 입력하면 여기에 표시됩니다.</p>
-                )}
-
-
-                {/* 하단 버튼 (미리보기 전용 — 비활성) */}
+              {/* 푸터 (미리보기 전용 — 비활성) */}
+              <div className="p-6 pt-4">
                 <div className="flex items-center justify-between gap-2 pt-2 border-t">
                   <Button type="button" variant="outline" size="sm" disabled>오늘 하루 안보기</Button>
                   <Button type="button" size="sm" disabled>닫기</Button>
