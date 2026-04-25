@@ -83,6 +83,17 @@ export interface Article {
   thumbnailUrl?: string;
 }
 
+/** 아티클 생성/수정 입력 */
+export interface ArticleMutationInput {
+  type: ArticleType;
+  title: string;
+  excerpt?: string;
+  content: string;
+  tags?: string[];
+  isPublished: boolean;
+  thumbnailUrl?: string;
+}
+
 export type InquiryType = "general" | "support" | "agency";
 
 export type InquiryStatus = "pending" | "in_progress" | "resolved";

@@ -111,10 +111,12 @@ export default async function AdminArticlesPage() {
               <CardDescription>유형별 콘텐츠 비중을 확인할 수 있습니다.</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Link href="/admin/dashboard">
-                <Button variant="outline">대시보드</Button>
-              </Link>
-              <Button>새 아티클</Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/dashboard">대시보드</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/admin/articles/new">새 아티클</Link>
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">

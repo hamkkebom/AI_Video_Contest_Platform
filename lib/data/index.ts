@@ -35,6 +35,7 @@ async function fetchAll<T extends Record<string, unknown>>(
 }
 import type {
   Article,
+  ArticleMutationInput,
   Company,
   CompanyMember,
   Contest,
@@ -2377,6 +2378,50 @@ export async function getPopupById(id: string): Promise<Popup | null> {
 }
 
 /** 팝업 생성 */
+/** admin 전용: 아티클 생성 */
+export async function createArticle(
+  input: ArticleMutationInput,
+  authorId: string,
+): Promise<Article | null> {
+  const supabase = await createClient();
+
+  const normalizedTitle = input.title.trim();
+  const slugPrefix = normalizedTitle
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w가-힣-]/g, '')
+    .slice(0, 36);
+  const slug = `${slugPrefix || 'article'}-${Date.now()}`;
+
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('articles')
+    .insert({
+      type: input.type,
+      title: normalizedTitle,
+      slug,
+      excerpt: input.excerpt?.trim() || null,
+      content: input.content,
+      author_id: authorId,
+      tags: input.tags ?? [],
+      is_published: input.isPublished,
+      published_at: input.isPublished ? nowIso : null,
+      thumbnail_url: input.thumbnailUrl?.trim() || null,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    console.error('[createArticle] 실패:', error?.message, error?.details, error?.hint);
+    return null;
+  }
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('articles');
+  return toArticle(data as Record<string, unknown>);
+}
+
 export async function createPopup(input: PopupMutationInput): Promise<Popup | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
