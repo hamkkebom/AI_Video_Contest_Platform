@@ -59,7 +59,22 @@ export async function PATCH(
       .eq('id', submissionId)
       .single();
 
-    if (fetchError || !submission) {
+    if (fetchError) {
+      console.error('[PATCH visibility] 조회 실패:', fetchError.code, fetchError.message, fetchError.details);
+      /* PostgREST 42703 = undefined column → 마이그레이션 미적용 가능성 높음 */
+      if (fetchError.code === '42703' || /column .* does not exist/i.test(fetchError.message)) {
+        return NextResponse.json(
+          { error: 'DB에 is_public 컬럼이 없습니다. 마이그레이션 041을 적용해주세요.', code: 'MIGRATION_NOT_APPLIED' },
+          { status: 500 },
+        );
+      }
+      return NextResponse.json(
+        { error: `출품작 조회 실패: ${fetchError.message}` },
+        { status: 500 },
+      );
+    }
+
+    if (!submission) {
       return NextResponse.json({ error: '출품작을 찾을 수 없습니다.' }, { status: 404 });
     }
 
