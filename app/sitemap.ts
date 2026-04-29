@@ -59,11 +59,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // 갤러리 (승인된 출품작)
+  // 갤러리 (승인 + 공개된 출품작 — 비공개는 SEO에서도 제외)
   const { data: submissions } = await supabase
     .from('submissions')
     .select('id, submitted_at')
     .eq('status', 'approved')
+    .eq('is_public', true)
     .order('submitted_at', { ascending: false })
     .limit(1000);
 

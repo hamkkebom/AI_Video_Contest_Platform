@@ -19,11 +19,12 @@ export async function GET(request: Request) {
 
   const supabase = createPublicClient();
 
-  /* 승인된 출품작 ID + 정렬에 필요한 최소 필드만 조회 */
+  /* 승인 + 공개된 출품작 ID + 정렬에 필요한 최소 필드만 조회 */
   let query = supabase
     .from('submissions')
     .select('id, title, description, user_id, thumbnail_url, views, like_count, submitted_at, submitter_name')
-    .eq('status', 'approved');
+    .eq('status', 'approved')
+    .eq('is_public', true);
 
   /* 기간 필터 */
   if (period > 0) {

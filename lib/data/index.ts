@@ -1475,12 +1475,13 @@ export function getRelatedSubmissions(
     async (): Promise<GallerySubmission[]> => {
       const supabase = createPublicClient();
 
-      // 같은 공모전의 승인된 출품작만 조회 (현재 작품 제외, 오래된순)
+      // 같은 공모전의 승인 + 공개된 출품작만 조회 (현재 작품 제외, 오래된순)
       const { data: submissions } = await supabase
         .from('submissions')
         .select('*')
         .eq('contest_id', contestId)
         .eq('status', 'approved')
+        .eq('is_public', true)
         .neq('id', excludeId)
         .order('submitted_at', { ascending: true })
         .limit(limit);

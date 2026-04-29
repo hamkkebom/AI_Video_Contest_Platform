@@ -100,8 +100,8 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
   const isAdmin = profile?.roles?.includes('admin') ?? false;
   const isOwner = profile?.id === submission.userId;
 
-  /* 승인되지 않은 작품은 본인 또는 관리자만 접근 가능 */
-  if (submission.status !== 'approved' && !isAdmin && !isOwner) {
+  /* 승인되지 않았거나 비공개 처리된 작품은 본인 또는 관리자만 접근 가능 */
+  if ((submission.status !== 'approved' || submission.isPublic === false) && !isAdmin && !isOwner) {
     return (
       <div className="w-full min-h-screen bg-background">
         <section className="py-20 px-4">
