@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp, Star } from 'lucide-react';
 import { BonusViewButton } from './bonus-view-button';
+import { VisibilityToggle } from './visibility-toggle';
 import { SearchInput } from '@/components/ui/search-input';
 import { formatDateTime } from '@/lib/utils';
 
@@ -302,6 +303,10 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
                               </div>
                               <div className="shrink-0 flex flex-col items-end gap-1.5">
                                 <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
+                                <VisibilityToggle
+                                  submissionId={submission.id}
+                                  initialIsPublic={submission.isPublic}
+                                />
                                 {bonusDataMap.has(submission.id) ? (
                                   <BonusViewButton
                                     submissionTitle={submission.title}

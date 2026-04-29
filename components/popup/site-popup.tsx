@@ -90,7 +90,7 @@ export function SitePopup() {
 
   return (
     <Dialog open={!!currentPopup} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-md overflow-hidden p-0 [&>button[class*='absolute']]:hidden">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 [&>button[class*='absolute']]:hidden">
         {/* 제목 헤더 + 닫기 */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <DialogHeader className="flex-1">

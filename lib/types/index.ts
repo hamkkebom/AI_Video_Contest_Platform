@@ -237,6 +237,8 @@ export interface Submission {
   videoUrl: string;
   thumbnailUrl: string;
   status: SubmissionStatus;
+  /** 갤러리 공개 여부 (관리자 토글) — false면 status가 approved여도 갤러리에서 숨김 */
+  isPublic: boolean;
   submittedAt: string;
   views: number;
   likeCount: number;

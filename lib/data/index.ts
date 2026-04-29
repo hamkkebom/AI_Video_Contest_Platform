@@ -335,6 +335,7 @@ function toSubmission(row: Record<string, unknown>): Submission {
     videoUrl: (row.video_url as string) ?? '',
     thumbnailUrl: (row.thumbnail_url as string) ?? '',
     status: row.status as Submission['status'],
+    isPublic: row.is_public !== false, // 컬럼이 없거나 null이면 공개로 간주(하위호환)
     submittedAt: row.submitted_at as string,
     views: (row.views as number) ?? 0,
     likeCount: (row.like_count as number) ?? 0,
@@ -1260,10 +1261,12 @@ export const getGallerySubmissions = unstable_cache(
     const supabase = createPublicClient();
 
     // 승인된 출품작 조회 (먼저 제출한 작품이 앞에 오도록 오래된순 정렬)
+    // is_public=true 만 노출 (관리자가 비공개 처리한 작품 제외)
     const { data: submissions } = await supabase
       .from('submissions')
       .select('*')
       .eq('status', 'approved')
+      .eq('is_public', true)
       .order('submitted_at', { ascending: true });
     if (!submissions || submissions.length === 0) return [];
 
@@ -1388,6 +1391,7 @@ export const getAwardedSubmissions = unstable_cache(
         videoUrl: '',
         thumbnailUrl: '',
         status: 'judged' as const,
+        isPublic: true,
         submittedAt: r.awarded_at as string,
         views: 0,
         likeCount: 0,
