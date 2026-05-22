@@ -88,3 +88,44 @@ export async function hashForAntiAbuse(value: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(signature));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * Supabase Storage URL → Image Transformation URL 변환
+ *
+ * 기존에 저장된 이미지를 재업로드 없이 WebP로 서빙한다.
+ * Supabase Pro 플랜에 포함된 기능으로, 변환 결과는 CDN에 캐시된다.
+ *
+ * - Supabase URL이 아닌 경우(Cloudflare, 외부 URL 등)는 원본 그대로 반환
+ * - null/undefined 입력은 null 반환
+ *
+ * @example
+ * getOptimizedImageUrl('https://xxx.supabase.co/storage/v1/object/public/thumbnails/a.jpg', { width: 640 })
+ * // → 'https://xxx.supabase.co/storage/v1/render/image/public/thumbnails/a.jpg?width=640&quality=75&format=webp'
+ */
+export function getOptimizedImageUrl(
+  url: string | null | undefined,
+  options: { width?: number; quality?: number } = {},
+): string | null {
+  if (!url) return null;
+
+  // Supabase Storage public URL 판별
+  // 형식: https://{project}.supabase.co/storage/v1/object/public/{bucket}/{path}
+  if (!url.includes('.supabase.co/storage/v1/object/public/')) {
+    return url; // Supabase URL이 아니면 원본 반환
+  }
+
+  const { width = 1280, quality = 75 } = options;
+
+  // /object/public/ → /render/image/public/ 로 경로 변경
+  const base = url
+    .split('?')[0] // 기존 ?t= 등 쿼리 제거
+    .replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+
+  const params = new URLSearchParams({
+    width: String(width),
+    quality: String(quality),
+    format: 'webp',
+  });
+
+  return `${base}?${params.toString()}`;
+}

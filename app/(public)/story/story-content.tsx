@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 import type { Article } from '@/lib/types';
@@ -164,16 +165,18 @@ function StoryList({ articles }: { articles: Article[] }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredArticles.map((article, index) => (
+              {filteredArticles.map((article) => (
                 <Link key={article.id} href={`/story/${article.slug}`}>
                   <div className="group rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10 h-full flex flex-col">
                     {/* Thumbnail */}
                     <div className="h-52 relative overflow-hidden bg-muted">
                       {article.thumbnailUrl && (
-                        <img
+                        <Image
                           src={article.thumbnailUrl}
                           alt={article.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       )}
                       {/* Type Badge */}

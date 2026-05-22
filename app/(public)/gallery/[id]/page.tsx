@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked, getSubmissions } from '@/lib/data';
+import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked, getSubmissionIds } from '@/lib/data';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { StreamVideoPlayer } from './stream-video-player';
@@ -129,18 +129,19 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
   /* 관리자: pending_review만 순회 (검수 워크플로우)
      일반 사용자: approved만 순회 (갤러리 탐색) */
   const navStatus = isAdmin ? 'pending_review' : 'approved';
-  const [relatedSubmissions, userLiked, contestSubmissions] = await Promise.all([
+  /* getSubmissionIds — ID만 조회해 이그레스 ~95% 절감 (nav에는 id만 필요) */
+  const [relatedSubmissions, userLiked, contestSubmissionIds] = await Promise.all([
     getRelatedSubmissions(submission.contestId, submission.id, 4),
     profile ? hasUserLiked(profile.id, id) : Promise.resolve(false),
-    getSubmissions({ contestId: submission.contestId, status: navStatus }),
+    getSubmissionIds({ contestId: submission.contestId, status: navStatus }),
   ]);
   /* 현재 출품작이 필터 결과에 없을 수 있음 (이미 승인/반려 처리된 경우 등)
      → 전체 목록에서 가장 가까운 위치 기준으로 이전/다음 계산 */
-  const currentIndex = contestSubmissions.findIndex((item) => item.id === submission.id);
-  const prevSubmission = currentIndex > 0 ? contestSubmissions[currentIndex - 1] : null;
+  const currentIndex = contestSubmissionIds.findIndex((sid) => sid === String(submission.id));
+  const prevSubmission = currentIndex > 0 ? { id: contestSubmissionIds[currentIndex - 1] } : null;
   const nextSubmission =
-    currentIndex >= 0 && currentIndex < contestSubmissions.length - 1
-      ? contestSubmissions[currentIndex + 1]
+    currentIndex >= 0 && currentIndex < contestSubmissionIds.length - 1
+      ? { id: contestSubmissionIds[currentIndex + 1] }
       : null;
 
   /* JSON-LD 구조화 데이터 — VideoObject 스키마 */
@@ -209,7 +210,7 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
           </Card>
 
           {/* 2. 영상 플레이어 (풀 너비) */}
-          {!isFromMy && contestSubmissions.length > 1 && (
+          {!isFromMy && contestSubmissionIds.length > 1 && (
             <div className="flex items-center justify-between px-1 py-2">
               <Link href={prevSubmission ? `/gallery/${prevSubmission.id}` : '#'}>
                 <Button variant="ghost" size="sm" disabled={!prevSubmission} className="gap-1">
@@ -218,7 +219,7 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
                 </Button>
               </Link>
               <span className="text-sm text-muted-foreground">
-                {currentIndex + 1} / {contestSubmissions.length}
+                {currentIndex + 1} / {contestSubmissionIds.length}
               </span>
               <Link href={nextSubmission ? `/gallery/${nextSubmission.id}` : '#'}>
                 <Button variant="ghost" size="sm" disabled={!nextSubmission} className="gap-1">

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     Carousel,
     CarouselContent,
@@ -83,20 +84,22 @@ export function FeaturedWorksCarousel({ submissions, showGalleryLink = true }: F
                         className="w-full"
                     >
                         <CarouselContent className="-ml-4 py-2">
-                            {submissions.map((sub, index) => (
+                            {submissions.map((sub) => (
                                 <CarouselItem
                                     key={sub.id}
                                     className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
                                 >
                                     <Link href={`/gallery/${sub.id}` as any}>
                                         <div className="group rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
-                                            {/* 썸네일 */}
-                                            <div className="aspect-video overflow-hidden bg-muted">
+                                            {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
+                                            <div className="aspect-video overflow-hidden relative bg-muted">
                                                 {sub.thumbnailUrl && (
-                                                    <img
+                                                    <Image
                                                         src={sub.thumbnailUrl}
                                                         alt={sub.title}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        fill
+                                                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                     />
                                                 )}
                                             </div>

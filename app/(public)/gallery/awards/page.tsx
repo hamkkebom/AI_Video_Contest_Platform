@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
@@ -28,7 +29,12 @@ export const metadata: Metadata = {
  * 결과발표된 공모전을 포스터 카드로 표시, 클릭 시 해당 공모전 수상작 상세
  */
 export default async function GalleryAwardsPage() {
-  const completedContests = await getCompletedContests();
+  let completedContests: Awaited<ReturnType<typeof getCompletedContests>> = [];
+  try {
+    completedContests = await getCompletedContests();
+  } catch (e) {
+    console.error('[GalleryAwardsPage] getCompletedContests 실패:', e);
+  }
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
@@ -62,19 +68,23 @@ export default async function GalleryAwardsPage() {
 
           {completedContests.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {completedContests.map((contest, index) => (
+              {completedContests.map((contest) => (
                 <Link key={contest.id} href={`/gallery/awards/${contest.id}` as any} className="group relative block">
                   <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
 
                     {/* Left Accent Bar */}
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
 
-                    {/* 포스터 이미지 */}
-                    <img
-                      src={contest.posterUrl || ''}
-                      alt={contest.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    {/* 포스터 이미지 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
+                    {contest.posterUrl && (
+                      <Image
+                        src={contest.posterUrl}
+                        alt={contest.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    )}
 
                     {/* 결과발표 뱃지 */}
                     <div className="absolute top-[18px] right-3 z-10">

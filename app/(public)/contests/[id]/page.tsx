@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import NextImage from 'next/image';
 import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -263,11 +264,14 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
             {/* 좌측: 포스터 */}
             <div className="w-full lg:w-80 shrink-0 space-y-3">
               {contest.posterUrl ? (
-                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4]">
-                  <img
+                <div className="overflow-hidden rounded-xl bg-muted shadow-lg aspect-[3/4] relative">
+                  <NextImage
                     src={contest.posterUrl}
                     alt={`${contest.title} 포스터`}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 320px"
+                    className="object-cover"
+                    priority
                   />
                 </div>
               ) : (
@@ -379,11 +383,13 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
               {contest.detailImageUrls && contest.detailImageUrls.length > 0 && (
                 <div className="flex flex-col items-center gap-4">
                   {contest.detailImageUrls.map((url) => (
-                    <div key={url} className="overflow-hidden rounded-lg bg-muted aspect-[3/4] max-w-sm w-full">
-                      <img
+                    <div key={url} className="overflow-hidden rounded-lg bg-muted aspect-[3/4] max-w-sm w-full relative">
+                      <NextImage
                         src={url}
                         alt={`${contest.title} 상세 안내`}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="384px"
+                        className="object-cover"
                       />
                     </div>
                   ))}

@@ -774,6 +774,37 @@ export function getSubmissions(filters?: SubmissionFilters): Promise<Submission[
   )(filters);
 }
 
+/**
+ * 이전/다음 네비게이션 전용 — ID만 조회 (이그레스 최소화)
+ * select('*') 대신 select('id')만 사용해 전송 데이터를 ~95% 절감
+ */
+export function getSubmissionIds(
+  filters?: Pick<SubmissionFilters, 'contestId' | 'status'>,
+): Promise<string[]> {
+  const keyParts = ['submission-ids'];
+  if (filters?.contestId) keyParts.push(`contest:${filters.contestId}`);
+  if (filters?.status) keyParts.push(`status:${filters.status}`);
+
+  return unstable_cache(
+    async (filters?: Pick<SubmissionFilters, 'contestId' | 'status'>): Promise<string[]> => {
+      const supabase = createPublicClient();
+      const allData = await fetchAll((from, to) => {
+        let query = supabase
+          .from('submissions')
+          .select('id')
+          .order('submitted_at', { ascending: true })
+          .range(from, to);
+        if (filters?.contestId) query = query.eq('contest_id', filters.contestId);
+        if (filters?.status) query = query.eq('status', filters.status);
+        return query;
+      });
+      return allData.map((row: Record<string, unknown>) => String(row.id));
+    },
+    keyParts,
+    { tags: ['submissions'], revalidate: 30 },
+  )(filters);
+}
+
 /** 관리자/인증 세션 기반 출품작 목록 조회 (RLS 세션 의존 이슈 대응) */
 export async function getAdminSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
   const supabase = await createClient();

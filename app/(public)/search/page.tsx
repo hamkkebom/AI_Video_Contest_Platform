@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import {
   Carousel, CarouselContent, CarouselItem, type CarouselApi,
 } from '@/components/ui/carousel';
-import { Search, Trophy, Award, Upload, Eye, Heart, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Search, Trophy, Award, Eye, Heart, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 import type { SearchResult } from '@/lib/types';
 import { ARTICLE_TYPES } from '@/config/constants';
@@ -296,16 +297,20 @@ function SearchContent() {
                   <div className="relative">
                     <Carousel setApi={contestNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
                       <CarouselContent className="-ml-4 py-2">
-                        {results.contests.map((contest, index) => (
+                        {results.contests.map((contest) => (
                           <CarouselItem key={contest.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Link href={`/contests/${contest.id}` as any} className="group relative block">
                               <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
-                                <img
-                                  src={contest.posterUrl || ''}
-                                  alt={contest.title}
-                                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
+                                {contest.posterUrl && (
+                                  <Image
+                                    src={contest.posterUrl}
+                                    alt={contest.title}
+                                    fill
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                  />
+                                )}
                                 <div className="absolute top-[18px] right-3 z-10">
                                   {contest.status === 'open' ? (() => {
                                     const dday = calcDDay(contest.submissionEndAt);
@@ -375,16 +380,20 @@ function SearchContent() {
                   <div className="relative">
                     <Carousel setApi={submissionNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
                       <CarouselContent className="-ml-4 py-2">
-                        {results.submissions.map((submission, index) => (
+                        {results.submissions.map((submission) => (
                           <CarouselItem key={submission.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Link href={`/gallery/${submission.id}` as any} className="group block">
                               <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80">
-                                <div className="aspect-video overflow-hidden">
-                                  <img
-                                    src={submission.thumbnailUrl || ''}
-                                    alt={submission.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
+                                <div className="aspect-video overflow-hidden relative bg-muted">
+                                  {submission.thumbnailUrl && (
+                                    <Image
+                                      src={submission.thumbnailUrl}
+                                      alt={submission.title}
+                                      fill
+                                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  )}
                                 </div>
                                 <div className="p-4 space-y-2">
                                   <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-accent-foreground transition-colors">
@@ -433,16 +442,20 @@ function SearchContent() {
                   <div className="relative">
                     <Carousel setApi={articleNav.setApi} opts={CAROUSEL_OPTS} className="w-full">
                       <CarouselContent className="-ml-4 py-2">
-                        {results.articles.map((article, index) => (
+                        {results.articles.map((article) => (
                           <CarouselItem key={article.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Link href={`/story/${article.slug}` as any} className="group block">
                               <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer bg-background border border-border hover:border-border/80 h-full flex flex-col">
-                                <div className="aspect-[16/9] relative overflow-hidden">
-                                  <img
-                                    src={article.thumbnailUrl || ''}
-                                    alt={article.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
+                                <div className="aspect-[16/9] relative overflow-hidden bg-muted">
+                                  {article.thumbnailUrl && (
+                                    <Image
+                                      src={article.thumbnailUrl}
+                                      alt={article.title}
+                                      fill
+                                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  )}
                                   <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-[0.65rem] font-bold backdrop-blur-md border border-white/20 shadow-lg ${getTypeColor(article.type)}`}>
                                     {getTypeLabel(article.type)}
                                   </div>

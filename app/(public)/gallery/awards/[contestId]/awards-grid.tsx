@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, Heart, Trophy } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
@@ -53,13 +54,15 @@ export function AwardsGrid({ submissions }: AwardsGridProps) {
         {displayed.map((submission) => (
           <Link key={`${submission.id}-${submission.rank}`} href={`/gallery/${submission.id}` as any} className="group">
             <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
-              {/* 썸네일 */}
+              {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
               <div className="aspect-video overflow-hidden relative bg-muted">
                 {submission.thumbnailUrl && (
-                  <img
+                  <Image
                     src={submission.thumbnailUrl}
                     alt={submission.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 )}
                 {/* 수상 뱃지 */}

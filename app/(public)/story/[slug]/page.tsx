@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Calendar, Tag } from 'lucide-react';
 import { getArticles } from '@/lib/data';
@@ -167,11 +168,16 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
         {article.thumbnailUrl && (
           <section className="py-10 px-4 bg-background">
             <div className="max-w-4xl mx-auto">
-              <img
-                src={article.thumbnailUrl}
-                alt={article.title}
-                className="w-full h-auto rounded-xl shadow-lg"
-              />
+              <div className="relative w-full aspect-video rounded-xl shadow-lg overflow-hidden">
+                <Image
+                  src={article.thumbnailUrl}
+                  alt={article.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 896px"
+                  className="object-cover"
+                />
+              </div>
             </div>
           </section>
         )}
@@ -203,16 +209,18 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
                 관련 아티클
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedArticles.map((relatedArticle, index) => (
+                {relatedArticles.map((relatedArticle) => (
                   <Link key={relatedArticle.id} href={`/story/${relatedArticle.slug}`}>
                     <div className="border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:border-primary hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-background">
                       {/* Thumbnail */}
                       <div className="relative h-40 overflow-hidden bg-muted/30">
                         {relatedArticle.thumbnailUrl && (
-                          <img
+                          <Image
                             src={relatedArticle.thumbnailUrl}
                             alt={relatedArticle.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            className="object-cover"
                           />
                         )}
                         <div className={`absolute top-3 right-3 px-2.5 py-1 rounded text-xs font-semibold ${getTypeColor(relatedArticle.type)}`}>

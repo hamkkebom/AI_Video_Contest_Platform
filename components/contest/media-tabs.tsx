@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Image, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import NextImage from 'next/image';
+import { Image as ImageIcon, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MediaTabsProps {
     posterUrl?: string;
@@ -22,14 +23,14 @@ export function MediaTabs({ posterUrl, promotionVideoUrls, title, defaultTab }: 
     if (!hasPoster && !hasVideo) {
         return (
             <div className="rounded-lg bg-muted/50 border border-dashed border-border p-8 text-center">
-                <Image className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+                <ImageIcon className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">포스터 및 홍보 자료가 준비 중입니다</p>
             </div>
         );
     }
 
-    const tabs: Array<{ key: TabType; label: string; icon: typeof Image; available: boolean }> = [
-        { key: 'poster', label: '포스터', icon: Image, available: hasPoster },
+    const tabs: Array<{ key: TabType; label: string; icon: typeof ImageIcon; available: boolean }> = [
+        { key: 'poster', label: '포스터', icon: ImageIcon, available: hasPoster },
         { key: 'video', label: `홍보영상${promotionVideoUrls && promotionVideoUrls.length > 1 ? ` (${promotionVideoUrls.length})` : ''}`, icon: Play, available: hasVideo },
     ];
 
@@ -65,11 +66,13 @@ export function MediaTabs({ posterUrl, promotionVideoUrls, title, defaultTab }: 
             {/* 탭 콘텐츠 */}
             {activeTab === 'poster' && hasPoster && (
                 <div className="flex justify-center">
-                    <div className="overflow-hidden rounded-lg bg-muted aspect-[3/4] max-w-sm w-full">
-                        <img
-                            src={posterUrl}
+                    <div className="overflow-hidden rounded-lg bg-muted aspect-[3/4] max-w-sm w-full relative">
+                        <NextImage
+                            src={posterUrl!}
                             alt={`${title} 포스터`}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="384px"
+                            className="object-cover"
                         />
                     </div>
                 </div>

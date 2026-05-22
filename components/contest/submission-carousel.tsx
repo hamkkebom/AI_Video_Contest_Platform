@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Carousel,
   CarouselContent,
@@ -55,7 +56,7 @@ export function SubmissionCarousel({ submissions, creators }: SubmissionCarousel
         className="w-full"
       >
         <CarouselContent className="-ml-4 py-2">
-          {submissions.map((submission, index) => {
+          {submissions.map((submission) => {
             const creator = creators[submission.userId];
             return (
               <CarouselItem
@@ -63,12 +64,14 @@ export function SubmissionCarousel({ submissions, creators }: SubmissionCarousel
                 className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
               >
                 <Card className="border border-border overflow-hidden h-full">
-                  <div className="aspect-[4/3] overflow-hidden bg-muted">
+                  <div className="aspect-[4/3] overflow-hidden bg-muted relative">
                     {submission.thumbnailUrl && (
-                      <img
+                      <Image
                         src={submission.thumbnailUrl}
                         alt={submission.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover"
                       />
                     )}
                   </div>

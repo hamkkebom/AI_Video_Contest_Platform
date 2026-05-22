@@ -51,7 +51,7 @@ export default async function GalleryAllPage({
 
   try {
     const res = await fetch(`${protocol}://${host}/api/gallery?${params.toString()}`, {
-      cache: 'no-store',
+      next: { tags: ['gallery'], revalidate: 30 },
     });
     if (res.ok) {
       const data = await res.json();

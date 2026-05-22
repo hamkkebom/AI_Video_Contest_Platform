@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient } from '@/lib/supabase/server';
+import { getGallerySubmissions } from '@/lib/data';
 
 const PAGE_SIZE = 12;
 
@@ -8,6 +8,11 @@ const PAGE_SIZE = 12;
  * GET /api/gallery?page=1&sort=random&seed=12345&search=keyword&period=7
  *
  * seed 기반 랜덤: 같은 seed면 같은 순서 → 더보기 시 중복/누락 없음
+ *
+ * [캐시 전략]
+ * getGallerySubmissions()는 unstable_cache(30초 + gallery/submissions 태그)로 래핑됨.
+ * 출품작 추가·변경 시 revalidateTag('gallery')로 즉시 무효화되므로
+ * 이 API는 대부분의 요청에서 Supabase DB를 조회하지 않는다.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,56 +22,42 @@ export async function GET(request: Request) {
   const search = searchParams.get('search')?.trim() || '';
   const period = Number(searchParams.get('period')) || 0;
 
-  const supabase = createPublicClient();
-
-  /* 승인 + 공개된 출품작 ID + 정렬에 필요한 최소 필드만 조회 */
-  let query = supabase
-    .from('submissions')
-    .select('id, title, description, user_id, thumbnail_url, views, like_count, submitted_at, submitter_name')
-    .eq('status', 'approved')
-    .eq('is_public', true);
+  /* 캐시된 전체 갤러리 데이터 조회 — getGallerySubmissions는 approved + is_public=true 필터 포함 */
+  const allData = await getGallerySubmissions();
 
   /* 기간 필터 */
+  let filtered = allData;
   if (period > 0) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - period);
-    query = query.gte('submitted_at', cutoff.toISOString());
+    filtered = filtered.filter(s => new Date(s.submittedAt) >= cutoff);
   }
 
-  /* 정렬 (random은 클라이언트에서 seed 기반 셔플) */
-  if (sort === 'oldest') {
-    query = query.order('submitted_at', { ascending: true });
-  } else if (sort === 'latest') {
-    query = query.order('submitted_at', { ascending: false });
-  } else {
-    /* random — 일단 전체를 가져와서 seed 기반 셔플 */
-    query = query.order('id', { ascending: true });
-  }
-
-  const { data: allSubmissions, error } = await query;
-
-  if (error || !allSubmissions) {
-    return NextResponse.json({ error: '갤러리 데이터를 불러올 수 없습니다.' }, { status: 500 });
-  }
-
-  /* 검색 필터 (DB 레벨이 아닌 앱 레벨 — submitterName, creatorName 포함) */
-  let filtered = allSubmissions;
+  /* 검색 필터 (제목·설명·크리에이터명) */
   if (search) {
     const q = search.toLowerCase();
-    filtered = allSubmissions.filter(s =>
-      (s.title as string)?.toLowerCase().includes(q) ||
-      (s.description as string)?.toLowerCase().includes(q) ||
-      (s.submitter_name as string)?.toLowerCase().includes(q)
+    filtered = filtered.filter(s =>
+      s.title?.toLowerCase().includes(q) ||
+      s.description?.toLowerCase().includes(q) ||
+      s.creatorName?.toLowerCase().includes(q),
     );
   }
 
-  /* seed 기반 랜덤 셔플 (결정적) */
-  if (sort === 'random') {
+  /* 정렬 */
+  if (sort === 'latest') {
+    filtered = [...filtered].sort(
+      (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+    );
+  } else if (sort === 'oldest') {
+    filtered = [...filtered].sort(
+      (a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime(),
+    );
+  } else {
+    /* random — seed 기반 Fisher-Yates 셔플 (결정적: 같은 seed면 같은 순서) */
     const seededRandom = (i: number) => {
-      let x = Math.sin(seed + i) * 10000;
+      const x = Math.sin(seed + i) * 10000;
       return x - Math.floor(x);
     };
-    /* Fisher-Yates 셔플 with seed */
     const arr = [...filtered];
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(seededRandom(i) * (i + 1));
@@ -79,24 +70,13 @@ export async function GET(request: Request) {
   const start = (page - 1) * PAGE_SIZE;
   const paged = filtered.slice(start, start + PAGE_SIZE);
 
-  /* 크리에이터 정보 조회 (현재 페이지 유저만) */
-  const userIds = [...new Set(paged.map(s => s.user_id as string))];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, nickname, name')
-    .in('id', userIds);
-
-  const profileMap = new Map(
-    (profiles ?? []).map(p => [p.id as string, (p.nickname as string) || (p.name as string) || '익명'])
-  );
-
   const items = paged.map(s => ({
     id: String(s.id),
-    title: s.title as string,
-    creatorName: profileMap.get(s.user_id as string) ?? '익명',
-    thumbnailUrl: s.thumbnail_url as string | null,
-    views: (s.views as number) ?? 0,
-    likeCount: (s.like_count as number) ?? 0,
+    title: s.title,
+    creatorName: s.creatorName,
+    thumbnailUrl: s.thumbnailUrl ?? null,
+    views: s.views ?? 0,
+    likeCount: s.likeCount ?? 0,
   }));
 
   return NextResponse.json({

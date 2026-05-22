@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, Heart, Loader2 } from 'lucide-react';
 
 interface GalleryItem {
@@ -71,14 +72,15 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
         {items.map((submission) => (
           <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
             <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
-              {/* 썸네일 */}
+              {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
               <div className="aspect-video overflow-hidden relative bg-muted">
                 {submission.thumbnailUrl && (
-                  <img
+                  <Image
                     src={submission.thumbnailUrl}
                     alt={submission.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 )}
               </div>

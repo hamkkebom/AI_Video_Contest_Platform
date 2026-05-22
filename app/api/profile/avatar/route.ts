@@ -57,13 +57,15 @@ export async function POST(request: Request) {
       .from('avatars')
       .getPublicUrl(filePath);
 
-    // 캐시 방지를 위한 타임스탬프 추가
-    const avatarUrl = `${publicUrl.publicUrl}?t=${Date.now()}`;
+    // DB에는 ?t= 없는 깨끗한 URL 저장 → Supabase CDN 캐시 가능
+    const cleanUrl = publicUrl.publicUrl;
+    // 응답에만 ?t= 추가 → 업로드 직후 본인 브라우저에서 즉시 새 사진 반영
+    const freshUrl = `${cleanUrl}?t=${Date.now()}`;
 
-    // profiles 테이블 업데이트
+    // profiles 테이블 업데이트 (클린 URL 저장)
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .update({ avatar_url: cleanUrl, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
     if (updateError) {
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
     // 캐시 무효화
     revalidateTag('users');
 
-    return NextResponse.json({ avatarUrl });
+    return NextResponse.json({ avatarUrl: freshUrl });
   } catch (error) {
     console.error('아바타 API 오류:', error);
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });

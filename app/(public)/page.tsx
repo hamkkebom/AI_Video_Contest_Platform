@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getContests, getFeaturedSubmissions, getSiteSettings } from '@/lib/data';
 import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
@@ -170,10 +171,13 @@ export default async function LandingPage() {
                       {/* 왼쪽: 포스터 이미지 */}
                       <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
                         <div className="relative h-60 md:h-full min-h-[240px]">
-                          <img
+                          <Image
                             src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
                             alt={contest.title}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 340px, 400px"
+                            className="object-cover"
+                            priority
                           />
                           {/* 상태 뱃지 */}
                           <div className="absolute top-4 left-4">
