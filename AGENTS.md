@@ -5,6 +5,19 @@
 ## Overview
 AI 영상 공모전 플랫폼 (꿈플/AI꿈) — 실제 운영 서비스. Next.js 15 App Router + Supabase + TypeScript.
 
+## Docs
+프로젝트의 "왜/무엇"은 `docs/`에 있다. 이 파일(AGENTS.md)은 "코드가 어떻게 생겼나"만 다룬다.
+
+| 문서 | 내용 |
+|------|------|
+| `docs/VISION.md` | 서비스 목적, 함께봄 생태계, 수익 모델 |
+| `docs/ROADMAP.md` | 살아있는 로드맵 — 완료/보류/폐기 후보와 재개 트리거 |
+| `docs/FEATURES.md` | 실구현 기능 인벤토리 (기능→코드 위치→DB 매핑) |
+| `docs/DECISIONS.md` | 주요 결정 기록 (피벗, 기술 교체 등) |
+| `docs/archive/` | 목업 시절 산출물 등 역사적 스냅샷 (갱신 안 함) |
+
+기능 상태를 바꾸는 변경은 `docs/ROADMAP.md`·`docs/FEATURES.md`를 같은 커밋에서 갱신할 것.
+
 ## Language
 - 사용자와의 모든 대화는 반드시 **한국어**로 진행한다.
 - 코드 변수명, 함수명은 영어로 유지한다.
