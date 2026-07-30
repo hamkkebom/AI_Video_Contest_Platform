@@ -7,6 +7,7 @@ import { Check, Clock, ImageIcon, ImagePlus, Loader2, Pencil, Trash2 } from 'luc
 import { cn } from '@/lib/utils';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { refreshAccessToken } from '@/lib/supabase/refresh-token';
+import { extractProofImagePath } from '@/lib/supabase/proof-image';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -116,7 +117,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
   const [availableProofImages, setAvailableProofImages] = useState<Array<{
     name: string;
     createdAt: string;
-    publicUrl: string;
+    signedUrl: string;
   }>>([]);
   const [availableProofLoading, setAvailableProofLoading] = useState(false);
   const [availableProofError, setAvailableProofError] = useState<string | null>(null);
@@ -167,7 +168,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
       setAvailableProofLoading(true);
       fetch(`/api/admin/submissions/${submissionId}/proof-images`)
         .then((r) => r.json())
-        .then((data: { images?: Array<{ name: string; createdAt: string; publicUrl: string }>; error?: string }) => {
+        .then((data: { images?: Array<{ name: string; createdAt: string; signedUrl: string }>; error?: string }) => {
           if (data.images) {
             setAvailableProofImages(data.images);
           } else {
@@ -1017,8 +1018,9 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 py-2">
               {availableProofImages.map((img) => {
                 /* 다른 config에 이미 매칭된 이미지인지 표시 */
+                /* 서명 URL은 매번 토큰이 달라지므로 URL 문자열이 아닌 객체 경로로 비교한다 */
                 const usedByConfigId = Object.entries(bonusForms).find(
-                  ([, e]) => e.proofImagePreview === img.publicUrl,
+                  ([, e]) => extractProofImagePath(e.proofImagePreview) === img.name,
                 )?.[0];
                 const usedByLabel = usedByConfigId
                   ? bonusConfigs.find((c) => c.id === usedByConfigId)?.label
@@ -1039,7 +1041,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                   >
                     <div
                       className="aspect-square bg-cover bg-center"
-                      style={{ backgroundImage: `url(${img.publicUrl})` }}
+                      style={{ backgroundImage: `url(${img.signedUrl})` }}
                       role="button"
                       tabIndex={0}
                       onClick={() => {
@@ -1055,7 +1057,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                             [imagePickerConfigId]: {
                               ...prevEntry,
                               proofImageFile: null,
-                              proofImagePreview: img.publicUrl,
+                              proofImagePreview: img.signedUrl,
                             },
                           };
                         });
@@ -1101,7 +1103,7 @@ export function AdminSubmissionActions({ submissionId, submissionTitle, contestI
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setPickerZoomUrl(img.publicUrl);
+                        setPickerZoomUrl(img.signedUrl);
                       }}
                       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] text-white transition-opacity"
                     >

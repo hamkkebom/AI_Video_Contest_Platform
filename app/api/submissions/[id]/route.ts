@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { signProofImageUrls, toStoredProofImageUrl } from '@/lib/supabase/proof-image';
 import { createActivityLog } from '@/lib/data';
 
 /** 허용되는 상태 값 */
@@ -202,6 +203,13 @@ export async function GET(
     .select('*')
     .eq('submission_id', submissionId);
 
+  /* 증빙 이미지는 비공개 버킷이라 공개 URL로 열리지 않는다 → 서명 URL로 일괄 변환 */
+  const bonusEntryList = (bonusEntries ?? []) as Array<Record<string, unknown>>;
+  const signedProofUrls = await signProofImageUrls(
+    supabase,
+    bonusEntryList.map((e) => e.proof_image_url as string | null),
+  );
+
   return NextResponse.json({
     submission: {
       id: submission.id,
@@ -216,10 +224,12 @@ export async function GET(
       productionProcess: submission.production_process,
       resubmissionCount: submission.resubmission_count ?? 0,
       resubmissionAllowedAt: submission.resubmission_allowed_at ?? null,
-      bonusEntries: (bonusEntries ?? []).map((e: Record<string, unknown>) => ({
+      bonusEntries: bonusEntryList.map((e, index) => ({
         bonusConfigId: e.bonus_config_id,
         snsUrl: e.sns_url,
-        proofImageUrl: e.proof_image_url,
+        /* 이 응답은 수정 폼에서 그대로 PUT으로 되돌아오므로, 서명 실패 시에도
+         * 값을 잃지 않도록 저장된 URL로 폴백한다 (이미지 표시만 깨지고 데이터는 보존) */
+        proofImageUrl: signedProofUrls[index] ?? e.proof_image_url ?? null,
       })),
     },
   });
@@ -389,12 +399,15 @@ export async function PUT(
         incomingConfigIds.add(configIdStr);
         const existing = existingByConfigId.get(configIdStr);
 
+        /* 미리보기로 내려준 서명 URL이 그대로 저장되지 않도록 공개 URL 형식으로 정규화 */
+        const incomingProof = toStoredProofImageUrl(supabase, entry.proofImageUrl);
+
         if (!existing) {
           const { error: insertError } = await supabase.from('bonus_entries').insert({
             submission_id: submissionId,
             bonus_config_id: entry.bonusConfigId,
             sns_url: entry.snsUrl || null,
-            proof_image_url: entry.proofImageUrl || null,
+            proof_image_url: incomingProof,
             submitted_at: new Date().toISOString(),
           });
           if (insertError) {
@@ -404,7 +417,7 @@ export async function PUT(
         } else if (!existing.status || existing.status === 'pending') {
           /* pending이면서 실제 변경이 있는 경우만 UPDATE (submitted_at, status 불변) */
           const newSns = entry.snsUrl || null;
-          const newProof = entry.proofImageUrl || null;
+          const newProof = incomingProof;
           if (newSns !== existing.sns_url || newProof !== existing.proof_image_url) {
             const { error: updateError } = await supabase
               .from('bonus_entries')
@@ -517,7 +530,8 @@ export async function PUT(
         const existing = existingByConfigId.get(configIdStr);
 
         const newSns = entry.snsUrl || null;
-        const newProof = entry.proofImageUrl || null;
+        /* 미리보기로 내려준 서명 URL이 그대로 저장되지 않도록 공개 URL 형식으로 정규화 */
+        const newProof = toStoredProofImageUrl(supabase, entry.proofImageUrl);
         const isEmpty = !newSns && !newProof;
 
         /* 클라이언트가 이 슬롯을 비운 경우 → 인증 취소 의도 */

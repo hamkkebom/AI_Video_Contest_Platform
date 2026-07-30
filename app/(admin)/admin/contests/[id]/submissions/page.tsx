@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { REVIEW_TABS } from '@/config/constants';
 import { getAdminSubmissions, getContestById, getUsersByIds } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
+import { signProofImageUrls } from '@/lib/supabase/proof-image';
 import type { SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Inbox, Video, ClipboardCheck, CheckCircle2, XCircle, Scale, Award, Eye, Heart, ListFilter, ArrowUpDown, ArrowDown, ArrowUp, Star } from 'lucide-react';
 import { BonusViewButton } from './bonus-view-button';
@@ -74,20 +75,26 @@ export default async function AdminContestSubmissionsPage({ params, searchParams
         .from('bonus_entries')
         .select('id, submission_id, bonus_config_id, sns_url, proof_image_url, submitted_at, status, rejection_reason, reviewed_at')
         .in('submission_id', submissionIds);
-      for (const be of bonusEntries ?? []) {
+      /* 증빙 이미지는 비공개 버킷이라 공개 URL로 열리지 않는다 → 서명 URL로 일괄 변환 */
+      const entries = bonusEntries ?? [];
+      const signedProofUrls = await signProofImageUrls(
+        supabase,
+        entries.map((be) => be.proof_image_url as string | null),
+      );
+      entries.forEach((be, index) => {
         const sid = String(be.submission_id);
         if (!bonusDataMap.has(sid)) bonusDataMap.set(sid, []);
         bonusDataMap.get(sid)!.push({
           id: String(be.id),
           bonusConfigId: String(be.bonus_config_id),
           snsUrl: (be.sns_url as string) ?? undefined,
-          proofImageUrl: (be.proof_image_url as string) ?? undefined,
+          proofImageUrl: signedProofUrls[index] ?? undefined,
           submittedAt: be.submitted_at as string,
           status: (be.status as string) ?? 'pending',
           rejectionReason: (be.rejection_reason as string) ?? undefined,
           reviewedAt: (be.reviewed_at as string) ?? undefined,
         });
-      }
+      });
     }
     const bonusSubmissionIds = new Set(bonusDataMap.keys());
 

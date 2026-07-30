@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { signProofImageUrls } from '@/lib/supabase/proof-image';
 
 /**
  * 해당 출품작의 제출자가 Storage에 업로드한 가산점 증빙 이미지 목록.
@@ -62,17 +63,20 @@ export async function GET(
     return NextResponse.json({ error: '이미지 목록 조회에 실패했습니다.' }, { status: 500 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  const images = (listData ?? [])
-    .filter((f) => f.name && f.id) /* 폴더가 아닌 실제 파일만 */
-    .map((f) => {
-      const fullPath = `${folderPath}/${f.name}`;
-      return {
-        name: fullPath,
-        createdAt: f.created_at ?? f.updated_at ?? new Date().toISOString(),
-        publicUrl: `${supabaseUrl}/storage/v1/object/public/proof-images/${fullPath}`,
-      };
-    });
+  const files = (listData ?? []).filter((f) => f.name && f.id); /* 폴더가 아닌 실제 파일만 */
+  const paths = files.map((f) => `${folderPath}/${f.name}`);
+
+  /* 비공개 버킷이라 공개 URL로 열리지 않는다 → 서명 URL로 일괄 변환 */
+  const signedUrls = await signProofImageUrls(supabase, paths);
+
+  const images = files
+    .map((f, index) => ({
+      name: paths[index]!,
+      createdAt: f.created_at ?? f.updated_at ?? new Date().toISOString(),
+      signedUrl: signedUrls[index],
+    }))
+    /* 서명 실패한 항목은 표시할 수 없으므로 제외 */
+    .filter((img): img is { name: string; createdAt: string; signedUrl: string } => Boolean(img.signedUrl));
 
   return NextResponse.json({ images });
 }
