@@ -7,8 +7,13 @@ tsconfig.tsbuildinfo
 .sisyphus
 
 .vercel
-.env.local
-.env*.local
+
+# 환경변수 — 실제 시크릿은 절대 커밋하지 않는다.
+# 모든 .env* 를 차단하고, 플레이스홀더 템플릿(*.example)만 예외로 허용한다.
+.env*
+!.env.example
+!.env.local.example
+
 skills/
 
 # 마이그레이션 임시 파일

@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   /** 외부 이미지 최적화 — next/image에서 사용할 도메인 */
   images: {
     remotePatterns: [
+      // 로컬 개발용 Supabase (supabase start)
+      { protocol: 'http', hostname: '127.0.0.1', port: '54321', pathname: '/storage/**' },
+      { protocol: 'http', hostname: 'localhost', port: '54321', pathname: '/storage/**' },
       { protocol: 'https', hostname: 'ulnrfzlpfffapkvpkegv.supabase.co', pathname: '/storage/**' },
       { protocol: 'https', hostname: 'ulnrfzlpfffapkvpkegv.storage.supabase.co', pathname: '/storage/**' },
       { protocol: 'https', hostname: 'kanganxnalihuejfvbaq.supabase.co', pathname: '/storage/**' },
