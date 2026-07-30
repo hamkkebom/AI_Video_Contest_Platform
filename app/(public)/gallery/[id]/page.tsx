@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Eye, Heart, Search, Trophy, Calendar, User, Film, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked, getSubmissionIds } from '@/lib/data';
+import { getSubmissionById, getAdminSubmissionById, getRelatedSubmissions, getAuthProfile, hasUserLiked, getSubmissionIds } from '@/lib/data';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { AdminDownloadButton } from './admin-download-button';
 import { StreamVideoPlayer } from './stream-video-player';
@@ -66,10 +66,22 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
   const { from } = await searchParams;
   const isFromMy = from === 'my';
   /* 독립적인 두 쿼리를 병렬 실행 */
-  const [submission, profile] = await Promise.all([
+  const [publicSubmission, profile] = await Promise.all([
     getSubmissionById(id),
     getAuthProfile(),
   ]);
+
+  /**
+   * getSubmissionById 는 공개 뷰(public_submissions)를 읽으므로 승인·공개 작품만 반환하고
+   * submitter_phone·rejection_reason 같은 비공개 컬럼도 담지 않는다.
+   * 따라서 아래 두 경우에는 원본 테이블을 다시 조회한다 — 접근 통제는 RLS가 담당한다.
+   *  - 로그인 사용자가 공개 뷰에서 못 찾은 작품(= 본인의 비공개·미승인 작품)
+   *  - 관리자가 반려 사유·연락처까지 봐야 하는 경우
+   */
+  const needsPrivilegedFetch =
+    profile !== null && (publicSubmission === null || (profile.roles?.includes('admin') ?? false));
+  const privilegedSubmission = needsPrivilegedFetch ? await getAdminSubmissionById(id) : null;
+  const submission = privilegedSubmission ?? publicSubmission;
 
   /* 존재하지 않는 출품작 */
   if (!submission) {

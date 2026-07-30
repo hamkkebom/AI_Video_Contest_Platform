@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-import { getUsers } from '@/lib/data';
+import { getPublicCreators } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: '크리에이터 — AI 영상 크리에이터 모아보기',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
  * 공모전 페이지 디자인 통일
  */
 export default async function CreatorsPage() {
-  const users = await getUsers();
+  const users = await getPublicCreators();
   const creators = users.filter(u => u.roles.includes('participant')).slice(0, 24);
 
   return (

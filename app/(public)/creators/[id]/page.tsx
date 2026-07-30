@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getUserById, getSubmissions, getContests } from '@/lib/data';
+import { getPublicProfileById, getPublicSubmissionsByUser, getContests } from '@/lib/data';
 import { Film, Heart, Eye, Award, ArrowLeft, Search } from 'lucide-react';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 
@@ -16,7 +16,7 @@ type CreatorDetailPageProps = {
 
 export async function generateMetadata({ params }: CreatorDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const user = await getUserById(id);
+  const user = await getPublicProfileById(id);
 
   if (!user) {
     return { title: '크리에이터를 찾을 수 없습니다' };
@@ -85,8 +85,8 @@ export default async function CreatorDetailPage({ params }: CreatorDetailPagePro
   const { id } = await params;
   // 단건 유저 조회로 최적화 (전체 유저 목록 조회 제거)
   const [user, allSubmissions, allContests] = await Promise.all([
-    getUserById(id),
-    getSubmissions({ userId: id }),
+    getPublicProfileById(id),
+    getPublicSubmissionsByUser(id),
     getContests(),
   ]);
 

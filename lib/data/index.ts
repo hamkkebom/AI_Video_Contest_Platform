@@ -75,7 +75,8 @@ import type { Popup, PopupMutationInput } from '@/lib/types';
 function toUser(row: Record<string, unknown>): User {
   return {
     id: String(row.id),
-    email: row.email as string,
+    // public_profiles 뷰는 email 컬럼을 노출하지 않으므로 빈 문자열로 대체한다
+    email: (row.email as string) ?? '',
     name: row.name as string,
     nickname: (row.nickname as string) ?? undefined,
     roles: (row.roles as User['roles']) ?? ['participant'],
@@ -535,32 +536,68 @@ function toIpLog(row: Record<string, unknown>): IpLog {
 // 공개 API 함수 — mock과 동일한 시그니처
 // ============================================================
 
-export const getUsers = unstable_cache(
+/**
+ * 전체 유저 조회 (관리자·주최자 화면용 — email 포함)
+ * anon 은 profiles 원본을 읽을 수 없으므로 세션 클라이언트를 사용한다.
+ * 쿠키가 필요해 unstable_cache 로 감쌀 수 없다.
+ */
+export async function getUsers(): Promise<User[]> {
+  const supabase = await createClient();
+  const allData = await fetchAll((from, to) =>
+    supabase.from('profiles').select('*').order('created_at', { ascending: true }).range(from, to),
+  );
+  return allData.map((row) => toUser(row));
+}
+
+/**
+ * 단건 유저 조회 (관리자·주최자 상세용 — email 포함)
+ * 공개 화면에서는 getPublicProfileById 를 사용해야 한다.
+ */
+export async function getUserById(id: string): Promise<User | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return toUser(data as Record<string, unknown>);
+}
+
+/**
+ * 공개 크리에이터 목록 (비로그인 포함) — public_profiles 뷰
+ * email·phone 이 없는 안전한 투영이므로 익명 클라이언트 + 캐시를 유지한다.
+ */
+export const getPublicCreators = unstable_cache(
   async (): Promise<User[]> => {
     const supabase = createPublicClient();
     const allData = await fetchAll((from, to) =>
-      supabase.from('profiles').select('*').order('created_at', { ascending: true }).range(from, to),
+      supabase
+        .from('public_profiles')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .range(from, to),
     );
     return allData.map((row) => toUser(row));
   },
-  ['users'],
+  ['public-creators'],
   { tags: ['users'], revalidate: 120 },
 );
 
-/** 단건 유저 조회 (profiles 테이블) */
-export function getUserById(id: string): Promise<User | null> {
+/** 공개 프로필 단건 조회 (크리에이터 상세·공모전 주최자 표기용) — public_profiles 뷰 */
+export function getPublicProfileById(id: string): Promise<User | null> {
   return unstable_cache(
     async (): Promise<User | null> => {
       const supabase = createPublicClient();
       const { data, error } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('*')
         .eq('id', id)
         .maybeSingle();
       if (error || !data) return null;
       return toUser(data as Record<string, unknown>);
     },
-    [`user-${id}`],
+    [`public-profile-${id}`],
     { tags: ['users'], revalidate: 120 },
   )();
 }
@@ -744,43 +781,82 @@ export function getRelatedContests(excludeId: string, limit = 6): Promise<Contes
   )();
 }
 
-/** 출품작 목록 조회 — 30초 캐시, 필터 지원 */
-export function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
-  const keyParts = ['submissions'];
-  if (filters?.contestId) keyParts.push(`contest:${filters.contestId}`);
-  if (filters?.userId) keyParts.push(`user:${filters.userId}`);
-  if (filters?.status) keyParts.push(`status:${filters.status}`);
+/**
+ * 출품작 목록 조회 — 필터 지원
+ * status 필터로 pending_review / rejected / judging 등 비공개 상태를 조회하는
+ * 호출자(관리자·주최자·심사위원·내 출품작)가 있어 public_submissions 뷰로는
+ * 결과가 비게 된다. 따라서 세션 클라이언트 + 원본 테이블을 사용하고,
+ * 쿠키가 필요하므로 unstable_cache 를 제거한다.
+ */
+export async function getSubmissions(filters?: SubmissionFilters): Promise<Submission[]> {
+  const supabase = await createClient();
 
+  const allData = await fetchAll((from, to) => {
+    let query = supabase
+      .from('submissions')
+      .select('*')
+      .order('submitted_at', { ascending: true })
+      .range(from, to);
+    if (filters?.contestId) query = query.eq('contest_id', filters.contestId);
+    if (filters?.userId) query = query.eq('user_id', filters.userId);
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    return query;
+  });
+  return allData.map((row) => toSubmission(row));
+}
+
+/**
+ * 특정 크리에이터의 공개 출품작 — 비로그인 크리에이터 상세 페이지용.
+ * getSubmissions 는 세션 클라이언트를 쓰므로 익명 방문자에게는 빈 배열이 된다.
+ * 공개 화면은 승인·공개 작품만 보여주면 되므로 public_submissions 뷰를 읽는다.
+ */
+export function getPublicSubmissionsByUser(userId: string): Promise<Submission[]> {
   return unstable_cache(
-    async (filters?: SubmissionFilters): Promise<Submission[]> => {
+    async (): Promise<Submission[]> => {
       const supabase = createPublicClient();
-
-      const allData = await fetchAll((from, to) => {
-        let query = supabase
-          .from('submissions')
+      const allData = await fetchAll((from, to) =>
+        supabase
+          .from('public_submissions')
           .select('*')
+          .eq('user_id', userId)
           .order('submitted_at', { ascending: true })
-          .range(from, to);
-        if (filters?.contestId) query = query.eq('contest_id', filters.contestId);
-        if (filters?.userId) query = query.eq('user_id', filters.userId);
-        if (filters?.status) query = query.eq('status', filters.status);
-        if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-        return query;
-      });
+          .range(from, to),
+      );
       return allData.map((row) => toSubmission(row));
     },
-    keyParts,
-    { tags: ['submissions'], revalidate: 30 },
-  )(filters);
+    [`public-submissions-user-${userId}`],
+    { tags: ['submissions'], revalidate: 120 },
+  )();
 }
 
 /**
  * 이전/다음 네비게이션 전용 — ID만 조회 (이그레스 최소화)
  * select('*') 대신 select('id')만 사용해 전송 데이터를 ~95% 절감
  */
-export function getSubmissionIds(
+export async function getSubmissionIds(
   filters?: Pick<SubmissionFilters, 'contestId' | 'status'>,
 ): Promise<string[]> {
+  /**
+   * approved 이외의 상태(관리자 검수 네비게이션의 pending_review 등)는
+   * public_submissions 뷰에 존재하지 않는다 → 세션 클라이언트 + 원본 테이블.
+   * 쿠키가 필요하므로 이 경로는 캐시하지 않는다.
+   */
+  if (filters?.status && filters.status !== 'approved') {
+    const supabase = await createClient();
+    const privateData = await fetchAll((from, to) => {
+      let query = supabase
+        .from('submissions')
+        .select('id')
+        .order('submitted_at', { ascending: true })
+        .range(from, to);
+      if (filters.contestId) query = query.eq('contest_id', filters.contestId);
+      query = query.eq('status', filters.status);
+      return query;
+    });
+    return privateData.map((row: Record<string, unknown>) => String(row.id));
+  }
+
   const keyParts = ['submission-ids'];
   if (filters?.contestId) keyParts.push(`contest:${filters.contestId}`);
   if (filters?.status) keyParts.push(`status:${filters.status}`);
@@ -789,13 +865,13 @@ export function getSubmissionIds(
     async (filters?: Pick<SubmissionFilters, 'contestId' | 'status'>): Promise<string[]> => {
       const supabase = createPublicClient();
       const allData = await fetchAll((from, to) => {
+        /* 뷰에 status='approved' AND is_public 조건이 내장되어 있다 */
         let query = supabase
-          .from('submissions')
+          .from('public_submissions')
           .select('id')
           .order('submitted_at', { ascending: true })
           .range(from, to);
         if (filters?.contestId) query = query.eq('contest_id', filters.contestId);
-        if (filters?.status) query = query.eq('status', filters.status);
         return query;
       });
       return allData.map((row: Record<string, unknown>) => String(row.id));
@@ -1173,19 +1249,20 @@ async function syncContestJudgingStages(
   }
 }
 
-export const getJudges = unstable_cache(
-  async (): Promise<Judge[]> => {
-    const supabase = createPublicClient();
-    const { data, error } = await supabase
-      .from('judges')
-      .select('*')
-      .order('invited_at', { ascending: true });
-    if (error || !data) return [];
-    return data.map((row) => toJudge(row as Record<string, unknown>));
-  },
-  ['judges'],
-  { tags: ['judges'], revalidate: 120 },
-);
+/**
+ * 심사위원 목록 — 주최자 대시보드 전용.
+ * judges 는 심사위원 신원(user_id·이메일)을 담아 익명 조회를 차단했으므로
+ * 세션 클라이언트로 읽는다. 쿠키가 필요해 unstable_cache 를 쓰지 않는다.
+ */
+export async function getJudges(): Promise<Judge[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('judges')
+    .select('*')
+    .order('invited_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => toJudge(row as Record<string, unknown>));
+}
 
 export async function getScores(): Promise<Score[]> {
   const supabase = await createClient();
@@ -1294,7 +1371,7 @@ export const getGallerySubmissions = unstable_cache(
     // 승인된 출품작 조회 (먼저 제출한 작품이 앞에 오도록 오래된순 정렬)
     // is_public=true 만 노출 (관리자가 비공개 처리한 작품 제외)
     const { data: submissions } = await supabase
-      .from('submissions')
+      .from('public_submissions')
       .select('*')
       .eq('status', 'approved')
       .eq('is_public', true)
@@ -1314,7 +1391,7 @@ export const getGallerySubmissions = unstable_cache(
     // 크리에이터 정보 조회
     const userIds = [...new Set(submissions.map((s) => s.user_id as string))];
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from('public_profiles')
       .select('id, nickname, name')
       .in('id', userIds);
     const profileMap = new Map(
@@ -1380,7 +1457,7 @@ export const getAwardedSubmissions = unstable_cache(
     // 해당 submission 조회
     const submissionIds = results.map((r) => String(r.submission_id));
     const { data: submissions } = await supabase
-      .from('submissions')
+      .from('public_submissions')
       .select('*')
       .in('id', submissionIds);
 
@@ -1391,7 +1468,7 @@ export const getAwardedSubmissions = unstable_cache(
     // 크리에이터 정보 조회
     const userIds = [...new Set((submissions ?? []).map((s) => s.user_id as string))];
     const { data: profiles } = userIds.length > 0
-      ? await supabase.from('profiles').select('id, nickname, name').in('id', userIds)
+      ? await supabase.from('public_profiles').select('id, nickname, name').in('id', userIds)
       : { data: [] };
     const profileMap = new Map(
       (profiles ?? []).map((p) => [
@@ -1457,7 +1534,10 @@ export async function getFeaturedSubmissions(limit = 12): Promise<GallerySubmiss
 }
 
 /**
- * 단일 출품작 상세 조회 — 5분 캐시
+ * 단일 출품작 상세 조회 (공개 갤러리용) — 30초 캐시
+ * public_submissions 뷰를 읽으므로 승인·공개 상태의 작품만 반환한다.
+ * 비공개/미승인 작품을 본인·관리자에게 보여줘야 하는 경로는
+ * getAdminSubmissionById 를 사용해야 한다.
  */
 export function getSubmissionById(id: string): Promise<GallerySubmission | null> {
   return unstable_cache(
@@ -1465,7 +1545,7 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
       const supabase = createPublicClient();
 
       const { data: submissionRow } = await supabase
-        .from('submissions')
+        .from('public_submissions')
         .select('*')
         .eq('id', id)
         .maybeSingle();
@@ -1476,7 +1556,7 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
       // 병렬 조회: 공모전 제목, 크리에이터, 수상 결과
       const [contestRes, profileRes, resultRes] = await Promise.all([
         supabase.from('contests').select('title').eq('id', sub.contestId).maybeSingle(),
-        supabase.from('profiles').select('nickname, name').eq('id', sub.userId).maybeSingle(),
+        supabase.from('public_profiles').select('nickname, name').eq('id', sub.userId).maybeSingle(),
         supabase.from('contest_results').select('prize_label, rank').eq('submission_id', id).maybeSingle(),
       ]);
 
@@ -1494,6 +1574,39 @@ export function getSubmissionById(id: string): Promise<GallerySubmission | null>
 }
 
 /**
+ * 단일 출품작 상세 조회 (관리자·본인용 — submitter_phone / rejection_reason 포함)
+ * 원본 submissions 테이블을 세션 클라이언트로 읽으며 RLS 가 접근 주체를
+ * 본인·관리자·주최자·심사위원으로 제한한다. 쿠키가 필요하므로 캐시하지 않는다.
+ */
+export async function getAdminSubmissionById(id: string): Promise<GallerySubmission | null> {
+  const supabase = await createClient();
+
+  const { data: submissionRow } = await supabase
+    .from('submissions')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (!submissionRow) return null;
+
+  const sub = toSubmission(submissionRow as Record<string, unknown>);
+
+  // 병렬 조회: 공모전 제목, 크리에이터, 수상 결과
+  const [contestRes, profileRes, resultRes] = await Promise.all([
+    supabase.from('contests').select('title').eq('id', sub.contestId).maybeSingle(),
+    supabase.from('profiles').select('nickname, name').eq('id', sub.userId).maybeSingle(),
+    supabase.from('contest_results').select('prize_label, rank').eq('submission_id', id).maybeSingle(),
+  ]);
+
+  return {
+    ...sub,
+    contestTitle: (contestRes.data?.title as string) ?? '',
+    creatorName: sub.submitterName || (profileRes.data?.nickname as string) || (profileRes.data?.name as string) || '익명',
+    prizeLabel: resultRes.data ? (resultRes.data.prize_label as string) : undefined,
+    rank: resultRes.data ? (resultRes.data.rank as number) : undefined,
+  };
+}
+
+/**
  * 같은 공모전의 다른 출품작 조회 (상세 페이지 관련 작품용) — 5분 캐시
  * getGallerySubmissions 전체 로드 대신 필요한 데이터만 조회
  */
@@ -1508,7 +1621,7 @@ export function getRelatedSubmissions(
 
       // 같은 공모전의 승인 + 공개된 출품작만 조회 (현재 작품 제외, 오래된순)
       const { data: submissions } = await supabase
-        .from('submissions')
+        .from('public_submissions')
         .select('*')
         .eq('contest_id', contestId)
         .eq('status', 'approved')
@@ -1521,7 +1634,7 @@ export function getRelatedSubmissions(
       // 크리에이터 정보 병렬 조회
       const userIds = [...new Set(submissions.map((s) => s.user_id as string))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('id, nickname, name')
         .in('id', userIds);
       const profileMap = new Map(
@@ -1586,15 +1699,18 @@ export async function searchData(filters: SearchFilters): Promise<SearchResult> 
           .select('*')
           .or(`title.ilike.%${normalized}%,description.ilike.%${normalized}%`)
       : Promise.resolve({ data: [], error: null }),
+    /* 공개 /api/search 가 결과를 그대로 JSON 으로 반환하므로
+       email·phone·submitter_phone 이 없는 공개 뷰만 조회한다.
+       뷰는 anon·authenticated 모두 SELECT 가능해 세션 클라이언트를 그대로 쓴다. */
     tab === 'all' || tab === 'submissions'
       ? supabase
-          .from('submissions')
+          .from('public_submissions')
           .select('*')
           .or(`title.ilike.%${normalized}%,description.ilike.%${normalized}%`)
       : Promise.resolve({ data: [], error: null }),
     tab === 'all' || tab === 'creators'
       ? supabase
-          .from('profiles')
+          .from('public_profiles')
           .select('*')
           .or(`name.ilike.%${normalized}%,nickname.ilike.%${normalized}%`)
       : Promise.resolve({ data: [], error: null }),

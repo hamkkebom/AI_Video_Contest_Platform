@@ -3,7 +3,7 @@ import NextImage from 'next/image';
 import type { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContestById, getUserById, getRelatedContests } from '@/lib/data';
+import { getContestById, getPublicProfileById, getRelatedContests } from '@/lib/data';
 import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
@@ -192,7 +192,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   const statusMeta = getStatusMeta(displayStatus);
 
   const [hostUser, relatedContests] = await Promise.all([
-    getUserById(contest.hostUserId),
+    getPublicProfileById(contest.hostUserId),
     getRelatedContests(contest.id, 6),
   ]);
   const isAdminHost = hostUser?.roles?.includes('admin');
