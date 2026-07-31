@@ -1,10 +1,11 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { Route } from 'next';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, Loader2, UserPen, LayoutGrid, Shield, Building2, User, Scale } from 'lucide-react';
+import { TreePine, Sun, Moon, Sparkles, Menu, LogIn, LogOut, Loader2, UserPen, LayoutGrid, Shield, Building2, User, Scale, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,78 +23,28 @@ import { useAuth } from '@/lib/supabase/auth-context';
  */
 interface MenuItem {
   label: string;
-  href: string;
+  href: Route;
   settingKey?: string;
-  children?: { label: string; href: string }[];
 }
 
+/* 내비 모델은 docs/IA.md §3.1 기준 — 링크에 쿼리 파라미터 금지, 기본 탭은 목록 페이지가 결정 */
 const allMenuItems: MenuItem[] = [
-  { label: '공모전', href: '/contests?status=open' },
+  { label: '공모전', href: '/contests' },
   { label: '갤러리', href: '/gallery/all', settingKey: 'menu.gallery' },
+  { label: '수상작', href: '/gallery/awards' },
   { label: '스토리', href: '/story', settingKey: 'menu.story' },
 ];
 
-interface HeaderProps {
-  siteSettings?: Record<string, boolean>;
+/** 갤러리 하위 경로는 수상작(/gallery/awards)과 그 외로 나눠 활성 표시 */
+function isMenuActive(pathname: string, hrefPath: string): boolean {
+  if (hrefPath === '/gallery/all') {
+    return pathname.startsWith('/gallery') && !pathname.startsWith('/gallery/awards');
+  }
+  return pathname === hrefPath || pathname.startsWith(hrefPath + '/');
 }
 
-/**
- * 호버로 열리는 드롭다운 메뉴 컴포넌트
- */
-function HoverDropdown({ linkClass, item }: { linkClass: string; item: MenuItem }) {
-  const [open, setOpen] = useState(false);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleOpen = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setOpen(true);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    closeTimerRef.current = setTimeout(() => setOpen(false), 150);
-  }, []);
-
-  /* 언마운트 시 타이머 정리 */
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    };
-  }, []);
-
-  return (
-    <DropdownMenu open={open} onOpenChange={() => {}} modal={false}>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={linkClass}
-          onMouseEnter={handleOpen}
-          onMouseLeave={handleClose}
-        >
-          {item.label}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        side="bottom"
-        align="start"
-        className="w-44"
-        onMouseEnter={handleOpen}
-        onMouseLeave={handleClose}
-        onPointerDownOutside={() => setOpen(false)}
-        onEscapeKeyDown={() => setOpen(false)}
-      >
-        {item.children?.map((child) => (
-          <DropdownMenuItem key={child.href} asChild className="cursor-pointer">
-            <Link href={child.href as any} className="w-full">
-              {child.label}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+interface HeaderProps {
+  siteSettings?: Record<string, boolean>;
 }
 
 /**
@@ -131,33 +82,34 @@ export function Header({ siteSettings = {} }: HeaderProps) {
   const roles = profile?.roles ?? [];
   const isAdmin = roles.includes('admin');
 
-  /* admin이 아닌 유저용 단일 대시보드 경로 */
-  const dashboardHref = (() => {
-    if (roles.includes('host')) return '/host/dashboard';
-    return '/my/submissions';
-  })();
-
   /* 역할별 프로필 경로 */
-  const profileHref = (() => {
-    if (roles.includes('admin')) return '/admin/profile';
-    if (roles.includes('host')) return '/host/profile';
-    return '/my/profile';
+  const profileHref: Route = (() => {
+    if (roles.includes('admin')) return '/admin/profile' as Route;
+    if (roles.includes('host')) return '/host/profile' as Route;
+    return '/my/profile' as Route;
   })();
 
-  /* admin용 대시보드 선택지 */
-  const adminDashboards = [
-    { label: '관리자 대시보드', href: '/admin/dashboard', icon: Shield },
-    { label: '주최자 대시보드', href: '/host/dashboard', icon: Building2 },
-    { label: '참가자 대시보드', href: '/my/submissions', icon: User },
-    { label: '심사위원 대시보드', href: '/judging', icon: Scale },
-  ];
+  /* 대시보드 선택지 — 보유 역할만 나열한다.
+     참가자 대시보드는 모든 로그인 유저에게 열려 있으므로 항상 포함
+     (host 겸직 유저가 자기 출품작으로 갈 진입점을 잃지 않게). admin은 전체 노출 */
+  const roleDashboards: Array<{ label: string; href: Route; icon: typeof Shield }> = isAdmin
+    ? [
+        { label: '관리자 대시보드', href: '/admin/dashboard', icon: Shield },
+        { label: '주최자 대시보드', href: '/host/dashboard', icon: Building2 },
+        { label: '참가자 대시보드', href: '/my/submissions', icon: User },
+        { label: '심사위원 대시보드', href: '/judging', icon: Scale },
+      ]
+    : [
+        ...(roles.includes('host')
+          ? [{ label: '주최자 대시보드', href: '/host/dashboard' as Route, icon: Building2 }]
+          : []),
+        { label: '참가자 대시보드', href: '/my/submissions' as Route, icon: User },
+        ...(roles.includes('judge')
+          ? [{ label: '심사위원 대시보드', href: '/judging' as Route, icon: Scale }]
+          : []),
+      ];
 
   const isLoginPage = pathname === '/login' || pathname === '/signup';
-  const isDashboardPage =
-    pathname.startsWith('/host') ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/judging') ||
-    pathname.startsWith('/my');
 
   const displayName = profile?.name || profile?.nickname || user?.email?.split('@')[0] || '사용자';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || null;
@@ -232,7 +184,7 @@ export function Header({ siteSettings = {} }: HeaderProps) {
         <DropdownMenuSeparator />
         {/* 프로필 */}
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href={profileHref as any} className="flex items-center gap-2">
+          <Link href={profileHref} className="flex items-center gap-2">
             <UserPen className="h-4 w-4" />
             프로필
           </Link>
@@ -254,7 +206,8 @@ export function Header({ siteSettings = {} }: HeaderProps) {
 
   return (
     <>
-      {!isDashboardPage && !isLoginPage && <header className="sticky top-0 z-50 w-full shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* 대시보드에서도 헤더를 유지한다 — 공개 영역과 대시보드가 한 세계 (docs/IA.md §3.1) */}
+      {!isLoginPage && <header className="sticky top-0 z-50 w-full shadow-md bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-6xl flex h-16 items-center px-4">
           {/* 왼쪽 — 로고 (데스크톱) */}
           <div className="hidden md:flex flex-shrink-0 items-center mr-8">
@@ -275,26 +228,17 @@ export function Header({ siteSettings = {} }: HeaderProps) {
           {/* 중앙 — 공통 메뉴 */}
           <nav className="hidden md:flex items-center gap-8 mr-auto">
             {commonMenuItems.map((item) => {
-              const hrefPath = item.href.split('?')[0];
-              const isActive = pathname.startsWith('/gallery')
-                ? item.href.startsWith('/gallery')
-                : pathname === hrefPath || pathname.startsWith(hrefPath + '/');
+              const isActive = isMenuActive(pathname, item.href);
 
               const linkClass = `relative text-[1.05rem] leading-snug cursor-pointer transition-all py-1 focus-visible:outline-none ${isActive
                 ? 'text-primary font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:rounded-full'
                 : 'text-muted-foreground hover:text-primary hover:font-semibold after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-primary/60 after:rounded-full after:transition-all after:duration-300 hover:after:left-0 hover:after:w-full'
                 }`;
 
-              if (item.children) {
-                return (
-                  <HoverDropdown key={item.label} linkClass={linkClass} item={item} />
-                );
-              }
-
               return (
                 <Link
                   key={item.href}
-                  href={item.href as any}
+                  href={item.href}
                   className={linkClass}
                 >
                   {item.label}
@@ -305,6 +249,12 @@ export function Header({ siteSettings = {} }: HeaderProps) {
 
           {/* 오른쪽 — 데스크톱 액션 영역 */}
           <div className="hidden md:flex flex-shrink-0 items-center justify-end gap-2">
+            {/* 통합 검색 */}
+            <Link href="/search" aria-label="검색">
+              <Button variant="ghost" size="icon" className="cursor-pointer text-muted-foreground hover:text-foreground">
+                <Search className="h-4 w-4" />
+              </Button>
+            </Link>
             {isGuest ? (
               <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
                 <Button
@@ -318,8 +268,8 @@ export function Header({ siteSettings = {} }: HeaderProps) {
               </Link>
             ) : (
               <>
-                {/* 대시보드 링크 — admin은 드롭다운, 그 외는 바로 이동 */}
-                {isAdmin ? (
+                {/* 대시보드 링크 — 역할이 여럿이면 드롭다운, 하나면 바로 이동 */}
+                {roleDashboards.length > 1 ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
@@ -328,9 +278,9 @@ export function Header({ siteSettings = {} }: HeaderProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="bottom" align="end" className="w-48">
-                      {adminDashboards.map((d) => (
+                      {roleDashboards.map((d) => (
                         <DropdownMenuItem key={d.href} asChild className="cursor-pointer">
-                          <Link href={d.href as any} className="flex items-center gap-2">
+                          <Link href={d.href} className="flex items-center gap-2">
                             <d.icon className="h-4 w-4" />
                             {d.label}
                           </Link>
@@ -339,7 +289,7 @@ export function Header({ siteSettings = {} }: HeaderProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <Link href={dashboardHref as any}>
+                  <Link href={roleDashboards[0].href}>
                     <Button variant="outline" size="sm" className="w-[7.5rem] justify-center gap-1.5 cursor-pointer">
                       <LayoutGrid className="h-4 w-4" />
                       대시보드
@@ -356,6 +306,13 @@ export function Header({ siteSettings = {} }: HeaderProps) {
 
           {/* 모바일 액션 영역 */}
           <div className="flex md:hidden flex-1 items-center justify-end gap-1">
+
+            {/* 통합 검색 — 모바일 */}
+            <Link href="/search" aria-label="검색">
+              <Button variant="ghost" size="icon" className="cursor-pointer text-muted-foreground">
+                <Search className="h-4 w-4" />
+              </Button>
+            </Link>
 
             {/* 게스트 — 모바일 로그인 버튼 */}
             {isGuest ? (
@@ -384,39 +341,10 @@ export function Header({ siteSettings = {} }: HeaderProps) {
               <SheetContent side="right">
                 <nav className="flex flex-col gap-2 mt-8">
                   {commonMenuItems.map((item) => {
-                    const hrefPath = item.href.split('?')[0];
-                    const isActive = pathname.startsWith('/gallery')
-                      ? item.href.startsWith('/gallery')
-                      : pathname === hrefPath || pathname.startsWith(hrefPath + '/');
-
-                    if (item.children) {
-                      return (
-                        <div key={item.label} className="space-y-1">
-                          <div className={`px-4 py-2 text-[1.05rem] font-medium ${isActive ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-                            {item.label}
-                          </div>
-                          {item.children.map((child) => {
-                            const childActive = pathname === child.href;
-                            return (
-                              <Link key={child.href} href={child.href as any}>
-                                <Button
-                                  variant="ghost"
-                                  className={`w-full justify-start text-base pl-8 ${childActive
-                                    ? 'text-primary font-semibold bg-primary/5 border-l-2 border-primary'
-                                    : 'hover:text-primary hover:font-semibold hover:bg-primary/5'
-                                    }`}
-                                >
-                                  {child.label}
-                                </Button>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      );
-                    }
+                    const isActive = isMenuActive(pathname, item.href);
 
                     return (
-                      <Link key={item.href} href={item.href as any}>
+                      <Link key={item.href} href={item.href}>
                         <Button
                           variant="ghost"
                           className={`w-full justify-start text-[1.05rem] focus-visible:ring-0 ${isActive
@@ -431,24 +359,15 @@ export function Header({ siteSettings = {} }: HeaderProps) {
                   })}
                   {!isGuest && (
                     <div className="border-t border-border pt-2 mt-2 space-y-1">
-                      {isAdmin ? (
-                        /* admin — 4가지 대시보드 선택 */
-                        adminDashboards.map((d) => (
-                          <Link key={d.href} href={d.href as any}>
-                            <Button variant="ghost" className="w-full justify-start gap-2">
-                              <d.icon className="h-4 w-4" />
-                              {d.label}
-                            </Button>
-                          </Link>
-                        ))
-                      ) : (
-                        <Link href={dashboardHref as any}>
+                      {/* 보유 역할의 대시보드만 나열 */}
+                      {roleDashboards.map((d) => (
+                        <Link key={d.href} href={d.href}>
                           <Button variant="ghost" className="w-full justify-start gap-2">
-                            <LayoutGrid className="h-4 w-4" />
-                            대시보드
+                            <d.icon className="h-4 w-4" />
+                            {d.label}
                           </Button>
                         </Link>
-                      )}
+                      ))}
                     </div>
                   )}
                 </nav>

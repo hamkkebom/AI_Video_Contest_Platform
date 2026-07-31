@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** /admin 진입 시 첫 번째 활성 메뉴로 리다이렉트 */
+/** /admin 진입 시 대시보드로 — 관리자 홈은 한 곳이다 (docs/IA.md §3.3) */
 export default function AdminRootPage() {
-  redirect('/admin/contests');
+  redirect('/admin/dashboard');
 }

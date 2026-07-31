@@ -1227,7 +1227,7 @@ export default function ContestSubmitPage() {
             <p className="text-muted-foreground mb-6">
               이 공모전은 현재 {contest.status === 'draft' ? '접수 준비중' : contest.status === 'judging' ? '심사중' : '종료'}입니다.
             </p>
-            <Link href={`/contests/${contestId}/landing`}>
+            <Link href={`/contests/${contestId}`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>
             </Link>
           </div>
@@ -1249,7 +1249,7 @@ export default function ContestSubmitPage() {
             <p className="text-muted-foreground mb-6">
               이 공모전의 접수는 {formatDate(contest.submissionStartAt, { year: 'numeric', month: 'long', day: 'numeric' })}부터 시작됩니다.
             </p>
-            <Link href={`/contests/${contestId}/landing`}>
+            <Link href={`/contests/${contestId}`}>
               <Button variant="outline">공모전 상세로 돌아가기</Button>
             </Link>
           </div>
@@ -1267,7 +1267,7 @@ export default function ContestSubmitPage() {
         <div className="container mx-auto max-w-3xl relative z-10">
           {/* Top navigation */}
           <div className="mb-6">
-            <Link href={`/contests/${contestId}/landing`}>
+            <Link href={`/contests/${contestId}`}>
               <Button
                 variant="outline"
                 size="sm"
@@ -1961,7 +1961,7 @@ export default function ContestSubmitPage() {
                 </p>
               )}
               <div className="flex items-center gap-3">
-                <Link href={isBonusOnly ? '/my/submissions' : `/contests/${contestId}/landing`} className="flex-1">
+                <Link href={isBonusOnly ? '/my/submissions' : `/contests/${contestId}`} className="flex-1">
                   <Button
                     type="button"
                     variant="outline"

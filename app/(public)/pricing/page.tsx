@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: 'AI꿈의 참가자, 주최자 요금제를 확인하세요. 공모전 참가부터 개최까지 다양한 플랜을 제공합니다.',
   keywords: ['AI꿈 요금제', '공모전 플랫폼 요금', '영상 공모전 요금'],
   alternates: { canonical: '/pricing' },
+  /* 수익화 동결(D-005) — sitemap 제외와 함께 색인도 차단 (docs/IA.md §5) */
+  robots: { index: false, follow: false },
   openGraph: {
     title: '요금제 — AI꿈 서비스 요금 안내',
     description: 'AI꿈의 참가자, 주최자 요금제를 확인하세요. 공모전 참가부터 개최까지 다양한 플랜을 제공합니다.',

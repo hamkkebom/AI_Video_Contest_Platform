@@ -210,7 +210,7 @@ function SearchContent() {
 
               {/* 카테고리 바로가기 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-lg">
-                <Link href="/contests?status=open" className="group">
+                <Link href="/contests" className="group">
                   <div className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background/50 hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/5 transition-all duration-300">
                     <Trophy className="h-6 w-6 text-violet-500" />
                     <span className="text-sm font-semibold group-hover:text-violet-500 transition-colors">공모전</span>
@@ -246,7 +246,7 @@ function SearchContent() {
                 다른 검색어로 다시 시도하거나, 아래 카테고리를 둘러보세요.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
-                <Link href="/contests?status=open">
+                <Link href="/contests">
                   <Button variant="outline" className="rounded-full px-6 cursor-pointer">공모전 보기</Button>
                 </Link>
                 <Link href="/gallery/all">

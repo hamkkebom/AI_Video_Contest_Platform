@@ -22,6 +22,25 @@ export const CONTEST_STATUS_TABS = [
   { value: "completed", label: "완료" }
 ] as const;
 
+/** 공모전 내부 상태 5종 (statusFlow: draft → open → closed → judging → completed) */
+export type ContestStatusValue = "draft" | "open" | "closed" | "judging" | "completed";
+
+/** 공개 페이지용 공모전 상태 라벨 — 페이지마다 로컬 매핑을 재정의하지 말고 이것만 쓴다 (docs/IA.md G007).
+    closed는 접수 마감·심사 시작 전 상태이므로 "결과발표"가 아니라 "마감"이다.
+    관리자 화면은 내부 어휘인 CONTEST_STATUS_TABS를 쓴다 */
+export const PUBLIC_CONTEST_STATUS_LABELS: Record<ContestStatusValue, string> = {
+  draft: "접수전",
+  open: "접수중",
+  closed: "마감",
+  judging: "심사중",
+  completed: "결과발표",
+};
+
+/** 공개 상태 라벨 조회 — 미지의 상태는 중립값(진행중)으로 취급 */
+export function publicContestStatusLabel(status: string): string {
+  return PUBLIC_CONTEST_STATUS_LABELS[status as ContestStatusValue] ?? "진행중";
+}
+
 export const FAQ_CATEGORIES = [
   { value: "participant", label: "참가자" },
   { value: "host", label: "주최자" },

@@ -10,7 +10,7 @@ import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import { contestTotalPrize, formatPrizeDisplay } from '@/lib/prize';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
-import { STATUS_BADGE_CLASS_MAP } from '@/config/constants';
+import { STATUS_BADGE_CLASS_MAP, publicContestStatusLabel } from '@/config/constants';
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -63,16 +63,9 @@ export async function generateMetadata({ params }: ContestDetailPageProps): Prom
   };
 }
 
-/** 공개 페이지용 상태 메타 — 색상은 공통 상수, 라벨은 사용자 노출용 */
+/** 공개 페이지용 상태 메타 — 색상·라벨 모두 공통 상수 사용 */
 function getStatusMeta(status: string) {
-  const publicLabels: Record<string, string> = {
-    draft: '접수전',
-    open: '접수중',
-    judging: '심사중',
-    closed: '결과발표',
-    completed: '결과발표',
-  };
-  const label = publicLabels[status] ?? '결과발표';
+  const label = publicContestStatusLabel(status);
   const className = `${STATUS_BADGE_CLASS_MAP[status] ?? STATUS_BADGE_CLASS_MAP.completed} cursor-default`;
   return { label, className };
 }

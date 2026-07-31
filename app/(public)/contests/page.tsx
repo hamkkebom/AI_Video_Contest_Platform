@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { Route } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
@@ -30,8 +31,18 @@ import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { contestTotalPrize } from '@/lib/prize';
 import { formatDate } from '@/lib/utils';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
+import { PUBLIC_CONTEST_STATUS_LABELS, publicContestStatusLabel } from '@/config/constants';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
+/* 상태 탭 — 개별 라벨은 공통 상수(config/constants.ts) 단일 소스.
+   completed 탭은 closed(마감)+completed(결과발표)를 묶으므로 그룹명 "종료"를 쓴다 */
+const STATUS_TABS = [
+  { id: 'draft', label: PUBLIC_CONTEST_STATUS_LABELS.draft },
+  { id: 'open', label: PUBLIC_CONTEST_STATUS_LABELS.open },
+  { id: 'judging', label: PUBLIC_CONTEST_STATUS_LABELS.judging },
+  { id: 'completed', label: '종료' },
+];
 
 /**
  * 공모전 목록 페이지
@@ -51,7 +62,26 @@ export default async function ContestsPage({
     console.error('[ContestsPage] getContests 실패:', e);
     fetchError = true;
   }
-  const currentStatus = status || 'open';
+  /* DB status='draft'(관리자 미공개 초안)는 공개 목록에서 제외 —
+     공개 어휘 "접수전"은 open+접수 시작 전 공모전만 가리킨다 (docs/IA.md §1-2) */
+  contests = contests.filter((c) => c.status !== 'draft');
+  // 서버사이드 현재 시각 (접수중이지만 아직 접수시작 전인지 판별용)
+  const nowMs = Date.now();
+  /** 표시용 상태 계산: open이지만 submissionStartAt이 미래면 'draft'(접수전)으로 취급 */
+  const getDisplayStatus = (c: (typeof contests)[number]) => {
+    if (c.status === 'open' && new Date(c.submissionStartAt).getTime() > nowMs) return 'draft';
+    return c.status;
+  };
+  /** 해당 상태 탭에 보여줄 공모전이 있는지 */
+  const statusHasContent = (s: string) =>
+    contests.some((c) => {
+      const ds = getDisplayStatus(c);
+      return s === 'completed' ? ds === 'completed' || ds === 'closed' : ds === s;
+    });
+  /* 스마트 기본 탭: status 미지정 시 콘텐츠가 있는 첫 탭 자동 선택 (docs/IA.md §1-4)
+     — 첫 클릭이 빈 화면이 되지 않게 한다 */
+  const currentStatus =
+    status || ['open', 'draft', 'judging', 'completed'].find(statusHasContent) || 'open';
   const currentSort = sort || 'deadline';
   const currentView = view || 'list';
   const currentPage = Math.max(1, Number(page) || 1);
@@ -66,9 +96,10 @@ export default async function ContestsPage({
     return deadlineKSTDay - nowKSTDay;
   };
 
-  /** 날짜를 "2026. 01. 30(금)" 형식으로 포맷 */
+  /** 날짜를 "2026. 01. 30(금)" 형식으로 포맷 — null/invalid는 "미정" (epoch 렌더 방지) */
   const formatDateWithDay = (dateStr: string) => {
     const d = new Date(dateStr);
+    if (!dateStr || isNaN(d.getTime())) return '미정';
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}(${days[d.getDay()]})`;
   };
@@ -80,14 +111,6 @@ export default async function ContestsPage({
     Object.entries(merged).forEach(([k, v]) => { if (v) params.set(k, v); });
     if (search && !overrides.search) params.set('search', search);
     return params;
-  };
-
-  // 서버사이드 현재 시각 (접수중이지만 아직 접수시작 전인지 판별용)
-  const nowMs = Date.now();
-  /** 표시용 상태 계산: open이지만 submissionStartAt이 미래면 'draft'(접수전)으로 취급 */
-  const getDisplayStatus = (c: typeof contests[number]) => {
-    if (c.status === 'open' && new Date(c.submissionStartAt).getTime() > nowMs) return 'draft';
-    return c.status;
   };
 
   // 필터링 (표시 상태 기준)
@@ -164,8 +187,12 @@ export default async function ContestsPage({
             <p className="text-lg text-muted-foreground mb-8">
               {activeContestsCount > 0 ? (
                 <>총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.</>
+              ) : statusHasContent('judging') ? (
+                <>지금은 접수 중인 공모전이 없어요. 심사중인 공모전의 진행 상황을 확인해 보세요.</>
+              ) : statusHasContent('completed') ? (
+                <>지금은 접수 중인 공모전이 없어요. 지난 공모전을 둘러보세요.</>
               ) : (
-                <>현재 심사중인 공모전이 있습니다. 다음 공모전을 기대해주세요!</>
+                <>새로운 공모전을 준비하고 있어요. 조금만 기다려주세요!</>
               )}
             </p>
           </div>
@@ -178,12 +205,7 @@ export default async function ContestsPage({
           <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 sm:p-3 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             {/* 상태 필터 (가로 스크롤 가능하게) */}
             <div className="flex gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
-              {[
-                { id: 'draft', label: '접수전' },
-                { id: 'open', label: '접수중' },
-                { id: 'judging', label: '심사중' },
-                { id: 'completed', label: '종료' }
-              ].map((tab) => (
+              {STATUS_TABS.map((tab) => (
                 <Link key={tab.id} href={`/contests?${buildParams({ status: tab.id }).toString()}`} scroll={false} className="shrink-0">
                   <button
                     type="button"
@@ -271,7 +293,7 @@ export default async function ContestsPage({
                     <div key={contest.id} className="group bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-0.5">
                       <div className="flex flex-col md:flex-row">
                         {/* 왼쪽: 포스터 이미지 */}
-                        <Link href={`/contests/${contest.id}` as any} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
+                        <Link href={`/contests/${contest.id}` as Route} className="block w-full md:w-[340px] lg:w-[400px] shrink-0">
                           <div className="relative h-60 md:h-full min-h-[240px]">
                             <Image
                               src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
@@ -282,17 +304,17 @@ export default async function ContestsPage({
                             />
                             {/* 상태 뱃지: open이지만 시작 전이면 접수전(초록) */}
                             <div className="absolute top-4 left-4">
-                              {(contest.status === 'draft' || isBeforeStart) && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
+                              {isBeforeStart && (
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">{PUBLIC_CONTEST_STATUS_LABELS.draft}</span>
                               )}
                               {contest.status === 'open' && !isBeforeStart && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">접수중</span>
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">{PUBLIC_CONTEST_STATUS_LABELS.open}</span>
                               )}
                               {contest.status === 'judging' && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">심사중</span>
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">{PUBLIC_CONTEST_STATUS_LABELS.judging}</span>
                               )}
                               {(contest.status === 'completed' || contest.status === 'closed') && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">종료</span>
+                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">{publicContestStatusLabel(contest.status)}</span>
                               )}
                             </div>
                           </div>
@@ -301,7 +323,7 @@ export default async function ContestsPage({
                         <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
                           <div className="space-y-3">
                             {/* 제목 */}
-                            <Link href={`/contests/${contest.id}` as any}>
+                            <Link href={`/contests/${contest.id}` as Route}>
                               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">
                                 {contest.title}
                               </h2>
@@ -350,7 +372,7 @@ export default async function ContestsPage({
                             {displayStatus === 'open' && (
                               <AuthSubmitButton contestId={contest.id} variant="sm" />
                             )}
-                            <Link href={`/contests/${contest.id}` as any} className="group/btn2">
+                            <Link href={`/contests/${contest.id}` as Route} className="group/btn2">
                               <span className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-neutral-600 text-neutral-300 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer">
                                 <span className="absolute inset-0 bg-neutral-600 scale-x-0 group-hover/btn2:scale-x-100 transition-transform duration-300 origin-left" />
                                 <span className="relative z-10 group-hover/btn2:text-white transition-colors">상세안내 확인하기</span>
@@ -369,7 +391,7 @@ export default async function ContestsPage({
                 {displayedContests.map((contest, index) => {
                   const displayStatusCard = getDisplayStatus(contest);
                   return (
-                    <Link key={contest.id} href={`/contests/${contest.id}` as any} className="group relative block">
+                    <Link key={contest.id} href={`/contests/${contest.id}` as Route} className="group relative block">
                       <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
                         <Image
@@ -382,7 +404,7 @@ export default async function ContestsPage({
                         {/* 상태 뱃지 */}
                         <div className="absolute top-[18px] right-3 z-10">
                           {displayStatusCard === 'draft' ? (
-                            <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">접수전</span>
+                            <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">{PUBLIC_CONTEST_STATUS_LABELS.draft}</span>
                           ) : contest.status === 'open' ? (() => {
                             const dday = calcDDay(contest.submissionEndAt);
                             const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
@@ -394,7 +416,9 @@ export default async function ContestsPage({
                           })() : (
                             <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'
                               }`}>
-                              {contest.status === 'judging' ? '심사중' : (<><Trophy className="inline h-3.5 w-3.5 mr-1" />결과발표</>)}
+                              {contest.status === 'completed'
+                                ? (<><Trophy className="inline h-3.5 w-3.5 mr-1" />{PUBLIC_CONTEST_STATUS_LABELS.completed}</>)
+                                : publicContestStatusLabel(contest.status)}
                             </span>
                           )}
                         </div>
@@ -450,6 +474,24 @@ export default async function ContestsPage({
               <p className="text-muted-foreground mb-8 max-w-md">
                 필터 조건을 변경하거나, 새로운 공모전이 등록될 때까지 잠시만 기다려주세요.
               </p>
+              {/* 빈 화면에서 끝내지 않는다 — 콘텐츠가 있는 탭·갤러리로 안내 (IA.md §1-4) */}
+              {(() => {
+                const fallbackTab = STATUS_TABS.find(
+                  (t) => t.id !== currentStatus && statusHasContent(t.id),
+                );
+                return (
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {fallbackTab && (
+                      <Link href={`/contests?${buildParams({ status: fallbackTab.id }).toString()}`} scroll={false}>
+                        <Button className="cursor-pointer">{fallbackTab.label} 공모전 보기</Button>
+                      </Link>
+                    )}
+                    <Link href="/gallery/all">
+                      <Button variant="outline" className="cursor-pointer">갤러리 둘러보기</Button>
+                    </Link>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

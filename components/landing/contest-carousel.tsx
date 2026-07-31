@@ -58,7 +58,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
           <Link
-            href={"/contests?status=open" as any}
+            href="/contests"
             className="text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
           >
             전체보기 →

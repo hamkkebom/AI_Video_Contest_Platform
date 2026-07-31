@@ -52,7 +52,7 @@ function FallbackHero() {
           공모전에 참여하고, 수상작을 감상하고, AI 영상 제작의 새로운 가능성을 발견하세요.
         </p>
         <div className="flex gap-4 justify-center pt-4">
-          <Link href="/contests?status=open">
+          <Link href="/contests">
             <Button size="lg" className="bg-accent-foreground hover:bg-accent-foreground/90 text-white cursor-pointer">
               공모전 둘러보기
             </Button>

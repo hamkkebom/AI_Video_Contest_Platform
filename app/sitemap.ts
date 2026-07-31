@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/creators`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE_URL}/story`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE_URL}/search`, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.6 },
+    /* /pricing은 수익화 동결(D-005) 상태 — 내비 미연결 페이지를 검색엔진에만 광고하지 않는다 (IA.md §5) */
     { url: `${BASE_URL}/support`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/support/faq`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/support/inquiry`, changeFrequency: 'monthly', priority: 0.4 },

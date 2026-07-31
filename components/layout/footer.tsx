@@ -1,18 +1,26 @@
 'use client';
 
 import Link from 'next/link';
+import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { TreePine } from 'lucide-react';
 
-const serviceLinks = [
-  { label: '공모전', href: '/contests?status=open' },
-  // TODO: 메뉴 구현 완료 후 복원
-  // { label: '갤러리', href: '/gallery/all' },
-  // { label: '스토리', href: '/story' },
-  // { label: '고객센터', href: '/support/inquiry' },
+/* 푸터 링크는 docs/IA.md §3.2 기준 — 공개 라우트는 전부 푸터에서 도달 가능해야 한다 */
+const serviceLinks: Array<{ label: string; href: Route }> = [
+  { label: '공모전', href: '/contests' },
+  { label: '갤러리', href: '/gallery/all' },
+  { label: '수상작', href: '/gallery/awards' },
+  { label: '크리에이터', href: '/creators' },
+  { label: '스토리', href: '/story' },
 ];
 
-const legalLinks = [
+const supportLinks: Array<{ label: string; href: Route }> = [
+  { label: 'FAQ', href: '/support/faq' },
+  { label: '문의하기', href: '/support/inquiry' },
+  { label: '제작 대행 의뢰', href: '/support/agency' },
+];
+
+const legalLinks: Array<{ label: string; href: Route }> = [
   { label: '이용약관', href: '/terms' },
   { label: '개인정보처리방침', href: '/privacy' },
 ];
@@ -20,7 +28,11 @@ const legalLinks = [
 export function Footer() {
   const pathname = usePathname();
   /* 대시보드 경로에서는 사이드바(w-60) 패딩 적용 */
-  const isDashboard = pathname.startsWith('/admin') || pathname.startsWith('/host') || pathname.startsWith('/my');
+  const isDashboard =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/host') ||
+    pathname.startsWith('/my') ||
+    pathname.startsWith('/judging');
 
   return (
     <footer className={`bg-foreground text-background ${isDashboard ? 'md:pl-60' : ''}`}>
@@ -46,7 +58,25 @@ export function Footer() {
               {serviceLinks.map((link) => (
                 <Link
                   key={link.label}
-                  href={link.href as any}
+                  href={link.href}
+                  className="text-sm text-background/60 hover:text-background transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* 지원 */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-background/40">
+              지원
+            </h4>
+            <nav className="flex flex-col gap-2.5">
+              {supportLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
                   className="text-sm text-background/60 hover:text-background transition-colors"
                 >
                   {link.label}
@@ -64,7 +94,7 @@ export function Footer() {
               {legalLinks.map((link) => (
                 <Link
                   key={link.label}
-                  href={link.href as any}
+                  href={link.href}
                   className="text-sm text-background/60 hover:text-background transition-colors"
                 >
                   {link.label}

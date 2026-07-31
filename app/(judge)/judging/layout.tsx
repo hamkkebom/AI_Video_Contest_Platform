@@ -15,6 +15,11 @@ interface JudgeLayoutProps {
   children: ReactNode;
 }
 
+/**
+ * /judging 전용 레이아웃 — RoleGuard는 여기에만 건다.
+ * 초대 수락(/invite/[token])은 아직 judge 역할이 없는 사람이 여는 페이지이므로
+ * 역할 가드로 감싸면 초대 흐름 자체가 막힌다. (docs/IA.md §4)
+ */
 export default function JudgeLayout({ children }: JudgeLayoutProps) {
   return (
     <RoleGuard allowedRoles={['judge', 'admin', 'host']}>
