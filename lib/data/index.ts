@@ -1627,11 +1627,13 @@ export const getAwardedSubmissions = unstable_cache(
   async (): Promise<GallerySubmission[]> => {
     const supabase = createPublicClient();
 
-    // completed 공모전
+    /* 결과가 발표된 공모전만 — getCompletedContests 와 같은 기준(results_published)을 쓴다.
+       status='completed' 로 거르면 결과를 발표해도 status 가 아직 'closed' 인 동안
+       수상작이 하나도 나오지 않는다. */
     const { data: completedContests } = await supabase
       .from('contests')
       .select('id, title')
-      .eq('status', 'completed');
+      .eq('results_published', true);
     if (!completedContests || completedContests.length === 0) return [];
 
     const completedIds = completedContests.map((c) => String(c.id));
@@ -1863,10 +1865,36 @@ export function getRelatedSubmissions(
 }
 
 /**
- * 결과발표 완료된 공모전 목록
+ * 결과가 발표된 공모전 목록 — 수상작 갤러리가 쓰는 기준.
+ *
+ * 이전에는 status='completed' 로 걸렀는데, 발표 여부를 담는 값은 results_published 다.
+ * 두 값이 어긋나면(예: 결과는 등록·발표했지만 status 는 'closed' 인 경우)
+ * 수상작 페이지가 404 를 냈다. 화면이 참조해야 할 것은 발표 플래그이므로 그쪽을 기준으로 삼는다.
  */
-export async function getCompletedContests(): Promise<Contest[]> {
-  return getContests({ status: 'completed' });
+export function getCompletedContests(): Promise<Contest[]> {
+  return unstable_cache(
+    async (): Promise<Contest[]> => {
+      const supabase = createPublicClient();
+      const { data, error } = await supabase
+        .from('contests')
+        .select('*')
+        .eq('results_published', true)
+        .order('result_announced_at', { ascending: false });
+      if (error || !data || data.length === 0) return [];
+
+      const ids = data.map((c) => String(c.id));
+      const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, ids);
+      return data.map((row) =>
+        toContest(
+          row as Record<string, unknown>,
+          tiersMap.get(String(row.id)) ?? [],
+          bonusMap.get(String(row.id)) ?? [],
+        ),
+      );
+    },
+    ['contests-results-published'],
+    { tags: ['contests'], revalidate: 120 },
+  )();
 }
 
 /**

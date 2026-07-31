@@ -131,11 +131,13 @@ if (MODE === 'publish' || MODE === 'unpublish') {
     }
     console.log(`수상 결과 ${existing.length}건 확인됨`);
   }
+  /* 발표하면 공모전 생애주기도 완료로 맞춘다 — 두 값이 어긋나면 관리 화면과 통계가 갈린다.
+     발표를 취소해도 status 는 되돌리지 않는다 (심사 종료 사실 자체는 변하지 않으므로). */
   await api(`/contests?id=eq.${CONTEST_ID}`, {
     method: 'PATCH',
-    body: JSON.stringify({ results_published: publish }),
+    body: JSON.stringify(publish ? { results_published: true, status: 'completed' } : { results_published: false }),
   });
-  console.log(`${contest.title} → results_published = ${publish}`);
+  console.log(`${contest.title} → results_published = ${publish}${publish ? ', status = completed' : ''}`);
   console.log(publish ? '수상작 페이지에 공개되었습니다.' : '공개가 취소되었습니다.');
   process.exit(0);
 }
@@ -178,19 +180,19 @@ for (const [label, n] of byLabel) {
   const tier = tierByLabel.get(label);
   if (tier && n > tier.count) errors.push(`"${label}" 정원 초과: 정원 ${tier.count}명, 입력 ${n}명`);
 }
-/* rank 중복 검사 */
-const rankSeen = new Map();
-for (const p of parsed) {
-  if (rankSeen.has(p.rank)) errors.push(`rank ${p.rank} 중복: ${rankSeen.get(p.rank)} / ${p._title}`);
-  rankSeen.set(p.rank, p._title);
-}
+/* rank 분포 — 등급제 공모전은 같은 등급에 여러 명이 들어가므로 동점을 허용한다.
+   대신 분포를 출력해 운영자가 의도한 배분인지 눈으로 확인하게 한다. */
+const rankDist = new Map();
+for (const p of parsed) rankDist.set(p.rank, (rankDist.get(p.rank) ?? 0) + 1);
 
 console.log(`공모전: ${contest.title} (현재 발표 상태: ${contest.results_published})`);
 console.log(`CSV 행 ${rows.length}개 중 수상 지정 ${winners.length}건 → 검증 통과 ${parsed.length}건\n`);
 for (const [label, n] of byLabel) {
   const tier = tierByLabel.get(label);
-  console.log(`  ${label.padEnd(10)} ${n}명 / 정원 ${tier?.count ?? '?'}명`);
+  const mark = tier && n === tier.count ? '✓' : ' ';
+  console.log(`  ${mark} ${label.padEnd(10)} ${n}명 / 정원 ${tier?.count ?? '?'}명`);
 }
+console.log(`\n  순위 분포: ${[...rankDist].sort((a, b) => a[0] - b[0]).map(([r, n]) => `${r}위 ${n}명`).join(' · ')}`);
 console.log();
 for (const p of [...parsed].sort((a, b) => a.rank - b.rank).slice(0, 15)) {
   console.log(`  ${String(p.rank).padStart(3)}위  ${p.prize_label.padEnd(10)} ${(p._title ?? '').slice(0, 30).padEnd(32)} ${p._who ?? ''}`);

@@ -86,6 +86,20 @@ export default async function ContestAwardsPage({
     prizeLabel: s.prizeLabel,
   }));
 
+  /* 등급 정보(이름·정원·상금)를 함께 넘겨 등급별 섹션과 상금 표시를 만든다 */
+  const tiers = (contest.awardTiers ?? []).map((t) => ({
+    label: t.label,
+    count: t.count,
+    prizeAmount: t.prizeAmount,
+  }));
+
+  /* 실제 수상 인원과 총 상금 — 헤더 요약에 쓴다 */
+  const totalPrize = (contest.awardTiers ?? []).reduce((sum, t) => {
+    const perPerson = Number(String(t.prizeAmount ?? '').replace(/[^0-9]/g, ''));
+    const awarded = contestAwarded.filter((s) => s.prizeLabel === t.label).length;
+    return Number.isFinite(perPerson) ? sum + perPerson * awarded : sum;
+  }, 0);
+
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
@@ -107,7 +121,10 @@ export default async function ContestAwardsPage({
               {contest.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{contest.prizeAmount ?? '상금 미정'}</span>
+              {/* 공모전에 총상금이 따로 입력돼 있지 않으면 등급별 상금 합계로 대신한다 */}
+              <span className="font-semibold text-foreground">
+                {contest.prizeAmount ?? (totalPrize > 0 ? `총 상금 ${totalPrize.toLocaleString()}원` : '상금 미정')}
+              </span>
               <span>발표일 {formatDate(contest.resultAnnouncedAt, { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
             </div>
           </div>
@@ -117,13 +134,18 @@ export default async function ContestAwardsPage({
       {/* 수상작 그리드 */}
       <section className="pb-24 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-base text-muted-foreground">
-              총 <span className="text-[#EA580C] font-semibold">{contestAwarded.length.toLocaleString()}</span>개의 수상작
+          <div className="mb-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-base text-muted-foreground">
+            <p>
+              총 <span className="font-semibold text-[#EA580C]">{contestAwarded.length.toLocaleString()}</span>개의 수상작
             </p>
+            {totalPrize > 0 && (
+              <p>
+                총 상금 <span className="font-semibold text-foreground">{totalPrize.toLocaleString()}원</span>
+              </p>
+            )}
           </div>
 
-          <AwardsGrid submissions={gridSubmissions} />
+          <AwardsGrid submissions={gridSubmissions} tiers={tiers} />
         </div>
       </section>
     </div>

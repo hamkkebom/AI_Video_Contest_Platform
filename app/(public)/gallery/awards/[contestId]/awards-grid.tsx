@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, Heart, Trophy } from 'lucide-react';
+import { Eye, Heart, Trophy, Medal, Award, Sparkles } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 12;
+/** 하위 등급은 수가 많아 한 번에 다 보여주지 않는다 */
+const LOWEST_TIER_INITIAL = 12;
+const LOWEST_TIER_STEP = 12;
 
-interface AwardItem {
+export interface AwardItem {
   id: string;
   title: string;
   creatorName: string;
@@ -18,106 +20,197 @@ interface AwardItem {
   prizeLabel?: string | null;
 }
 
-interface AwardsGridProps {
-  submissions: AwardItem[];
+export interface AwardTierInfo {
+  label: string;
+  count: number;
+  /** 1인당 상금 (표시용 문자열) */
+  prizeAmount?: string;
 }
 
-/** 수상작 그리드 — 클라이언트 상태로 더보기 처리 (스크롤 위치 유지) */
-export function AwardsGrid({ submissions }: AwardsGridProps) {
-  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+interface AwardsGridProps {
+  submissions: AwardItem[];
+  tiers: AwardTierInfo[];
+}
 
-  const displayed = submissions.slice(0, displayCount);
-  const hasMore = submissions.length > displayCount;
-  const remainingCount = submissions.length - displayCount;
+/** 등급 순서(0부터)에 따른 시각 강조 — 위로 갈수록 크고 화려하게 */
+const TIER_STYLE = [
+  {
+    icon: Trophy,
+    badge: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white',
+    ring: 'ring-2 ring-amber-400/40',
+    glow: 'shadow-2xl shadow-amber-500/20',
+    accent: 'text-amber-500',
+  },
+  {
+    icon: Medal,
+    badge: 'bg-gradient-to-r from-slate-300 to-slate-500 text-white',
+    ring: 'ring-1 ring-slate-400/40',
+    glow: 'shadow-xl shadow-slate-400/10',
+    accent: 'text-slate-400',
+  },
+  {
+    icon: Award,
+    badge: 'bg-gradient-to-r from-orange-400 to-orange-600 text-white',
+    ring: 'ring-1 ring-orange-400/30',
+    glow: 'shadow-lg shadow-orange-500/10',
+    accent: 'text-orange-500',
+  },
+  {
+    icon: Sparkles,
+    badge: 'bg-primary/90 text-primary-foreground',
+    ring: 'ring-1 ring-primary/20',
+    glow: '',
+    accent: 'text-primary',
+  },
+];
 
-  const handleLoadMore = () => {
-    setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
-  };
+const tierStyle = (index: number) => TIER_STYLE[Math.min(index, TIER_STYLE.length - 1)];
+
+/** 등급별 카드 크기 — 최상위는 1열 대형, 그 다음은 2열, 이후 3~4열 */
+function gridClass(index: number, total: number): string {
+  if (index === 0 && total > 1) return 'grid-cols-1';
+  if (index === 1) return 'grid-cols-1 sm:grid-cols-2';
+  if (index === 2) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+  return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+}
+
+function AwardCard({ item, tierIndex, featured }: { item: AwardItem; tierIndex: number; featured: boolean }) {
+  const style = tierStyle(tierIndex);
+  const Icon = style.icon;
+
+  return (
+    <Link href={`/gallery/${item.id}` as any} className="group block">
+      <div
+        className={`relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 ${style.ring} ${style.glow}`}
+      >
+        <div className={`relative overflow-hidden bg-muted ${featured ? 'aspect-[21/9]' : 'aspect-video'}`}>
+          {item.thumbnailUrl && (
+            <Image
+              src={item.thumbnailUrl}
+              alt={item.title}
+              fill
+              /* 최상위 수상작은 화면 폭을 크게 차지하므로 더 큰 이미지를 받는다 */
+              sizes={featured ? '(max-width: 1024px) 100vw, 1100px' : '(max-width: 768px) 100vw, 33vw'}
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              priority={featured}
+            />
+          )}
+          <div className="absolute top-3 left-3 z-10">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold shadow-lg ${style.badge}`}>
+              <Icon className="h-3.5 w-3.5" />
+              {item.prizeLabel}
+            </span>
+          </div>
+        </div>
+
+        <div className={featured ? 'space-y-2 p-6' : 'space-y-2 p-4'}>
+          <h3 className={`font-semibold ${featured ? 'text-xl md:text-2xl' : 'line-clamp-2 text-sm'}`}>
+            {item.title}
+          </h3>
+          <p className={`text-muted-foreground ${featured ? 'text-base' : 'text-xs'}`}>{item.creatorName}</p>
+          <div className="flex gap-3 pt-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Eye className="h-3.5 w-3.5" />
+              {item.views.toLocaleString()}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="h-3.5 w-3.5" />
+              {item.likeCount.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/**
+ * 수상작 목록 — 등급별로 구분해 보여준다.
+ *
+ * 이전에는 43개 수상작을 같은 크기 카드로 평면 나열해, 상금 300만원의 대상과
+ * 10만원의 최하위 등급이 시각적으로 동등해 보였다. 시상 결과는 등급이 핵심 정보이므로
+ * 등급마다 섹션을 나누고 위로 갈수록 카드를 크게 해 순위가 한눈에 읽히도록 한다.
+ */
+export function AwardsGrid({ submissions, tiers }: AwardsGridProps) {
+  const [expandedTiers, setExpandedTiers] = useState<Record<string, number>>({});
 
   if (submissions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
-        <div className="w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
           <Trophy className="h-10 w-10 text-muted-foreground/40" />
         </div>
-        <h3 className="text-xl font-bold mb-2">수상작이 없습니다</h3>
-        <p className="text-muted-foreground mb-8 max-w-md">
-          이 공모전에 수상작이 아직 등록되지 않았습니다.
-        </p>
+        <h3 className="mb-2 text-xl font-bold">수상작이 없습니다</h3>
+        <p className="max-w-md text-muted-foreground">이 공모전에 수상작이 아직 등록되지 않았습니다.</p>
       </div>
     );
   }
 
+  /* 공모전에 등록된 등급 순서를 기준으로 묶는다. 등급 정보가 없으면 rank 순 단일 그룹. */
+  const grouped = tiers.length
+    ? tiers
+        .map((tier) => ({ tier, items: submissions.filter((s) => s.prizeLabel === tier.label) }))
+        .filter((g) => g.items.length > 0)
+    : [{ tier: { label: '수상작', count: submissions.length } as AwardTierInfo, items: submissions }];
+
+  /* 등급에 속하지 않은 수상작이 있으면 마지막에 따로 보여준다 (데이터 불일치 대비) */
+  const knownLabels = new Set(grouped.map((g) => g.tier.label));
+  const orphans = submissions.filter((s) => !s.prizeLabel || !knownLabels.has(s.prizeLabel));
+  if (orphans.length > 0) {
+    grouped.push({ tier: { label: '기타 수상', count: orphans.length }, items: orphans });
+  }
+
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {displayed.map((submission) => (
-          <Link key={`${submission.id}-${submission.rank}`} href={`/gallery/${submission.id}` as any} className="group">
-            <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
-              {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
-              <div className="aspect-video overflow-hidden relative bg-muted">
-                {submission.thumbnailUrl && (
-                  <Image
-                    src={submission.thumbnailUrl}
-                    alt={submission.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                )}
-                {/* 수상 뱃지 */}
-                <div className="absolute top-3 left-3 z-10">
-                  <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg ${
-                    submission.rank === 1 ? 'bg-amber-500/90 text-white' :
-                    submission.rank === 2 ? 'bg-slate-400/90 text-white' :
-                    'bg-orange-600/90 text-white'
-                  }`}>
-                    <Trophy className="inline h-3.5 w-3.5 mr-1" />
-                    {submission.prizeLabel}
-                  </span>
-                </div>
-              </div>
+    <div className="space-y-16">
+      {grouped.map((group, tierIndex) => {
+        const style = tierStyle(tierIndex);
+        const Icon = style.icon;
+        const isLargeTier = group.items.length > LOWEST_TIER_INITIAL;
+        const shown = expandedTiers[group.tier.label] ?? (isLargeTier ? LOWEST_TIER_INITIAL : group.items.length);
+        const visible = group.items.slice(0, shown);
+        const remaining = group.items.length - shown;
+        const featured = tierIndex === 0 && group.items.length === 1;
 
-              {/* 콘텐츠 */}
-              <div className="p-4 space-y-2">
-                <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-accent-foreground transition-colors">
-                  {submission.title}
-                </h3>
-                <p className="text-xs text-muted-foreground">{submission.creatorName}</p>
-
-                {/* 통계 */}
-                <div className="flex gap-3 text-xs text-muted-foreground pt-2">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3.5 w-3.5" />
-                    {submission.views.toLocaleString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Heart className="h-3.5 w-3.5" />
-                    {submission.likeCount.toLocaleString()}
-                  </span>
-                </div>
-              </div>
+        return (
+          <section key={group.tier.label} aria-labelledby={`tier-${tierIndex}`}>
+            {/* 등급 헤더 — 등급명·인원·상금 */}
+            <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pb-3">
+              <h2 id={`tier-${tierIndex}`} className={`flex items-center gap-2 text-xl font-bold md:text-2xl ${style.accent}`}>
+                <Icon className="h-5 w-5" />
+                {group.tier.label}
+              </h2>
+              <span className="text-sm text-muted-foreground">{group.items.length}작품</span>
+              {group.tier.prizeAmount && (
+                <span className="text-sm text-muted-foreground">· 1인당 {group.tier.prizeAmount}</span>
+              )}
             </div>
-          </Link>
-        ))}
-      </div>
 
-      {/* 더보기 버튼 */}
-      {hasMore && (
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={handleLoadMore}
-            className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer"
-          >
-            <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-            <span className="relative z-10 flex items-center gap-2">
-              더보기
-              <span className="text-sm opacity-70">+{remainingCount.toLocaleString()}</span>
-            </span>
-          </button>
-        </div>
-      )}
-    </>
+            <div className={`grid gap-4 ${gridClass(tierIndex, group.items.length)}`}>
+              {visible.map((item) => (
+                <AwardCard key={item.id} item={item} tierIndex={tierIndex} featured={featured} />
+              ))}
+            </div>
+
+            {remaining > 0 && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedTiers((prev) => ({
+                      ...prev,
+                      [group.tier.label]: shown + LOWEST_TIER_STEP,
+                    }))
+                  }
+                  className="cursor-pointer rounded-full border-2 border-primary px-8 py-2.5 font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                >
+                  {group.tier.label} 더보기
+                  <span className="ml-2 text-sm opacity-70">+{remaining.toLocaleString()}</span>
+                </button>
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
   );
 }
