@@ -14,6 +14,7 @@ AI 영상 공모전 플랫폼 (꿈플/AI꿈) — 실제 운영 서비스. Next.j
 | `docs/ROADMAP.md` | 살아있는 로드맵 — 완료/보류/폐기 후보와 재개 트리거 |
 | `docs/FEATURES.md` | 실구현 기능 인벤토리 (기능→코드 위치→DB 매핑) |
 | `docs/DECISIONS.md` | 주요 결정 기록 (피벗, 기술 교체 등) |
+| `docs/BACKUP.md` | 백업·복구 절차. Supabase 자동 백업은 Storage 파일을 포함하지 않는다 |
 | `docs/archive/` | 목업 시절 산출물 등 역사적 스냅샷 (갱신 안 함) |
 
 기능 상태를 바꾸는 변경은 `docs/ROADMAP.md`·`docs/FEATURES.md`를 같은 커밋에서 갱신할 것.
@@ -137,8 +138,16 @@ ANTHROPIC_API_KEY=              # Claude API
 bun run dev          # 개발 서버 (Turbopack)
 bun run build        # 프로덕션 빌드
 bun run start        # 프로덕션 서버
-npx tsc --noEmit     # 타입 체크
+bun run typecheck    # 타입 체크
+
+# 백업 (→ docs/BACKUP.md)
+node scripts/backup-db.mjs <출력디렉터리>       # DB 전 테이블 JSON
+node scripts/backup-storage.mjs <출력디렉터리>  # Storage 파일 (자동 백업에 미포함)
 ```
+
+> `npx tsc --noEmit` 은 쓰지 말 것. 전역에 설치된 다른 버전의 TypeScript 가 잡혀
+> `tsconfig.json` 의 `baseUrl` 을 두고 실제로 존재하지 않는 오류(TS5101)를 낸다.
+> 프로젝트 로컬 버전을 쓰는 `bun run typecheck` 만 신뢰할 것.
 
 ## Notes
 - 배포: Vercel 자동 배포 (git push → 자동 트리거)
