@@ -605,16 +605,33 @@ export function getPublicProfileById(id: string): Promise<User | null> {
   )();
 }
 
-/** 여러 유저 ID로 벌크 조회 (usersMap 생성용) */
+/**
+ * 여러 유저 ID로 벌크 조회 (usersMap 생성용)
+ * ID 수가 많으면 URL 길이 제한과 기본 조회 제한(1000건)에 걸리므로 청크로 나눠 조회한다.
+ */
+const USERS_BY_IDS_CHUNK_SIZE = 200;
+
 export async function getUsersByIds(ids: string[]): Promise<User[]> {
   if (ids.length === 0) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .in('id', ids);
-  if (error || !data) return [];
-  return data.map((row) => toUser(row as Record<string, unknown>));
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += USERS_BY_IDS_CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + USERS_BY_IDS_CHUNK_SIZE));
+  }
+
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', chunk);
+      if (error || !data) return [];
+      return data.map((row) => toUser(row as Record<string, unknown>));
+    }),
+  );
+
+  return results.flat();
 }
 
 /** 관리자 회원 목록 페이지네이션 결과 */
@@ -744,6 +761,48 @@ export async function getAdminUserCounts(): Promise<AdminUserCounts> {
   ]);
 
   return { total, participant, host, judge, admin, active, pending, suspended };
+}
+
+/**
+ * 회원 가입일(created_at) 목록 — 가입 추이 집계용
+ * 행 전체(select('*')) 대신 created_at 한 컬럼만 받아 전송량을 최소화한다.
+ * since(ISO 문자열)를 주면 해당 시각 이후 가입자만 조회한다.
+ * 정렬은 getUsers() 와 동일하게 created_at 오름차순을 유지한다.
+ */
+export async function getUserSignupDates(since?: string): Promise<string[]> {
+  const supabase = await createClient();
+  const allData = await fetchAll((from, to) => {
+    let query = supabase.from('profiles').select('created_at');
+    if (since) {
+      query = query.gte('created_at', since);
+    }
+    return query.order('created_at', { ascending: true }).range(from, to);
+  });
+  return allData.map((row) => row.created_at as string);
+}
+
+/**
+ * 지역별 회원 수 집계 (지역 분석 화면용)
+ * region 한 컬럼만 받아 집계한다 — 행 전체를 가져오지 않는다.
+ * region 이 비어 있는 회원은 기존 filter(u => u.region === region) 과 동일하게 제외된다.
+ */
+export async function getUserCountsByRegion(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const allData = await fetchAll((from, to) =>
+    supabase
+      .from('profiles')
+      .select('region')
+      .order('created_at', { ascending: true })
+      .range(from, to),
+  );
+
+  const counts: Record<string, number> = {};
+  for (const row of allData) {
+    const region = row.region as string | null;
+    if (!region) continue;
+    counts[region] = (counts[region] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export async function getCompanies(): Promise<Company[]> {
@@ -2237,33 +2296,35 @@ export async function deleteContest(id: string): Promise<boolean> {
 // ============================================================
 
 /** 특정 주최자(host)의 공모전만 조회 */
-export function getContestsByHost(hostUserId: string): Promise<Contest[]> {
-  return unstable_cache(
-    async (): Promise<Contest[]> => {
-      const supabase = await createClient();
+/**
+ * 주최자별 공모전 목록.
+ *
+ * 이전에는 unstable_cache 로 감싸고 있었으나, 캐시 함수 내부에서는 쿠키에 접근할 수 없어
+ * 세션 클라이언트를 만드는 순간 "cookies inside unstable_cache" 로 매번 실패했다.
+ * 그 결과 /host/reports 는 항상 에러 화면을 렌더링하고 있었다.
+ * 주최자 데이터는 본인 것만 보여야 해 세션이 필수이므로 캐시를 제거한다.
+ */
+export async function getContestsByHost(hostUserId: string): Promise<Contest[]> {
+  const supabase = await createClient();
 
-      const { data: contestRows, error } = await supabase
-        .from('contests')
-        .select('*')
-        .eq('host_user_id', hostUserId)
-        .order('created_at', { ascending: false });
-      if (error || !contestRows) return [];
+  const { data: contestRows, error } = await supabase
+    .from('contests')
+    .select('*')
+    .eq('host_user_id', hostUserId)
+    .order('created_at', { ascending: false });
+  if (error || !contestRows) return [];
 
-      const contestIds = contestRows.map((c) => String(c.id));
-      if (contestIds.length === 0) return [];
-      const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
+  const contestIds = contestRows.map((c) => String(c.id));
+  if (contestIds.length === 0) return [];
+  const { tiersMap, bonusMap } = await getContestRelationsByIds(supabase, contestIds);
 
-      return contestRows.map((row) =>
-        toContest(
-          row as Record<string, unknown>,
-          tiersMap.get(String(row.id)) ?? [],
-          bonusMap.get(String(row.id)) ?? [],
-        ),
-      );
-    },
-    ['contests-by-host', hostUserId],
-    { tags: ['contests'], revalidate: 60 },
-  )();
+  return contestRows.map((row) =>
+    toContest(
+      row as Record<string, unknown>,
+      tiersMap.get(String(row.id)) ?? [],
+      bonusMap.get(String(row.id)) ?? [],
+    ),
+  );
 }
 
 /** 특정 심사위원(judge user)에게 배정된 공모전 ID 목록 조회 */

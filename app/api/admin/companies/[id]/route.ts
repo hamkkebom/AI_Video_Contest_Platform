@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCompanies, getCompanyMembers, getUsers } from '@/lib/data';
+import { getCompanies, getCompanyMembers, getUsersByIds } from '@/lib/data';
 
 export async function GET(
   _request: Request,
@@ -7,19 +7,22 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const [companies, members, users] = await Promise.all([
+    const [companies, members] = await Promise.all([
       getCompanies(),
       getCompanyMembers(),
-      getUsers(),
     ]);
 
     const company = companies.find((c) => c.id === id) ?? null;
-    const companyMembers = members
-      .filter((m) => m.companyId === id)
-      .map((m) => ({
-        ...m,
-        user: users.find((u) => u.id === m.userId) ?? null,
-      }));
+    const memberRows = members.filter((m) => m.companyId === id);
+
+    /* 해당 회사 멤버만 조회한다 (전체 회원 조회 방지) */
+    const memberUserIds = [...new Set(memberRows.map((m) => m.userId))];
+    const users = memberUserIds.length > 0 ? await getUsersByIds(memberUserIds) : [];
+
+    const companyMembers = memberRows.map((m) => ({
+      ...m,
+      user: users.find((u) => u.id === m.userId) ?? null,
+    }));
 
     return NextResponse.json({ company, members: companyMembers });
   } catch (error) {

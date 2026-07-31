@@ -1,11 +1,20 @@
 import { AdminAnalyticsContent } from '@/components/dashboard/admin-analytics-content';
-import { getAllActivityLogs, getContests, getAllInquiries, getSubmissions, getUsers } from '@/lib/data';
+import {
+  getAdminUserCounts,
+  getAllActivityLogs,
+  getContests,
+  getAllInquiries,
+  getSubmissions,
+  getUserSignupDates,
+} from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 export default async function AdminAnalyticsPage() {
   try {
-    const [users, contests, submissions, inquiries, activityLogs] = await Promise.all([
-      getUsers(),
+    /* 회원은 카운트 + 가입일만 필요하므로 전체 행을 가져오지 않는다 */
+    const [userCounts, signupDates, contests, submissions, inquiries, activityLogs] = await Promise.all([
+      getAdminUserCounts(),
+      getUserSignupDates(),
       getContests(),
       getSubmissions(),
       getAllInquiries(),
@@ -22,8 +31,8 @@ export default async function AdminAnalyticsPage() {
     const activityTrend = Array.from(monthlyActivityMap.entries()).map(([month, count]) => ({ month, count }));
 
     const monthlySignupMap = new Map<string, number>();
-    for (const user of users) {
-      const month = formatDate(user.createdAt, { month: 'numeric' });
+    for (const createdAt of signupDates) {
+      const month = formatDate(createdAt, { month: 'numeric' });
       const monthLabel = `${month.replace('.', '').trim()}월`;
       monthlySignupMap.set(monthLabel, (monthlySignupMap.get(monthLabel) ?? 0) + 1);
     }
@@ -48,7 +57,7 @@ export default async function AdminAnalyticsPage() {
         data={{
           totalViews,
           conversionRate,
-          activeUsers: users.filter((user) => user.status === 'active').length,
+          activeUsers: userCounts.active,
           pendingInquiries: inquiries.filter((inquiry) => inquiry.status === 'pending').length,
           contests: contests.length,
           submissions: submissions.length,

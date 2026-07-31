@@ -13,12 +13,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAllInquiries, getUsers } from '@/lib/data';
+import { getAllInquiries, getUsersByIds } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 export default async function AdminInquiriesPage() {
   try {
-    const [inquiries, users] = await Promise.all([getAllInquiries(), getUsers()]);
+    const inquiries = await getAllInquiries();
+
+    /* 목록에 표시할 문의자만 조회한다 — 비회원 문의는 userId 가 null (전체 회원 조회 방지) */
+    const inquiryUserIds = [
+      ...new Set(inquiries.map((inquiry) => inquiry.userId).filter((id): id is string => Boolean(id))),
+    ];
+    const users = inquiryUserIds.length > 0 ? await getUsersByIds(inquiryUserIds) : [];
 
     const typeLabelMap: Record<string, { label: string; color: string }> = {
       general: { label: '일반', color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300' },

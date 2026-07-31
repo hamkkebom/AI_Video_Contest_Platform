@@ -5,7 +5,7 @@ import type { Route } from 'next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { REVIEW_TABS } from '@/config/constants';
-import { getContests, getSubmissions, getUsers } from '@/lib/data';
+import { getContests, getSubmissions, getUsersByIds } from '@/lib/data';
 import type { SubmissionStatus } from '@/lib/types';
 import { SubmissionsSearchTable } from './submissions-search-table';
 
@@ -18,14 +18,12 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
     const { tab } = await searchParams;
     const activeTab = REVIEW_TABS.some((item) => item.value === tab) ? (tab as SubmissionStatus) : 'pending_review';
 
-    const [allSubmissions, allContests, allUsers] = await Promise.all([
+    const [allSubmissions, allContests] = await Promise.all([
       getSubmissions(),
       getContests(),
-      getUsers(),
     ]);
 
     const contestsMap = new Map(allContests.map((c) => [c.id, c]));
-    const usersMap = new Map(allUsers.map((u) => [u.id, u]));
 
     const countByStatus = REVIEW_TABS.reduce<Record<string, number>>((acc, item) => {
       acc[item.value] = allSubmissions.filter((s) => s.status === item.value).length;
@@ -33,6 +31,11 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
     }, {});
 
     const filteredSubmissions = allSubmissions.filter((s) => s.status === activeTab);
+
+    /* 현재 탭 테이블에 표시할 제출자만 조회한다 (전체 회원 조회 방지) */
+    const submitterIds = [...new Set(filteredSubmissions.map((s) => s.userId))];
+    const submitters = submitterIds.length > 0 ? await getUsersByIds(submitterIds) : [];
+    const usersMap = new Map(submitters.map((u) => [u.id, u]));
 
     return (
       <div className="space-y-6 pb-10">

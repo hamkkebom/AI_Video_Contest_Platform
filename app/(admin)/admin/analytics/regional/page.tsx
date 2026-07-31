@@ -1,15 +1,20 @@
 import { REGIONS_KR } from '@/config/constants';
 import { AdminAnalyticsRegionalContent } from '@/components/dashboard/admin-analytics-regional-content';
-import { getContests, getSubmissions, getUsers } from '@/lib/data';
+import { getContests, getSubmissions, getUserCountsByRegion } from '@/lib/data';
 import type { RegionalMetric } from '@/lib/types';
 
 export default async function AdminAnalyticsRegionalPage() {
   try {
-    const [users, contests, submissions] = await Promise.all([getUsers(), getContests(), getSubmissions()]);
+    /* 회원은 지역별 카운트만 필요하므로 region 컬럼 집계로 대체한다 */
+    const [regionUserCounts, contests, submissions] = await Promise.all([
+      getUserCountsByRegion(),
+      getContests(),
+      getSubmissions(),
+    ]);
 
     const regionalMetrics: RegionalMetric[] = REGIONS_KR.map((region) => ({
       region,
-      userCount: users.filter((user) => user.region === region).length,
+      userCount: regionUserCounts[region] ?? 0,
       contestCount: contests.filter((contest) => contest.region === region).length,
       submissionCount: submissions.filter((submission) => {
         const contest = contests.find((item) => item.id === submission.contestId);

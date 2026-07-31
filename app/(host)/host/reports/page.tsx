@@ -5,7 +5,7 @@ import {
   getAuthProfile,
   getContestsByHost,
   getSubmissions,
-  getUsers,
+  getUsersByIds,
   getAllActivityLogs,
 } from '@/lib/data';
 import { Download, FileText, History, Trophy } from 'lucide-react';
@@ -17,11 +17,10 @@ export default async function HostReportsPage() {
   if (!profile) redirect('/login?redirect=/host/reports');
 
   try {
-    const [hostContests, allSubmissions, allActivityLogs, allUsers] = await Promise.all([
+    const [hostContests, allSubmissions, allActivityLogs] = await Promise.all([
       getContestsByHost(profile.id),
       getSubmissions(),
       getAllActivityLogs(),
-      getUsers(),
     ]);
 
     const hostContestIds = new Set(hostContests.map((contest) => contest.id));
@@ -34,8 +33,12 @@ export default async function HostReportsPage() {
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const usersMap = new Map(allUsers.map((user) => [user.id, user]));
     const recentLogs = hostActivityLogs.slice(0, 12);
+
+    /* 화면에 표시되는 최근 로그 12건의 작성자만 조회한다 (전체 회원 조회 방지) */
+    const actorIds = [...new Set(recentLogs.map((log) => log.userId))];
+    const actors = actorIds.length > 0 ? await getUsersByIds(actorIds) : [];
+    const usersMap = new Map(actors.map((user) => [user.id, user]));
 
     return (
       <div className="space-y-6 pb-10">

@@ -12,12 +12,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAllArticles, getUsers } from '@/lib/data';
+import { getAllArticles, getUsersByIds } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 export default async function AdminArticlesPage() {
   try {
-    const [articles, users] = await Promise.all([getAllArticles(), getUsers()]);
+    const articles = await getAllArticles();
+
+    /* 목록에 표시할 작성자만 조회한다 (전체 회원 조회 방지) */
+    const authorIds = [...new Set(articles.map((article) => article.authorId).filter((id) => Boolean(id)))];
+    const users = authorIds.length > 0 ? await getUsersByIds(authorIds) : [];
 
     const typeColorMap: Record<string, string> = {
       notice: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',

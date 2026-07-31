@@ -4,7 +4,15 @@ import { ArrowUpRight } from 'lucide-react';
 import { AdminDashboardContent } from '@/components/dashboard/admin-dashboard-content';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAllActivityLogs, getContests, getInquiryCountByStatus, getSubmissions, getUsers } from '@/lib/data';
+import {
+  getAdminUserCounts,
+  getAllActivityLogs,
+  getContests,
+  getInquiryCountByStatus,
+  getSubmissions,
+  getUserSignupDates,
+  getUsersByIds,
+} from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 const actionLabelMap: Record<string, string> = {
@@ -27,30 +35,33 @@ const targetLabelMap = {
  */
 export default async function AdminDashboardPage() {
   try {
-    // 통계 데이터: 모두 unstable_cache 적용 → 캐시 히트 시 즉시 반환
-    const [users, contests, submissions, pendingInquiries] = await Promise.all([
-      getUsers(),
+    const now = new Date();
+    /**
+     * 가입 추이 집계에 필요한 최소 구간만 조회한다.
+     * 필요한 최댓값은 "전월 1일"이며 최근 14일 구간은 항상 그 이후에 들어온다.
+     */
+    const signupSince = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+    // 통계 데이터: 회원은 DB 카운트/가입일만 조회 (전체 행 조회 제거)
+    const [userCounts, contests, submissions, pendingInquiries, signupDates] = await Promise.all([
+      getAdminUserCounts(),
       getContests(),
       getSubmissions(),
       getInquiryCountByStatus('pending'),
+      getUserSignupDates(signupSince),
     ]);
 
-    const activeUsers = users.filter((user) => user.status === 'active').length;
+    const activeUsers = userCounts.active;
     const ongoingContests = contests.filter((contest) => contest.status === 'open' || contest.status === 'judging').length;
     const approvedSubmissions = submissions.filter((submission) => submission.status === 'approved').length;
 
-    const roleDistribution = users.reduce(
-      (acc, user) => {
-        if (user.roles.includes('participant')) acc.participant += 1;
-        if (user.roles.includes('host')) acc.host += 1;
-        if (user.roles.includes('judge')) acc.judge += 1;
-        if (user.roles.includes('admin')) acc.admin += 1;
-        return acc;
-      },
-      { participant: 0, host: 0, judge: 0, admin: 0 }
-    );
-
-    const now = new Date();
+    /* roles 는 TEXT[] 이므로 한 회원이 여러 역할에 중복 집계될 수 있다 — DB contains 카운트와 동일 */
+    const roleDistribution = {
+      participant: userCounts.participant,
+      host: userCounts.host,
+      judge: userCounts.judge,
+      admin: userCounts.admin,
+    };
 
     // --- 일별 가입자 추이 (최근 14일) ---
     const dailySignupData: Array<{ date: string; count: number }> = [];
@@ -59,7 +70,7 @@ export default async function AdminDashboardPage() {
       d.setDate(d.getDate() - i);
       const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
       const ymd = d.toISOString().slice(0, 10);
-      const count = users.filter((u) => u.createdAt.slice(0, 10) === ymd).length;
+      const count = signupDates.filter((createdAt) => createdAt.slice(0, 10) === ymd).length;
       dailySignupData.push({ date: dateStr, count });
     }
 
@@ -81,8 +92,8 @@ export default async function AdminDashboardPage() {
     const prevMonth = prevMonthDate.getMonth();
     const prevYear = prevMonthDate.getFullYear();
 
-    const usersThisMonth = users.filter((u) => { const c = new Date(u.createdAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; }).length;
-    const usersPrevMonth = users.filter((u) => { const c = new Date(u.createdAt); return c.getFullYear() === prevYear && c.getMonth() === prevMonth; }).length;
+    const usersThisMonth = signupDates.filter((createdAt) => { const c = new Date(createdAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; }).length;
+    const usersPrevMonth = signupDates.filter((createdAt) => { const c = new Date(createdAt); return c.getFullYear() === prevYear && c.getMonth() === prevMonth; }).length;
 
     const submissionsThisMonth = submissions.filter((s) => { const c = new Date(s.submittedAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; }).length;
     const submissionsPrevMonth = submissions.filter((s) => { const c = new Date(s.submittedAt); return c.getFullYear() === prevYear && c.getMonth() === prevMonth; }).length;
@@ -104,7 +115,7 @@ export default async function AdminDashboardPage() {
             day: 'numeric',
             weekday: 'long',
           }),
-          totalUsers: users.length,
+          totalUsers: userCounts.total,
           activeUsers,
           totalContests: contests.length,
           ongoingContests,
@@ -142,10 +153,10 @@ async function RecentActivitiesSection() {
   let activityLogs;
   let users;
   try {
-    [activityLogs, users] = await Promise.all([
-      getAllActivityLogs(10),
-      getUsers(),
-    ]);
+    activityLogs = await getAllActivityLogs(10);
+    /* 피드에 노출되는 8건의 작성자만 조회한다 (전체 회원 조회 방지) */
+    const feedUserIds = [...new Set(activityLogs.slice(0, 8).map((log) => log.userId))];
+    users = feedUserIds.length > 0 ? await getUsersByIds(feedUserIds) : [];
   } catch {
     return (
       <section>
