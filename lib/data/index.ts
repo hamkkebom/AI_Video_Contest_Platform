@@ -481,13 +481,16 @@ function toPricingPlan(row: Record<string, unknown>): PricingPlan {
 function toInquiry(row: Record<string, unknown>): Inquiry {
   return {
     id: String(row.id),
-    userId: row.user_id as string,
+    userId: (row.user_id as string | null) ?? null,
     type: row.type as Inquiry['type'],
     title: row.title as string,
     content: row.content as string,
     status: row.status as Inquiry['status'],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
+    guestName: (row.guest_name as string) ?? undefined,
+    guestEmail: (row.guest_email as string) ?? undefined,
+    guestPhone: (row.guest_phone as string) ?? undefined,
   };
 }
 

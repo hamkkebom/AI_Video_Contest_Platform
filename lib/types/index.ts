@@ -100,13 +100,18 @@ export type InquiryStatus = "pending" | "in_progress" | "resolved";
 
 export interface Inquiry {
   id: string;
-  userId: string;
+  /** 회원 문의면 작성자 ID, 비회원 문의면 null */
+  userId: string | null;
   type: InquiryType;
   title: string;
   content: string;
   status: InquiryStatus;
   createdAt: string;
   updatedAt: string;
+  /** 비회원 문의자 정보 — 회원 문의는 undefined */
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
 }
 
 export type FaqCategory = "participant" | "host" | "judge" | "general";

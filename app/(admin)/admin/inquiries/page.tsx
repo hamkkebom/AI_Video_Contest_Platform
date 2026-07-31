@@ -166,7 +166,28 @@ export default async function AdminInquiriesPage() {
                           <p className="max-w-xs truncate text-xs text-muted-foreground">{inquiry.content}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{author?.name ?? '알 수 없음'}</TableCell>
+                      <TableCell className="text-sm">
+                        {author ? (
+                          <div>
+                            <p>{author.name}</p>
+                            <p className="text-xs text-muted-foreground">{author.email}</p>
+                          </div>
+                        ) : inquiry.guestEmail ? (
+                          /* 비회원 문의 — 답변할 연락처를 함께 보여준다 */
+                          <div>
+                            <p>
+                              {inquiry.guestName || '비회원'}
+                              <span className="ml-1 text-xs text-muted-foreground">(비회원)</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">{inquiry.guestEmail}</p>
+                            {inquiry.guestPhone && (
+                              <p className="text-xs text-muted-foreground">{inquiry.guestPhone}</p>
+                            )}
+                          </div>
+                        ) : (
+                          '알 수 없음'
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge className={`${typeInfo.color} border-0 text-xs`}>{typeInfo.label}</Badge>
                       </TableCell>
