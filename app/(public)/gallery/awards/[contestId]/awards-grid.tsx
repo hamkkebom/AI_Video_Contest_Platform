@@ -66,12 +66,24 @@ const TIER_STYLE = [
 
 const tierStyle = (index: number) => TIER_STYLE[Math.min(index, TIER_STYLE.length - 1)];
 
-/** 등급별 카드 크기 — 최상위는 1열 대형, 그 다음은 2열, 이후 3~4열 */
+/**
+ * 등급별 카드 크기 — 위 등급일수록 크게, 아래로 갈수록 촘촘하게.
+ * 하위 등급은 수가 많아 모바일에서도 2열로 깔아야 스크롤이 감당된다.
+ */
 function gridClass(index: number, total: number): string {
-  if (index === 0 && total > 1) return 'grid-cols-1';
+  /* 최상위 등급이 단독 수상이면 한 장을 크게 보여준다 */
+  if (index === 0) return total === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2';
   if (index === 1) return 'grid-cols-1 sm:grid-cols-2';
-  if (index === 2) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
-  return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+  if (index === 2) return 'grid-cols-2 lg:grid-cols-3';
+  return 'grid-cols-2 lg:grid-cols-4';
+}
+
+/** '3000000' 같은 원시 문자열을 '3,000,000원' 으로 — DB 에는 숫자만 저장돼 있다 */
+function formatPrize(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (!digits) return raw;
+  return `${Number(digits).toLocaleString()}원`;
 }
 
 function AwardCard({ item, tierIndex, featured }: { item: AwardItem; tierIndex: number; featured: boolean }) {
@@ -83,7 +95,11 @@ function AwardCard({ item, tierIndex, featured }: { item: AwardItem; tierIndex: 
       <div
         className={`relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 ${style.ring} ${style.glow}`}
       >
-        <div className={`relative overflow-hidden bg-muted ${featured ? 'aspect-[21/9]' : 'aspect-video'}`}>
+        {/* 대상은 좁은 화면에서 21:9 로 두면 아래 등급 카드보다 낮아져 위계가 뒤집힌다.
+            모바일에서는 4:3 으로 키우고, 넓은 화면에서만 시네마틱 비율을 쓴다. */}
+        <div
+          className={`relative overflow-hidden bg-muted ${featured ? 'aspect-[4/3] sm:aspect-[21/9]' : 'aspect-video'}`}
+        >
           {item.thumbnailUrl && (
             <Image
               src={item.thumbnailUrl}
@@ -95,20 +111,25 @@ function AwardCard({ item, tierIndex, featured }: { item: AwardItem; tierIndex: 
               priority={featured}
             />
           )}
-          <div className="absolute top-3 left-3 z-10">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold shadow-lg ${style.badge}`}>
-              <Icon className="h-3.5 w-3.5" />
+          {/* 좁은 화면의 2열 카드에서는 뱃지를 줄여 썸네일을 덜 가린다 */}
+          <div className="absolute left-2 top-2 z-10 sm:left-3 sm:top-3">
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold shadow-lg sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm ${style.badge}`}
+            >
+              <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {item.prizeLabel}
             </span>
           </div>
         </div>
 
-        <div className={featured ? 'space-y-2 p-6' : 'space-y-2 p-4'}>
-          <h3 className={`font-semibold ${featured ? 'text-xl md:text-2xl' : 'line-clamp-2 text-sm'}`}>
+        <div className={featured ? 'space-y-2 p-5 sm:p-6' : 'space-y-1.5 p-3 sm:p-4'}>
+          <h3 className={`font-semibold ${featured ? 'text-lg sm:text-xl md:text-2xl' : 'line-clamp-2 text-[13px] sm:text-sm'}`}>
             {item.title}
           </h3>
-          <p className={`text-muted-foreground ${featured ? 'text-base' : 'text-xs'}`}>{item.creatorName}</p>
-          <div className="flex gap-3 pt-1 text-xs text-muted-foreground">
+          <p className={`truncate text-muted-foreground ${featured ? 'text-sm sm:text-base' : 'text-xs'}`}>
+            {item.creatorName}
+          </p>
+          <div className="flex gap-3 pt-0.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Eye className="h-3.5 w-3.5" />
               {item.views.toLocaleString()}
@@ -180,12 +201,13 @@ export function AwardsGrid({ submissions, tiers }: AwardsGridProps) {
                 {group.tier.label}
               </h2>
               <span className="text-sm text-muted-foreground">{group.items.length}작품</span>
-              {group.tier.prizeAmount && (
-                <span className="text-sm text-muted-foreground">· 1인당 {group.tier.prizeAmount}</span>
+              {formatPrize(group.tier.prizeAmount) && (
+                <span className="text-sm text-muted-foreground">· 1인당 {formatPrize(group.tier.prizeAmount)}</span>
               )}
             </div>
 
-            <div className={`grid gap-4 ${gridClass(tierIndex, group.items.length)}`}>
+            {/* 단독 대상은 한 장이 화면 전체를 가로지르면 오히려 비어 보여 폭을 제한한다 */}
+            <div className={`grid gap-4 ${gridClass(tierIndex, group.items.length)} ${featured ? 'mx-auto max-w-4xl' : ''}`}>
               {visible.map((item) => (
                 <AwardCard key={item.id} item={item} tierIndex={tierIndex} featured={featured} />
               ))}

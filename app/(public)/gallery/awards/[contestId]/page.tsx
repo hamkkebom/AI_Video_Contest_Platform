@@ -134,16 +134,10 @@ export default async function ContestAwardsPage({
       {/* 수상작 그리드 */}
       <section className="pb-24 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="mb-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-base text-muted-foreground">
-            <p>
-              총 <span className="font-semibold text-[#EA580C]">{contestAwarded.length.toLocaleString()}</span>개의 수상작
-            </p>
-            {totalPrize > 0 && (
-              <p>
-                총 상금 <span className="font-semibold text-foreground">{totalPrize.toLocaleString()}원</span>
-              </p>
-            )}
-          </div>
+          {/* 총 상금은 페이지 헤더에 이미 있어 여기서는 수상작 수만 보여준다 */}
+          <p className="mb-8 text-base text-muted-foreground">
+            총 <span className="font-semibold text-[#EA580C]">{contestAwarded.length.toLocaleString()}</span>개의 수상작
+          </p>
 
           <AwardsGrid submissions={gridSubmissions} tiers={tiers} />
         </div>
