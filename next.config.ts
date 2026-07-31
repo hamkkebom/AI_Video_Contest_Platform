@@ -1,6 +1,41 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+/**
+ * CSP — 우선 Report-Only 로 운영한다.
+ *
+ * 이 사이트는 출품작 제목·설명 등 사용자 입력을 그대로 렌더링하므로 XSS 방어가 필요하지만,
+ * CSP 를 처음부터 강제하면 누락된 출처 하나 때문에 영상 재생이나 결제 위젯이 조용히 깨진다.
+ * Report-Only 는 브라우저가 위반을 /api/csp-report 로 보고만 하고 차단하지는 않는다.
+ * 실제 위반 로그를 며칠 모아 정책을 확정한 뒤 Content-Security-Policy 로 승격할 것.
+ *
+ * 허용 출처 근거:
+ *  - videodelivery.net / cloudflarestream.com : Cloudflare Stream 영상 재생 iframe·SDK
+ *  - *.supabase.co : DB·인증 API 와 Storage 이미지
+ *  - googletagmanager.com / google-analytics.com : GTM·GA
+ *  - connect.facebook.net / facebook.com : 페이스북 픽셀
+ *  - lh3.googleusercontent.com : 구글 로그인 사용자 아바타
+ *  - *.ingest.sentry.io : Sentry 에러 전송 (DSN 설정 시)
+ *  - 'unsafe-inline' : Next.js 가 하이드레이션용 인라인 스크립트를 넣기 때문에 현 단계에서는 불가피하다.
+ *                      승격 시 nonce 방식으로 바꿔 제거하는 것이 목표다.
+ */
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://embed.videodelivery.net",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.supabase.co https://*.cloudflarestream.com https://videodelivery.net https://lh3.googleusercontent.com https://www.google-analytics.com https://www.facebook.com",
+  "media-src 'self' blob: https://*.cloudflarestream.com https://videodelivery.net",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co https://*.cloudflarestream.com https://videodelivery.net https://www.google-analytics.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
+  "frame-src 'self' https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.facebook.com",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  "report-uri /api/csp-report",
+].join('; ');
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
   // recharts, lucide-react는 Next.js 15 기본 최적화 대상 — 중복 등록 시 dev HMR chunk 충돌 발생
@@ -34,6 +69,7 @@ const nextConfig: NextConfig = {
         { key: 'X-XSS-Protection', value: '1; mode=block' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
       ],
     },
   ],
