@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, CircleCheckBig, Clapperboard, Users, DollarSign, Info, Loader2, Zap, ShieldCheck } from 'lucide-react';
+import { ChevronRight, CircleCheckBig, Clapperboard, Users, DollarSign, Info, Loader2, ClipboardList, Mail } from 'lucide-react';
 
 /**
  * 영상 제작 의뢰 페이지
@@ -110,11 +110,15 @@ export default function AgencyRequestPage() {
     }
   };
 
+  /**
+   * 대행 서비스는 아직 준비 중이므로 확정된 약속(납품 속도·A/S 등) 대신
+   * 지금 실제로 보장할 수 있는 것 — 접수·검토·회신 절차 — 만 안내한다.
+   */
   const features = [
-    { icon: Users, title: '전문 크리에이터', description: '검증된 AI 영상 전문가가 직접 제작합니다' },
-    { icon: DollarSign, title: '합리적 비용', description: '예산에 맞는 최적의 제작 방안을 제안합니다' },
-    { icon: Zap, title: '빠른 납품', description: 'AI 기술을 활용하여 신속하게 결과물을 전달합니다' },
-    { icon: ShieldCheck, title: 'A/S 보장', description: '납품 후 수정 요청에 적극 대응합니다' },
+    { icon: ClipboardList, title: '의뢰 접수', description: '남겨주신 내용을 담당자가 확인합니다' },
+    { icon: Users, title: '크리에이터 연결', description: '공모전에서 활동한 AI 영상 창작자와 연결을 준비 중입니다' },
+    { icon: DollarSign, title: '예산 상담', description: '알려주신 예산 범위에 맞춰 제작 방안을 함께 검토합니다' },
+    { icon: Mail, title: '순차 회신', description: '서비스가 준비되는 대로 접수 순서대로 연락드립니다' },
   ];
 
   return (
@@ -133,7 +137,7 @@ export default function AgencyRequestPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold">AI 영상 제작 의뢰</h1>
-              <p className="text-muted-foreground">전문 크리에이터에게 AI 영상 제작을 맡겨보세요</p>
+              <p className="text-muted-foreground">서비스 준비 중 — 의뢰를 남겨주시면 순차적으로 연락드립니다</p>
             </div>
           </div>
         </div>
