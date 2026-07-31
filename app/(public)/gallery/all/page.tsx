@@ -4,19 +4,25 @@ import { safeJsonLd } from '@/lib/utils';
 import { GalleryGrid } from './gallery-grid';
 import { SearchInput } from '@/components/ui/search-input';
 import { headers } from 'next/headers';
+import { getContests } from '@/lib/data';
+import { keywordsFromContests } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: '갤러리 — AI 영상 작품 감상',
-  description: 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요. 공모전 수상작과 출품작을 확인할 수 있습니다.',
-  keywords: ['AI 영상 갤러리', 'AI 영상 작품', '공모전 수상작', 'AI꿈', '꿈꾸는 아리랑', '꿈꾸는 아리랑 영상', '꿈꾸는 아리랑 공모전', '아리랑 AI 작품'],
-  alternates: { canonical: '/gallery/all' },
-  openGraph: {
-    title: '갤러리 — AI 영상 작품 감상',
-    description: 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요.',
-    url: '/gallery/all',
-    type: 'website',
-  },
-};
+/**
+ * 갤러리 키워드는 공모전 태그에서 만든다.
+ * 새 공모전이 등록되면 그 태그가 자동으로 검색 키워드에 반영된다.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const contests = await getContests().catch(() => []);
+  const title = '갤러리 — AI 영상 작품 감상';
+  const description = 'AI꿈 갤러리에서 AI로 제작된 창작 영상 작품들을 감상하세요. 공모전 수상작과 출품작을 확인할 수 있습니다.';
+  return {
+    title,
+    description,
+    keywords: ['AI 영상 갤러리', 'AI 영상 작품', '공모전 수상작', ...keywordsFromContests(contests)],
+    alternates: { canonical: '/gallery/all' },
+    openGraph: { title, description, url: '/gallery/all', type: 'website' },
+  };
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 

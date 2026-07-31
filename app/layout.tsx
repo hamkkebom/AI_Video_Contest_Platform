@@ -13,6 +13,7 @@ import { ActivityTracker } from '@/components/tracking/activity-tracker';
 import { SessionTimeoutGuard } from '@/components/auth/session-timeout-guard';
 import { createClient } from '@/lib/supabase/server';
 import { getSiteSettings } from '@/lib/data';
+import { SITE_URL, SITE_NAME, DEFAULT_TITLE, DEFAULT_DESCRIPTION, BRAND_KEYWORDS } from '@/lib/seo';
 
 /** GTM/GA4 환경변수 — .env.local에 설정하면 자동 활성화 */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -28,11 +29,12 @@ export const viewport: Viewport = {
   ],
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
-const SITE_NAME = 'AI꿈';
-const DEFAULT_TITLE = 'AI꿈 — AI와 함께 꿈을 설계하고 완성하다';
-const DEFAULT_DESCRIPTION = 'AI꿈(AI꿈허브)은 AI 영상 공모전 전문 플랫폼입니다. AI를 활용한 창작 영상 공모전에 참가하고, 꿈꾸는 아리랑 등 다양한 공모전의 수상작을 감상해 보세요.';
-
+/**
+ * 사이트 전역 메타데이터는 플랫폼 자체만 설명한다.
+ * 개별 공모전명(예: 꿈꾸는 아리랑)을 여기 넣으면 그 공모전이 끝난 뒤에도
+ * 사이트 전체가 그 이름으로 검색에 남고, 새 공모전이 열려도 갱신되지 않는다.
+ * 공모전별 키워드는 각 공모전 페이지의 generateMetadata 가 DB 에서 만든다. (lib/seo.ts)
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -40,11 +42,7 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
-  keywords: [
-    'AI 영상 공모전', 'AI꿈', 'AI꿈허브', '꿈꾸는 아리랑', '꿈꾸는 아리랑 공모전',
-    '영상 공모전', 'AI 영상 제작', '공모전 플랫폼', '아리랑 AI 영상', '생성형AI 영상',
-    '헐버트 아리랑', '아리랑 공모전', 'Dreaming Arirang', 'AI video contest',
-  ],
+  keywords: [...BRAND_KEYWORDS],
   /* favicon.ico, apple-icon.png → app/ 폴더에 정적 파일로 배치, Next.js 자동 서빙 */
   alternates: {
     canonical: SITE_URL,

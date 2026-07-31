@@ -3,23 +3,24 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Trophy, Award, Search, LayoutList, LayoutGrid } from 'lucide-react';
 import { safeJsonLd } from '@/lib/utils';
+import { summarizeContests, keywordsFromContests } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: '공모전 목록 — 꿈꾸는 아리랑 AI 영상 공모전 접수중',
-  description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 제1회 꿈꾸는 아리랑 AI 영상 공모전 접수중! 헐버트 아리랑 채보 130주년 기념, 총 상금 1,300만원. 지금 참가하세요.',
-  keywords: [
-    'AI 영상 공모전', '공모전 목록', '꿈꾸는 아리랑', '꿈꾸는 아리랑 공모전', 'AI꿈',
-    '영상 공모전 접수', '아리랑 공모전', '헐버트 아리랑', '아리랑 AI 영상', '생성형AI 공모전',
-    'Dreaming Arirang', '영상 공모전 상금',
-  ],
-  alternates: { canonical: '/contests' },
-  openGraph: {
-    title: '공모전 목록 — 꿈꾸는 아리랑 AI 영상 공모전 접수중',
-    description: 'AI꿈에서 진행 중인 AI 영상 공모전을 확인하세요. 제1회 꿈꾸는 아리랑 AI 영상 공모전 접수중! 헐버트 아리랑 채보 130주년 기념, 총 상금 1,300만원.',
-    url: '/contests',
-    type: 'website',
-  },
-};
+/**
+ * 목록 메타데이터는 DB 의 공모전 상태에서 만든다.
+ * 예전에는 "꿈꾸는 아리랑 접수중" 이 하드코딩돼 있어, 그 공모전이 끝난 뒤에도
+ * 검색 결과에는 계속 접수중으로 노출되고 새 공모전은 반영되지 않았다.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const contests = await getContests().catch(() => []);
+  const { title, description } = summarizeContests(contests);
+  return {
+    title,
+    description,
+    keywords: keywordsFromContests(contests),
+    alternates: { canonical: '/contests' },
+    openGraph: { title, description, url: '/contests', type: 'website' },
+  };
+}
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getContests } from '@/lib/data';

@@ -5,24 +5,31 @@ import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getCompletedContests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
+import { keywordsFromContests } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: '수상작 갤러리 — AI 영상 공모전 수상작',
-  description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
-  keywords: ['수상작', 'AI 영상 수상작', '공모전 수상작', 'AI꿈 갤러리'],
-  alternates: { canonical: '/gallery/awards' },
-  openGraph: {
-    title: '수상작 갤러리 — AI 영상 공모전 수상작',
-    description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
-    url: '/gallery/awards',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: '수상작 갤러리 — AI 영상 공모전 수상작',
-    description: 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.',
-  },
-};
+/**
+ * 결과가 발표된 공모전이 생기면 그 이름이 메타데이터에 자동으로 반영된다.
+ * 아직 발표된 공모전이 없으면 일반적인 소개 문구를 쓴다.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  /* 화면이 렌더하는 것과 같은 목록을 쓴다 — 결과 발표된 공모전만 담긴다 */
+  const published = await getCompletedContests().catch(() => []);
+
+  const title = '수상작 갤러리 — AI 영상 공모전 수상작';
+  const description =
+    published.length > 0
+      ? `${published.map((c) => c.title).slice(0, 3).join(', ')}의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.`
+      : 'AI꿈 공모전의 수상작을 감상하세요. AI를 활용한 뛰어난 영상 작품들을 확인할 수 있습니다.';
+
+  return {
+    title,
+    description,
+    keywords: ['수상작', 'AI 영상 수상작', '공모전 수상작', ...keywordsFromContests(published)],
+    alternates: { canonical: '/gallery/awards' },
+    openGraph: { title, description, url: '/gallery/awards', type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
+  };
+}
 
 /**
  * 수상작 갤러리 메인 페이지
