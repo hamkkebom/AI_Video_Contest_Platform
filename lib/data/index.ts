@@ -617,6 +617,135 @@ export async function getUsersByIds(ids: string[]): Promise<User[]> {
   return data.map((row) => toUser(row as Record<string, unknown>));
 }
 
+/** 관리자 회원 목록 페이지네이션 결과 */
+export type AdminUserPage = {
+  users: User[];
+  /** 필터 적용 후 전체 건수 (DB count) */
+  total: number;
+  /** 1-based 페이지 번호 */
+  page: number;
+  pageSize: number;
+};
+
+/** 관리자 회원 통계 카운트 (역할별·상태별) */
+export type AdminUserCounts = {
+  total: number;
+  participant: number;
+  host: number;
+  judge: number;
+  admin: number;
+  active: number;
+  pending: number;
+  suspended: number;
+};
+
+const ADMIN_USER_DEFAULT_PAGE_SIZE = 50;
+const ADMIN_USER_MAX_PAGE_SIZE = 200;
+
+/** PostgREST or() 필터 문법을 깨뜨리는 문자를 제거한다 */
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[,()\\]/g, '').trim();
+}
+
+/**
+ * 관리자 회원 목록 조회 (DB 레벨 페이지네이션 + 검색 + 역할·상태 필터)
+ * 전 행을 가져오지 않고 .range() 로 해당 페이지만, 총 건수는 count 로 받는다.
+ * profiles 원본은 anon 이 읽을 수 없으므로 세션 클라이언트를 사용한다(unstable_cache 불가).
+ */
+export async function getAdminUsers(params: {
+  page?: number;
+  pageSize?: number;
+  /** 이름·닉네임·이메일 부분 일치 */
+  search?: string;
+  /** participant | host | judge | admin */
+  role?: string;
+  /** active | pending | suspended */
+  status?: string;
+}): Promise<AdminUserPage> {
+  const supabase = await createClient();
+
+  const pageSize = Math.min(
+    Math.max(1, Math.floor(params.pageSize ?? ADMIN_USER_DEFAULT_PAGE_SIZE)),
+    ADMIN_USER_MAX_PAGE_SIZE,
+  );
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase.from('profiles').select('*', { count: 'exact', head: false });
+
+  const search = sanitizeSearchTerm(params.search ?? '');
+  if (search) {
+    query = query.or(
+      `name.ilike.%${search}%,nickname.ilike.%${search}%,email.ilike.%${search}%`,
+    );
+  }
+  /* roles 는 TEXT[] 이므로 contains 로 배열 포함 여부를 확인한다 */
+  if (params.role) {
+    query = query.contains('roles', [params.role]);
+  }
+  if (params.status) {
+    query = query.eq('status', params.status);
+  }
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: true })
+    .range(from, to);
+
+  if (error || !data) return { users: [], total: 0, page, pageSize };
+
+  return {
+    users: data.map((row) => toUser(row as Record<string, unknown>)),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+/**
+ * 관리자 회원 통계 카운트
+ * head: true 로 행 데이터를 받지 않고 count 만 조회한다.
+ */
+export async function getAdminUserCounts(): Promise<AdminUserCounts> {
+  const supabase = await createClient();
+
+  const countAll = async (): Promise<number> => {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+    return error ? 0 : (count ?? 0);
+  };
+
+  const countByRole = async (role: string): Promise<number> => {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .contains('roles', [role]);
+    return error ? 0 : (count ?? 0);
+  };
+
+  const countByStatus = async (status: string): Promise<number> => {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', status);
+    return error ? 0 : (count ?? 0);
+  };
+
+  const [total, participant, host, judge, admin, active, pending, suspended] = await Promise.all([
+    countAll(),
+    countByRole('participant'),
+    countByRole('host'),
+    countByRole('judge'),
+    countByRole('admin'),
+    countByStatus('active'),
+    countByStatus('pending'),
+    countByStatus('suspended'),
+  ]);
+
+  return { total, participant, host, judge, admin, active, pending, suspended };
+}
+
 export async function getCompanies(): Promise<Company[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
