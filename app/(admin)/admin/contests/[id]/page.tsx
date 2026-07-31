@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Contest, SubmissionStatus } from '@/lib/types';
 import { ArrowLeft, Search, Pencil, Video, Trash2, Calendar, Gavel, Trophy, Image as ImageIcon, UserPlus, X, Loader2 } from 'lucide-react';
+import { formatPrizeDisplay } from '@/lib/prize';
 import { formatDateCompact } from '@/lib/utils';
 import { STATUS_LABEL_MAP, STATUS_BADGE_CLASS_MAP } from '@/config/constants';
 
@@ -32,23 +33,6 @@ function getAwardColorClass(label: string, index: number): string {
   if (index === 1) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
   if (index === 2) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
   return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
-}
-
-/** 상금 표시 포맷 (공개 페이지와 동일) */
-function formatPrizeDisplay(amount: string): string {
-  if (/[만억원]/.test(amount)) return amount;
-  const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
-  if (isNaN(num) || num === 0) return amount;
-  if (num >= 100000000) {
-    const eok = Math.floor(num / 100000000);
-    const man = Math.floor((num % 100000000) / 10000);
-    if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-    return `${eok}억원`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toLocaleString()}만원`;
-  }
-  return `${num.toLocaleString()}원`;
 }
 
 type ContestPayload = {

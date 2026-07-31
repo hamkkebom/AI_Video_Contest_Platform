@@ -27,7 +27,7 @@ import { getContests } from '@/lib/data';
 import { SortSelect } from '@/components/ui/sort-select';
 import { SearchInput } from '@/components/ui/search-input';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
-import type { AwardTier } from '@/lib/types';
+import { contestTotalPrize } from '@/lib/prize';
 import { formatDate } from '@/lib/utils';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 
@@ -71,54 +71,6 @@ export default async function ContestsPage({
     const d = new Date(dateStr);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}(${days[d.getDay()]})`;
-  };
-
-  /** 상금 문자열("300만원", "1,000만원" 등)을 숫자(원)로 변환 */
-  const parsePrizeAmount = (amount: string): number => {
-    const cleaned = amount.replace(/[,\s]/g, '');
-    const match = cleaned.match(/(\d+)/);
-    if (!match) return 0;
-    const num = parseInt(match[1], 10);
-    if (cleaned.includes('만')) return num * 10000;
-    if (cleaned.includes('억')) return num * 100000000;
-    return num;
-  };
-
-  /** awardTiers에서 총 상금 계산 (인원 × 개인 상금 합산) */
-  const calculateTotalPrize = (tiers: AwardTier[]): string | null => {
-    let total = 0;
-    for (const tier of tiers) {
-      if (!tier.prizeAmount) continue;
-      total += parsePrizeAmount(tier.prizeAmount) * tier.count;
-    }
-    if (total === 0) return null;
-    if (total >= 100000000) {
-      const eok = Math.floor(total / 100000000);
-      const man = Math.floor((total % 100000000) / 10000);
-      if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-      return `${eok}억원`;
-    }
-    if (total >= 10000) {
-      return `${(total / 10000).toLocaleString()}만원`;
-    }
-    return `${total.toLocaleString()}원`;
-  };
-
-  /** 상금 표시 포맷: 순수 숫자면 한국 원 단위로 변환 */
-  const formatPrizeDisplay = (amount: string): string => {
-    if (/[만억원]/.test(amount)) return amount;
-    const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
-    if (isNaN(num) || num === 0) return amount;
-    if (num >= 100000000) {
-      const eok = Math.floor(num / 100000000);
-      const man = Math.floor((num % 100000000) / 10000);
-      if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-      return `${eok}억원`;
-    }
-    if (num >= 10000) {
-      return `${(num / 10000).toLocaleString()}만원`;
-    }
-    return `${num.toLocaleString()}원`;
   };
 
   /** 공통 URL 파라미터 생성 (view, sort, search 보존) */
@@ -312,7 +264,7 @@ export default async function ContestsPage({
               /* ────────────── 리스트 뷰 ────────────── */
               <div className="space-y-6">
                 {displayedContests.map((contest, index) => {
-                  const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
+                  const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
                   const displayStatus = getDisplayStatus(contest);
                   const isBeforeStart = displayStatus === 'draft' && contest.status === 'open';
                   return (
@@ -466,7 +418,7 @@ export default async function ContestsPage({
                               </p>
                             )}
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-bold text-white"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {(contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers) || '미정'}</span>
+                              <span className="text-sm font-bold text-white"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contestTotalPrize(contest.prizeAmount, contest.awardTiers) ?? '미정'}</span>
                               <span className="text-sm text-white/70">
                                 {(displayStatusCard === 'draft')
                                   ? `접수시작 ${formatDate(contest.submissionStartAt, { month: '2-digit', day: '2-digit' })}`

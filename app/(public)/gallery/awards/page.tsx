@@ -6,6 +6,7 @@ import { AutoFitTitle } from '@/components/ui/auto-fit-title';
 import { getCompletedContests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 import { keywordsFromContests } from '@/lib/seo';
+import { contestTotalPrize } from '@/lib/prize';
 
 /**
  * 결과가 발표된 공모전이 생기면 그 이름이 메타데이터에 자동으로 반영된다.
@@ -114,7 +115,7 @@ export default async function GalleryAwardsPage() {
                           {contest.title}
                         </AutoFitTitle>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contest.prizeAmount ?? '미정'}</span>
+                          <span className="text-sm font-bold text-white/90"><Award className="inline h-3.5 w-3.5 mr-1" />총상금 {contestTotalPrize(contest.prizeAmount, contest.awardTiers) ?? '미정'}</span>
                           <span className="text-sm text-white/60">
                             발표 {formatDate(contest.resultAnnouncedAt, { month: '2-digit', day: '2-digit' })}
                           </span>

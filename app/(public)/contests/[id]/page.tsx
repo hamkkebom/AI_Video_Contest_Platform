@@ -7,7 +7,7 @@ import { getContestById, getPublicProfileById, getRelatedContests } from '@/lib/
 import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
-import type { AwardTier } from '@/lib/types';
+import { contestTotalPrize, formatPrizeDisplay } from '@/lib/prize';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
 import { STATUS_BADGE_CLASS_MAP } from '@/config/constants';
@@ -91,54 +91,6 @@ function getResultFormatLabel(format?: string) {
   return format ?? '-';
 }
 
-/** 상금 문자열("300만원", "1,000만원" 등)을 숫자(원)로 변환 */
-function parsePrizeAmount(amount: string): number {
-  const cleaned = amount.replace(/[,\s]/g, '');
-  const match = cleaned.match(/(\d+)/);
-  if (!match) return 0;
-  const num = parseInt(match[1], 10);
-  if (cleaned.includes('만')) return num * 10000;
-  if (cleaned.includes('억')) return num * 100000000;
-  return num;
-}
-
-/** awardTiers에서 총 상금을 계산 (인원 × 개인 상금 합산) */
-function calculateTotalPrize(tiers: AwardTier[]): string | null {
-  let total = 0;
-  for (const tier of tiers) {
-    if (!tier.prizeAmount) continue;
-    total += parsePrizeAmount(tier.prizeAmount) * tier.count;
-  }
-  if (total === 0) return null;
-  if (total >= 100000000) {
-    const eok = Math.floor(total / 100000000);
-    const man = Math.floor((total % 100000000) / 10000);
-    if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-    return `${eok}억원`;
-  }
-  if (total >= 10000) {
-    return `${(total / 10000).toLocaleString()}만원`;
-  }
-  return `${total.toLocaleString()}원`;
-}
-
-/** 상금 표시 포맷: 순수 숫자면 한국 원 단위로 변환, 이미 포맷된 문자열이면 그대로 반환 */
-function formatPrizeDisplay(amount: string): string {
-  if (/[만억원]/.test(amount)) return amount;
-  const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
-  if (isNaN(num) || num === 0) return amount;
-  if (num >= 100000000) {
-    const eok = Math.floor(num / 100000000);
-    const man = Math.floor((num % 100000000) / 10000);
-    if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-    return `${eok}억원`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toLocaleString()}만원`;
-  }
-  return `${num.toLocaleString()}원`;
-}
-
 /** 수상 티어 라벨 기반 색상 클래스 */
 function getAwardColorClass(label: string, index: number): string {
   const lower = label.toLowerCase();
@@ -196,7 +148,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     getRelatedContests(contest.id, 6),
   ]);
   const isAdminHost = hostUser?.roles?.includes('admin');
-  const totalPrize = (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) || calculateTotalPrize(contest.awardTiers);
+  const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
 
   /* JSON-LD 구조화 데이터 — Event 스키마 */
   const jsonLd = {

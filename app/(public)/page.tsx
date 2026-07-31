@@ -7,7 +7,7 @@ import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carou
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { Clapperboard, ArrowRight } from 'lucide-react';
-import type { AwardTier } from '@/lib/types';
+import { contestTotalPrize } from '@/lib/prize';
 import { formatDate, safeJsonLd } from '@/lib/utils';
 import { SitePopup } from '@/components/popup/site-popup';
 
@@ -43,52 +43,6 @@ export default async function LandingPage() {
     ctaLabel: '자세히 보기',
     imageUrl: c.heroImageUrl || c.posterUrl,
   }));
-
-  /* ── 상금 계산 유틸 ── */
-  const parsePrizeAmount = (amount: string): number => {
-    const cleaned = amount.replace(/[,\s]/g, '');
-    const match = cleaned.match(/(\d+)/);
-    if (!match) return 0;
-    const num = parseInt(match[1], 10);
-    if (cleaned.includes('만')) return num * 10000;
-    if (cleaned.includes('억')) return num * 100000000;
-    return num;
-  };
-
-  const calculateTotalPrize = (tiers: AwardTier[]): string | null => {
-    let total = 0;
-    for (const tier of tiers) {
-      if (!tier.prizeAmount) continue;
-      total += parsePrizeAmount(tier.prizeAmount) * tier.count;
-    }
-    if (total === 0) return null;
-    if (total >= 100000000) {
-      const eok = Math.floor(total / 100000000);
-      const man = Math.floor((total % 100000000) / 10000);
-      if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-      return `${eok}억원`;
-    }
-    if (total >= 10000) {
-      return `${(total / 10000).toLocaleString()}만원`;
-    }
-    return `${total.toLocaleString()}원`;
-  };
-
-  const formatPrizeDisplay = (amount: string): string => {
-    if (/[만억원]/.test(amount)) return amount;
-    const num = parseInt(amount.replace(/[,\s]/g, ''), 10);
-    if (isNaN(num) || num === 0) return amount;
-    if (num >= 100000000) {
-      const eok = Math.floor(num / 100000000);
-      const man = Math.floor((num % 100000000) / 10000);
-      if (man > 0) return `${eok}억 ${man.toLocaleString()}만원`;
-      return `${eok}억원`;
-    }
-    if (num >= 10000) {
-      return `${(num / 10000).toLocaleString()}만원`;
-    }
-    return `${num.toLocaleString()}원`;
-  };
 
   /** "2026. 03. 28(토)" 형식 */
   const formatDateWithDay = (dateStr: string) => {
@@ -157,9 +111,7 @@ export default async function LandingPage() {
 
             <div className="space-y-6">
               {openContests.map((contest, index) => {
-                const totalPrize =
-                  (contest.prizeAmount ? formatPrizeDisplay(contest.prizeAmount) : null) ||
-                  calculateTotalPrize(contest.awardTiers);
+                const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
                 const beforeStart = isBeforeStart(contest);
 
                 return (

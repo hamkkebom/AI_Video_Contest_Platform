@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getAwardedSubmissions, getCompletedContests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
+import { contestTotalPrize } from '@/lib/prize';
 import { AwardsGrid } from './awards-grid';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
@@ -93,12 +94,8 @@ export default async function ContestAwardsPage({
     prizeAmount: t.prizeAmount,
   }));
 
-  /* 실제 수상 인원과 총 상금 — 헤더 요약에 쓴다 */
-  const totalPrize = (contest.awardTiers ?? []).reduce((sum, t) => {
-    const perPerson = Number(String(t.prizeAmount ?? '').replace(/[^0-9]/g, ''));
-    const awarded = contestAwarded.filter((s) => s.prizeLabel === t.label).length;
-    return Number.isFinite(perPerson) ? sum + perPerson * awarded : sum;
-  }, 0);
+  /* 총 상금 — 직접 입력값이 있으면 그것을, 없으면 등급별 상금 합계를 쓴다 */
+  const totalPrizeLabel = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
@@ -121,9 +118,8 @@ export default async function ContestAwardsPage({
               {contest.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              {/* 공모전에 총상금이 따로 입력돼 있지 않으면 등급별 상금 합계로 대신한다 */}
               <span className="font-semibold text-foreground">
-                {contest.prizeAmount ?? (totalPrize > 0 ? `총 상금 ${totalPrize.toLocaleString()}원` : '상금 미정')}
+                {totalPrizeLabel ? `총 상금 ${totalPrizeLabel}` : '상금 미정'}
               </span>
               <span>발표일 {formatDate(contest.resultAnnouncedAt, { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
             </div>
