@@ -37,6 +37,7 @@
 | 갤러리 (무한스크롤) | ✅ 운영 | `app/gallery/`, `app/api/gallery/` | `submissions` |
 | 갤러리 공모전 필터 (2026-08-01) | ✅ 운영 | `?contest=[id]` — 공모전 2개 이상일 때 자동 노출. 기간 필터를 대체 | `submissions.contest_id` |
 | 주최자 공개 페이지 (2026-08-01) | ✅ 운영 | `app/(public)/hosts/[id]/` — 승인 기업만, 사업자 정보 제외 (D-014) | `public_companies` 뷰 |
+| 주최자 온보딩 (2026-08-01) | ⚠️ 마이그레이션 048·049 적용 대기 | `/hosts/apply` 신청 → `/admin/companies` 승인 → host 역할 자동 부여 (D-015) | RPC `apply_host_company`, `admin_set_company_status` |
 | 갤러리 상세 비로그인 공개 (2026-08-01) | ✅ 운영 | `lib/supabase/middleware.ts` — 감상은 공개, 좋아요만 로그인 ([IA.md](IA.md) §4) | `public_submissions` 뷰 |
 | 공개/비공개 토글 (계획외) | ✅ 운영 | 마이그레이션 041 | `submissions.is_public` |
 | 좋아요 (+어뷰징 방어) | ✅ 운영 | `app/api/` + RPC `rpc_toggle_like` | `likes`, `like_events` |

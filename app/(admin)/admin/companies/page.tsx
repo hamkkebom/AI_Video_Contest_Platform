@@ -15,6 +15,7 @@ import {
 import { getCompanies, getCompanyMembers } from '@/lib/data';
 import type { CompanyStatus } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
+import { CompanyStatusActions } from './_components/company-status-actions';
 
 /** 기업 승인 상태 라벨 */
 const STATUS_LABEL_MAP: Record<CompanyStatus, { label: string; color: string }> = {
@@ -171,11 +172,14 @@ export default async function AdminCompaniesPage() {
                         {formatDate(company.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/admin/companies/${company.id}` as Route}>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            상세
-                          </Button>
-                        </Link>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <CompanyStatusActions companyId={company.id} status={company.status} />
+                          <Link href={`/admin/companies/${company.id}` as Route}>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                              상세
+                            </Button>
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

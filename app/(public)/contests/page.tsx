@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import { Button } from '@/components/ui/button';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
-import { getContests } from '@/lib/data';
+import { getContests, getPublicCompanies } from '@/lib/data';
 import { SortSelect } from '@/components/ui/sort-select';
 import { SearchInput } from '@/components/ui/search-input';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
@@ -65,6 +65,9 @@ export default async function ContestsPage({
   /* DB status='draft'(관리자 미공개 초안)는 공개 목록에서 제외 —
      공개 어휘 "접수전"은 open+접수 시작 전 공모전만 가리킨다 (docs/IA.md §1-2) */
   contests = contests.filter((c) => c.status !== 'draft');
+  /* 주최자 표기용 — 승인된 기업만 담긴 공개 뷰 (뷰 미배포 환경에선 빈 배열) */
+  const companies = await getPublicCompanies().catch(() => []);
+  const companyNameById = new Map(companies.map((c) => [c.id, c.name]));
   // 서버사이드 현재 시각 (접수중이지만 아직 접수시작 전인지 판별용)
   const nowMs = Date.now();
   /** 표시용 상태 계산: open이지만 submissionStartAt이 미래면 'draft'(접수전)으로 취급 */
@@ -322,6 +325,12 @@ export default async function ContestsPage({
                         {/* 오른쪽: 콘텐츠 */}
                         <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
                           <div className="space-y-3">
+                            {/* 주최자 (등록 기업이 있을 때만) */}
+                            {companyNameById.get(contest.hostCompanyId) && (
+                              <p className="text-xs font-medium tracking-wide text-neutral-400">
+                                주최 · {companyNameById.get(contest.hostCompanyId)}
+                              </p>
+                            )}
                             {/* 제목 */}
                             <Link href={`/contests/${contest.id}` as Route}>
                               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">

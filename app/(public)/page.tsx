@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { getContests, getFeaturedSubmissions, getSiteSettings } from '@/lib/data';
+import { getContests, getFeaturedSubmissions, getSiteSettings, getPublicCompanies } from '@/lib/data';
 import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
 import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
@@ -32,6 +32,9 @@ export default async function LandingPage() {
   const siteSettings = await getSiteSettings();
   const showFeaturedCarousel = siteSettings['landing.featured_carousel'] ?? false;
   const featuredSubmissions = showFeaturedCarousel ? await getFeaturedSubmissions(12) : [];
+  /* 주최자 표기용 — 승인된 기업만 담긴 공개 뷰 (뷰 미배포 환경에선 빈 배열) */
+  const companies = await getPublicCompanies().catch(() => []);
+  const companyNameById = new Map(companies.map((c) => [c.id, c.name]));
   const openContests = contests.filter(c => c.status === 'open').slice(0, 8);
   /* 접수 중 공모전이 없을 때 홈 폴백용 — 심사중/결과발표 공모전 최신순 (IA.md §1-4: 첫 화면은 빈 껍데기가 아니어야 한다) */
   const fallbackContests = openContests.length === 0
@@ -114,7 +117,57 @@ export default async function LandingPage() {
           </div>
         </section>
       )}
-      {openContests.length > 0 && (
+      {/* 3개 이상이면 컴팩트 그리드 — 전폭 카드를 N개 쌓으면 홈이 스크롤 지옥이 된다 (멀티 공모전 대응) */}
+      {openContests.length >= 3 && (
+        <section className="pt-20 pb-8 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <div className="mb-10 flex items-end justify-between">
+              <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
+              <Link href="/contests" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                전체 보기 →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {openContests.map((contest, index) => {
+                const beforeStart = isBeforeStart(contest);
+                const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
+                const hostName = companyNameById.get(contest.hostCompanyId);
+                return (
+                  <Link key={contest.id} href={`/contests/${contest.id}` as Route} className="group">
+                    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-muted">
+                      <Image
+                        src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
+                        alt={contest.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      {/* 상태 뱃지 */}
+                      <span className={`absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md border border-white/20 ${beforeStart ? 'bg-emerald-500/70' : 'bg-orange-500/70'}`}>
+                        {beforeStart ? PUBLIC_CONTEST_STATUS_LABELS.draft : PUBLIC_CONTEST_STATUS_LABELS.open}
+                      </span>
+                      {/* 하단 정보 오버레이 */}
+                      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 pt-10 space-y-1">
+                        {hostName && (
+                          <p className="truncate text-[11px] font-medium text-white/70">{hostName}</p>
+                        )}
+                        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white break-keep">
+                          {contest.title}
+                        </h3>
+                        <p className="text-xs text-white/70">~ {formatDateWithDay(contest.submissionEndAt)}</p>
+                        {totalPrize && <p className="text-xs font-semibold text-orange-300">총 상금 {totalPrize}</p>}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 1~2개일 땐 기존 전폭 카드 — 정보 밀도가 높은 리치 카드 유지 */}
+      {openContests.length > 0 && openContests.length < 3 && (
         <section className="pt-20 pb-8 px-4">
           <div className="container mx-auto max-w-6xl">
             <h2 className="text-2xl font-bold mb-10">진행 중인 공모전</h2>
@@ -155,6 +208,12 @@ export default async function LandingPage() {
                       {/* 오른쪽: 콘텐츠 */}
                       <div className="flex-1 p-6 md:p-8 flex flex-col justify-between min-w-0">
                         <div className="space-y-3">
+                          {/* 주최자 (등록 기업이 있을 때만) */}
+                          {companyNameById.get(contest.hostCompanyId) && (
+                            <p className="text-xs font-medium tracking-wide text-neutral-400">
+                              주최 · {companyNameById.get(contest.hostCompanyId)}
+                            </p>
+                          )}
                           {/* 제목 */}
                           <Link href={`/contests/${contest.id}` as Route}>
                             <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">

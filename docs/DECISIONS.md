@@ -90,6 +90,12 @@
 - **결정**: 042와 같은 패턴으로 `public_companies` 뷰(id·name·logo_url·website·description, `status='approved'` 한정)를 만들고 원본 테이블의 anon SELECT 를 회수했다. `company_members` 는 본인·같은 회사·관리자만 조회한다(자기 참조 재귀를 피하려 `is_company_member()` SECURITY DEFINER 함수 사용). 주최 표기는 **등록 기업 → 플랫폼 자체 개최(admin) → 주최 담당자** 순으로 해석하고, 공개 주최자 페이지 `/hosts/[id]` 를 신설했다. Event JSON-LD 의 organizer 도 플랫폼 고정에서 실제 주최자로 바꿨다. (마이그레이션 048)
 - **결과**: 주최자가 공개 화면에 존재하게 됐고 사업자 정보는 뷰 밖으로 나갈 수 없다. 부수 발견 — `/hosts` 도입으로 `pathname.startsWith('/host')` 가 공개 주최자 페이지까지 로그인으로 보내는 접두사 충돌이 드러나, 미들웨어·헤더·푸터의 경로 비교를 세그먼트 경계(`isUnder`)로 교정했다. 인증 없는 관리자 API 는 `/api/admin/companies/[id]` 하나만 실제 구멍이었고(나머지 4개는 RLS 가 쓰기를 막고 있었다) 명시적 관리자 확인을 추가했다.
 
+## D-015 · 주최자 온보딩은 좁은 RPC 두 개로 (2026-08-01)
+
+- **배경**: 멀티테넌트(D-014)의 다음 조각은 외부 주최자가 스스로 기업을 등록하는 흐름인데, RLS 구조가 셀프서비스를 막고 있었다 — ① `company_members`에 INSERT 정책이 없고, 열면 아무나 임의 회사의 멤버로 자신을 추가할 수 있다(소속 위조). ② 신청 직후에는 아직 멤버가 아니라 companies의 "소속 멤버 조회" 정책에 걸려 `INSERT ... RETURNING`도 실패한다(가입 전엔 자기 회사를 SELECT할 수 없는 순환). ③ profiles는 "본인만 수정"이라 관리자가 승인 시점에 host 역할을 부여할 방법이 없다.
+- **결정**: 테이블 쓰기 권한을 여는 대신 검증이 내장된 SECURITY DEFINER RPC 두 개만 연다 — `apply_host_company`(기업 pending + 신청자 owner 멤버십 원자 생성, 중복 신청 차단)와 `admin_set_company_status`(is_admin 강제, 승인 시 owner 전원에게 host 역할 부여). 직접 INSERT 정책은 `status='pending'` 강제로 교체해 우회 승인을 막았다. (마이그레이션 049) 흐름: `/hosts/apply`(로그인 필요) → `/admin/companies` 승인/반려 버튼 → host 대시보드 개방. 진입점은 푸터 "공모전 개최 신청".
+- **결과**: 온보딩 코드 완성, RPC 미배포 환경에선 503으로 우아하게 실패. **048·049 마이그레이션은 MCP가 읽기 전용이라 수동 적용 필요** — 적용 전까지 신청 접수 불가.
+
 ---
 
 ## 새 결정 추가 방법

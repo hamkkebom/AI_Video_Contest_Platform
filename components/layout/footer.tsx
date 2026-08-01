@@ -18,6 +18,7 @@ const supportLinks: Array<{ label: string; href: Route }> = [
   { label: 'FAQ', href: '/support/faq' },
   { label: '문의하기', href: '/support/inquiry' },
   { label: '제작 대행 의뢰', href: '/support/agency' },
+  { label: '공모전 개최 신청', href: '/hosts/apply' },
 ];
 
 const legalLinks: Array<{ label: string; href: Route }> = [

@@ -28,6 +28,7 @@
 ├── /gallery/awards        수상작 갤러리
 │   └── /gallery/awards/[contestId]
 ├── /hosts/[id]            주최자 공개 페이지 — 승인된 기업만 (D-014)
+├── /hosts/apply           공모전 개최 신청 — 로그인 필요, 승인 시 host 역할 부여 (D-015)
 ├── /creators              크리에이터 목록
 │   └── /creators/[id]
 ├── /story                 스토리 (아티클)
@@ -92,6 +93,7 @@
 | `/gallery/[id]` | **공개로 전환** | 좋아요 등 행위만 로그인 요구 (컴포넌트 단위). sitemap 1,000건과 정합. **트레이드오프**: 익명 조회수가 쌓이므로 `online_vote_type`에 views를 포함하는 공모전 운영 시 인증 조회 집계 정책 필요 (D-013, 로드맵 이관) |
 | `/contests/[id]/submit` | 로그인 | 기존 유지 |
 | `/invite/[token]` | 로그인 (역할 무관) | 미들웨어 로그인 가드 적용, RoleGuard는 `/judging` 전용 레이아웃으로 이동 — 초대 수신자는 아직 judge 역할이 없음. 페이지 자체는 데모 스텁 상태로 실토큰 흐름 재구축은 로드맵 이관(§6) |
+| `/hosts/apply` | 로그인 | 개최 신청 — RPC(`apply_host_company`)가 기업(pending)+owner 멤버십 원자 생성, 관리자 승인 시 host 역할 부여 (D-015) |
 | `/my/*` | 로그인 | |
 | `/host/*` | 로그인 + host | |
 | `/admin/*` | 로그인 + admin | |
