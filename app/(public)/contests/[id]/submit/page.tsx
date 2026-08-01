@@ -1399,7 +1399,7 @@ export default function ContestSubmitPage() {
                 {/* 이름 */}
                 <div className="space-y-2">
                   <Label htmlFor="submitterName" className="text-sm font-semibold">
-                    이름 <span className="text-red-500">*</span>
+                    이름 <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="submitterName"
@@ -1411,12 +1411,12 @@ export default function ContestSubmitPage() {
                     placeholder="이름을 입력하세요"
                     className="bg-background/50 border-border"
                   />
-                  {fieldErrors.submitterName && <p className="text-xs text-red-500">{fieldErrors.submitterName}</p>}
+                  {fieldErrors.submitterName && <p className="text-xs text-destructive">{fieldErrors.submitterName}</p>}
                 </div>
                 {/* 전화번호 */}
                 <div className="space-y-2">
                   <Label htmlFor="submitterPhone" className="text-sm font-semibold">
-                    전화번호 <span className="text-red-500">*</span>
+                    전화번호 <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="submitterPhone"
@@ -1428,12 +1428,12 @@ export default function ContestSubmitPage() {
                     placeholder="010-0000-0000"
                     className="bg-background/50 border-border"
                   />
-                  {fieldErrors.submitterPhone && <p className="text-xs text-red-500">{fieldErrors.submitterPhone}</p>}
+                  {fieldErrors.submitterPhone && <p className="text-xs text-destructive">{fieldErrors.submitterPhone}</p>}
                 </div>
                 {/* 영상 제목 */}
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-sm font-semibold">
-                    영상 제목 <span className="text-red-500">*</span>
+                    영상 제목 <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -1446,12 +1446,12 @@ export default function ContestSubmitPage() {
                     className="bg-background/50 border-border"
                   />
                   <p className="text-xs text-muted-foreground text-right">{form.title.length}/100</p>
-                  {fieldErrors.title && <p className="text-xs text-red-500">{fieldErrors.title}</p>}
+                  {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
                 </div>
                 {/* 영상 설명 */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-semibold">
-                    영상 설명 <span className="text-red-500">*</span>
+                    영상 설명 <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="description"
@@ -1465,7 +1465,7 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground text-right">
                     {form.description.length}/1000
                   </p>
-                  {fieldErrors.description && <p className="text-xs text-red-500">{fieldErrors.description}</p>}
+                  {fieldErrors.description && <p className="text-xs text-destructive">{fieldErrors.description}</p>}
                 </div>
                 {/* 사용한 AI 도구 */}
                 <div className="space-y-4">
@@ -1497,7 +1497,7 @@ export default function ContestSubmitPage() {
                 {/* 제작과정 설명 */}
                 <div className="space-y-2">
                   <Label htmlFor="productionProcess" className="text-sm font-semibold">
-                    제작과정 설명 <span className="text-red-500">*</span>
+                    제작과정 설명 <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="productionProcess"
@@ -1511,7 +1511,7 @@ export default function ContestSubmitPage() {
                   <p className="text-xs text-muted-foreground text-right">
                     {form.productionProcess.length}/3000
                   </p>
-                  {fieldErrors.productionProcess && <p className="text-xs text-red-500">{fieldErrors.productionProcess}</p>}
+                  {fieldErrors.productionProcess && <p className="text-xs text-destructive">{fieldErrors.productionProcess}</p>}
                 </div>
               </div>
             </Card>
@@ -1563,7 +1563,7 @@ export default function ContestSubmitPage() {
                   {/* 썸네일 이미지 업로드 */}
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">
-                      썸네일 이미지 <span className="text-red-500">*</span>
+                      썸네일 이미지 <span className="text-destructive">*</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">JPG, PNG 형식, 최대 10MB · 권장 1920×1080px</p>
                     <input
@@ -1627,12 +1627,12 @@ export default function ContestSubmitPage() {
                         </div>
                       </button>
                     )}
-                    {fieldErrors.thumbnailFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.thumbnailFile}</p>}
+                    {fieldErrors.thumbnailFile && <p className="text-xs text-destructive mt-1">{fieldErrors.thumbnailFile}</p>}
                   </div>
                   {/* 영상 파일 업로드 */}
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold">
-                      영상 파일 <span className="text-red-500">*</span>
+                      영상 파일 <span className="text-destructive">*</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">
                       {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 200MB
@@ -1682,7 +1682,7 @@ export default function ContestSubmitPage() {
                         </div>
                       </button>
                     )}
-                    {fieldErrors.videoFile && <p className="text-xs text-red-500 mt-1">{fieldErrors.videoFile}</p>}
+                    {fieldErrors.videoFile && <p className="text-xs text-destructive mt-1">{fieldErrors.videoFile}</p>}
                   </div>
                 </div>
               )}
@@ -1692,7 +1692,7 @@ export default function ContestSubmitPage() {
             {hasBonusConfigs && (
               <Card className="p-6 border border-border">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
                   <div>
                     <h2 className="text-lg font-bold">가산점 인증 <span className="text-xs text-muted-foreground font-normal ml-1">(선택)</span></h2>
                     <p className="text-xs text-muted-foreground">추후 마이페이지에서도 등록 가능합니다</p>
@@ -1768,7 +1768,7 @@ export default function ContestSubmitPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleProofImageRemove(config.id)}
-                                    className="text-xs text-red-500 hover:text-red-600 cursor-pointer font-medium shrink-0"
+                                    className="text-xs text-destructive hover:text-destructive cursor-pointer font-medium shrink-0"
                                   >
                                     제거
                                   </button>
@@ -1922,10 +1922,10 @@ export default function ContestSubmitPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  에 동의합니다 <span className="text-red-500">*</span>
+                  에 동의합니다 <span className="text-destructive">*</span>
                 </label>
               </div>
-              {fieldErrors.agree && <p className="text-xs text-red-500 mt-1 ml-8">{fieldErrors.agree}</p>}
+              {fieldErrors.agree && <p className="text-xs text-destructive mt-1 ml-8">{fieldErrors.agree}</p>}
 
               {/* 개인 SNS 업로드 자제 안내 */}
               <div className="mt-4 rounded-xl border-2 border-blue-400 bg-blue-50 dark:bg-blue-950/30 p-4">
@@ -1948,7 +1948,7 @@ export default function ContestSubmitPage() {
             {/* ===== 제출/저장 버튼 (항상 표시) ===== */}
             <Card className="p-6 border border-border">
               {submitError && (
-                <p className="text-sm text-red-500 mb-4">{submitError}</p>
+                <p className="text-sm text-destructive mb-4">{submitError}</p>
               )}
               {isSubmitting && (
                 <p className="text-sm text-muted-foreground mb-4">
@@ -1999,7 +1999,7 @@ export default function ContestSubmitPage() {
           </DialogHeader>
           <div className="space-y-2 py-2">
             {Object.values(fieldErrors).map((msg) => (
-              <div key={msg} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+              <div key={msg} className="flex items-center gap-2 text-sm text-destructive dark:text-destructive">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 <span>{msg}</span>
               </div>
@@ -2098,7 +2098,7 @@ export default function ContestSubmitPage() {
                           'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
                           isCompleted && 'bg-green-500/10 text-green-500',
                           isActive && !isFailed && 'bg-primary/10 text-primary',
-                          isFailed && 'bg-red-500/10 text-red-500',
+                          isFailed && 'bg-destructive/10 text-destructive',
                           isPending && 'bg-muted text-muted-foreground',
                         )}>
                           {isCompleted ? <CheckCircle2 className="h-5 w-5" />
@@ -2111,7 +2111,7 @@ export default function ContestSubmitPage() {
                             'text-sm font-medium transition-colors',
                             isCompleted && 'text-green-600 dark:text-green-400',
                             isActive && !isFailed && 'text-foreground',
-                            isFailed && 'text-red-600 dark:text-red-400',
+                            isFailed && 'text-destructive dark:text-destructive',
                             isPending && 'text-muted-foreground',
                           )}>
                             {step.label}{isCompleted && ' ✓'}{isFailed && ' ✕'}
@@ -2156,8 +2156,8 @@ export default function ContestSubmitPage() {
                   ) : errorType === 'contest_closed' ? (
                     /* 공모전 취소/종료 */
                     <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-red-500" />
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-destructive" />
                       </div>
                       <p className="text-center font-semibold">공모전이 종료되었습니다</p>
                       <p className="text-center text-sm text-muted-foreground">이 공모전은 현재 접수 기간이 아닙니다.</p>
@@ -2168,8 +2168,8 @@ export default function ContestSubmitPage() {
                   ) : errorType === 'deadline_passed' ? (
                     /* 마감 초과 */
                     <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-red-500" />
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-destructive" />
                       </div>
                       <p className="text-center font-semibold">접수 마감일이 지났습니다</p>
                       <p className="text-center text-sm text-muted-foreground">공모전 접수 마감일이 지나 제출이 완료되지 않았습니다.</p>
@@ -2192,8 +2192,8 @@ export default function ContestSubmitPage() {
                   ) : (
                     /* 일반 오류 — 사용자 친화적 안내 */
                     <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-red-500" />
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-destructive" />
                       </div>
                       <div className="p-4 rounded-lg bg-muted/50 text-sm whitespace-pre-line leading-relaxed">
                         {submitError}

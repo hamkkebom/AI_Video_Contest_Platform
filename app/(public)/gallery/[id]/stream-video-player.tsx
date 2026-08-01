@@ -125,7 +125,7 @@ export function StreamVideoPlayer({ videoUid, title, posterUrl }: StreamVideoPla
   if (status === 'error') {
     return (
       <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-2 text-white px-4 text-center">
-        <p className="font-medium text-red-400">영상 처리 실패</p>
+        <p className="font-medium text-destructive">영상 처리 실패</p>
         <p className="text-sm text-white/60">{errorMsg}</p>
       </div>
     );

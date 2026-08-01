@@ -309,7 +309,7 @@ function SearchContent() {
                                 <div className="absolute top-[18px] right-3 z-10">
                                   {contest.status === 'open' ? (() => {
                                     const dday = calcDDay(contest.submissionEndAt);
-                                    const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-brand/70' : 'bg-primary/70';
+                                    const colorClass = dday <= 7 ? 'bg-destructive/70' : dday <= 14 ? 'bg-brand/70' : 'bg-primary/70';
                                     return (
                                       <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
                                         {dday === 0 ? 'D-Day' : `D-${dday}`}
