@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/page-header';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { safeJsonLd } from '@/lib/utils';
@@ -108,21 +109,17 @@ export default async function GalleryAllPage({
       {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
       <div className="page-glow" />
 
-      {/* 페이지 헤더 */}
-      <section className="relative pt-24 pb-4 px-4">
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
-              Gallery
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              {currentContestTitle
+      <PageHeader
+        title="Gallery"
+        description={
+          <>
+{currentContestTitle
                 ? `${currentContestTitle} 출품작`
                 : '공모전에 출품된 작품들을 감상하세요'}
-            </p>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+        tight
+      />
 
       {/* 필터 바 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-8 pt-12">

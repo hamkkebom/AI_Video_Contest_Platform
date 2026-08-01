@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/page-header';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
@@ -37,19 +38,14 @@ export default async function CreatorsPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-violet-500/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* 페이지 헤더 */}
-      <section className="relative pt-24 pb-12 px-4">
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
-              Creators
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              <span className="text-primary font-bold">{creators.length}</span>명의 크리에이터를 만나보세요
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        title="Creators"
+        description={
+          <>
+<span className="text-primary font-bold">{creators.length}</span>명의 크리에이터를 만나보세요
+          </>
+        }
+      />
 
       {/* 필터 (Glassmorphism) */}
       <section className="sticky top-16 z-40 px-4 pb-8">

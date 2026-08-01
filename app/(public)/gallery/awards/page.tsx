@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/page-header';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
@@ -50,19 +51,15 @@ export default async function GalleryAwardsPage() {
       {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
       <div className="page-glow" />
 
-      {/* 페이지 헤더 */}
-      <section className="relative pt-24 pb-4 px-4">
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
-              Awards Gallery
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              공모전 수상 작품들을 감상하세요
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        title="Awards Gallery"
+        description={
+          <>
+공모전 수상 작품들을 감상하세요
+          </>
+        }
+        tight
+      />
 
       {/* 공모전 포스터 카드 그리드 */}
       <section className="pt-16 pb-24 px-4">

@@ -1,5 +1,6 @@
 'use client';
 
+import { PageHeader } from '@/components/layout/page-header';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -157,19 +158,14 @@ function SearchContent() {
       {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
       <div className="page-glow" />
 
-      {/* 페이지 헤더 */}
-      <section className="relative pt-24 pb-4 px-4">
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
-              Search
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              공모전, 영상, 스토리를 통합 검색하세요
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        title="Search"
+        description={
+          <>
+공모전, 영상, 스토리를 통합 검색하세요
+          </>
+        }
+      />
 
       {/* Sticky 검색바 (Glassmorphism) */}
       <section className="sticky top-16 z-40 px-4 pb-8 pt-8">
