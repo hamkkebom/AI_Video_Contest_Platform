@@ -4,7 +4,7 @@ import { safeJsonLd } from '@/lib/utils';
 import { GalleryGrid } from './gallery-grid';
 import { SearchInput } from '@/components/ui/search-input';
 import { headers } from 'next/headers';
-import { getContests } from '@/lib/data';
+import { getContests, getGallerySubmissions } from '@/lib/data';
 import { keywordsFromContests } from '@/lib/seo';
 
 /**
@@ -33,11 +33,28 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'
 export default async function GalleryAllPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; search?: string; period?: string; _t?: string }>;
+  searchParams: Promise<{ sort?: string; search?: string; contest?: string; _t?: string }>;
 }) {
-  const { sort, search, period, _t } = await searchParams;
+  const { sort, search, contest, _t } = await searchParams;
   const currentSort = sort || 'random';
   const seed = _t ? Number(_t) : Date.now();
+
+  /* 공모전 필터 후보 — 실제로 갤러리에 작품이 있는 공모전만, 출품작 많은 순.
+     같은 캐시(getGallerySubmissions)를 읽으므로 추가 DB 조회가 없다 */
+  const allSubmissions = await getGallerySubmissions().catch(() => []);
+  const contestFacets = (() => {
+    const counts = new Map<string, { id: string; title: string; count: number }>();
+    for (const s of allSubmissions) {
+      const id = String(s.contestId);
+      const entry = counts.get(id);
+      if (entry) entry.count += 1;
+      else counts.set(id, { id, title: s.contestTitle, count: 1 });
+    }
+    return [...counts.values()].sort((a, b) => b.count - a.count);
+  })();
+  /* 존재하지 않는 공모전 id가 들어오면 무시하고 전체로 */
+  const currentContest = contest && contestFacets.some((c) => c.id === contest) ? contest : '';
+  const currentContestTitle = contestFacets.find((c) => c.id === currentContest)?.title ?? '';
 
   /* 서버에서 첫 페이지 데이터를 API로 조회 */
   const headersList = await headers();
@@ -49,9 +66,9 @@ export default async function GalleryAllPage({
   params.set('sort', currentSort);
   params.set('seed', String(seed));
   if (search) params.set('search', search);
-  if (period) params.set('period', period);
+  if (currentContest) params.set('contest', currentContest);
 
-  let initialItems: Array<{ id: string; title: string; creatorName: string; thumbnailUrl: string | null; views: number; likeCount: number }> = [];
+  let initialItems: Array<{ id: string; title: string; creatorName: string; thumbnailUrl: string | null; views: number; likeCount: number; contestId: string; contestTitle: string }> = [];
   let total = 0;
   let hasMore = false;
 
@@ -100,7 +117,9 @@ export default async function GalleryAllPage({
               Gallery
             </h1>
             <p className="text-lg text-muted-foreground">
-              공모전에 출품된 작품들을 감상하세요
+              {currentContestTitle
+                ? `${currentContestTitle} 출품작`
+                : '공모전에 출품된 작품들을 감상하세요'}
             </p>
           </div>
         </div>
@@ -109,67 +128,72 @@ export default async function GalleryAllPage({
       {/* 필터 바 (Glassmorphism Sticky) */}
       <section className="sticky top-16 z-40 px-4 pb-8 pt-12">
         <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <div className="flex items-center gap-1 flex-wrap">
-              {[
-                { id: 'random', label: '랜덤' },
-                { id: 'oldest', label: '오래된순' },
-                { id: 'latest', label: '최신순' },
-              ].map((tab) => {
-                const linkParams = new URLSearchParams();
-                if (tab.id === 'random') {
-                  linkParams.set('_t', String(Date.now()));
-                } else {
-                  linkParams.set('sort', tab.id);
-                }
-                if (search) linkParams.set('search', search);
-                if (period) linkParams.set('period', period);
-                return (
-                  <Link key={tab.id} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
-                    <button
-                      type="button"
-                      className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentSort === tab.id
-                        ? 'text-violet-500 font-bold bg-violet-500/10'
-                        : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
-                        }`}
-                    >
-                      {tab.id === 'random' ? '🔀 랜덤' : tab.label}
-                    </button>
-                  </Link>
-                );
-              })}
-              {/* 기간 드롭다운 */}
-              {[
-                { id: '', label: '전체' },
-                { id: '7', label: '최근 1주' },
-                { id: '14', label: '최근 2주' },
-                { id: '21', label: '최근 3주' },
-                { id: '30', label: '최근 1개월' },
-                { id: '60', label: '최근 2개월' },
-              ].map((opt) => {
-                const linkParams = new URLSearchParams();
-                if (currentSort !== 'random') linkParams.set('sort', currentSort);
-                else linkParams.set('_t', String(seed));
-                if (search) linkParams.set('search', search);
-                if (opt.id) linkParams.set('period', opt.id);
-                return (
-                  <Link key={opt.id} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
-                    <button
-                      type="button"
-                      className={`px-3 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${(period || '') === opt.id
-                        ? 'text-orange-600 font-bold bg-orange-500/10'
-                        : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  </Link>
-                );
-              })}
-            </div>
+          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 space-y-2">
+            {/* 1행: 공모전 필터 — 여러 공모전이 열리는 구조의 1차 축 */}
+            {contestFacets.length > 1 && (
+              <div className="flex items-center gap-1 flex-wrap border-b border-border/50 pb-2">
+                <span className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  공모전
+                </span>
+                {[{ id: '', title: '전체', count: allSubmissions.length }, ...contestFacets].map((opt) => {
+                  const linkParams = new URLSearchParams();
+                  if (currentSort !== 'random') linkParams.set('sort', currentSort);
+                  else linkParams.set('_t', String(seed));
+                  if (search) linkParams.set('search', search);
+                  if (opt.id) linkParams.set('contest', opt.id);
+                  return (
+                    <Link key={opt.id || 'all'} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
+                      <button
+                        type="button"
+                        className={`px-3 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${currentContest === opt.id
+                          ? 'text-orange-600 font-bold bg-orange-500/10'
+                          : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
+                          }`}
+                      >
+                        {opt.title}
+                        <span className="ml-1.5 text-xs opacity-60">{opt.count.toLocaleString()}</span>
+                      </button>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* 검색 입력 */}
-            <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ ...(currentSort !== 'random' ? { sort: currentSort } : { _t: String(seed) }), ...(period ? { period } : {}) }} placeholder="작품 또는 제작자 검색..." />
+            {/* 2행: 정렬 + 검색 */}
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+              <div className="flex items-center gap-1 flex-wrap">
+                {[
+                  { id: 'random', label: '🔀 랜덤' },
+                  { id: 'latest', label: '최신순' },
+                  { id: 'oldest', label: '오래된순' },
+                ].map((tab) => {
+                  const linkParams = new URLSearchParams();
+                  if (tab.id === 'random') {
+                    linkParams.set('_t', String(Date.now()));
+                  } else {
+                    linkParams.set('sort', tab.id);
+                  }
+                  if (search) linkParams.set('search', search);
+                  if (currentContest) linkParams.set('contest', currentContest);
+                  return (
+                    <Link key={tab.id} href={`/gallery/all?${linkParams.toString()}`} scroll={false}>
+                      <button
+                        type="button"
+                        className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentSort === tab.id
+                          ? 'text-violet-500 font-bold bg-violet-500/10'
+                          : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
+                          }`}
+                      >
+                        {tab.label}
+                      </button>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* 검색 입력 */}
+              <SearchInput basePath="/gallery/all" currentSearch={search} extraParams={{ ...(currentSort !== 'random' ? { sort: currentSort } : { _t: String(seed) }), ...(currentContest ? { contest: currentContest } : {}) }} placeholder="작품 또는 제작자 검색..." />
+            </div>
           </div>
         </div>
       </section>
@@ -198,7 +222,8 @@ export default async function GalleryAllPage({
             seed={seed}
             sort={currentSort}
             search={search || ''}
-            period={period || ''}
+            contest={currentContest}
+            showContestLabel={!currentContest && contestFacets.length > 1}
           />
         </div>
       </section>

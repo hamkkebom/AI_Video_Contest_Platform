@@ -23,7 +23,7 @@
 │   └── /contests/[id]     공모전 상세 (정식 진입점)
 │       ├── /landing       마케팅 랜딩 (외부 유입용 보조 진입점)
 │       └── /submit        출품 (로그인 필요)
-├── /gallery/all           갤러리 (전체 작품)
+├── /gallery/all           갤러리 (전체 작품) — `?contest=[id]`로 공모전 스코프
 │   └── /gallery/[id]      작품 상세 — 공개 전환 (D-013)
 ├── /gallery/awards        수상작 갤러리
 │   └── /gallery/awards/[contestId]
@@ -118,7 +118,6 @@
 - **landing/상세 canonical 정리**: SEO 중복 해소 (canonical 태그 조정 또는 랜딩의 공모전별 분리)
 - **pricing 가짜 가격 폴백 제거**: 수익화 재개(D-005 트리거) 시점에 처리
 - **제출 메가폼(1,765줄) 단계 분리**, **관리자 공모전 폼(2,196줄) 분해**
-- **갤러리 공모전별 필터 추가** 및 기간 필터 6버튼 축소
 
 ## 7. 구현 매핑 (ultragoal)
 

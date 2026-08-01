@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import NextImage from 'next/image';
-import type { Metadata } from 'next';
+import type { Metadata, Route } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContestById, getPublicProfileById, getRelatedContests } from '@/lib/data';
-import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download } from 'lucide-react';
+import { getContestById, getPublicProfileById, getRelatedContests, getGallerySubmissions } from '@/lib/data';
+import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download, Film } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import { contestTotalPrize, formatPrizeDisplay } from '@/lib/prize';
@@ -136,10 +136,15 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     : contest.status;
   const statusMeta = getStatusMeta(displayStatus);
 
-  const [hostUser, relatedContests] = await Promise.all([
+  const [hostUser, relatedContests, gallerySubmissions] = await Promise.all([
     getPublicProfileById(contest.hostUserId),
     getRelatedContests(contest.id, 6),
+    getGallerySubmissions().catch(() => []),
   ]);
+  /* 이 공모전의 공개 출품작 수 — 갤러리 진입 동선에 사용 (캐시 공유라 추가 DB 조회 없음) */
+  const contestWorkCount = gallerySubmissions.filter(
+    (s) => String(s.contestId) === String(contest.id),
+  ).length;
   const isAdminHost = hostUser?.roles?.includes('admin');
   const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
 
@@ -299,6 +304,32 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           {/* 영상 제출 버튼 — 포스터+정보 전체 너비 */}
           {displayStatus === 'open' && (
             <AuthSubmitButton contestId={contest.id} variant="hero" />
+          )}
+
+          {/* 이 공모전의 출품작·수상작으로 가는 동선 (docs/IA.md §1-2) */}
+          {contestWorkCount > 0 && (
+            <div className="flex flex-wrap gap-3">
+              <Link href={`/gallery/all?contest=${contest.id}` as Route} className="flex-1 min-w-[12rem]">
+                <div className="group flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 transition-all hover:shadow-md hover:-translate-y-0.5">
+                  <Film className="h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm group-hover:text-primary transition-colors">출품작 보기</p>
+                    <p className="text-xs text-muted-foreground">{contestWorkCount.toLocaleString()}편의 작품</p>
+                  </div>
+                </div>
+              </Link>
+              {(displayStatus === 'completed' || displayStatus === 'closed') && (
+                <Link href={`/gallery/awards/${contest.id}` as Route} className="flex-1 min-w-[12rem]">
+                  <div className="group flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 transition-all hover:shadow-md hover:-translate-y-0.5">
+                    <Trophy className="h-5 w-5 shrink-0 text-amber-600" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm group-hover:text-primary transition-colors">수상작 보기</p>
+                      <p className="text-xs text-muted-foreground">이 공모전의 수상 결과</p>
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
           )}
         </div>
       </section>

@@ -5,9 +5,13 @@ const PAGE_SIZE = 12;
 
 /**
  * 갤러리 서버 사이드 페이지네이션 API
- * GET /api/gallery?page=1&sort=random&seed=12345&search=keyword&period=7
+ * GET /api/gallery?page=1&sort=random&seed=12345&search=keyword&contest=3
  *
  * seed 기반 랜덤: 같은 seed면 같은 순서 → 더보기 시 중복/누락 없음
+ *
+ * 공모전 필터(contest)는 여러 공모전이 동시에 열리는 구조의 1차 축이다.
+ * 예전에는 "최근 N일" 기간 필터가 그 역할을 대신했지만(공모전이 하나뿐이라
+ * 시간=공모전이 성립했다), 회차가 겹치면 성립하지 않는다.
  *
  * [캐시 전략]
  * getGallerySubmissions()는 unstable_cache(30초 + gallery/submissions 태그)로 래핑됨.
@@ -20,17 +24,15 @@ export async function GET(request: Request) {
   const sort = searchParams.get('sort') || 'random';
   const seed = Number(searchParams.get('seed')) || Date.now();
   const search = searchParams.get('search')?.trim() || '';
-  const period = Number(searchParams.get('period')) || 0;
+  const contest = searchParams.get('contest')?.trim() || '';
 
   /* 캐시된 전체 갤러리 데이터 조회 — getGallerySubmissions는 approved + is_public=true 필터 포함 */
   const allData = await getGallerySubmissions();
 
-  /* 기간 필터 */
+  /* 공모전 필터 */
   let filtered = allData;
-  if (period > 0) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - period);
-    filtered = filtered.filter(s => new Date(s.submittedAt) >= cutoff);
+  if (contest) {
+    filtered = filtered.filter(s => String(s.contestId) === contest);
   }
 
   /* 검색 필터 (제목·설명·크리에이터명) */
@@ -77,6 +79,8 @@ export async function GET(request: Request) {
     thumbnailUrl: s.thumbnailUrl ?? null,
     views: s.views ?? 0,
     likeCount: s.likeCount ?? 0,
+    contestId: String(s.contestId),
+    contestTitle: s.contestTitle,
   }));
 
   return NextResponse.json({

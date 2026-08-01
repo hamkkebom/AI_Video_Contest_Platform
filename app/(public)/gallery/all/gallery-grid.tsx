@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import type { Route } from 'next';
 import Image from 'next/image';
 import { Eye, Heart, Loader2 } from 'lucide-react';
 
@@ -12,6 +13,8 @@ interface GalleryItem {
   thumbnailUrl: string | null;
   views: number;
   likeCount: number;
+  contestId: string;
+  contestTitle: string;
 }
 
 interface GalleryGridProps {
@@ -27,12 +30,14 @@ interface GalleryGridProps {
   sort: string;
   /** 검색어 */
   search: string;
-  /** 기간 필터 */
-  period: string;
+  /** 공모전 필터 (빈 문자열이면 전체) */
+  contest: string;
+  /** 카드에 공모전명 배지 표시 — 전체 보기이고 공모전이 2개 이상일 때만 */
+  showContestLabel: boolean;
 }
 
 /** 갤러리 그리드 — 서버 사이드 페이지네이션 + 더보기 */
-export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, search, period }: GalleryGridProps) {
+export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, search, contest, showContestLabel }: GalleryGridProps) {
   const [items, setItems] = useState<GalleryItem[]>(initialItems);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -50,7 +55,7 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
       params.set('sort', sort);
       params.set('seed', String(seed));
       if (search) params.set('search', search);
-      if (period) params.set('period', period);
+      if (contest) params.set('contest', contest);
 
       const res = await fetch(`/api/gallery?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load');
@@ -64,13 +69,13 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, hasMore, page, sort, seed, search, period]);
+  }, [isLoading, hasMore, page, sort, seed, search, contest]);
 
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {items.map((submission) => (
-          <Link key={submission.id} href={`/gallery/${submission.id}` as any} className="group">
+          <Link key={submission.id} href={`/gallery/${submission.id}` as Route} className="group">
             <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
               {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
               <div className="aspect-video overflow-hidden relative bg-muted">
@@ -82,6 +87,12 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
+                )}
+                {/* 어느 공모전 작품인지 — 전체 보기에서만 (필터 중엔 중복 정보) */}
+                {showContestLabel && submission.contestTitle && (
+                  <span className="absolute top-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                    {submission.contestTitle}
+                  </span>
                 )}
               </div>
 
