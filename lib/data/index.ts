@@ -1222,10 +1222,11 @@ export async function hasUserLiked(userId: string, submissionId: string): Promis
 export const getArticles = unstable_cache(
   async (): Promise<Article[]> => {
     const supabase = createPublicClient();
+    /* 원본 articles 는 관리자 정책이 걸려 있어 anon 이 직접 읽으면
+       is_admin() 평가에서 막힌다 — 발행분만 담긴 뷰를 읽는다 (마이그레이션 051) */
     const { data, error } = await supabase
-      .from('articles')
+      .from('public_articles')
       .select('*')
-      .eq('is_published', true)
       .order('published_at', { ascending: false });
     if (error || !data) return [];
     return data.map((row) => toArticle(row as Record<string, unknown>));
@@ -2072,12 +2073,14 @@ export const getAuthProfile = cache(async function getAuthProfile(): Promise<Use
 /** admin 전용: 모든 아티클 조회 (비공개 포함) */
 export async function getAllArticles(): Promise<Article[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('articles')
-    .select('*')
-    .order('published_at', { ascending: false });
-  if (error || !data) return [];
-  return data.map((row) => toArticle(row as Record<string, unknown>));
+  /* 미발행 초안까지 봐야 한다. articles 정책에 is_admin() 을 넣으면 익명 조회가 깨지므로
+     (050 회귀) 관리자 경로는 SECURITY DEFINER 함수로 뺐다 — 마이그레이션 051 */
+  const { data, error } = await supabase.rpc('admin_list_articles');
+  if (error || !data) {
+    if (error) console.error('[getAllArticles] 실패:', error.message);
+    return [];
+  }
+  return (data as Record<string, unknown>[]).map((row) => toArticle(row));
 }
 
 /** admin 전용: 모든 문의 조회 */
