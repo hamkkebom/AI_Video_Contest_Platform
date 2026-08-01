@@ -97,7 +97,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
                         {contest.status === 'open' && (() => {
                           const diff = Math.ceil((new Date(contest.submissionEndAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                           return diff >= 0 ? (
-                            <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-lg ${diff <= 7 ? 'bg-red-500' : diff <= 14 ? 'bg-orange-500' : 'bg-violet-500'}`}>
+                            <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-lg ${diff <= 7 ? 'bg-red-500' : diff <= 14 ? 'bg-brand' : 'bg-primary'}`}>
                               {diff === 0 ? 'D-Day' : `D-${diff}`}
                             </span>
                           ) : null;

@@ -1222,7 +1222,7 @@ export default function ContestSubmitPage() {
       <div className="w-full min-h-screen bg-background">
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-3xl text-center">
-            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <AlertCircle className="h-12 w-12 text-brand mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">제출 기간이 아닙니다</h1>
             <p className="text-muted-foreground mb-6">
               이 공모전은 현재 {contest.status === 'draft' ? '접수 준비중' : contest.status === 'judging' ? '심사중' : '종료'}입니다.
@@ -1244,7 +1244,7 @@ export default function ContestSubmitPage() {
       <div className="w-full min-h-screen bg-background">
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-3xl text-center">
-            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <AlertCircle className="h-12 w-12 text-brand mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">접수 시작 전입니다</h1>
             <p className="text-muted-foreground mb-6">
               이 공모전의 접수는 {formatDate(contest.submissionStartAt, { year: 'numeric', month: 'long', day: 'numeric' })}부터 시작됩니다.
@@ -1281,21 +1281,21 @@ export default function ContestSubmitPage() {
           {/* New Header Design */}
           <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-zinc-950 border border-white/10 p-5 sm:p-8 md:p-10 shadow-2xl">
             {/* Inner background glow */}
-            <div className="absolute -top-24 -right-24 w-80 h-80 bg-violet-600/30 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-orange-500/20 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-80 h-80 bg-primary/30 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-brand/20 rounded-full blur-[80px] pointer-events-none" />
 
             <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 relative z-10">
               {/* Icon Container */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl md:rounded-[1.5rem] bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl md:rounded-[1.5rem] bg-gradient-to-br from-primary to-brand border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
                 <Film className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-white/90 drop-shadow-md" />
               </div>
 
               {/* Text Content */}
               <div className="flex-1 space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-bold tracking-wider uppercase mb-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold tracking-wider uppercase mb-1">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
                   {isBonusOnly ? 'Bonus Points' : isEditMode ? 'Edit Your Work' : 'Submit Your Vision'}
                 </div>
@@ -1320,19 +1320,19 @@ export default function ContestSubmitPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* 업로드 오류 시 새로고침 안내 배너 — 눈에 잘 띄도록 강조 */}
-            <div className="flex items-center gap-3 rounded-xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/40 px-5 py-4 shadow-md">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
+            <div className="flex items-center gap-3 rounded-xl border-2 border-brand bg-brand dark:bg-brand/40 px-5 py-4 shadow-md">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white">
                 <AlertCircle className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-base font-bold text-orange-900 dark:text-orange-100">
+                <p className="text-base font-bold text-brand dark:text-brand">
                   ⚠️ 업로드 전 필독!
                 </p>
-                <p className="mt-1 text-sm text-orange-800 dark:text-orange-200 leading-relaxed">
+                <p className="mt-1 text-sm text-brand dark:text-brand leading-relaxed">
                   오류 발생 시{' '}
-                  <kbd className="inline-flex items-center rounded border-2 border-orange-400 bg-white dark:bg-orange-900 px-2 py-0.5 text-xs font-mono font-bold text-orange-700 dark:text-orange-200">Ctrl+Shift+R</kbd>{' '}
+                  <kbd className="inline-flex items-center rounded border-2 border-brand bg-white dark:bg-brand px-2 py-0.5 text-xs font-mono font-bold text-brand dark:text-brand">Ctrl+Shift+R</kbd>{' '}
                   (Mac:{' '}
-                  <kbd className="inline-flex items-center rounded border-2 border-orange-400 bg-white dark:bg-orange-900 px-2 py-0.5 text-xs font-mono font-bold text-orange-700 dark:text-orange-200">⌘+Shift+R</kbd>
+                  <kbd className="inline-flex items-center rounded border-2 border-brand bg-white dark:bg-brand px-2 py-0.5 text-xs font-mono font-bold text-brand dark:text-brand">⌘+Shift+R</kbd>
                   )로 <span className="font-bold underline">강력 새로고침</span> 후 다시 시도해 주세요.
                 </p>
               </div>
@@ -1345,8 +1345,8 @@ export default function ContestSubmitPage() {
 
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 dark:bg-white/5 flex items-center justify-center shrink-0 border border-violet-500/20 dark:border-white/10">
-                    <Info className="h-6 w-6 text-violet-500 dark:text-zinc-300" />
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 dark:bg-white/5 flex items-center justify-center shrink-0 border border-primary/20 dark:border-white/10">
+                    <Info className="h-6 w-6 text-primary dark:text-zinc-300" />
                   </div>
                   <div className="space-y-2.5">
                     {/* 공모전 제목과 주제 */}
@@ -1359,7 +1359,7 @@ export default function ContestSubmitPage() {
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground pt-1">
                       <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]"></span>
+                        <span className="w-2 h-2 rounded-full bg-brand shadow-[0_0_8px_rgba(249,115,22,0.4)]"></span>
                         마감: <strong className="text-foreground font-medium">
                           {formatDate(contest.submissionEndAt, {
                             year: 'numeric',
@@ -1370,7 +1370,7 @@ export default function ContestSubmitPage() {
                       </span>
                       <span className="hidden md:inline text-border">|</span>
                       <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.4)]"></span>
+                        <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(139,92,246,0.4)]"></span>
                         형식: <strong className="text-foreground font-medium">
                           {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')}
                         </strong>
@@ -1389,7 +1389,7 @@ export default function ContestSubmitPage() {
             {/* ===== STEP 1: 영상 정보 ===== */}
             <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
                 <div>
                   <h2 className="text-lg font-bold">영상 정보</h2>
                   <p className="text-xs text-muted-foreground">영상의 기본 정보를 입력해 주세요</p>
@@ -1519,16 +1519,16 @@ export default function ContestSubmitPage() {
             {/* ===== STEP 2: 파일 업로드 ===== */}
             <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
                 <div>
                   <h2 className="text-lg font-bold">파일 업로드</h2>
                   <p className="text-xs text-muted-foreground">썸네일과 영상 파일을 업로드해 주세요</p>
                 </div>
               </div>
-              <div className="mb-6 p-3 rounded-lg bg-orange-100 dark:bg-orange-950/40 border-2 border-orange-400 flex items-start gap-2">
-                <Info className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
-                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
-                  ⚠️ 업로드가 안 될 경우 <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd> (Mac: <kbd className="rounded border border-orange-400 bg-white dark:bg-orange-900 px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로 <strong className="underline">강력 새로고침</strong> 후 다시 시도해 주세요.
+              <div className="mb-6 p-3 rounded-lg bg-brand dark:bg-brand/40 border-2 border-brand flex items-start gap-2">
+                <Info className="h-5 w-5 text-brand dark:text-brand mt-0.5 shrink-0" />
+                <p className="text-sm text-brand dark:text-brand font-medium">
+                  ⚠️ 업로드가 안 될 경우 <kbd className="rounded border border-brand bg-white dark:bg-brand px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd> (Mac: <kbd className="rounded border border-brand bg-white dark:bg-brand px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로 <strong className="underline">강력 새로고침</strong> 후 다시 시도해 주세요.
                 </p>
               </div>
               {isEditMode && !isResubmitMode && existingSubmission ? (
@@ -1543,8 +1543,8 @@ export default function ContestSubmitPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/10">
-                        <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                          <FileVideo className="h-5 w-5 text-orange-500" />
+                        <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                          <FileVideo className="h-5 w-5 text-brand" />
                         </div>
                         <div>
                           <p className="text-sm font-medium">영상 파일</p>
@@ -1574,11 +1574,11 @@ export default function ContestSubmitPage() {
                       onChange={handleThumbnailSelect}
                     />
                     {thumbnailFile ? (
-                      <div className="p-4 rounded-xl border border-violet-500/30 bg-violet-500/5">
+                      <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                              <ImageIcon className="h-5 w-5 text-violet-500" />
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                               <p className="text-sm font-medium">{thumbnailFile.name}</p>
@@ -1607,7 +1607,7 @@ export default function ContestSubmitPage() {
                         <button
                           type="button"
                           onClick={() => thumbnailInputRef.current?.click()}
-                          className="w-full border border-dashed border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer text-center"
+                          className="w-full border border-dashed border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-center"
                         >
                           새 썸네일로 변경
                         </button>
@@ -1616,10 +1616,10 @@ export default function ContestSubmitPage() {
                       <button
                         type="button"
                         onClick={() => thumbnailInputRef.current?.click()}
-                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer"
+                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
                       >
-                        <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center">
-                          <ImageIcon className="h-6 w-6 text-violet-500" />
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-primary" />
                         </div>
                         <div className="text-center">
                           <p className="font-medium text-sm">썸네일 업로드</p>
@@ -1645,11 +1645,11 @@ export default function ContestSubmitPage() {
                       onChange={handleVideoSelect}
                     />
                     {videoFile ? (
-                      <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5">
+                      <div className="p-4 rounded-xl border border-brand/30 bg-brand/5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                              <FileVideo className="h-5 w-5 text-orange-500" />
+                            <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                              <FileVideo className="h-5 w-5 text-brand" />
                             </div>
                             <div>
                               <p className="text-sm font-medium">{videoFile.name}</p>
@@ -1671,10 +1671,10 @@ export default function ContestSubmitPage() {
                       <button
                         type="button"
                         onClick={() => videoInputRef.current?.click()}
-                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer"
+                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-brand/50 hover:bg-brand/5 transition-all cursor-pointer"
                       >
-                        <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                          <Upload className="h-6 w-6 text-orange-500" />
+                        <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+                          <Upload className="h-6 w-6 text-brand" />
                         </div>
                         <div className="text-center">
                           <p className="font-medium text-sm">영상 업로드</p>
@@ -1775,7 +1775,7 @@ export default function ContestSubmitPage() {
                                 </div>
                               </div>
                             ) : (
-                              <label className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-dashed border-border hover:border-violet-500/50 cursor-pointer transition-colors">
+                              <label className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
                                 <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">캡처 이미지 업로드 (JPG, PNG, WebP, 최대 10MB)</span>
                                 <input
@@ -1791,7 +1791,7 @@ export default function ContestSubmitPage() {
                               </label>
                             )}
                             {/* URL + 이미지 모두 필요 안내 */}
-                            <p className="text-xs text-orange-500">
+                            <p className="text-xs text-brand">
                               ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
                             </p>
                           </div>
@@ -1815,9 +1815,9 @@ export default function ContestSubmitPage() {
                 </div>
               </div>
               {/* 안내 사항 */}
-              <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10 mb-5">
+              <div className="p-4 rounded-xl bg-brand/5 border border-brand/10 mb-5">
                 <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Film className="h-4 w-4 text-orange-500" />
+                  <Film className="h-4 w-4 text-brand" />
                   제출 전 확인사항
                 </h3>
                 <ul className="space-y-1.5 text-xs text-muted-foreground list-disc pl-5">
@@ -1845,7 +1845,7 @@ export default function ContestSubmitPage() {
                     <DialogTrigger asChild>
                       <button
                         type="button"
-                        className="underline underline-offset-2 decoration-dashed hover:text-violet-600 transition-colors cursor-pointer"
+                        className="underline underline-offset-2 decoration-dashed hover:text-primary transition-colors cursor-pointer"
                         onClick={(e) => { e.preventDefault(); setNotesOpen(true); }}
                       >
                         유의사항 및 저작권 안내
@@ -1854,11 +1854,11 @@ export default function ContestSubmitPage() {
                     <DialogContent className="max-w-2xl max-h-[80vh] p-0 gap-0 overflow-hidden [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:z-20">
                       {/* 스타일링된 헤더 */}
                       <div className="relative overflow-hidden bg-zinc-950 px-6 pt-6 pb-5">
-                        <div className="absolute -top-16 -right-16 w-52 h-52 bg-violet-600/30 rounded-full blur-[60px] pointer-events-none" />
-                        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-orange-500/20 rounded-full blur-[60px] pointer-events-none" />
+                        <div className="absolute -top-16 -right-16 w-52 h-52 bg-primary/30 rounded-full blur-[60px] pointer-events-none" />
+                        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-brand/20 rounded-full blur-[60px] pointer-events-none" />
                         <DialogHeader className="relative z-10">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-orange-500 border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)]">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-brand border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)]">
                               <Shield className="h-5 w-5 text-white/90" />
                             </div>
                             <div>
@@ -1885,7 +1885,7 @@ export default function ContestSubmitPage() {
                                 <div key={`section-${titleLine ?? bodyLines.join('-')}`} className={sectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}>
                                   {titleLine && (
                                     <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                       {titleLine}
                                     </h3>
                                   )}
@@ -1973,7 +1973,7 @@ export default function ContestSubmitPage() {
                 </Link>
                 <Button
                   type="submit"
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold cursor-pointer"
+                  className="flex-1 bg-brand hover:bg-brand-hover text-white font-semibold cursor-pointer"
                   disabled={isSubmitting || (isEditMode && !hasFormChanges)}
                 >
                   <Upload className="h-4 w-4 mr-2" />
@@ -1989,8 +1989,8 @@ export default function ContestSubmitPage() {
       <Dialog open={showValidationPopup} onOpenChange={setShowValidationPopup}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-orange-500" />
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-brand" />
             </div>
             <DialogTitle className="text-center">필수 항목을 확인해주세요</DialogTitle>
             <DialogDescription className="text-center text-sm text-muted-foreground">
@@ -2062,7 +2062,7 @@ export default function ContestSubmitPage() {
                 ))}
               </div>
               <DialogFooter>
-                <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => { setSubmitted(false); setUploadStep(null); router.push('/my/submissions'); }}>확인</Button>
+                <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => { setSubmitted(false); setUploadStep(null); router.push('/my/submissions'); }}>확인</Button>
               </DialogFooter>
             </>
           ) : (
@@ -2097,7 +2097,7 @@ export default function ContestSubmitPage() {
                         <div className={cn(
                           'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
                           isCompleted && 'bg-green-500/10 text-green-500',
-                          isActive && !isFailed && 'bg-violet-500/10 text-violet-500',
+                          isActive && !isFailed && 'bg-primary/10 text-primary',
                           isFailed && 'bg-red-500/10 text-red-500',
                           isPending && 'bg-muted text-muted-foreground',
                         )}>
@@ -2122,16 +2122,16 @@ export default function ContestSubmitPage() {
                             </p>
                           )}
                           {isActive && step.key === 'video' && uploadProgress >= 100 && !isFailed && (
-                            <p className="text-xs text-orange-500 animate-pulse">서버에서 처리 중입니다. 잠시 기다려주세요...</p>
+                            <p className="text-xs text-brand animate-pulse">서버에서 처리 중입니다. 잠시 기다려주세요...</p>
                           )}
                         </div>
                         {isActive && step.showProgress && !isFailed && (
-                          <span className="text-sm font-mono font-semibold text-violet-600 dark:text-violet-400 tabular-nums">{uploadProgress}%</span>
+                          <span className="text-sm font-mono font-semibold text-primary dark:text-primary tabular-nums">{uploadProgress}%</span>
                         )}
                       </div>
                       {isActive && step.showProgress && !isFailed && (
                         <div className="ml-11 h-2 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
+                          <div className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
                         </div>
                       )}
                     </div>
@@ -2143,14 +2143,14 @@ export default function ContestSubmitPage() {
                   {errorType === 'duplicate' ? (
                     /* 중복 제출 */
                     <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-orange-500" />
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-brand" />
                       </div>
                       <p className="text-center font-semibold">이미 제출한 공모전입니다</p>
                       <p className="text-center text-sm text-muted-foreground">이 공모전에는 이미 영상을 제출하셨습니다. 추가 제출은 불가합니다.</p>
                       <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
                         <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
-                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
                       </DialogFooter>
                     </>
                   ) : errorType === 'contest_closed' ? (
@@ -2180,13 +2180,13 @@ export default function ContestSubmitPage() {
                   ) : errorType === 'auth_expired' ? (
                     /* 세션 만료 */
                     <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-orange-500" />
+                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-brand" />
                       </div>
                       <p className="text-center font-semibold">로그인이 필요합니다</p>
                       <p className="text-center text-sm text-muted-foreground">세션이 만료되었습니다. 다시 로그인해 주세요.</p>
                       <DialogFooter>
-                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/submit`)}>로그인하기</Button>
+                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/submit`)}>로그인하기</Button>
                       </DialogFooter>
                     </>
                   ) : (
@@ -2199,7 +2199,7 @@ export default function ContestSubmitPage() {
                         {submitError}
                       </div>
                       <DialogFooter className="flex-col gap-2">
-                        <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer w-full" onClick={() => window.location.reload()}>페이지 새로고침</Button>
+                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => window.location.reload()}>페이지 새로고침</Button>
                         <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setIsSubmitting(false); setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
                       </DialogFooter>
                     </>
@@ -2215,8 +2215,8 @@ export default function ContestSubmitPage() {
       <Dialog open={alreadySubmitted} onOpenChange={(open) => { if (!open) router.push(`/contests/${contestId}`); }}>
         <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-orange-500" />
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-brand" />
             </div>
             <DialogTitle className="text-center">이미 제출한 공모전입니다</DialogTitle>
             <DialogDescription className="text-center">
@@ -2226,7 +2226,7 @@ export default function ContestSubmitPage() {
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
             <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
-            <Button className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
+            <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

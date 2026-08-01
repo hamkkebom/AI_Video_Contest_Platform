@@ -50,10 +50,10 @@ const TIER_STYLE = [
   },
   {
     icon: Award,
-    badge: 'bg-gradient-to-r from-orange-400 to-orange-600 text-white',
-    ring: 'ring-1 ring-orange-400/30',
-    glow: 'shadow-lg shadow-orange-500/10',
-    accent: 'text-orange-500',
+    badge: 'bg-gradient-to-r from-brand to-brand text-white',
+    ring: 'ring-1 ring-brand/30',
+    glow: 'shadow-lg shadow-brand/10',
+    accent: 'text-brand',
   },
   {
     icon: Sparkles,

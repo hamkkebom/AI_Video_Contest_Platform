@@ -80,9 +80,9 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
     const getTypeColor = (type: string) => {
       switch (type) {
         case 'notice':
-          return 'bg-orange-500 text-white';
+          return 'bg-brand text-white';
         case 'program':
-          return 'bg-violet-500 text-white';
+          return 'bg-primary text-white';
         case 'insight':
           return 'bg-emerald-500 text-white';
         default:

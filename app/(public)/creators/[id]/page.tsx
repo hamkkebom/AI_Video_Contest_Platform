@@ -71,9 +71,9 @@ function getContestStatusLabel(status: string) {
 function getContestStatusClassName(status: string) {
   switch (status) {
     case 'open':
-      return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+      return 'bg-brand/10 text-brand border-brand/30';
     case 'judging':
-      return 'bg-violet-500/10 text-violet-600 border-violet-500/30';
+      return 'bg-primary/10 text-primary border-primary/30';
     case 'completed':
       return 'bg-muted text-muted-foreground border-border';
     default:

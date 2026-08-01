@@ -32,7 +32,7 @@ export function PromoVideoSection({ videoUrls, title }: PromoVideoSectionProps) 
               onClick={() => setActiveIndex(index)}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                 activeIndex === index
-                  ? 'bg-violet-500 text-white shadow-md'
+                  ? 'bg-primary text-white shadow-md'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
               }`}
             >

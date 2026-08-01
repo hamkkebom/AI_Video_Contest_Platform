@@ -92,12 +92,12 @@ function getAwardColorClass(label: string, index: number): string {
   const lower = label.toLowerCase();
   if (lower.includes('대상')) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
   if (lower.includes('최우수') || lower.includes('금상')) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
-  if (lower.includes('우수') || lower.includes('은상')) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
+  if (lower.includes('우수') || lower.includes('은상')) return 'bg-brand/10 text-brand border-brand/20';
   if (lower.includes('장려') || lower.includes('입선') || lower.includes('동상')) return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
-  if (lower.includes('특별')) return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
+  if (lower.includes('특별')) return 'bg-primary/10 text-primary border-primary/20';
   if (index === 0) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
   if (index === 1) return 'bg-slate-400/10 text-slate-500 border-slate-400/20';
-  if (index === 2) return 'bg-orange-600/10 text-orange-500 border-orange-600/20';
+  if (index === 2) return 'bg-brand/10 text-brand border-brand/20';
   return 'bg-sky-500/10 text-sky-600 border-sky-500/20';
 }
 
@@ -183,7 +183,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
         {/* 배경 장식 */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-orange-500/5 blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-brand/5 blur-3xl" />
         </div>
 
         <div className="relative container mx-auto max-w-6xl space-y-6">
@@ -191,7 +191,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
           <div>
             <Link
               href="/contests"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-foreground/10 text-sm font-medium text-foreground/70 hover:bg-violet-500 hover:text-white transition-all"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-foreground/10 text-sm font-medium text-foreground/70 hover:bg-primary hover:text-white transition-all"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               돌아가기
@@ -258,7 +258,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                         {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}
                       </p>
                     </div>
-                    <Calendar className="h-5 w-5 text-orange-500" />
+                    <Calendar className="h-5 w-5 text-brand" />
                   </div>
                 </Card>
 
@@ -282,7 +282,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                       <p className="text-sm font-bold text-muted-foreground mb-1">결과 발표일</p>
                       <p className="font-semibold text-[15px]">{formatDateCompact(contest.resultAnnouncedAt)}</p>
                     </div>
-                    <Trophy className="h-5 w-5 text-violet-600" />
+                    <Trophy className="h-5 w-5 text-primary" />
                   </div>
                 </Card>
               </div>

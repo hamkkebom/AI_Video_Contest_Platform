@@ -60,9 +60,9 @@ function StoryList({ articles }: { articles: Article[] }) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'notice':
-        return 'bg-orange-500/90 text-white';
+        return 'bg-brand/90 text-white';
       case 'program':
-        return 'bg-violet-500/90 text-white';
+        return 'bg-primary/90 text-white';
       case 'insight':
         return 'bg-emerald-500/90 text-white';
       default:
@@ -183,7 +183,7 @@ AI꿈의 새로운 소식을 만나보세요
 
                     {/* Content */}
                     <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-lg text-foreground line-clamp-2 mb-3 leading-snug group-hover:text-orange-400 transition-colors">
+                      <h3 className="font-bold text-lg text-foreground line-clamp-2 mb-3 leading-snug group-hover:text-brand transition-colors">
                         {article.title}
                       </h3>
 

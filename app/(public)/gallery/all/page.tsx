@@ -142,7 +142,7 @@ export default async function GalleryAllPage({
                       <button
                         type="button"
                         className={`px-3 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${currentContest === opt.id
-                          ? 'text-orange-600 font-bold bg-orange-500/10'
+                          ? 'text-brand font-bold bg-brand/10'
                           : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                           }`}
                       >

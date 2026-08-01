@@ -139,9 +139,9 @@ function SearchContent() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'notice':
-        return 'bg-orange-500/90 text-white';
+        return 'bg-brand/90 text-white';
       case 'program':
-        return 'bg-violet-500/90 text-white';
+        return 'bg-primary/90 text-white';
       case 'insight':
         return 'bg-emerald-500/90 text-white';
       default:
@@ -177,12 +177,12 @@ function SearchContent() {
                 <input
                   type="text"
                   placeholder="공모전, 영상, 스토리 검색..."
-                  className="w-full pl-11 pr-4 py-2.5 rounded-lg bg-background/80 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-transparent transition-all"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-lg bg-background/80 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="bg-violet-500 hover:bg-violet-600 rounded-lg px-6 py-2.5 cursor-pointer text-sm font-semibold">
+              <Button type="submit" className="bg-primary hover:bg-primary/90 rounded-lg px-6 py-2.5 cursor-pointer text-sm font-semibold">
                 검색
               </Button>
             </form>
@@ -195,8 +195,8 @@ function SearchContent() {
         <section className="pb-24 px-4">
           <div className="container mx-auto max-w-6xl">
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 bg-violet-500/10 rounded-2xl flex items-center justify-center mb-6">
-                <Search className="h-8 w-8 text-violet-500" />
+              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Search className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-2">무엇을 찾고 계신가요?</h3>
               <p className="text-muted-foreground max-w-md mb-10">
@@ -206,15 +206,15 @@ function SearchContent() {
               {/* 카테고리 바로가기 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-lg">
                 <Link href="/contests" className="group">
-                  <div className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background/50 hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/5 transition-all duration-300">
-                    <Trophy className="h-6 w-6 text-violet-500" />
-                    <span className="text-sm font-semibold group-hover:text-violet-500 transition-colors">공모전</span>
+                  <div className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                    <Trophy className="h-6 w-6 text-primary" />
+                    <span className="text-sm font-semibold group-hover:text-primary transition-colors">공모전</span>
                   </div>
                 </Link>
                 <Link href="/gallery/all" className="group">
-                  <div className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background/50 hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300">
-                    <Eye className="h-6 w-6 text-orange-500" />
-                    <span className="text-sm font-semibold group-hover:text-orange-500 transition-colors">갤러리</span>
+                  <div className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background/50 hover:border-brand/30 hover:shadow-lg hover:shadow-brand/5 transition-all duration-300">
+                    <Eye className="h-6 w-6 text-brand" />
+                    <span className="text-sm font-semibold group-hover:text-brand transition-colors">갤러리</span>
                   </div>
                 </Link>
                 <Link href="/story" className="group">
@@ -235,7 +235,7 @@ function SearchContent() {
                 <Search className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-bold mb-2">
-                &apos;<span className="text-violet-500">{searchQuery}</span>&apos;에 대한 결과가 없습니다
+                &apos;<span className="text-primary">{searchQuery}</span>&apos;에 대한 결과가 없습니다
               </h3>
               <p className="text-muted-foreground max-w-md mb-8">
                 다른 검색어로 다시 시도하거나, 아래 카테고리를 둘러보세요.
@@ -309,7 +309,7 @@ function SearchContent() {
                                 <div className="absolute top-[18px] right-3 z-10">
                                   {contest.status === 'open' ? (() => {
                                     const dday = calcDDay(contest.submissionEndAt);
-                                    const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
+                                    const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-brand/70' : 'bg-primary/70';
                                     return (
                                       <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
                                         {dday === 0 ? 'D-Day' : `D-${dday}`}
@@ -456,7 +456,7 @@ function SearchContent() {
                                   </div>
                                 </div>
                                 <div className="p-4 flex-1 flex flex-col">
-                                  <h3 className="font-bold text-sm text-foreground line-clamp-2 mb-1.5 group-hover:text-orange-400 transition-colors min-h-[2.5rem]">
+                                  <h3 className="font-bold text-sm text-foreground line-clamp-2 mb-1.5 group-hover:text-brand transition-colors min-h-[2.5rem]">
                                     {article.title}
                                   </h3>
                                   <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-1">

@@ -235,7 +235,7 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
                       ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
                       : submission.rank === 2
                         ? 'bg-slate-400/10 text-slate-500 border-slate-400/30'
-                        : 'bg-orange-600/10 text-orange-600 border-orange-600/30'
+                        : 'bg-brand/10 text-brand border-brand/30'
                   }`}
                 >
                   <Trophy className="h-3.5 w-3.5" />
@@ -290,14 +290,14 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
           {isAdmin && (submission.resubmissionCount ?? 0) > 0 && (
             <div className={`rounded-lg p-3 flex items-center gap-2 ${
               submission.status === 'needs_resubmission'
-                ? 'bg-orange-500/10 border border-orange-500/20'
+                ? 'bg-brand/10 border border-brand/20'
                 : submission.resubmissionAllowedAt
                   ? 'bg-amber-500/10 border border-amber-500/20'
                   : 'bg-emerald-500/10 border border-emerald-500/20'
             }`}>
               <span className={`text-xs font-bold ${
                 submission.status === 'needs_resubmission'
-                  ? 'text-orange-600'
+                  ? 'text-brand'
                   : submission.resubmissionAllowedAt
                     ? 'text-amber-600'
                     : 'text-emerald-600'
@@ -328,8 +328,8 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
 
           {(isAdmin || isOwner) && submission.rejectionReason && (
             submission.status === 'needs_resubmission' ? (
-              <div className="rounded-lg bg-orange-500/5 border border-orange-500/20 p-3">
-                <p className="text-xs font-bold text-orange-600 mb-1">기타 사유</p>
+              <div className="rounded-lg bg-brand/5 border border-brand/20 p-3">
+                <p className="text-xs font-bold text-brand mb-1">기타 사유</p>
                 <p className="text-sm text-muted-foreground">{submission.rejectionReason}</p>
               </div>
             ) : (
@@ -383,7 +383,7 @@ export default async function SubmissionDetailPage({ params, searchParams }: Sub
                               ? 'bg-amber-500/90 text-white'
                               : sub.rank === 2
                                 ? 'bg-slate-400/90 text-white'
-                                : 'bg-orange-600/90 text-white'
+                                : 'bg-brand/90 text-white'
                           }`}>
                             {sub.prizeLabel}
                           </span>

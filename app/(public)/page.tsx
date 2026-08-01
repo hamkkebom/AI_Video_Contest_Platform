@@ -179,7 +179,7 @@ export default async function LandingPage() {
                           {contest.title}
                         </h3>
                         <p className="text-xs text-white/70">~ {formatDateWithDay(contest.submissionEndAt)}</p>
-                        {totalPrize && <p className="text-xs font-semibold text-orange-300">총 상금 {totalPrize}</p>}
+                        {totalPrize && <p className="text-xs font-semibold text-brand">총 상금 {totalPrize}</p>}
                       </div>
                     </div>
                   </Link>
@@ -247,7 +247,7 @@ export default async function LandingPage() {
                             </p>
                           )}
                           {/* 기간 */}
-                          <p className="text-orange-500 font-bold text-sm sm:text-base md:text-lg">
+                          <p className="text-brand font-bold text-sm sm:text-base md:text-lg">
                             {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                           </p>
                           {/* 카운트다운 + 총상금 */}

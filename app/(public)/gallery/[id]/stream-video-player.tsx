@@ -105,13 +105,13 @@ export function StreamVideoPlayer({ videoUid, title, posterUrl }: StreamVideoPla
   if (status === 'processing') {
     return (
       <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-4 text-white px-4">
-        <Loader2 className="h-10 w-10 animate-spin text-orange-400" />
+        <Loader2 className="h-10 w-10 animate-spin text-brand" />
         <div className="text-center space-y-2">
           <p className="font-medium">영상 인코딩 처리 중...</p>
           {pctComplete > 0 ? (
             <div className="w-48 mx-auto">
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${pctComplete}%` }} />
+                <div className="h-full bg-brand transition-all duration-500" style={{ width: `${pctComplete}%` }} />
               </div>
               <p className="text-xs text-white/60 mt-1">{pctComplete}% 완료</p>
             </div>

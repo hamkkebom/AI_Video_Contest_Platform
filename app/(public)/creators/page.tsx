@@ -35,7 +35,7 @@ export default async function CreatorsPage() {
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
       {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-violet-500/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
       <PageHeader
@@ -62,7 +62,7 @@ export default async function CreatorsPage() {
                   type="button"
                   key={tab.id}
                   className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${tab.id === 'all'
-                    ? 'text-violet-500 font-bold'
+                    ? 'text-primary font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
                     }`}
                 >
@@ -109,11 +109,11 @@ export default async function CreatorsPage() {
                     {/* 통계 */}
                     <div className="flex justify-around text-sm">
                       <div>
-                        <div className="font-semibold text-orange-400">0</div>
+                        <div className="font-semibold text-brand">0</div>
                         <div className="text-xs text-muted-foreground">작품</div>
                       </div>
                       <div>
-                        <div className="font-semibold text-violet-400">0</div>
+                        <div className="font-semibold text-primary">0</div>
                         <div className="text-xs text-muted-foreground">좋아요</div>
                       </div>
                       <div>
@@ -123,7 +123,7 @@ export default async function CreatorsPage() {
                     </div>
 
                     {/* 버튼 */}
-                    <Button className="w-full bg-violet-500 hover:bg-violet-600 rounded-lg" size="sm">
+                    <Button className="w-full bg-primary hover:bg-primary/90 rounded-lg" size="sm">
                       프로필 보기
                     </Button>
                   </div>

@@ -26,8 +26,12 @@
 | `--status-{draft,open,closed,judging,completed}` | 공모전 상태 5종. 라벨은 `config/constants.ts`, 색은 여기 |
 
 - 상태 뱃지는 `<ContestStatusBadge>` 하나만 쓴다 (solid/soft/overlay).
+- 페이지 상단 제목은 `<PageHeader>` 하나만 쓴다 — 예전엔 같은 헤더가 8가지 변형으로 복붙돼 있었다.
 - 테마는 3종이 실제로 구분되어야 한다 — 예전엔 signature가 light와 같은 블록이라 골라도 변화가 없었다.
-- 관리자 화면의 카테고리 색(아티클 유형, 수상 티어)은 브랜드가 아니라 분류 표시이므로 원시 팔레트를 허용한다.
+- **공개 표면(app/(public), components/{common,layout,landing,contest})에는 `orange-*`·`violet-*` 원시 팔레트를 쓰지 않는다.** 2026-08-01에 전량(180여 곳) 토큰으로 옮겼다. 새로 넣으면 테마가 그 화면에 닿지 못한다.
+- 관리자 화면의 카테고리 색(아티클 유형, 수상 티어, 심사 상태)은 브랜드가 아니라 분류 표시이므로 원시 팔레트를 허용한다.
+- 어두운 표면 전용 컴포넌트(`ContestCountdown` 등)는 테마 토큰 대신 `text-white/60` 같은 고정값을 쓴다 — 밝은 테마 회색을 어두운 카드에 얹으면 대비가 무너진다.
+- 색을 일괄 치환할 때는 **호버가 기본색과 같아지지 않았는지** 확인한다 (`bg-orange-500 hover:bg-orange-600` → 둘 다 `bg-brand`가 되면 호버가 사라진다).
 
 ## 2. 사이트맵 (목표 상태)
 

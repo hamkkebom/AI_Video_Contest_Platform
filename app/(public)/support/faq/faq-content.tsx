@@ -81,7 +81,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
               type="button"
               onClick={() => { setSelectedRole(null); setSelectedTopic(null); }}
               className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${selectedRole === null
-                  ? 'text-violet-500 font-bold'
+                  ? 'text-primary font-bold'
                   : 'text-muted-foreground font-medium hover:text-foreground'
                 }`}
             >
@@ -93,7 +93,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
                 key={cat.value}
                 onClick={() => { setSelectedRole(cat.value); setSelectedTopic(null); }}
                 className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${selectedRole === cat.value
-                    ? 'text-violet-500 font-bold'
+                    ? 'text-primary font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
                   }`}
               >
@@ -112,7 +112,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
               type="button"
               onClick={() => setSelectedTopic(null)}
               className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${selectedTopic === null
-                  ? 'text-orange-500 font-bold'
+                  ? 'text-brand font-bold'
                   : 'text-muted-foreground font-medium hover:text-foreground'
                 }`}
             >
@@ -124,7 +124,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
                 key={topic.value}
                 onClick={() => setSelectedTopic(topic.value)}
                 className={`px-4 py-2 rounded-lg text-sm tracking-tight transition-all cursor-pointer ${selectedTopic === topic.value
-                    ? 'text-orange-500 font-bold'
+                    ? 'text-brand font-bold'
                     : 'text-muted-foreground font-medium hover:text-foreground'
                   }`}
               >
@@ -182,7 +182,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
                       type="button"
                       onClick={() => setExpandedFaqId(expandedFaqId === faq.id ? null : faq.id)}
                       className={`flex w-full items-center justify-between px-5 py-5 text-left transition-colors cursor-pointer ${expandedFaqId === faq.id
-                          ? 'bg-orange-500/10'
+                          ? 'bg-brand/10'
                           : 'hover:bg-muted/40'
                         }`}
                     >
@@ -200,7 +200,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
                         </span>
                       </div>
                       <span
-                        className={`shrink-0 text-sm text-orange-400 transition-transform duration-200 ${expandedFaqId === faq.id ? 'rotate-180' : 'rotate-0'
+                        className={`shrink-0 text-sm text-brand transition-transform duration-200 ${expandedFaqId === faq.id ? 'rotate-180' : 'rotate-0'
                           }`}
                       >
                         ▼

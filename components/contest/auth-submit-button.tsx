@@ -82,10 +82,10 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
 
   /* variant별 스타일 */
   const buttonClass = {
-    default: 'group/btn inline-flex items-center gap-2 px-8 py-2.5 rounded-lg border-2 border-orange-500 text-orange-500 font-semibold overflow-hidden transition-all duration-300 cursor-pointer relative',
-    sm: 'group/btn relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer',
-    card: 'group/btn relative w-full py-2 rounded-lg border-2 border-orange-500 text-orange-500 text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer',
-    hero: 'group/btn relative w-full py-3.5 rounded-xl bg-orange-500 text-white text-lg font-bold flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 cursor-pointer hover:bg-orange-600 hover:scale-[1.02] shadow-lg hover:shadow-orange-500/30 hover:shadow-xl active:scale-[0.98]',
+    default: 'group/btn inline-flex items-center gap-2 px-8 py-2.5 rounded-lg border-2 border-brand text-brand font-semibold overflow-hidden transition-all duration-300 cursor-pointer relative',
+    sm: 'group/btn relative inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-lg border-2 border-brand text-brand text-xs sm:text-sm font-semibold overflow-hidden transition-all duration-300 cursor-pointer',
+    card: 'group/btn relative w-full py-2 rounded-lg border-2 border-brand text-brand text-sm font-semibold flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 cursor-pointer',
+    hero: 'group/btn relative w-full py-3.5 rounded-xl bg-brand text-brand-foreground text-lg font-bold flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 cursor-pointer hover:bg-brand-hover hover:scale-[1.02] shadow-lg hover:shadow-brand/30 hover:shadow-xl active:scale-[0.98]',
   }[variant];
 
   const iconClass = {
@@ -100,7 +100,7 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
   return (
     <>
       <button type="button" onClick={handleClick} disabled={pendingSubmit} className={buttonClass}>
-        {variant !== 'hero' && <span className="absolute inset-0 bg-orange-500 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />}
+        {variant !== 'hero' && <span className="absolute inset-0 bg-brand scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left" />}
         {pendingSubmit ? (
           <Loader2 className={`${iconClass} animate-spin`} />
         ) : (
@@ -115,8 +115,8 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-orange-500" />
+            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-brand" />
             </div>
             <DialogTitle className="text-center">이미 제출한 공모전입니다</DialogTitle>
             <DialogDescription className="text-center">
@@ -132,7 +132,7 @@ export function AuthSubmitButton({ contestId, variant = 'default' }: AuthSubmitB
               확인
             </Button>
             <Button
-              className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer flex-1"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer flex-1"
               onClick={() => { setDialogOpen(false); router.push('/my/submissions'); }}
             >
               내 출품작 보기

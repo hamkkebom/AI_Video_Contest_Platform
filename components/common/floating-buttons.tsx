@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { ArrowUp, MessageCircle } from 'lucide-react';
 
+/** 카카오 채널 상담 링크 */
+const KAKAO_CHAT_URL = 'https://pf.kakao.com/_cFfIX/chat';
+
 export function FloatingButtons() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -20,31 +23,32 @@ export function FloatingButtons() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      {/* 맨위로 버튼 */}
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+      {/* 맨위로 */}
       <button
         type="button"
         onClick={scrollToTop}
-        className={`w-12 h-12 rounded-full bg-violet-500 text-white shadow-lg hover:shadow-xl hover:bg-violet-600 hover:scale-105 transition-all duration-300 flex items-center justify-center cursor-pointer ${
+        className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-105 hover:bg-primary/90 hover:shadow-xl ${
           showScrollTop
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 translate-y-4 pointer-events-none'
+            ? 'translate-y-0 opacity-100'
+            : 'pointer-events-none translate-y-4 opacity-0'
         }`}
         aria-label="맨위로"
       >
         <ArrowUp className="h-5 w-5" />
       </button>
 
-      {/* 문의하기 버튼 */}
+      {/* 문의하기 — 모바일에서는 원형 아이콘만.
+          라벨까지 띄우면 좁은 화면에서 본문 위를 넓게 덮는다 */}
       <a
-        href="http://pf.kakao.com/_cFfIX/chat"
+        href={KAKAO_CHAT_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-5 h-12 rounded-full bg-brand text-white shadow-lg hover:shadow-xl hover:bg-brand-hover hover:scale-105 transition-all duration-300"
+        className="flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-brand text-brand-foreground shadow-lg transition-all duration-300 hover:scale-105 hover:bg-brand-hover hover:shadow-xl sm:w-auto sm:px-5"
         aria-label="문의하기"
       >
-        <MessageCircle className="h-5 w-5" />
-        <span className="text-sm font-semibold">문의하기</span>
+        <MessageCircle className="h-5 w-5 shrink-0" />
+        <span className="hidden text-sm font-semibold sm:inline">문의하기</span>
       </a>
     </div>
   );

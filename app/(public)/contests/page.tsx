@@ -231,7 +231,7 @@ export default async function ContestsPage({
                     <button
                       type="button"
                       className={`p-2 transition-all cursor-pointer ${currentView === id
-                        ? 'bg-violet-500/15 text-violet-500'
+                        ? 'bg-primary/15 text-primary'
                         : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                         }`}
                       title={label}
@@ -334,7 +334,7 @@ export default async function ContestsPage({
                             )}
 
                             {/* 기간 */}
-                            <p className="text-orange-500 font-bold text-sm sm:text-base md:text-lg">
+                            <p className="text-brand font-bold text-sm sm:text-base md:text-lg">
                               {formatDateWithDay(contest.submissionStartAt)} ~ {formatDateWithDay(contest.submissionEndAt)}
                             </p>
 

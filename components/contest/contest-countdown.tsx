@@ -7,7 +7,9 @@ interface ContestCountdownProps {
   deadline: string;
   /** 타이머 위 라벨 (기본: "접수 마감까지 남은시간") */
   label?: string;
-  /** 만료 후 표시 텍스트 (기본: "마감됨") */
+  /** 만료 후 표시 텍스트 (기본: "마감됨")
+      주의: 이 컴포넌트는 어두운 카드 위 전용이라 숫자·라벨이 흰색 계열로 고정돼 있다.
+      밝은 표면에 얹으려면 색을 주입받도록 먼저 고쳐야 한다. */
   expiredText?: string;
   /** 크기: sm(기본), lg(리스트뷰 강조용) */
   size?: 'sm' | 'lg';
@@ -48,22 +50,22 @@ export function ContestCountdown({
   }, [deadline]);
 
   if (!timeLeft) {
-    return <span className="text-neutral-500 text-sm">{expiredText}</span>;
+    return <span className="text-muted-foreground text-sm">{expiredText}</span>;
   }
 
   if (size === 'lg') {
     return (
       <div>
-        <p className="text-neutral-400 text-sm mb-1">{label}</p>
+        <p className="text-white/60 text-sm mb-1">{label}</p>
         <p className="text-white font-extrabold text-2xl md:text-3xl tabular-nums tracking-tight">
           {String(timeLeft.days).padStart(2, '0')}
-          <span className="text-neutral-500 text-lg font-medium">일 </span>
+          <span className="text-white/60 text-lg font-medium">일 </span>
           {String(timeLeft.hours).padStart(2, '0')}
-          <span className="text-neutral-500 text-lg font-medium">시간 </span>
+          <span className="text-white/60 text-lg font-medium">시간 </span>
           {String(timeLeft.minutes).padStart(2, '0')}
-          <span className="text-neutral-500 text-lg font-medium">분 </span>
+          <span className="text-white/60 text-lg font-medium">분 </span>
           {String(timeLeft.seconds).padStart(2, '0')}
-          <span className="text-neutral-500 text-lg font-medium">초</span>
+          <span className="text-white/60 text-lg font-medium">초</span>
         </p>
       </div>
     );
@@ -71,7 +73,7 @@ export function ContestCountdown({
 
   return (
     <div className="text-sm">
-      <p className="text-neutral-500">{label}</p>
+      <p className="text-white/60">{label}</p>
       <p className="text-white font-bold tabular-nums">
         {String(timeLeft.days).padStart(2, '0')}일{' '}
         {String(timeLeft.hours).padStart(2, '0')}시간{' '}
