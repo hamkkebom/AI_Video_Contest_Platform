@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Route } from 'next';
+import { ArticleRowActions } from '../_components/article-row-actions';
 import { BookText, Megaphone, Newspaper, PlusCircle } from 'lucide-react';
 import { ARTICLE_TYPES } from '@/config/constants';
 import { Badge } from '@/components/ui/badge';
@@ -206,18 +207,13 @@ export default async function AdminArticlesPage({
                           {article.isPublished ? '발행됨' : '비공개'}
                         </Badge>
                       </TableCell>
+                      {/* 수정은 편집 폼이 없어 뺐다 — 동작하지 않는 버튼을 두지 않는다 (ROADMAP 이관) */}
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            수정
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            {article.isPublished ? '비공개' : '발행'}
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive hover:text-destructive">
-                            삭제
-                          </Button>
-                        </div>
+                        <ArticleRowActions
+                          articleId={String(article.id)}
+                          isPublished={Boolean(article.isPublished)}
+                          title={article.title}
+                        />
                       </TableCell>
                     </TableRow>
                   );

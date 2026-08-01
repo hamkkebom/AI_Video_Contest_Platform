@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserStatusActions } from '../_components/user-status-actions';
 import type { Route } from 'next';
 import { Filter, Search, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -319,12 +320,12 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                                 보기
                               </Button>
                             </Link>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                              수정
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive hover:text-destructive">
-                              정지
-                            </Button>
+                            {/* 수정은 편집 폼이 없어 뺐다 — 동작하지 않는 버튼을 두지 않는다 (ROADMAP 이관) */}
+                            <UserStatusActions
+                              userId={user.id}
+                              status={user.status}
+                              name={user.name || user.email}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
