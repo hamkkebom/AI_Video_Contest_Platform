@@ -18,7 +18,9 @@ type HostPageProps = {
 export async function generateMetadata({ params }: HostPageProps): Promise<Metadata> {
   const { id } = await params;
   const company = await getPublicCompanyById(id);
-  if (!company) return { title: '주최자를 찾을 수 없습니다' };
+  /* 본문 스트리밍 시작 후의 notFound()는 상태코드가 200으로 굳는다(소프트 404).
+     메타데이터 단계에서 끊어야 검색엔진에 진짜 404가 나간다 */
+  if (!company) notFound();
 
   const title = `${company.name} — 주최 공모전`;
   const description = company.description?.slice(0, 155)
