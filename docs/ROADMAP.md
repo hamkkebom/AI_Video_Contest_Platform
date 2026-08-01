@@ -16,12 +16,12 @@
 | 항목 | 내용 |
 |------|------|
 | 대시보드 라우트 통폐합 | `/my`·`/judging`을 탭 구조로 합치는 리팩터링 (라우트 변경 + 리다이렉트 필요) |
-| landing/상세 canonical 정리 | `/contests/[id]` vs `/contests/[id]/landing` SEO 중복 해소, 아리랑 전용 랜딩의 공모전별 분리 |
+| ~~landing/상세 canonical 정리~~ | ✅ 2026-08-01 완료 — landing 의 canonical 을 상세로 지정하고 sitemap 에서 제외. 아리랑 전용 랜딩의 공모전별 분리는 별도 과제로 남음 |
 | 심사위원 초대 실동작화 | `/invite/[token]`은 하드코딩 목업 상태 — 이메일 발송(보류 항목)과 함께 실토큰 흐름 필요 |
 | pricing 가짜 가격 폴백 제거 | 수익화 재개(D-005) 시점에 처리 |
 | 익명 조회수 점수 정책 | 갤러리 공개 전환으로 비로그인 조회가 쌓임 — `online_vote_type`에 views 포함 공모전 운영 전 인증 조회 집계 정책 필요 (현 기본값 likes라 즉시 영향 없음) |
-| sitemap·상세의 draft 공모전 배출 | 목록은 미공개 초안을 제외하지만 sitemap과 `/contests/[id]` 상세에는 draft 가드가 없음 — IA 원칙(내비·sitemap 양쪽 제외)과의 잔여 모순 (리뷰 R-1) |
-| 동적 상세 페이지 소프트 404 | `(public)/loading.tsx` 셸이 먼저 flush돼 `notFound()`가 상태코드를 못 바꿈(항상 200) — contests·gallery·story·hosts 상세 전부 해당, Googlebot UA로도 재현. generateMetadata에서 던져도 무효(b7ac0a4로 확인). 근본 해결은 loading 경계 재설계 |
+| ~~sitemap·상세의 draft 공모전 배출~~ | ✅ 2026-08-01 완료 — sitemap 쿼리에 `.neq('status','draft')`, 상세·메타데이터에 draft 가드(noindex). 수상작 URL 도 결과 나온 공모전만 배출 |
+| ~~동적 상세 페이지 소프트 404~~ | ✅ 2026-08-01 완료 — 원인이 둘이었다: ① 세 페이지가 `notFound()` 대신 커스텀 UI를 200으로 렌더 ② loading.tsx 가 스트리밍을 먼저 시작. 공용 `(public)/not-found.tsx` 신설 + 상세 라우트 loading 제거 + story 의 try/catch 가 삼키던 예외를 `unstable_rethrow` 로 통과. 4개 라우트 404 확인 |
 | 제출 메가폼·관리자 공모전 폼 분해 | 1,765줄/2,196줄 단일 파일 |
 | ~~갤러리 공모전별 필터~~ | ✅ 2026-08-01 완료 — `?contest=[id]` 필터가 기간 필터 6버튼을 대체 |
 

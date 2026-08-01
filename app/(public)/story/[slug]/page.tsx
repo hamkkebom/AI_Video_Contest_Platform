@@ -1,3 +1,4 @@
+import { notFound, unstable_rethrow } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
@@ -64,24 +65,7 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
     const article = articles.find((a) => a.slug === slug);
 
     if (!article) {
-      return (
-        <main className="min-h-screen py-12 px-4 bg-muted/30">
-          <div className="container mx-auto max-w-6xl text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              아티클을 찾을 수 없습니다
-            </h1>
-            <p className="text-muted-foreground mb-6">
-              요청하신 아티클이 존재하지 않습니다.
-            </p>
-            <Link
-              href="/story"
-              className="inline-flex items-center rounded-lg bg-primary px-8 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              스토리 목록으로 돌아가기
-            </Link>
-          </div>
-        </main>
-      );
+      notFound();
     }
 
     // Get related articles (same type, different article)
@@ -252,6 +236,9 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
       </div>
     );
   } catch (error) {
+    /* notFound() 는 예외를 던져 동작한다 — 여기서 삼키면 404 대신 오류 화면이 200 으로 나간다.
+       unstable_rethrow 는 Next 내부 제어 예외(notFound·redirect 등)만 다시 던진다 */
+    unstable_rethrow(error);
     console.error('Error loading article:', error);
     return (
       <main className="min-h-screen py-12 px-4 bg-muted/30">

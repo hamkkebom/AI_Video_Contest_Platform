@@ -41,7 +41,10 @@ export async function generateMetadata({ params }: ContestLandingPageProps): Pro
     title,
     description,
     keywords,
-    alternates: { canonical: url },
+    /* 랜딩은 상세와 같은 공모전을 다루는 보조 진입점이다.
+       각자 자기 URL 을 canonical 로 주장하면 같은 내용이 두 페이지로 색인된다.
+       정본은 상세(/contests/[id])이고 랜딩은 그쪽을 가리킨다 */
+    alternates: { canonical: `${SITE_URL}/contests/${id}` },
     openGraph: {
       title,
       description,

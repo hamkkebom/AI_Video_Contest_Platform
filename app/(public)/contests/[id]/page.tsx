@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import type { Metadata, Route } from 'next';
@@ -23,8 +24,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com'
 export async function generateMetadata({ params }: ContestDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   const contest = await getContestById(id);
-  if (!contest) {
-    return { title: '공모전을 찾을 수 없습니다' };
+  /* 미공개 초안은 메타데이터도 만들지 않는다 (본문 가드와 같은 기준) */
+  if (!contest || contest.status === 'draft') {
+    return { title: '공모전을 찾을 수 없습니다', robots: { index: false, follow: false } };
   }
 
   const title = `${contest.title} — AI 영상 공모전`;
@@ -103,31 +105,11 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
   await searchParams;
   const contest = await getContestById(id);
 
-  /* 공모전 미존재 상태 */
-  if (!contest) {
-    return (
-      <div className="w-full min-h-screen bg-background">
-        <section className="py-12 px-4 bg-gradient-to-b from-primary/5 to-background border-b border-border">
-          <div className="container mx-auto max-w-6xl" />
-        </section>
-        <section className="py-20 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <Card className="p-12 text-center border border-border">
-              <div className="space-y-4">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto" />
-                <h1 className="text-2xl font-bold">공모전을 찾을 수 없습니다</h1>
-                <p className="text-muted-foreground">요청하신 공모전이 존재하지 않거나 삭제되었습니다.</p>
-                <Link href="/contests">
-                  <button type="button" className="text-sm text-muted-foreground hover:text-brand hover:font-bold transition-all cursor-pointer">
-                    목록으로 돌아가기 →
-                  </button>
-                </Link>
-              </div>
-            </Card>
-          </div>
-        </section>
-      </div>
-    );
+  /* 미공개 초안(DB status='draft')은 없는 것으로 취급한다 — 목록·sitemap 에서 뺐으므로
+     URL 직접 접근도 같은 결론이어야 한다 (docs/IA.md §1-2).
+     "접수전"은 open 이면서 접수 시작 전인 공모전을 가리키는 별개 개념이다. */
+  if (!contest || contest.status === 'draft') {
+    notFound();
   }
 
   /* 표시용 상태 */
