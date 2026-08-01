@@ -24,8 +24,20 @@ const STATUS_LABEL_MAP: Record<CompanyStatus, { label: string; color: string }> 
   rejected: { label: '반려', color: 'bg-destructive/10 text-destructive' },
 };
 
-export default async function AdminCompaniesPage() {
+const STATUS_FILTERS = [
+  { value: 'pending', label: '승인대기' },
+  { value: 'approved', label: '승인' },
+  { value: 'rejected', label: '반려' },
+];
+
+export default async function AdminCompaniesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   try {
+    const { status: statusFilter } = await searchParams;
+    const activeStatus = STATUS_FILTERS.some((f) => f.value === statusFilter) ? statusFilter : '';
     const [companies, members] = await Promise.all([
       getCompanies(),
       getCompanyMembers(),
@@ -103,25 +115,30 @@ export default async function AdminCompaniesPage() {
           ))}
         </section>
 
-        {/* 상태별 필터 데모 */}
+        {/* 상태별 필터 */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle>상태별 필터</CardTitle>
             <CardDescription>기업 승인 상태별 분포를 확인합니다.</CardDescription>
           </CardHeader>
+          {/* 링크 기반 필터 — 예전에는 onClick 없는 버튼이라 눌러도 아무 일이 없었다 */}
           <CardContent className="flex flex-wrap gap-2">
-            <button type="button" className="rounded-md border border-border bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
-              전체 ({companies.length})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              승인대기 ({pendingCount})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              승인 ({approvedCount})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              반려 ({rejectedCount})
-            </button>
+            {[
+              { value: '', label: '전체', count: companies.length },
+              { value: 'pending', label: '승인대기', count: pendingCount },
+              { value: 'approved', label: '승인', count: approvedCount },
+              { value: 'rejected', label: '반려', count: rejectedCount },
+            ].map((opt) => (
+              <Link
+                key={opt.value || 'all'}
+                href={(opt.value ? `/admin/companies?status=${opt.value}` : '/admin/companies') as Route}
+                className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors ${
+                  activeStatus === opt.value ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label} ({opt.count})
+              </Link>
+            ))}
           </CardContent>
         </Card>
 
@@ -145,7 +162,7 @@ export default async function AdminCompaniesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {companies.map((company) => {
+                {(activeStatus ? companies.filter((c) => c.status === activeStatus) : companies).map((company) => {
                   const statusInfo = STATUS_LABEL_MAP[company.status];
                   return (
                     <TableRow key={company.id} className="transition-colors hover:bg-primary/5">

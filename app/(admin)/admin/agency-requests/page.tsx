@@ -10,11 +10,27 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import Link from 'next/link';
+import type { Route } from 'next';
 import { getAllAgencyRequests } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
+import { StatusSelect } from '../_components/status-select';
 
-export default async function AdminAgencyRequestsPage() {
+/** agency_requests.status CHECK 제약과 같은 값 */
+const STATUS_OPTIONS = [
+  { value: 'new', label: '신규' },
+  { value: 'reviewing', label: '검토중' },
+  { value: 'quoted', label: '견적발송' },
+  { value: 'closed', label: '종료' },
+];
+
+export default async function AdminAgencyRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   try {
+    const { status: statusFilter } = await searchParams;
     const requests = await getAllAgencyRequests();
 
     const statusLabelMap: Record<string, { label: string; color: string }> = {
@@ -32,7 +48,10 @@ export default async function AdminAgencyRequestsPage() {
       closed: requests.filter((item) => item.status === 'closed').length,
     };
 
-    const sortedRequests = [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    /* 필터는 URL 파라미터로 — 서버 컴포넌트라 onClick 을 쓸 수 없다 */
+    const activeStatus = STATUS_OPTIONS.some((o) => o.value === statusFilter) ? statusFilter : '';
+    const visibleRequests = activeStatus ? requests.filter((r) => r.status === activeStatus) : requests;
+    const sortedRequests = [...visibleRequests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const stats = [
       {
@@ -100,22 +119,31 @@ export default async function AdminAgencyRequestsPage() {
             <CardTitle>상태 필터</CardTitle>
             <CardDescription>의뢰 우선순위를 빠르게 파악할 수 있습니다.</CardDescription>
           </CardHeader>
+          {/* 링크 기반 필터 — 예전에는 onClick 없는 버튼이라 눌러도 아무 일이 없었다 */}
           <CardContent className="flex flex-wrap gap-2">
-            <button type="button" className="rounded-md border border-border bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
-              전체 ({counts.all})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              신규 ({counts.new})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              검토중 ({counts.reviewing})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              견적발송 ({counts.quoted})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              종료 ({counts.closed})
-            </button>
+            {[
+              { value: '', label: '전체', count: counts.all },
+              ...STATUS_OPTIONS.map((o) => ({
+                ...o,
+                count: counts[o.value as keyof typeof counts] ?? 0,
+              })),
+            ].map((opt) => {
+              const isActive = activeStatus === opt.value;
+              const href = (opt.value ? `/admin/agency-requests?status=${opt.value}` : '/admin/agency-requests') as Route;
+              return (
+                <Link
+                  key={opt.value || 'all'}
+                  href={href}
+                  className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-primary/10 font-medium text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label} ({opt.count})
+                </Link>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -163,14 +191,11 @@ export default async function AdminAgencyRequestsPage() {
                         {formatDate(request.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            상세
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            상태 변경
-                          </Button>
-                        </div>
+                        <StatusSelect
+                          endpoint={`/api/admin/agency-requests/${request.id}`}
+                          current={request.status}
+                          options={STATUS_OPTIONS}
+                        />
                       </TableCell>
                     </TableRow>
                   );

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Route } from 'next';
 import { BookText, Megaphone, Newspaper, PlusCircle } from 'lucide-react';
 import { ARTICLE_TYPES } from '@/config/constants';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +16,14 @@ import {
 import { getAllArticles, getUsersByIds } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
-export default async function AdminArticlesPage() {
+export default async function AdminArticlesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
   try {
+    const { type: typeFilter } = await searchParams;
+    const activeType = ARTICLE_TYPES.some((t) => t.value === typeFilter) ? typeFilter : '';
     const articles = await getAllArticles();
 
     /* 목록에 표시할 작성자만 조회한다 (전체 회원 조회 방지) */
@@ -80,7 +87,8 @@ export default async function AdminArticlesPage() {
       },
     ];
 
-    const sortedArticles = [...articles].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    const visibleArticles = activeType ? articles.filter((a) => a.type === activeType) : articles;
+    const sortedArticles = [...visibleArticles].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     return (
       <div className="space-y-6 pb-10">
@@ -124,18 +132,20 @@ export default async function AdminArticlesPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* 링크 기반 필터 — 예전에는 onClick 없는 버튼이라 눌러도 아무 일이 없었다 */}
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="rounded-md border border-border bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
-                전체 ({articles.length})
-              </button>
-              {ARTICLE_TYPES.map((articleType) => (
-                <button
-                  key={articleType.value}
-                  type="button"
-                  className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              {[{ value: '', label: '전체', count: articles.length },
+                ...ARTICLE_TYPES.map((t) => ({ value: t.value as string, label: t.label, count: typeCounts[t.value] ?? 0 }))
+              ].map((opt) => (
+                <Link
+                  key={opt.value || 'all'}
+                  href={(opt.value ? `/admin/articles?type=${opt.value}` : '/admin/articles') as Route}
+                  className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors ${
+                    activeType === opt.value ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  {articleType.label} ({typeCounts[articleType.value] ?? 0})
-                </button>
+                  {opt.label} ({opt.count})
+                </Link>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">

@@ -13,11 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import type { Route } from 'next';
 import { getAllInquiries, getUsersByIds } from '@/lib/data';
+import { StatusSelect } from '../_components/status-select';
 import { formatDate } from '@/lib/utils';
 
-export default async function AdminInquiriesPage() {
+/** inquiries.status CHECK 제약과 같은 값 */
+const STATUS_OPTIONS = [
+  { value: 'pending', label: '대기' },
+  { value: 'in_progress', label: '처리중' },
+  { value: 'resolved', label: '완료' },
+];
+
+export default async function AdminInquiriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   try {
+    const { status: statusFilter } = await searchParams;
     const inquiries = await getAllInquiries();
 
     /* 목록에 표시할 문의자만 조회한다 — 비회원 문의는 userId 가 null (전체 회원 조회 방지) */
@@ -38,6 +52,9 @@ export default async function AdminInquiriesPage() {
       resolved: { label: '해결', color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
     };
 
+    /* 필터는 URL 파라미터로 — 서버 컴포넌트라 onClick 을 쓸 수 없다 */
+    const activeStatus = STATUS_OPTIONS.some((o) => o.value === statusFilter) ? statusFilter : '';
+
     const statusCounts = {
       all: inquiries.length,
       pending: inquiries.filter((item) => item.status === 'pending').length,
@@ -45,7 +62,8 @@ export default async function AdminInquiriesPage() {
       resolved: inquiries.filter((item) => item.status === 'resolved').length,
     };
 
-    const sortedInquiries = [...inquiries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const visibleInquiries = activeStatus ? inquiries.filter((i) => i.status === activeStatus) : inquiries;
+    const sortedInquiries = [...visibleInquiries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const stats = [
       {
@@ -118,19 +136,26 @@ export default async function AdminInquiriesPage() {
               <Button variant="outline">대시보드</Button>
             </Link>
           </CardHeader>
+          {/* 링크 기반 필터 — 예전에는 onClick 없는 버튼이라 눌러도 아무 일이 없었다 */}
           <CardContent className="flex flex-wrap items-center gap-2">
-            <button type="button" className="rounded-md border border-border bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
-              전체 ({statusCounts.all})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              대기 ({statusCounts.pending})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              처리중 ({statusCounts.in_progress})
-            </button>
-            <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-              완료 ({statusCounts.resolved})
-            </button>
+            {[
+              { value: '', label: '전체', count: statusCounts.all },
+              ...STATUS_OPTIONS.map((o) => ({ ...o, count: statusCounts[o.value as keyof typeof statusCounts] ?? 0 })),
+            ].map((opt) => {
+              const isActive = activeStatus === opt.value;
+              const href = (opt.value ? `/admin/inquiries?status=${opt.value}` : '/admin/inquiries') as Route;
+              return (
+                <Link
+                  key={opt.value || 'all'}
+                  href={href}
+                  className={`rounded-md border border-border px-3 py-1.5 text-sm transition-colors ${
+                    isActive ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label} ({opt.count})
+                </Link>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -207,17 +232,11 @@ export default async function AdminInquiriesPage() {
                         {formatDate(inquiry.updatedAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            보기
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                            답변
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-emerald-700 hover:text-emerald-700 dark:text-emerald-300">
-                            완료
-                          </Button>
-                        </div>
+                        <StatusSelect
+                          endpoint={`/api/admin/inquiries/${inquiry.id}`}
+                          current={inquiry.status}
+                          options={STATUS_OPTIONS}
+                        />
                       </TableCell>
                     </TableRow>
                   );
