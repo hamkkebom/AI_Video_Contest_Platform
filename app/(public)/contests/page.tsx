@@ -31,7 +31,8 @@ import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { contestTotalPrize } from '@/lib/prize';
 import { formatDate } from '@/lib/utils';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
-import { PUBLIC_CONTEST_STATUS_LABELS, publicContestStatusLabel } from '@/config/constants';
+import { PUBLIC_CONTEST_STATUS_LABELS } from '@/config/constants';
+import { ContestStatusBadge } from '@/components/contest/contest-status-badge';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -176,20 +177,19 @@ export default async function ContestsPage({
         dangerouslySetInnerHTML={{ __html: safeJsonLd(contestsJsonLd) }}
       />
 
-      {/* 배경 장식 (모던한 그라데이션) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               Contests
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
               {activeContestsCount > 0 ? (
-                <>총 <span className="text-[#EA580C] font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.</>
+                <>총 <span className="text-brand font-bold">{activeContestsCount}</span>개의 공모전이 당신의 도전을 기다리고 있습니다.</>
               ) : statusHasContent('judging') ? (
                 <>지금은 접수 중인 공모전이 없어요. 심사중인 공모전의 진행 상황을 확인해 보세요.</>
               ) : statusHasContent('completed') ? (
@@ -213,7 +213,7 @@ export default async function ContestsPage({
                   <button
                     type="button"
                     className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap w-full ${currentStatus === tab.id
-                      ? 'text-violet-500 font-bold bg-violet-500/10'
+                      ? 'text-primary font-bold bg-primary/10'
                       : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
@@ -261,7 +261,7 @@ export default async function ContestsPage({
           <div className="flex items-center justify-between mb-5">
             <div className="flex flex-col gap-1">
               <p className="text-base text-muted-foreground">
-                총 <span className="text-[#EA580C] font-semibold">{sortedContests.length}</span>개의 공모전
+                총 <span className="text-brand font-semibold">{sortedContests.length}</span>개의 공모전
               </p>
               {search && (
                 <p className="text-sm text-muted-foreground">
@@ -307,18 +307,11 @@ export default async function ContestsPage({
                             />
                             {/* 상태 뱃지: open이지만 시작 전이면 접수전(초록) */}
                             <div className="absolute top-4 left-4">
-                              {isBeforeStart && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">{PUBLIC_CONTEST_STATUS_LABELS.draft}</span>
-                              )}
-                              {contest.status === 'open' && !isBeforeStart && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">{PUBLIC_CONTEST_STATUS_LABELS.open}</span>
-                              )}
-                              {contest.status === 'judging' && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-pink-500/70">{PUBLIC_CONTEST_STATUS_LABELS.judging}</span>
-                              )}
-                              {(contest.status === 'completed' || contest.status === 'closed') && (
-                                <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-amber-500/70">{publicContestStatusLabel(contest.status)}</span>
-                              )}
+                              <ContestStatusBadge
+                                status={isBeforeStart ? 'draft' : contest.status}
+                                variant="overlay"
+                                className="text-sm"
+                              />
                             </div>
                           </div>
                         </Link>
@@ -333,7 +326,7 @@ export default async function ContestsPage({
                             )}
                             {/* 제목 */}
                             <Link href={`/contests/${contest.id}` as Route}>
-                              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">
+                              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-brand transition-colors break-keep">
                                 {contest.title}
                               </h2>
                             </Link>
@@ -402,7 +395,7 @@ export default async function ContestsPage({
                   return (
                     <Link key={contest.id} href={`/contests/${contest.id}` as Route} className="group relative block">
                       <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
                         <Image
                           src={contest.posterUrl || `/images/contest-${(index % 5) + 1}.jpg`}
                           alt={contest.title}
@@ -410,25 +403,24 @@ export default async function ContestsPage({
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />
-                        {/* 상태 뱃지 */}
+                        {/* 접수중이면 남은 기간(D-day), 그 외에는 상태 뱃지 */}
                         <div className="absolute top-[18px] right-3 z-10">
-                          {displayStatusCard === 'draft' ? (
-                            <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">{PUBLIC_CONTEST_STATUS_LABELS.draft}</span>
-                          ) : contest.status === 'open' ? (() => {
+                          {contest.status === 'open' && displayStatusCard !== 'draft' ? (() => {
                             const dday = calcDDay(contest.submissionEndAt);
-                            const colorClass = dday <= 7 ? 'bg-red-500/70' : dday <= 14 ? 'bg-orange-500/70' : 'bg-violet-500/70';
+                            /* 마감이 임박할수록 강한 색 — 상태가 아니라 긴급도를 나타낸다 */
+                            const urgency = dday <= 7 ? 'bg-destructive' : dday <= 14 ? 'bg-brand' : 'bg-status-open';
                             return (
-                              <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${colorClass}`}>
+                              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-bold text-white opacity-90 border border-white/20 shadow-lg backdrop-blur-md ${urgency}`}>
                                 {dday === 0 ? 'D-Day' : `D-${dday}`}
                               </span>
                             );
                           })() : (
-                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white ${contest.status === 'judging' ? 'bg-pink-500/70' : 'bg-amber-500/70'
-                              }`}>
-                              {contest.status === 'completed'
-                                ? (<><Trophy className="inline h-3.5 w-3.5 mr-1" />{PUBLIC_CONTEST_STATUS_LABELS.completed}</>)
-                                : publicContestStatusLabel(contest.status)}
-                            </span>
+                            <ContestStatusBadge
+                              status={displayStatusCard}
+                              variant="overlay"
+                              withIcon
+                              className="text-sm"
+                            />
                           )}
                         </div>
 
@@ -437,7 +429,7 @@ export default async function ContestsPage({
                           <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 from-35% via-neutral-900/70 via-60% to-transparent" />
                           <div className="relative pb-7 px-4 flex flex-col gap-2.5">
                             <AutoFitTitle
-                              className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
+                              className="font-bold text-white break-keep group-hover:text-brand transition-colors leading-snug"
                               maxFontSize={18}
                               minFontSize={13}
                               maxLines={2}
@@ -511,8 +503,8 @@ export default async function ContestsPage({
                 const params = buildParams({ page: String(currentPage + 1) });
                 return (
                   <Link href={`/contests?${params.toString()}`} scroll={false}>
-                    <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
-                      <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                    <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-primary/20 cursor-pointer">
+                      <span className="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                       <span className="relative z-10 flex items-center gap-2">
                         더보기
                         <span className="text-sm opacity-70">+{remainingCount}</span>

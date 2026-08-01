@@ -41,7 +41,7 @@ export default async function CreatorsPage() {
       <section className="relative pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               Creators
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
@@ -83,7 +83,7 @@ export default async function CreatorsPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between mb-5">
             <p className="text-base text-muted-foreground">
-              <span className="text-[#EA580C] font-semibold">{creators.length}</span>명의 크리에이터
+              <span className="text-brand font-semibold">{creators.length}</span>명의 크리에이터
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -138,8 +138,8 @@ export default async function CreatorsPage() {
 
           {/* 더보기 */}
           <div className="mt-10 flex flex-col items-center gap-3">
-            <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
-              <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+            <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-primary/20 cursor-pointer">
+              <span className="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
               <span className="relative z-10">더 많은 크리에이터 보기</span>
             </button>
           </div>

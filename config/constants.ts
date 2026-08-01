@@ -215,11 +215,27 @@ export const STATUS_LABEL_MAP: Record<string, string> = {
   completed: '완료',
 };
 
-/** 공모전 상태 뱃지 스타일 — 기본 solid, hover 시 연한 톤 (전체 공통) */
+/**
+ * 공모전 상태 뱃지 — solid (진한 배경 + 흰 글자).
+ * 색은 app/globals.css 의 --status-* 토큰이 단일 소스이며 테마별 명도 보정도 거기서 한다.
+ * 그래서 여기에는 dark: 변형이 필요 없다 (예전에는 상태마다 4개씩 달려 있었다).
+ */
 export const STATUS_BADGE_CLASS_MAP: Record<string, string> = {
-  draft: 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-300',
-  open: 'bg-orange-600 text-white dark:bg-orange-500 dark:text-white hover:bg-orange-500/10 hover:text-orange-700 dark:hover:bg-orange-500/15 dark:hover:text-orange-300',
-  closed: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white hover:bg-amber-500/10 hover:text-amber-700 dark:hover:bg-amber-500/15 dark:hover:text-amber-300',
-  judging: 'bg-pink-600 text-white dark:bg-pink-500 dark:text-white hover:bg-pink-500/10 hover:text-pink-700 dark:hover:bg-pink-500/15 dark:hover:text-pink-300',
-  completed: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white hover:bg-amber-500/10 hover:text-amber-700 dark:hover:bg-amber-500/15 dark:hover:text-amber-300',
+  draft: 'bg-status-draft text-white',
+  open: 'bg-status-open text-white',
+  closed: 'bg-status-closed text-white',
+  judging: 'bg-status-judging text-white',
+  completed: 'bg-status-completed text-white',
+};
+
+/**
+ * 공모전 상태 뱃지 — soft (연한 배경 + 상태색 글자).
+ * 카드 위 오버레이가 아니라 흰 배경에 얹을 때 쓴다.
+ */
+export const STATUS_BADGE_SOFT_CLASS_MAP: Record<string, string> = {
+  draft: 'bg-status-draft/10 text-status-draft',
+  open: 'bg-status-open/10 text-status-open',
+  closed: 'bg-status-closed/10 text-status-closed',
+  judging: 'bg-status-judging/10 text-status-judging',
+  completed: 'bg-status-completed/10 text-status-completed',
 };

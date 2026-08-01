@@ -118,7 +118,7 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <h1 className="text-2xl font-bold">공모전을 찾을 수 없습니다</h1>
                 <p className="text-muted-foreground">요청하신 공모전이 존재하지 않거나 삭제되었습니다.</p>
                 <Link href="/contests">
-                  <button type="button" className="text-sm text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all cursor-pointer">
+                  <button type="button" className="text-sm text-muted-foreground hover:text-brand hover:font-bold transition-all cursor-pointer">
                     목록으로 돌아가기 →
                   </button>
                 </Link>

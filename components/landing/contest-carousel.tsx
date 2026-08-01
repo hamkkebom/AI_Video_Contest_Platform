@@ -59,7 +59,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
           <h2 className="text-2xl font-bold">진행 중인 공모전</h2>
           <Link
             href="/contests"
-            className="text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
+            className="text-base text-muted-foreground hover:text-brand hover:font-bold transition-all"
           >
             전체보기 →
           </Link>
@@ -104,7 +104,7 @@ export function ContestCarousel({ contests }: ContestCarouselProps) {
                         })()}
                       </div>
                       <div className="p-5 space-y-3 flex flex-col flex-1">
-                        <h3 className="font-semibold text-base line-clamp-2 group-hover:text-[#EA580C] transition-colors">
+                        <h3 className="font-semibold text-base line-clamp-2 group-hover:text-brand transition-colors">
                           {contest.title}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">

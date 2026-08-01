@@ -105,15 +105,14 @@ export default async function GalleryAllPage({
         dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryJsonLd) }}
       />
 
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-4 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               Gallery
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -180,7 +179,7 @@ export default async function GalleryAllPage({
                       <button
                         type="button"
                         className={`px-5 py-2.5 rounded-lg text-base tracking-tight transition-all cursor-pointer ${currentSort === tab.id
-                          ? 'text-violet-500 font-bold bg-violet-500/10'
+                          ? 'text-primary font-bold bg-primary/10'
                           : 'text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50'
                           }`}
                       >
@@ -205,7 +204,7 @@ export default async function GalleryAllPage({
           <div className="flex items-center justify-between mb-5">
             <div className="flex flex-col gap-1">
               <p className="text-base text-muted-foreground">
-                총 <span className="text-[#EA580C] font-semibold">{total.toLocaleString()}</span>개의 작품
+                총 <span className="text-brand font-semibold">{total.toLocaleString()}</span>개의 작품
               </p>
               {search && (
                 <p className="text-sm text-muted-foreground">

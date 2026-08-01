@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { getPublicCompanyById, getContests, getGallerySubmissions } from '@/lib/data';
 import { contestTotalPrize } from '@/lib/prize';
 import { formatDateCompact, safeJsonLd } from '@/lib/utils';
-import { STATUS_BADGE_CLASS_MAP, publicContestStatusLabel } from '@/config/constants';
+import { ContestStatusBadge } from '@/components/contest/contest-status-badge';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -170,13 +170,7 @@ export default async function HostPage({ params }: HostPageProps) {
                           <h3 className="font-bold leading-snug break-keep group-hover:text-primary transition-colors">
                             {contest.title}
                           </h3>
-                          <span
-                            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
-                              STATUS_BADGE_CLASS_MAP[displayStatus] ?? STATUS_BADGE_CLASS_MAP.completed
-                            }`}
-                          >
-                            {publicContestStatusLabel(displayStatus)}
-                          </span>
+                          <ContestStatusBadge status={displayStatus} variant="soft" className="shrink-0" />
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {formatDateCompact(contest.submissionStartAt)} ~ {formatDateCompact(contest.submissionEndAt)}

@@ -27,13 +27,40 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  /* ── 브랜드 ── AI꿈 시그니처 오렌지. 예전에는 #EA580C 를 26곳에 하드코딩했다 */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+
+  /* ── 공모전 상태 ── 상태 어휘는 config/constants.ts 가, 색은 여기가 단일 소스.
+     각 상태는 solid(뱃지 배경)와 soft(연한 배경+텍스트) 두 쓰임이 있다 */
+  --color-status-draft: var(--status-draft);
+  --color-status-open: var(--status-open);
+  --color-status-judging: var(--status-judging);
+  --color-status-closed: var(--status-closed);
+  --color-status-completed: var(--status-completed);
 }
 
 @layer base {
 
+  /* ── 브랜드·상태 색은 테마와 무관하게 고정 ──
+     상태 뱃지가 테마마다 다른 색이면 "심사중"을 색으로 익힌 사용자가 헤맨다.
+     명도만 다크에서 살짝 올려 대비를 맞춘다 */
+  :root {
+    --brand: oklch(0.646 0.222 41.116);
+    --brand-hover: oklch(0.573 0.199 41.116);
+    --brand-foreground: oklch(0.985 0 0);
+
+    --status-draft: oklch(0.696 0.17 162.48);
+    --status-open: oklch(0.646 0.222 41.116);
+    --status-judging: oklch(0.656 0.241 354.308);
+    --status-closed: oklch(0.769 0.188 70.08);
+    --status-completed: oklch(0.769 0.188 70.08);
+  }
+
   :root,
-  [data-theme="light"],
-  [data-theme="signature"] {
+  [data-theme="light"] {
     --background: oklch(0.985 0.002 247);
     --foreground: oklch(0.145 0.024 266);
     --card: oklch(0.985 0.002 247);
@@ -58,6 +85,36 @@
     --chart-3: oklch(0.769 0.188 70);
     --chart-4: oklch(0.627 0.265 303);
     --chart-5: oklch(0.645 0.246 16);
+  }
+
+  /* ── 시그니처 (기본 테마) ──
+     예전에는 light 와 같은 블록을 공유해서 골라도 아무 변화가 없었다.
+     브랜드 오렌지를 primary 로 쓰고 배경에 미세한 온기를 넣어 실제로 구분되게 한다 */
+  [data-theme="signature"] {
+    --background: oklch(0.988 0.006 70);
+    --foreground: oklch(0.155 0.02 50);
+    --card: oklch(0.996 0.004 70);
+    --card-foreground: oklch(0.155 0.02 50);
+    --popover: oklch(0.996 0.004 70);
+    --popover-foreground: oklch(0.155 0.02 50);
+    --primary: oklch(0.646 0.222 41.116);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.955 0.014 65);
+    --secondary-foreground: oklch(0.24 0.03 50);
+    --muted: oklch(0.955 0.014 65);
+    --muted-foreground: oklch(0.545 0.03 55);
+    --accent: oklch(0.955 0.038 60);
+    --accent-foreground: oklch(0.573 0.199 41.116);
+    --destructive: oklch(0.577 0.245 27);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(0.9 0.014 65);
+    --input: oklch(0.9 0.014 65);
+    --ring: oklch(0.646 0.222 41.116);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.696 0.17 162);
+    --chart-3: oklch(0.769 0.188 70);
+    --chart-4: oklch(0.627 0.265 303);
+    --chart-5: oklch(0.606 0.25 292.717);
   }
 
   [data-theme="dark"] {
@@ -85,6 +142,15 @@
     --chart-3: oklch(0.769 0.188 70);
     --chart-4: oklch(0.627 0.265 303);
     --chart-5: oklch(0.645 0.246 16);
+
+    /* 어두운 배경에서는 같은 색이 탁해 보이므로 명도만 올린다 (색상은 유지) */
+    --brand: oklch(0.705 0.213 47.604);
+    --brand-hover: oklch(0.646 0.222 41.116);
+    --status-draft: oklch(0.765 0.155 163);
+    --status-open: oklch(0.705 0.213 47.604);
+    --status-judging: oklch(0.718 0.202 354);
+    --status-closed: oklch(0.828 0.16 74);
+    --status-completed: oklch(0.828 0.16 74);
   }
 
   * {
@@ -107,6 +173,44 @@
   body {
     font-family: "Pretendard", "Noto Sans KR", sans-serif;
   }
+}
+
+/* ── 페이지 상단 배경 장식 ──
+   공개 페이지 10곳이 각자 indigo/orange 원시 색으로 같은 블러 두 덩이를 그리고 있었다.
+   테마를 따르도록 primary/brand 토큰으로 묶는다. */
+.page-glow {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 600px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.page-glow::before,
+.page-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+}
+
+.page-glow::before {
+  top: 0;
+  left: 50%;
+  width: 1000px;
+  height: 600px;
+  transform: translateX(-50%);
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+  filter: blur(120px);
+}
+
+.page-glow::after {
+  top: 20%;
+  right: -10%;
+  width: 800px;
+  height: 600px;
+  background: color-mix(in oklch, var(--brand) 12%, transparent);
+  filter: blur(100px);
 }
 
 /* ── 교육 섹션 오로라 그라데이션 ── */

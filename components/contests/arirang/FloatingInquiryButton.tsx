@@ -35,24 +35,11 @@ export function FloatingInquiryButton() {
       href="http://pf.kakao.com/_cFfIX/chat"
       target="_blank"
       rel="noopener noreferrer"
-      className={`fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-5 py-3 font-bold rounded-full shadow-lg transition-all duration-300 ${
+      className={`fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-5 py-3 font-bold rounded-full shadow-lg shadow-brand/35 bg-brand text-brand-foreground hover:bg-brand-hover transition-all duration-300 ${
         visible
-          ? 'opacity-100 translate-y-0 pointer-events-auto'
+          ? 'opacity-100 translate-y-0 pointer-events-auto hover:scale-105'
           : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
-      style={{
-        backgroundColor: '#EA580C',
-        color: '#ffffff',
-        boxShadow: '0 8px 24px rgba(234,88,12,0.35)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#C2540A';
-        e.currentTarget.style.transform = visible ? 'translateY(0) scale(1.05)' : '';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = '#EA580C';
-        e.currentTarget.style.transform = visible ? 'translateY(0) scale(1)' : '';
-      }}
     >
       <MessageCircle className="w-5 h-5" />
       {t(heroTranslations, 'ctaInquiry', lang)}

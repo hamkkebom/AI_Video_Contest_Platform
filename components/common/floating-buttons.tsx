@@ -40,7 +40,7 @@ export function FloatingButtons() {
         href="http://pf.kakao.com/_cFfIX/chat"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-5 h-12 rounded-full bg-[#EA580C] text-white shadow-lg hover:shadow-xl hover:bg-[#C2540A] hover:scale-105 transition-all duration-300"
+        className="flex items-center gap-2 px-5 h-12 rounded-full bg-brand text-white shadow-lg hover:shadow-xl hover:bg-brand-hover hover:scale-105 transition-all duration-300"
         aria-label="문의하기"
       >
         <MessageCircle className="h-5 w-5" />

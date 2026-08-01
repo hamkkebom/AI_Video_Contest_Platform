@@ -154,15 +154,14 @@ function SearchContent() {
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-4 px-4">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               Search
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -266,7 +265,7 @@ function SearchContent() {
             <div className="container mx-auto max-w-6xl">
               <div className="flex flex-col gap-1">
                 <p className="text-base text-muted-foreground">
-                  총 <span className="text-[#EA580C] font-semibold">{totalResults}</span>건의 결과
+                  총 <span className="text-brand font-semibold">{totalResults}</span>건의 결과
                 </p>
                 <p className="text-sm text-muted-foreground">
                   &apos;<span className="text-foreground font-semibold">{searchQuery}</span>&apos; 검색 결과
@@ -301,7 +300,7 @@ function SearchContent() {
                           <CarouselItem key={contest.id} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Link href={`/contests/${contest.id}` as any} className="group relative block">
                               <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
-                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#EA580C] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
+                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top z-20" />
                                 {contest.posterUrl && (
                                   <Image
                                     src={contest.posterUrl}
@@ -330,7 +329,7 @@ function SearchContent() {
                                   <div className="absolute inset-0 bg-gradient-to-t from-black from-50% to-transparent" />
                                   <div className="relative pb-4 px-4 flex flex-col gap-3">
                                     <AutoFitTitle
-                                      className="font-bold text-white break-keep group-hover:text-[#EA580C] transition-colors leading-snug"
+                                      className="font-bold text-white break-keep group-hover:text-brand transition-colors leading-snug"
                                       maxFontSize={18}
                                       minFontSize={13}
                                       maxLines={2}

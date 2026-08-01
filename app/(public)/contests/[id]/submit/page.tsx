@@ -1260,9 +1260,8 @@ export default function ContestSubmitPage() {
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
       <section className="relative pt-24 pb-10 px-4">
         <div className="container mx-auto max-w-3xl relative z-10">
           {/* Top navigation */}
@@ -1341,8 +1340,8 @@ export default function ContestSubmitPage() {
 
             {/* 공모전 정보 요약 배너 */}
             <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-border/50 p-4 sm:p-6 md:p-8 shadow-sm backdrop-blur-xl mb-6 sm:mb-8 transition-colors">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand/10 rounded-full blur-3xl pointer-events-none" />
 
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">

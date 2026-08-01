@@ -127,9 +127,9 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
             type="button"
             onClick={handleLoadMore}
             disabled={isLoading}
-            className="group relative px-10 py-2.5 rounded-full border-2 border-violet-500 text-violet-500 font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer disabled:opacity-50"
+            className="group relative px-10 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50"
           >
-            <span className="absolute inset-0 bg-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+            <span className="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
             <span className="relative z-10 flex items-center gap-2">
               {isLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...</>

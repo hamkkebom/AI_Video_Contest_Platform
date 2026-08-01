@@ -6,7 +6,8 @@ export default function Loading() {
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden">
       {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       <section className="relative pt-24 pb-10 px-4">
         <div className="container mx-auto max-w-3xl">

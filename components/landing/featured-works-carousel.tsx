@@ -64,7 +64,7 @@ export function FeaturedWorksCarousel({ submissions, showGalleryLink = true }: F
                     {showGalleryLink && (
                         <Link
                             href="/gallery/all"
-                            className="text-base text-muted-foreground hover:text-[#EA580C] hover:font-bold transition-all"
+                            className="text-base text-muted-foreground hover:text-brand hover:font-bold transition-all"
                         >
                             갤러리 보기 →
                         </Link>

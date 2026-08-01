@@ -48,9 +48,8 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-12 px-4">
@@ -64,7 +63,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
               <ChevronRight className="h-3 w-3" />
               <span className="text-foreground font-medium">FAQ</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               FAQ
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -142,7 +141,7 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
           {/* FAQ 건수 */}
           <div className="max-w-4xl mx-auto mb-5">
             <p className="text-base text-muted-foreground">
-              총 <span className="text-[#EA580C] font-semibold">{filteredFaqs.length}</span>개의 FAQ
+              총 <span className="text-brand font-semibold">{filteredFaqs.length}</span>개의 FAQ
               {selectedRole && (
                 <span className="ml-2 text-sm">
                   · {FAQ_CATEGORIES.find((c) => c.value === selectedRole)?.label}

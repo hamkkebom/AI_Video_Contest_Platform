@@ -36,7 +36,7 @@ export function DurationFilter({ minDur, maxDur }: DurationFilterProps) {
           onClick={() => handleClick(p.min, p.max)}
           className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
             isActive(p.min, p.max)
-              ? 'text-violet-500 font-bold bg-violet-500/10'
+              ? 'text-primary font-bold bg-primary/10'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >

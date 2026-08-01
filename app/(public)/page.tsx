@@ -11,7 +11,7 @@ import { Clapperboard, ArrowRight, Trophy } from 'lucide-react';
 import { contestTotalPrize } from '@/lib/prize';
 import { formatDate, safeJsonLd } from '@/lib/utils';
 import { SitePopup } from '@/components/popup/site-popup';
-import { PUBLIC_CONTEST_STATUS_LABELS, publicContestStatusLabel } from '@/config/constants';
+import { ContestStatusBadge } from '@/components/contest/contest-status-badge';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
 
@@ -143,9 +143,11 @@ export default async function LandingPage() {
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       {/* 상태 뱃지 */}
-                      <span className={`absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md border border-white/20 ${beforeStart ? 'bg-emerald-500/70' : 'bg-orange-500/70'}`}>
-                        {beforeStart ? PUBLIC_CONTEST_STATUS_LABELS.draft : PUBLIC_CONTEST_STATUS_LABELS.open}
-                      </span>
+                      <ContestStatusBadge
+                        status={beforeStart ? 'draft' : 'open'}
+                        variant="overlay"
+                        className="absolute top-3 left-3 z-10"
+                      />
                       {/* 하단 정보 오버레이 */}
                       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 pt-10 space-y-1">
                         {hostName && (
@@ -196,11 +198,7 @@ export default async function LandingPage() {
                           />
                           {/* 상태 뱃지 */}
                           <div className="absolute top-4 left-4">
-                            {beforeStart ? (
-                              <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-emerald-500/70">{PUBLIC_CONTEST_STATUS_LABELS.draft}</span>
-                            ) : (
-                              <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg text-white bg-orange-500/70">{PUBLIC_CONTEST_STATUS_LABELS.open}</span>
-                            )}
+                            <ContestStatusBadge status={beforeStart ? 'draft' : 'open'} variant="overlay" className="text-sm" />
                           </div>
                         </div>
                       </Link>
@@ -216,7 +214,7 @@ export default async function LandingPage() {
                           )}
                           {/* 제목 */}
                           <Link href={`/contests/${contest.id}` as Route}>
-                            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-[#EA580C] transition-colors break-keep">
+                            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight group-hover:text-brand transition-colors break-keep">
                               {contest.title}
                             </h3>
                           </Link>
@@ -312,15 +310,7 @@ export default async function LandingPage() {
                                   : `결과 발표 ${resultDate}`}
                             </p>
                           </div>
-                          <span
-                            className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
-                              resultPending
-                                ? 'bg-violet-500/10 text-violet-500'
-                                : 'bg-amber-500/10 text-amber-600'
-                            }`}
-                          >
-                            {publicContestStatusLabel(contest.status)}
-                          </span>
+                          <ContestStatusBadge status={contest.status} variant="soft" className="shrink-0" />
                         </div>
                       </Link>
                     );
@@ -374,7 +364,7 @@ export default async function LandingPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-foreground to-foreground/90 p-12 md:p-16 text-background">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#EA580C]/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand/30 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#8B5CF6]/30 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
@@ -400,7 +390,7 @@ export default async function LandingPage() {
                 <Link href="/support/agency">
                   <Button
                     size="lg"
-                    className="bg-[#EA580C] hover:bg-[#C2540A] text-white cursor-pointer font-semibold gap-2"
+                    className="bg-brand hover:bg-brand-hover text-white cursor-pointer font-semibold gap-2"
                   >
                     제작 의뢰하기
                     <ArrowRight className="h-4 w-4" />

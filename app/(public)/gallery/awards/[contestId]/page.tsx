@@ -100,9 +100,8 @@ export default async function ContestAwardsPage({
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       {/* 페이지 헤더 */}
       <section className="relative pt-24 pb-8 px-4">
@@ -114,7 +113,7 @@ export default async function ContestAwardsPage({
           </Link>
 
           <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-violet-500/80 to-foreground/70">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
               {contest.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -132,7 +131,7 @@ export default async function ContestAwardsPage({
         <div className="container mx-auto max-w-6xl">
           {/* 총 상금은 페이지 헤더에 이미 있어 여기서는 수상작 수만 보여준다 */}
           <p className="mb-8 text-base text-muted-foreground">
-            총 <span className="font-semibold text-[#EA580C]">{contestAwarded.length.toLocaleString()}</span>개의 수상작
+            총 <span className="font-semibold text-brand">{contestAwarded.length.toLocaleString()}</span>개의 수상작
           </p>
 
           <AwardsGrid submissions={gridSubmissions} tiers={tiers} />
