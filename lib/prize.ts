@@ -58,3 +58,20 @@ export function contestTotalPrize(
   if (prizeAmount) return formatPrizeDisplay(prizeAmount);
   return calculateTotalPrize(tiers ?? []);
 }
+
+/**
+ * 공모전의 총 상금을 원 단위 숫자로 — 여러 공모전을 합산할 때 쓴다.
+ * 표기(contestTotalPrize)와 계산 규칙이 갈라지지 않도록 같은 우선순위를 따른다.
+ */
+export function contestTotalPrizeAmount(
+  prizeAmount: string | null | undefined,
+  tiers: AwardTier[] | null | undefined,
+): number {
+  if (prizeAmount) return parsePrizeAmount(prizeAmount);
+  let total = 0;
+  for (const tier of tiers ?? []) {
+    if (!tier.prizeAmount) continue;
+    total += parsePrizeAmount(tier.prizeAmount) * tier.count;
+  }
+  return total;
+}

@@ -2,13 +2,12 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { getContests, getFeaturedSubmissions, getSiteSettings, getPublicCompanies } from '@/lib/data';
-import { HeroCarousel, type HeroSlide } from '@/components/landing/hero-carousel';
-import { FeaturedWorksCarousel } from '@/components/landing/featured-works-carousel';
+import { getContests, getPublicCompanies, getGallerySubmissions } from '@/lib/data';
+import { HeroMosaic, type MosaicTile } from '@/components/landing/hero-mosaic';
 import { ContestCountdown } from '@/components/contest/contest-countdown';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
 import { Clapperboard, ArrowRight, Trophy } from 'lucide-react';
-import { contestTotalPrize } from '@/lib/prize';
+import { contestTotalPrize, contestTotalPrizeAmount, formatKrw } from '@/lib/prize';
 import { formatDate, safeJsonLd } from '@/lib/utils';
 import { SitePopup } from '@/components/popup/site-popup';
 import { ContestStatusBadge } from '@/components/contest/contest-status-badge';
@@ -29,9 +28,6 @@ export default async function LandingPage() {
     contestsFetchError = true;
   }
 
-  const siteSettings = await getSiteSettings();
-  const showFeaturedCarousel = siteSettings['landing.featured_carousel'] ?? false;
-  const featuredSubmissions = showFeaturedCarousel ? await getFeaturedSubmissions(12) : [];
   /* 주최자 표기용 — 승인된 기업만 담긴 공개 뷰 (뷰 미배포 환경에선 빈 배열) */
   const companies = await getPublicCompanies().catch(() => []);
   const companyNameById = new Map(companies.map((c) => [c.id, c.name]));
@@ -44,17 +40,37 @@ export default async function LandingPage() {
         .slice(0, 4)
     : [];
 
-  /* ── 히어로 슬라이드: 공모전만 (heroImageUrl 우선, 없으면 posterUrl) ── */
-  const heroSlides: HeroSlide[] = openContests.slice(0, 3).map(c => ({
-    id: c.id,
-    type: 'contest',
-    title: c.title,
-    description: c.description,
-    date: c.submissionEndAt,
-    href: `/contests/${c.id}`,
-    ctaLabel: '자세히 보기',
-    imageUrl: c.heroImageUrl || c.posterUrl,
-  }));
+  /* ── 히어로 배경 타일 ──
+     결과 발표가 끝난 공모전의 작품만 쓴다. 심사가 진행 중인 작품을 홈에 띄우면
+     조회수·좋아요에 유리해져 공정성을 해친다 (추천 캐러셀을 끈 것과 같은 이유). */
+  const settledContestIds = new Set(
+    contests.filter((c) => c.status === 'completed' || c.status === 'closed').map((c) => String(c.id)),
+  );
+  const gallerySubmissions = await getGallerySubmissions().catch(() => []);
+  const heroTiles: MosaicTile[] = gallerySubmissions
+    .filter((s) => s.thumbnailUrl && settledContestIds.has(String(s.contestId)))
+    .slice(0, 36)
+    .map((s) => ({ id: String(s.id), title: s.title, thumbnailUrl: s.thumbnailUrl as string }));
+
+  /* 히어로 지표 — 문구 대신 실제 숫자로 */
+  const publicContests = contests.filter((c) => c.status !== 'draft');
+  const totalPrizeAmount = publicContests.reduce(
+    (sum, c) => sum + contestTotalPrizeAmount(c.prizeAmount, c.awardTiers),
+    0,
+  );
+  const heroStats = {
+    works: gallerySubmissions.length,
+    contests: publicContests.length,
+    prize: totalPrizeAmount > 0 ? formatKrw(totalPrizeAmount) : null,
+  };
+  const heroPrimary = openContests[0]
+    ? { href: `/contests/${openContests[0].id}` as Route, label: '공모전 참여하기' }
+    : { href: '/contests' as Route, label: '공모전 둘러보기' };
+  const heroEyebrow = openContests.length > 0
+    ? `${openContests.length}개 공모전 접수 중`
+    : gallerySubmissions.length > 0
+      ? `${gallerySubmissions.length.toLocaleString()}편의 작품이 기다립니다`
+      : 'AI 영상 공모전 플랫폼';
 
   /** "2026. 03. 28(토)" 형식 — null/invalid는 "미정" (epoch 렌더 방지, result_announced_at은 nullable) */
   const formatDateWithDay = (dateStr: string) => {
@@ -103,8 +119,14 @@ export default async function LandingPage() {
       dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
     />
     <div className="w-full">
-      {/* ══ 히어로 캐러셀 ══ */}
-      <HeroCarousel slides={heroSlides} />
+      {/* ══ 히어로 — 실제 출품작으로 만든 배경 위에 한 문장 ══ */}
+      <HeroMosaic
+        tiles={heroTiles}
+        stats={heroStats}
+        primaryHref={heroPrimary.href}
+        primaryLabel={heroPrimary.label}
+        eyebrow={heroEyebrow}
+      />
 
       {/* ══ 진행 중인 공모전 — 리스트뷰 ══ */}
       {contestsFetchError && openContests.length === 0 && (
@@ -350,15 +372,6 @@ export default async function LandingPage() {
           </div>
         </section>
       )}
-
-      {/* ══ 추천 작품 캐러셀 — 심사 공정성 위해 비활성화 ══ */}
-      {/* {showFeaturedCarousel && featuredSubmissions.length > 0 && (
-        <section className="py-20 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <FeaturedWorksCarousel submissions={featuredSubmissions} />
-          </div>
-        </section>
-      )} */}
 
       {/* ══ 영상 제작 대행 CTA ══ */}
       <section className="py-20 px-4">
