@@ -21,6 +21,7 @@
 | pricing 가짜 가격 폴백 제거 | 수익화 재개(D-005) 시점에 처리 |
 | 익명 조회수 점수 정책 | 갤러리 공개 전환으로 비로그인 조회가 쌓임 — `online_vote_type`에 views 포함 공모전 운영 전 인증 조회 집계 정책 필요 (현 기본값 likes라 즉시 영향 없음) |
 | sitemap·상세의 draft 공모전 배출 | 목록은 미공개 초안을 제외하지만 sitemap과 `/contests/[id]` 상세에는 draft 가드가 없음 — IA 원칙(내비·sitemap 양쪽 제외)과의 잔여 모순 (리뷰 R-1) |
+| 동적 상세 페이지 소프트 404 | `(public)/loading.tsx` 셸이 먼저 flush돼 `notFound()`가 상태코드를 못 바꿈(항상 200) — contests·gallery·story·hosts 상세 전부 해당, Googlebot UA로도 재현. generateMetadata에서 던져도 무효(b7ac0a4로 확인). 근본 해결은 loading 경계 재설계 |
 | 제출 메가폼·관리자 공모전 폼 분해 | 1,765줄/2,196줄 단일 파일 |
 | ~~갤러리 공모전별 필터~~ | ✅ 2026-08-01 완료 — `?contest=[id]` 필터가 기간 필터 6버튼을 대체 |
 
