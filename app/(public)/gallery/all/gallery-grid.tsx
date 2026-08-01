@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import Image from 'next/image';
-import { Eye, Heart, Loader2 } from 'lucide-react';
+import { Eye, Heart, Loader2, Play } from 'lucide-react';
 
 interface GalleryItem {
   id: string;
@@ -76,9 +76,9 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {items.map((submission) => (
           <Link key={submission.id} href={`/gallery/${submission.id}` as Route} className="group">
-            <div className="relative rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl">
               {/* 썸네일 — next/image로 Vercel CDN 캐싱 + WebP 자동 변환 */}
-              <div className="aspect-video overflow-hidden relative bg-muted">
+              <div className="relative aspect-video overflow-hidden bg-muted">
                 {submission.thumbnailUrl && (
                   <Image
                     src={submission.thumbnailUrl}
@@ -88,23 +88,23 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 )}
+
+                {/* 영상이라는 신호 — 정지 이미지만으로는 재생 가능한지 알 수 없다 */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/35 group-hover:opacity-100">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-lg">
+                    <Play className="ml-0.5 h-5 w-5 fill-neutral-900 text-neutral-900" />
+                  </span>
+                </div>
+
                 {/* 어느 공모전 작품인지 — 전체 보기에서만 (필터 중엔 중복 정보) */}
                 {showContestLabel && submission.contestTitle && (
-                  <span className="absolute top-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                  <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
                     {submission.contestTitle}
                   </span>
                 )}
-              </div>
 
-              {/* 콘텐츠 */}
-              <div className="p-4 space-y-2">
-                <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-accent-foreground transition-colors">
-                  {submission.title}
-                </h3>
-                <p className="text-xs text-muted-foreground line-clamp-1">{submission.creatorName}</p>
-
-                {/* 통계 */}
-                <div className="flex gap-3 text-xs text-muted-foreground pt-2">
+                {/* 조회·좋아요는 썸네일 위로 — 아래 텍스트 영역을 제목·제작자에 온전히 내준다 */}
+                <div className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 text-xs font-medium text-white">
                   <span className="flex items-center gap-1">
                     <Eye className="h-3.5 w-3.5" />
                     {submission.views.toLocaleString()}
@@ -114,6 +114,14 @@ export function GalleryGrid({ initialItems, total, initialHasMore, seed, sort, s
                     {submission.likeCount.toLocaleString()}
                   </span>
                 </div>
+              </div>
+
+              {/* 콘텐츠 */}
+              <div className="space-y-1 p-4">
+                <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+                  {submission.title}
+                </h3>
+                <p className="line-clamp-1 text-xs text-muted-foreground">{submission.creatorName}</p>
               </div>
             </div>
           </Link>

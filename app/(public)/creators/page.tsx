@@ -1,8 +1,9 @@
 import { PageHeader } from '@/components/layout/page-header';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
-import { getPublicCreators } from '@/lib/data';
+import { getPublicCreators, getGallerySubmissions } from '@/lib/data';
+import Image from 'next/image';
+import type { Route } from 'next';
 
 export const metadata: Metadata = {
   title: '크리에이터 — AI 영상 크리에이터 모아보기',
@@ -28,15 +29,33 @@ export const metadata: Metadata = {
  * 공모전 페이지 디자인 통일
  */
 export default async function CreatorsPage() {
-  const users = await getPublicCreators();
-  const creators = users.filter(u => u.roles.includes('participant')).slice(0, 24);
+  const [users, submissions] = await Promise.all([
+    getPublicCreators(),
+    getGallerySubmissions().catch(() => []),
+  ]);
+
+  /* 크리에이터별 실제 성과 — 예전에는 작품·좋아요·팔로워가 전부 0 으로 하드코딩돼 있었다 */
+  const statsByUser = new Map<string, { works: number; likes: number }>();
+  for (const s of submissions) {
+    const key = String(s.userId);
+    const cur = statsByUser.get(key) ?? { works: 0, likes: 0 };
+    cur.works += 1;
+    cur.likes += s.likeCount ?? 0;
+    statsByUser.set(key, cur);
+  }
+
+  /* 작품이 많은 순으로 — 아무 기준 없이 나열하면 목록이 의미를 갖지 못한다 */
+  const creators = users
+    .filter((u) => u.roles.includes('participant'))
+    .map((u) => ({ ...u, stats: statsByUser.get(String(u.id)) ?? { works: 0, likes: 0 } }))
+    .sort((a, b) => b.stats.works - a.stats.works || b.stats.likes - a.stats.likes)
+    .slice(0, 24);
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
 
-      {/* 배경 장식 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-0 w-[800px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 배경 장식 — 색은 globals.css .page-glow 가 테마 토큰으로 결정 */}
+      <div className="page-glow" />
 
       <PageHeader
         title="Creators"
@@ -47,98 +66,76 @@ export default async function CreatorsPage() {
         }
       />
 
-      {/* 필터 (Glassmorphism) */}
-      <section className="sticky top-16 z-40 px-4 pb-8">
-        <div className="container mx-auto max-w-6xl">
-          <div className="backdrop-blur-xl bg-background/70 border border-white/10 dark:border-white/5 shadow-sm rounded-2xl p-2 pr-4 flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <div className="flex gap-1 overflow-x-auto w-full md:w-auto">
-              {[
-                { id: 'all', label: '전체' },
-                { id: 'follow', label: '팔로우순' },
-                { id: 'works', label: '작품순' },
-                { id: 'popular', label: '인기순' },
-              ].map((tab) => (
-                <button
-                  type="button"
-                  key={tab.id}
-                  className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base tracking-tight transition-all cursor-pointer whitespace-nowrap ${tab.id === 'all'
-                    ? 'text-primary font-bold'
-                    : 'text-muted-foreground font-medium hover:text-foreground'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 크리에이터 그리드 */}
+      {/* 크리에이터 그리드
+          정렬 탭이 있었지만 onClick 이 없는 죽은 버튼이었고, 팔로우 기능 자체가 없다.
+          동작하지 않는 컨트롤을 두느니 "작품 많은 순"이라는 기준을 명시한다. */}
       <section className="pb-24 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-5">
+          <div className="mb-5 flex items-center justify-between">
             <p className="text-base text-muted-foreground">
-              <span className="text-brand font-semibold">{creators.length}</span>명의 크리에이터
+              <span className="font-semibold text-brand">{creators.length}</span>명의 크리에이터
             </p>
+            <p className="text-sm text-muted-foreground">작품 많은 순</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {creators.map((creator) => (
-              <Link key={creator.id} href={`/creators/${creator.id}` as any}>
-                <div className="group rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10">
+              <Link key={creator.id} href={`/creators/${creator.id}` as Route}>
+                <div className="group h-full overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl">
                   {/* 배경 */}
-                  <div className="bg-gradient-to-r from-accent-foreground/20 to-primary/20 h-24 relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-accent-foreground transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
-                  </div>
+                  <div className="relative h-20 bg-gradient-to-r from-brand/20 to-primary/20" />
 
                   {/* 프로필 */}
-                  <div className="p-4 text-center space-y-3">
-                    {/* 아바타 */}
-                    <div className="flex justify-center -mt-12 mb-2">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent-foreground to-primary flex items-center justify-center text-white text-2xl font-bold border-4 border-background shadow-lg">
-                        {creator.name.charAt(0)}
+                  <div className="space-y-3 p-4 text-center">
+                    {/* 아바타 — 등록한 사진이 있으면 그것을, 없으면 이니셜 */}
+                    <div className="-mt-12 mb-2 flex justify-center">
+                      <div className="relative h-16 w-16 overflow-hidden rounded-full border-4 border-card shadow-lg">
+                        {creator.avatarUrl ? (
+                          <Image
+                            src={creator.avatarUrl}
+                            alt={creator.nickname || creator.name}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand to-primary text-2xl font-bold text-white">
+                            {creator.name.charAt(0)}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* 정보 */}
-                    <div>
-                      <h3 className="font-bold text-lg group-hover:text-accent-foreground transition-colors">{creator.nickname || creator.name}</h3>
-                      <p className="text-xs text-muted-foreground">{creator.region ?? '미설정'}</p>
+                    <div className="space-y-0.5">
+                      <h3 className="truncate text-lg font-bold transition-colors group-hover:text-primary">
+                        {creator.nickname || creator.name}
+                      </h3>
+                      {creator.region && (
+                        <p className="text-xs text-muted-foreground">{creator.region}</p>
+                      )}
                     </div>
 
-                    {/* 통계 */}
-                    <div className="flex justify-around text-sm">
+                    {/* 통계 — 갤러리에서 집계한 실제 수치 */}
+                    <div className="flex justify-center gap-6 border-t border-border pt-3 text-sm">
                       <div>
-                        <div className="font-semibold text-brand">0</div>
+                        <div className="font-semibold tabular-nums text-brand">
+                          {creator.stats.works.toLocaleString()}
+                        </div>
                         <div className="text-xs text-muted-foreground">작품</div>
                       </div>
                       <div>
-                        <div className="font-semibold text-primary">0</div>
+                        <div className="font-semibold tabular-nums text-primary">
+                          {creator.stats.likes.toLocaleString()}
+                        </div>
                         <div className="text-xs text-muted-foreground">좋아요</div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-amber-400">0</div>
-                        <div className="text-xs text-muted-foreground">팔로워</div>
-                      </div>
                     </div>
-
-                    {/* 버튼 */}
-                    <Button className="w-full bg-primary hover:bg-primary/90 rounded-lg" size="sm">
-                      프로필 보기
-                    </Button>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
 
-          {/* 더보기 */}
-          <div className="mt-10 flex flex-col items-center gap-3">
-            <button type="button" className="group relative px-10 py-2.5 rounded-full border-2 border-primary text-primary font-semibold text-base overflow-hidden transition-all duration-300 hover:text-white hover:shadow-lg hover:shadow-primary/20 cursor-pointer">
-              <span className="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-              <span className="relative z-10">더 많은 크리에이터 보기</span>
-            </button>
-          </div>
         </div>
       </section>
     </div>

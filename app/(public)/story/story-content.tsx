@@ -163,7 +163,7 @@ AI꿈의 새로운 소식을 만나보세요
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredArticles.map((article) => (
                 <Link key={article.id} href={`/story/${article.slug}`}>
-                  <div className="group rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 bg-background/50 backdrop-blur border border-white/10 h-full flex flex-col">
+                  <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl">
                     {/* Thumbnail */}
                     <div className="h-52 relative overflow-hidden bg-muted">
                       {article.thumbnailUrl && (
