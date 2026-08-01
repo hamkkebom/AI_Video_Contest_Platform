@@ -63,10 +63,10 @@ export function FaqContent({ faqs }: { faqs: FAQ[] }) {
               <ChevronRight className="h-3 w-3" />
               <span className="text-foreground font-medium">FAQ</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
+            <h1 className="mb-3 bg-gradient-to-r from-foreground via-primary/80 to-foreground/70 bg-clip-text pb-1 text-4xl font-extrabold tracking-tight text-transparent md:text-5xl">
               FAQ
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base text-muted-foreground sm:text-lg">
               자주 묻는 질문을 역할별, 주제별로 확인하세요
             </p>
           </div>

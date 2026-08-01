@@ -113,7 +113,8 @@ export default async function ContestAwardsPage({
           </Link>
 
           <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3 pb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary/80 to-foreground/70">
+            {/* 공모전 제목이라 영문 디스플레이 헤더(PageHeader)와 달리 한 단계 작게 잡는다 */}
+            <h1 className="mb-3 bg-gradient-to-r from-foreground via-primary/80 to-foreground/70 bg-clip-text pb-1 text-3xl font-extrabold tracking-tight text-transparent md:text-4xl">
               {contest.title}
             </h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
