@@ -194,23 +194,25 @@
   border-radius: 9999px;
 }
 
+/* 두 덩이는 서로 다른 계열이어야 분위기가 되고, 같은 계열이면 화면이 한 색으로 덮인다.
+   시그니처 테마는 primary 가 브랜드 오렌지라 한 덩이는 반드시 차가운 쪽(chart-5)을 쓴다. */
 .page-glow::before {
   top: 0;
   left: 50%;
-  width: 1000px;
-  height: 600px;
+  width: 900px;
+  height: 520px;
   transform: translateX(-50%);
-  background: color-mix(in oklch, var(--primary) 18%, transparent);
+  background: color-mix(in oklch, var(--chart-5) 10%, transparent);
   filter: blur(120px);
 }
 
 .page-glow::after {
-  top: 20%;
-  right: -10%;
-  width: 800px;
-  height: 600px;
-  background: color-mix(in oklch, var(--brand) 12%, transparent);
-  filter: blur(100px);
+  top: 22%;
+  right: -12%;
+  width: 700px;
+  height: 500px;
+  background: color-mix(in oklch, var(--brand) 7%, transparent);
+  filter: blur(110px);
 }
 
 /* ── 교육 섹션 오로라 그라데이션 ── */

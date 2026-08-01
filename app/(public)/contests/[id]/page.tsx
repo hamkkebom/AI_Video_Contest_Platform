@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { getContestById, getPublicProfileById, getPublicCompanyById, getRelatedContests, getGallerySubmissions } from '@/lib/data';
 import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download, Film } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
+import { ContestDetailContent } from '@/components/contest/contest-detail-content';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
 import { contestTotalPrize, formatPrizeDisplay } from '@/lib/prize';
 import { AuthSubmitButton } from '@/components/contest/auth-submit-button';
@@ -360,13 +361,11 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 </div>
               )}
 
-              {/* 상세 안내 텍스트 */}
+              {/* 상세 안내 텍스트 — 주최자가 넣은 평문에서 섹션·목록 구조를 읽어 렌더 */}
               {contest.detailContent ? (
-                <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {contest.detailContent}
-                </div>
+                <ContestDetailContent content={contest.detailContent} />
               ) : (
-                <p className="text-muted-foreground leading-relaxed">{contest.description}</p>
+                <p className="text-[0.95rem] leading-relaxed text-muted-foreground">{contest.description}</p>
               )}
             </Card>
           </div>
