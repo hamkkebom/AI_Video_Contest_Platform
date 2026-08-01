@@ -605,6 +605,65 @@ export function getPublicProfileById(id: string): Promise<User | null> {
   )();
 }
 
+/** 공개 주최자(기업) — public_companies 뷰가 노출하는 컬럼만 */
+export interface PublicCompany {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  website: string | null;
+  description: string | null;
+}
+
+function toPublicCompany(row: Record<string, unknown>): PublicCompany {
+  return {
+    id: String(row.id),
+    name: (row.name as string) ?? '',
+    logoUrl: (row.logo_url as string | null) ?? null,
+    website: (row.website as string | null) ?? null,
+    description: (row.description as string | null) ?? null,
+  };
+}
+
+/**
+ * 공개 주최자 단건 조회 (공모전 주최자 표기·주최자 페이지) — public_companies 뷰.
+ * 뷰는 승인된 기업만 담고 사업자등록번호·대표자명·연락처·사업자등록증을 제외한다. (마이그레이션 048)
+ * 뷰가 아직 없는 환경에서도 화면이 깨지지 않도록 실패 시 null 을 돌려준다.
+ */
+export function getPublicCompanyById(id: string): Promise<PublicCompany | null> {
+  return unstable_cache(
+    async (): Promise<PublicCompany | null> => {
+      const supabase = createPublicClient();
+      const { data, error } = await supabase
+        .from('public_companies')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (error || !data) return null;
+      return toPublicCompany(data as Record<string, unknown>);
+    },
+    [`public-company-${id}`],
+    { tags: ['companies'], revalidate: 300 },
+  )();
+}
+
+/**
+ * 승인된 공개 주최자 전체 — 주최자 목록 화면·sitemap 용.
+ * 뷰가 아직 없는 환경에서도 안전하도록 실패 시 빈 배열.
+ */
+export const getPublicCompanies = unstable_cache(
+  async (): Promise<PublicCompany[]> => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('public_companies')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error || !data) return [];
+    return data.map((row) => toPublicCompany(row as Record<string, unknown>));
+  },
+  ['public-companies'],
+  { tags: ['companies'], revalidate: 300 },
+);
+
 /**
  * 여러 유저 ID로 벌크 조회 (usersMap 생성용)
  * ID 수가 많으면 URL 길이 제한과 기본 조회 제한(1000건)에 걸리므로 청크로 나눠 조회한다.

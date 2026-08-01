@@ -27,6 +27,7 @@
 │   └── /gallery/[id]      작품 상세 — 공개 전환 (D-013)
 ├── /gallery/awards        수상작 갤러리
 │   └── /gallery/awards/[contestId]
+├── /hosts/[id]            주최자 공개 페이지 — 승인된 기업만 (D-014)
 ├── /creators              크리에이터 목록
 │   └── /creators/[id]
 ├── /story                 스토리 (아티클)
@@ -87,7 +88,7 @@
 
 | 라우트 | 정책 | 비고 |
 |---|---|---|
-| `/`, `/contests*`, `/gallery/all`, `/gallery/awards*`, `/creators*`, `/story*`, `/search`, `/support*`, `/terms`, `/privacy` | 공개 | |
+| `/`, `/contests*`, `/gallery/all`, `/gallery/awards*`, `/creators*`, `/hosts/*`, `/story*`, `/search`, `/support*`, `/terms`, `/privacy` | 공개 | `/hosts`는 승인된 기업만(`public_companies` 뷰). 경로 비교는 세그먼트 경계로 — `/host`(주최자 대시보드)와 접두사가 겹친다 (D-014) |
 | `/gallery/[id]` | **공개로 전환** | 좋아요 등 행위만 로그인 요구 (컴포넌트 단위). sitemap 1,000건과 정합. **트레이드오프**: 익명 조회수가 쌓이므로 `online_vote_type`에 views를 포함하는 공모전 운영 시 인증 조회 집계 정책 필요 (D-013, 로드맵 이관) |
 | `/contests/[id]/submit` | 로그인 | 기존 유지 |
 | `/invite/[token]` | 로그인 (역할 무관) | 미들웨어 로그인 가드 적용, RoleGuard는 `/judging` 전용 레이아웃으로 이동 — 초대 수신자는 아직 judge 역할이 없음. 페이지 자체는 데모 스텁 상태로 실토큰 흐름 재구축은 로드맵 이관(§6) |

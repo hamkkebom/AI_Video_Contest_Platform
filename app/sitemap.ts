@@ -105,5 +105,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...contestRoutes, ...awardRoutes, ...galleryRoutes, ...storyRoutes, ...creatorRoutes];
+  // 주최자 (승인된 기업만 — public_companies 뷰가 status 조건을 담고 있다)
+  const { data: hosts } = await supabase
+    .from('public_companies')
+    .select('id');
+
+  const hostRoutes: MetadataRoute.Sitemap = (hosts ?? []).map((h) => ({
+    url: `${BASE_URL}/hosts/${h.id}`,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }));
+
+  return [...staticRoutes, ...contestRoutes, ...awardRoutes, ...galleryRoutes, ...storyRoutes, ...creatorRoutes, ...hostRoutes];
 }

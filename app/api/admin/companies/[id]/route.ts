@@ -1,11 +1,29 @@
 import { NextResponse } from 'next/server';
 import { getCompanies, getCompanyMembers, getUsersByIds } from '@/lib/data';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    /* 이 라우트는 /api/admin/* 이라 미들웨어 보호 대상이 아니다(/admin 으로 시작하지 않음).
+       companies 는 사업자등록번호·사업자등록증 URL 을 담으므로 RLS 에만 기대지 않고
+       여기서도 관리자를 명시적으로 확인한다. */
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!profile?.roles?.includes('admin')) {
+      return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+    }
+
     const { id } = await params;
     const [companies, members] = await Promise.all([
       getCompanies(),

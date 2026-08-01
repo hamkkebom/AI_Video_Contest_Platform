@@ -35,6 +35,22 @@ const allMenuItems: MenuItem[] = [
   { label: '스토리', href: '/story', settingKey: 'menu.story' },
 ];
 
+/** 경로가 특정 세그먼트 아래인지 — `/host`(주최자 대시보드)가 `/hosts`(공개 주최자 페이지)를 삼키지 않게 */
+function isUnder(pathname: string, base: string): boolean {
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+/** 로그아웃 시 홈으로 보내야 하는 보호 라우트인지 */
+function isProtectedPath(pathname: string): boolean {
+  return (
+    isUnder(pathname, '/my') ||
+    isUnder(pathname, '/admin') ||
+    isUnder(pathname, '/host') ||
+    isUnder(pathname, '/judging') ||
+    /^\/contests\/[^/]+\/submit/.test(pathname)
+  );
+}
+
 /** 갤러리 하위 경로는 수상작(/gallery/awards)과 그 외로 나눠 활성 표시 */
 function isMenuActive(pathname: string, hrefPath: string): boolean {
   if (hrefPath === '/gallery/all') {
@@ -121,24 +137,12 @@ export function Header({ siteSettings = {} }: HeaderProps) {
     try {
       await signOut();
       /* 보호 라우트에서 로그아웃하면 미들웨어가 login으로 보내기 전에 홈으로 이동 */
-      const isProtected =
-        pathname.startsWith('/my') ||
-        pathname.startsWith('/admin') ||
-        pathname.startsWith('/host') ||
-        pathname.startsWith('/judging') ||
-        /^\/contests\/[^/]+\/submit/.test(pathname);
-      if (isProtected) {
+      if (isProtectedPath(pathname)) {
         router.replace('/');
       }
     } catch {
       /* signOut 실패 시에도 보호 라우트면 홈으로 */
-      const isProtected =
-        pathname.startsWith('/my') ||
-        pathname.startsWith('/admin') ||
-        pathname.startsWith('/host') ||
-        pathname.startsWith('/judging') ||
-        /^\/contests\/[^/]+\/submit/.test(pathname);
-      if (isProtected) {
+      if (isProtectedPath(pathname)) {
         router.replace('/');
       }
     } finally {

@@ -13,6 +13,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { COOKIE_MAX_AGE } from './client';
 import { getSupabaseEnv } from '@/lib/env';
 
+/**
+ * 경로가 특정 세그먼트 아래인지 — 접두사 충돌 방지.
+ * startsWith('/host') 는 공개 주최자 페이지 `/hosts/[id]` 까지 삼켜
+ * 비로그인 방문자를 로그인으로 보내버린다. 세그먼트 경계까지 봐야 한다.
+ */
+function isUnder(pathname: string, base: string): boolean {
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
 /** 쿠키 옵션 (모든 auth 쿠키에 동일 적용) */
 const COOKIE_OPTIONS = {
   maxAge: COOKIE_MAX_AGE,
@@ -104,11 +113,11 @@ export async function updateSession(request: NextRequest) {
      미들웨어 벽이 불필요하다. (docs/IA.md §4, DECISIONS D-013) */
   /* /invite는 로그인만 요구 (역할 무관) — 초대 수신자는 아직 judge 역할이 없다 (docs/IA.md §4) */
   const isProtectedRoute =
-    pathname.startsWith('/my') ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/host') ||
-    pathname.startsWith('/judging') ||
-    pathname.startsWith('/invite') ||
+    isUnder(pathname, '/my') ||
+    isUnder(pathname, '/admin') ||
+    isUnder(pathname, '/host') ||
+    isUnder(pathname, '/judging') ||
+    isUnder(pathname, '/invite') ||
     /^\/contests\/[^/]+\/submit/.test(pathname);
 
   if (isProtectedRoute && !user) {

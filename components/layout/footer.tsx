@@ -27,12 +27,11 @@ const legalLinks: Array<{ label: string; href: Route }> = [
 
 export function Footer() {
   const pathname = usePathname();
-  /* 대시보드 경로에서는 사이드바(w-60) 패딩 적용 */
+  /* 대시보드 경로에서는 사이드바(w-60) 패딩 적용.
+     세그먼트 경계까지 비교한다 — `/host`(대시보드)와 `/hosts`(공개 주최자 페이지)는 다른 화면이다 */
+  const isUnder = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
   const isDashboard =
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/host') ||
-    pathname.startsWith('/my') ||
-    pathname.startsWith('/judging');
+    isUnder('/admin') || isUnder('/host') || isUnder('/my') || isUnder('/judging');
 
   return (
     <footer className={`bg-foreground text-background ${isDashboard ? 'md:pl-60' : ''}`}>

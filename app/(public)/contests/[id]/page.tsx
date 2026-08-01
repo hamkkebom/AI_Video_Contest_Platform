@@ -3,7 +3,7 @@ import NextImage from 'next/image';
 import type { Metadata, Route } from 'next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getContestById, getPublicProfileById, getRelatedContests, getGallerySubmissions } from '@/lib/data';
+import { getContestById, getPublicProfileById, getPublicCompanyById, getRelatedContests, getGallerySubmissions } from '@/lib/data';
 import { Calendar, Gavel, Trophy, ArrowLeft, Search, Image as ImageIcon, Download, Film } from 'lucide-react';
 import { RelatedContestCarousel } from '@/components/contest/related-contest-carousel';
 import { PromoVideoSection } from '@/components/contest/promo-video-section';
@@ -136,8 +136,9 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     : contest.status;
   const statusMeta = getStatusMeta(displayStatus);
 
-  const [hostUser, relatedContests, gallerySubmissions] = await Promise.all([
+  const [hostUser, hostCompany, relatedContests, gallerySubmissions] = await Promise.all([
     getPublicProfileById(contest.hostUserId),
+    contest.hostCompanyId ? getPublicCompanyById(contest.hostCompanyId) : Promise.resolve(null),
     getRelatedContests(contest.id, 6),
     getGallerySubmissions().catch(() => []),
   ]);
@@ -146,6 +147,10 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
     (s) => String(s.contestId) === String(contest.id),
   ).length;
   const isAdminHost = hostUser?.roles?.includes('admin');
+  /* 주최자 표기 우선순위: 등록 기업 → 플랫폼 자체 개최(admin) → 주최 담당자 → 기본값.
+     기업이 붙은 공모전을 운영사 이름으로 덮어쓰지 않는다 (멀티테넌트 전제) */
+  const hostDisplayName =
+    hostCompany?.name ?? (isAdminHost ? '함께봄 주식회사' : (hostUser?.name ?? '운영팀'));
   const totalPrize = contestTotalPrize(contest.prizeAmount, contest.awardTiers);
 
   /* JSON-LD 구조화 데이터 — Event 스키마 */
@@ -163,10 +168,11 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
       url: `${SITE_URL}/contests/${id}`,
     },
     image: contest.posterUrl || undefined,
+    /* 주최자는 공모전마다 다르다 — 플랫폼 이름으로 고정하지 않는다 */
     organizer: {
       '@type': 'Organization',
-      name: 'AI꿈',
-      url: SITE_URL,
+      name: hostDisplayName,
+      url: hostCompany?.website || (hostCompany ? `${SITE_URL}/hosts/${hostCompany.id}` : SITE_URL),
     },
     ...(contest.awardTiers.length > 0 ? {
       offers: {
@@ -432,7 +438,13 @@ export default async function ContestDetailPage({ params, searchParams }: Contes
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">주최</span>
                   <span className="text-right font-medium">
-                    {isAdminHost ? '함께봄 주식회사' : (hostUser?.name ?? '운영팀')}
+                    {hostCompany ? (
+                      <Link href={`/hosts/${hostCompany.id}` as Route} className="hover:text-primary transition-colors">
+                        {hostDisplayName}
+                      </Link>
+                    ) : (
+                      hostDisplayName
+                    )}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
