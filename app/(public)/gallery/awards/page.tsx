@@ -1,10 +1,10 @@
 import { PageHeader } from '@/components/layout/page-header';
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Metadata } from 'next';
+import type { Metadata, Route } from 'next';
 import { Trophy, Award } from 'lucide-react';
 import { AutoFitTitle } from '@/components/ui/auto-fit-title';
-import { getCompletedContests } from '@/lib/data';
+import { getCompletedContests, getAwardedSubmissions } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 import { keywordsFromContests } from '@/lib/seo';
 import { contestTotalPrize } from '@/lib/prize';
@@ -38,12 +38,21 @@ export async function generateMetadata(): Promise<Metadata> {
  * 결과발표된 공모전을 포스터 카드로 표시, 클릭 시 해당 공모전 수상작 상세
  */
 export default async function GalleryAwardsPage() {
-  let completedContests: Awaited<ReturnType<typeof getCompletedContests>> = [];
-  try {
-    completedContests = await getCompletedContests();
-  } catch (e) {
-    console.error('[GalleryAwardsPage] getCompletedContests 실패:', e);
-  }
+  const [completedContests, awarded] = await Promise.all([
+    getCompletedContests().catch((e) => {
+      console.error('[GalleryAwardsPage] getCompletedContests 실패:', e);
+      return [] as Awaited<ReturnType<typeof getCompletedContests>>;
+    }),
+    getAwardedSubmissions().catch((e) => {
+      console.error('[GalleryAwardsPage] getAwardedSubmissions 실패:', e);
+      return [] as Awaited<ReturnType<typeof getAwardedSubmissions>>;
+    }),
+  ]);
+
+  /* 등수 높은 순으로 앞에 세운다 — 이 페이지의 주인공은 공모전이 아니라 수상작이다 */
+  const topAwarded = [...awarded]
+    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+    .slice(0, 8);
 
   return (
     <div className="w-full min-h-screen bg-background relative overflow-hidden font-sans">
@@ -54,26 +63,76 @@ export default async function GalleryAwardsPage() {
       <PageHeader
         title="Awards Gallery"
         description={
-          <>
-공모전 수상 작품들을 감상하세요
-          </>
+          awarded.length > 0 ? (
+            <>
+              <span className="font-semibold text-foreground">{completedContests.length}</span>개 공모전에서
+              선정된 <span className="font-semibold text-foreground">{awarded.length}</span>편의 수상작
+            </>
+          ) : (
+            <>공모전 수상 작품들을 감상하세요</>
+          )
         }
         tight
       />
 
+      {/* ── 수상작 ── 포스터가 아니라 실제 수상 작품으로 시작한다 */}
+      {topAwarded.length > 0 && (
+        <section className="px-4 pt-10 pb-4">
+          <div className="container mx-auto max-w-6xl">
+            <h2 className="mb-6 text-xl font-bold tracking-tight sm:text-2xl">수상작</h2>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {topAwarded.map((work) => (
+                <Link
+                  key={work.id}
+                  href={`/gallery/${work.id}` as Route}
+                  className="group relative isolate overflow-hidden rounded-2xl border border-border bg-neutral-950 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="relative aspect-video">
+                    {work.thumbnailUrl && (
+                      <Image
+                        src={work.thumbnailUrl}
+                        alt={work.title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
+                    {work.prizeLabel && (
+                      <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/20 bg-status-completed px-2.5 py-1 text-xs font-bold text-white opacity-95 backdrop-blur-md">
+                        <Trophy className="h-3 w-3" />
+                        {work.prizeLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-1 p-4">
+                    <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-brand">
+                      {work.title}
+                    </h3>
+                    <p className="truncate text-xs text-white/60">{work.creatorName}</p>
+                    <p className="truncate text-[11px] text-white/40">{work.contestTitle}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 공모전 포스터 카드 그리드 */}
-      <section className="pt-16 pb-24 px-4">
+      <section className="pt-12 pb-24 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between mb-5">
-            <p className="text-base text-muted-foreground">
-              총 <span className="text-brand font-semibold">{completedContests.length}</span>개의 공모전
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">공모전별로 보기</h2>
+            <p className="text-sm text-muted-foreground">
+              총 <span className="font-semibold text-brand">{completedContests.length}</span>개
             </p>
           </div>
 
           {completedContests.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {completedContests.map((contest) => (
-                <Link key={contest.id} href={`/gallery/awards/${contest.id}` as any} className="group relative block">
+                <Link key={contest.id} href={`/gallery/awards/${contest.id}` as Route} className="group relative block">
                   <div className="relative aspect-[2/3] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
 
                     {/* Left Accent Bar */}
@@ -92,7 +151,7 @@ export default async function GalleryAwardsPage() {
 
                     {/* 결과발표 뱃지 */}
                     <div className="absolute top-[18px] right-3 z-10">
-                      <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg bg-amber-500/90 text-white">
+                      <span className="px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-lg bg-status-completed text-white opacity-95">
                         <Trophy className="inline h-3.5 w-3.5 mr-1" />
                         결과발표
                       </span>
