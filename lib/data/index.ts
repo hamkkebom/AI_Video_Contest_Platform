@@ -71,6 +71,21 @@ import type { Popup, PopupMutationInput } from '@/lib/types';
 // 유틸리티: snake_case → camelCase 변환
 // ============================================================
 
+/**
+ * Supabase 조회 실패를 조용히 빈 값으로 바꾸지 않기 위한 로거.
+ *
+ * 예전에는 데이터 함수 대부분이 `if (error || !data) return []` 이었다.
+ * RLS 거부·네트워크 오류·권한 문제가 전부 "데이터 없음"과 같은 모습이 되어,
+ * 실제로 articles 의 RLS 사고가 화면상 "아티클이 없습니다"로 위장된 채 남아 있었다. (051)
+ *
+ * 이제 오류는 반드시 로그를 남긴다 — 빈 결과인지 장애인지 구분되어야 한다.
+ * (Sentry 가 console.error 를 수집하므로 별도 전송 코드를 두지 않는다 — D-012)
+ */
+function logDataError(fn: string, error: { message: string; code?: string } | null): void {
+  if (!error) return;
+  console.error(`[data:${fn}] 조회 실패:`, error.message, error.code ? `(${error.code})` : '');
+}
+
 /** DB profiles 행 → User 타입 */
 function toUser(row: Record<string, unknown>): User {
   return {
@@ -563,6 +578,7 @@ export async function getUserById(id: string): Promise<User | null> {
     .select('*')
     .eq('id', id)
     .maybeSingle();
+  if (error) logDataError('getUserById', error);
   if (error || !data) return null;
   return toUser(data as Record<string, unknown>);
 }
@@ -597,6 +613,7 @@ export function getPublicProfileById(id: string): Promise<User | null> {
         .select('*')
         .eq('id', id)
         .maybeSingle();
+      if (error) logDataError('getPublicProfileById', error);
       if (error || !data) return null;
       return toUser(data as Record<string, unknown>);
     },
@@ -638,6 +655,7 @@ export function getPublicCompanyById(id: string): Promise<PublicCompany | null> 
         .select('*')
         .eq('id', id)
         .maybeSingle();
+      if (error) logDataError('getPublicCompanyById', error);
       if (error || !data) return null;
       return toPublicCompany(data as Record<string, unknown>);
     },
@@ -657,6 +675,7 @@ export const getPublicCompanies = unstable_cache(
       .from('public_companies')
       .select('*')
       .order('created_at', { ascending: true });
+    if (error) logDataError('getPublicCompanies', error);
     if (error || !data) return [];
     return data.map((row) => toPublicCompany(row as Record<string, unknown>));
   },
@@ -685,6 +704,7 @@ export async function getUsersByIds(ids: string[]): Promise<User[]> {
         .from('profiles')
         .select('*')
         .in('id', chunk);
+      if (error) logDataError('getUsersByIds', error);
       if (error || !data) return [];
       return data.map((row) => toUser(row as Record<string, unknown>));
     }),
@@ -768,6 +788,7 @@ export async function getAdminUsers(params: {
     .order('created_at', { ascending: true })
     .range(from, to);
 
+  if (error) logDataError('getAdminUsers', error);
   if (error || !data) return { users: [], total: 0, page, pageSize };
 
   return {
@@ -870,6 +891,7 @@ export async function getCompanies(): Promise<Company[]> {
     .from('companies')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getCompanies', error);
   if (error || !data) return [];
   return data.map((row) => toCompany(row as Record<string, unknown>));
 }
@@ -880,6 +902,7 @@ export async function getCompanyMembers(): Promise<CompanyMember[]> {
     .from('company_members')
     .select('*')
     .order('joined_at', { ascending: true });
+  if (error) logDataError('getCompanyMembers', error);
   if (error || !data) return [];
   return data.map((row) => toCompanyMember(row as Record<string, unknown>));
 }
@@ -890,6 +913,7 @@ export async function getDevices(): Promise<Device[]> {
     .from('devices')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getDevices', error);
   if (error || !data) return [];
   return data.map((row) => toDevice(row as Record<string, unknown>));
 }
@@ -901,6 +925,7 @@ export async function getDevicesByUser(userId: string): Promise<Device[]> {
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: true });
+  if (error) logDataError('getDevicesByUser', error);
   if (error || !data) return [];
   return data.map((row) => toDevice(row as Record<string, unknown>));
 }
@@ -992,6 +1017,7 @@ export async function getContestIdBySlug(slug: string): Promise<string | null> {
     .select('id')
     .eq('slug', slug)
     .maybeSingle();
+  if (error) logDataError('getContestIdBySlug', error);
   if (error || !data) return null;
   return String(data.id);
 }
@@ -1158,6 +1184,7 @@ export async function getAdminSubmissions(filters?: SubmissionFilters): Promise<
   }
 
   const { data, error } = await query;
+  if (error) logDataError('getAdminSubmissions', error);
   if (error || !data) return [];
   return data.map((row) => toSubmission(row as Record<string, unknown>));
 }
@@ -1168,6 +1195,7 @@ export async function getLikes(): Promise<Like[]> {
     .from('likes')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getLikes', error);
   if (error || !data) return [];
   return data.map((row) => toLike(row as Record<string, unknown>));
 }
@@ -1228,6 +1256,7 @@ export const getArticles = unstable_cache(
       .from('public_articles')
       .select('*')
       .order('published_at', { ascending: false });
+    if (error) logDataError('getArticles', error);
     if (error || !data) return [];
     return data.map((row) => toArticle(row as Record<string, unknown>));
   },
@@ -1242,6 +1271,7 @@ export const getFaqs = unstable_cache(
       .from('faqs')
       .select('*')
       .order('updated_at', { ascending: true });
+    if (error) logDataError('getFaqs', error);
     if (error || !data) return [];
     return data.map((row) => toFaq(row as Record<string, unknown>));
   },
@@ -1255,6 +1285,7 @@ export async function getInquiries(): Promise<Inquiry[]> {
     .from('inquiries')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getInquiries', error);
   if (error || !data) return [];
   return data.map((row) => toInquiry(row as Record<string, unknown>));
 }
@@ -1265,6 +1296,7 @@ export async function getAgencyRequests(): Promise<AgencyRequest[]> {
     .from('agency_requests')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getAgencyRequests', error);
   if (error || !data) return [];
   return data.map((row) => toAgencyRequest(row as Record<string, unknown>));
 }
@@ -1276,6 +1308,7 @@ export async function getJudgingTemplates(): Promise<JudgingTemplate[]> {
     .from('judging_templates')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getJudgingTemplates', error);
   if (error || !templates) return [];
 
   const templateIds = templates.map((t) => String(t.id));
@@ -1511,6 +1544,7 @@ export async function getJudges(): Promise<Judge[]> {
     .from('judges')
     .select('*')
     .order('invited_at', { ascending: true });
+  if (error) logDataError('getJudges', error);
   if (error || !data) return [];
   return data.map((row) => toJudge(row as Record<string, unknown>));
 }
@@ -1522,6 +1556,7 @@ export async function getScores(): Promise<Score[]> {
     .from('scores')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getScores', error);
   if (error || !scores) return [];
 
   const scoreIds = scores.map((s) => String(s.id));
@@ -1560,6 +1595,7 @@ export const getContestResults = unstable_cache(
       .from('contest_results')
       .select('*')
       .order('rank', { ascending: true });
+    if (error) logDataError('getContestResults', error);
     if (error || !data) return [];
     return data.map((row) => toContestResult(row as Record<string, unknown>));
   },
@@ -1573,6 +1609,7 @@ export const getPricingPlans = unstable_cache(
     const { data, error } = await supabase
       .from('pricing_plans')
       .select('*');
+    if (error) logDataError('getPricingPlans', error);
     if (error || !data) return [];
     return data.map((row) => toPricingPlan(row as Record<string, unknown>));
   },
@@ -1586,6 +1623,7 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
     .from('activity_logs')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getActivityLogs', error);
   if (error || !data) return [];
   return data.map((row) => toActivityLog(row as Record<string, unknown>));
 }
@@ -1596,6 +1634,7 @@ export async function getIpLogs(): Promise<IpLog[]> {
     .from('ip_logs')
     .select('*')
     .order('created_at', { ascending: true });
+  if (error) logDataError('getIpLogs', error);
   if (error || !data) return [];
   return data.map((row) => toIpLog(row as Record<string, unknown>));
 }
@@ -1940,6 +1979,7 @@ export function getCompletedContests(): Promise<Contest[]> {
         .select('*')
         .eq('results_published', true)
         .order('result_announced_at', { ascending: false });
+      if (error) logDataError('getCompletedContests', error);
       if (error || !data || data.length === 0) return [];
 
       const ids = data.map((c) => String(c.id));
@@ -2090,6 +2130,7 @@ export async function getAllInquiries(): Promise<Inquiry[]> {
     .from('inquiries')
     .select('*')
     .order('created_at', { ascending: false });
+  if (error) logDataError('getAllInquiries', error);
   if (error || !data) return [];
   return data.map((row) => toInquiry(row as Record<string, unknown>));
 }
@@ -2104,6 +2145,7 @@ export const getAllActivityLogs = unstable_cache(
       .order('created_at', { ascending: false });
     if (limit) query = query.limit(limit);
     const { data, error } = await query;
+    if (error) logDataError('getAllActivityLogs', error);
     if (error || !data) return [];
     return data.map((row) => toActivityLog(row as Record<string, unknown>));
   },
@@ -2119,6 +2161,7 @@ export const getInquiryCountByStatus = unstable_cache(
       .from('inquiries')
       .select('*', { count: 'exact', head: true })
       .eq('status', status);
+    if (error) logDataError('getInquiryCountByStatus', error);
     if (error) return 0;
     return count ?? 0;
   },
@@ -2133,6 +2176,7 @@ export async function getAllIpLogs(): Promise<IpLog[]> {
     .from('ip_logs')
     .select('*')
     .order('created_at', { ascending: false });
+  if (error) logDataError('getAllIpLogs', error);
   if (error || !data) return [];
   return data.map((row) => toIpLog(row as Record<string, unknown>));
 }
@@ -2144,6 +2188,7 @@ export async function getAllAgencyRequests(): Promise<AgencyRequest[]> {
     .from('agency_requests')
     .select('*')
     .order('created_at', { ascending: false });
+  if (error) logDataError('getAllAgencyRequests', error);
   if (error || !data) return [];
   return data.map((row) => toAgencyRequest(row as Record<string, unknown>));
 }
@@ -2402,6 +2447,7 @@ export async function getContestsByHost(hostUserId: string): Promise<Contest[]> 
     .select('*')
     .eq('host_user_id', hostUserId)
     .order('created_at', { ascending: false });
+  if (error) logDataError('getContestsByHost', error);
   if (error || !contestRows) return [];
 
   const contestIds = contestRows.map((c) => String(c.id));
@@ -2425,6 +2471,7 @@ export async function getJudgeAssignments(judgeUserId: string): Promise<Judge[]>
     .select('*')
     .eq('user_id', judgeUserId)
     .order('invited_at', { ascending: true });
+  if (error) logDataError('getJudgeAssignments', error);
   if (error || !data) return [];
   return data.map((row) => toJudge(row as Record<string, unknown>));
 }
@@ -2437,6 +2484,7 @@ export async function getJudgesByContest(contestId: string): Promise<Judge[]> {
     .select('*')
     .eq('contest_id', contestId)
     .order('invited_at', { ascending: true });
+  if (error) logDataError('getJudgesByContest', error);
   if (error || !data) return [];
   return data.map((row) => toJudge(row as Record<string, unknown>));
 }
@@ -2458,6 +2506,7 @@ export async function getScoresByContest(contestId: string): Promise<Score[]> {
     .select('*')
     .in('submission_id', submissionIds)
     .order('created_at', { ascending: true });
+  if (error) logDataError('getScoresByContest', error);
   if (error || !scores) return [];
 
   const scoreIds = scores.map((s) => String(s.id));
@@ -2502,6 +2551,7 @@ export async function getJudgingStages(contestId: string): Promise<JudgingStage[
     .select('*')
     .eq('contest_id', contestId)
     .order('stage_number', { ascending: true });
+  if (error) logDataError('getJudgingStages', error);
   if (error || !stages) return [];
 
   // 템플릿 조회 (scored 단계)
@@ -2581,6 +2631,7 @@ export async function getSubmissionsForStage(contestId: string, _stageId: string
       .eq('contest_id', contestId)
       .eq('status', 'approved')
       .order('submitted_at', { ascending: true });
+    if (error) logDataError('getSubmissionsForStage', error);
     if (error || !data) return [];
     return data.map((row) => toSubmission(row as Record<string, unknown>));
   }
@@ -2609,6 +2660,7 @@ export async function getSubmissionsForStage(contestId: string, _stageId: string
     .select('*')
     .in('id', passedIds)
     .order('submitted_at', { ascending: true });
+  if (error) logDataError('getSubmissionsForStage', error);
   if (error || !data) return [];
   return data.map((row) => toSubmission(row as Record<string, unknown>));
 }
@@ -2621,6 +2673,7 @@ export async function getSimpleJudgments(stageId: string): Promise<SimpleJudgmen
     .select('*')
     .eq('stage_id', stageId)
     .order('created_at', { ascending: true });
+  if (error) logDataError('getSimpleJudgments', error);
   if (error || !data) return [];
   return data.map((row) => ({
     id: String(row.id),
@@ -2640,6 +2693,7 @@ export async function getStageResults(stageId: string): Promise<SubmissionStageR
     .from('submission_stage_results')
     .select('*')
     .eq('stage_id', stageId);
+  if (error) logDataError('getStageResults', error);
   if (error || !data) return [];
   return data.map((row) => ({
     id: String(row.id),
@@ -2777,6 +2831,7 @@ export async function getAllPopups(): Promise<Popup[]> {
     .select('*')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
+  if (error) logDataError('getAllPopups', error);
   if (error || !data) return [];
   return data.map((row) => toPopup(row as Record<string, unknown>));
 }
@@ -2793,6 +2848,7 @@ export const getActivePopups = unstable_cache(
       .lte('display_start_at', now)
       .gte('display_end_at', now)
       .order('sort_order', { ascending: true });
+    if (error) logDataError('getActivePopups', error);
     if (error || !data) return [];
     return data.map((row) => toPopup(row as Record<string, unknown>));
   },
@@ -2808,6 +2864,7 @@ export async function getPopupById(id: string): Promise<Popup | null> {
     .select('*')
     .eq('id', id)
     .maybeSingle();
+  if (error) logDataError('getPopupById', error);
   if (error || !data) return null;
   return toPopup(data as Record<string, unknown>);
 }
@@ -2949,6 +3006,7 @@ export async function getAbuseFlags(): Promise<AbuseFlag[]> {
     .select('*')
     .order('created_at', { ascending: false })
     .limit(100);
+  if (error) logDataError('getAbuseFlags', error);
   if (error || !data) return [];
   return data.map((row: Record<string, unknown>) => ({
     id: String(row.id),
@@ -2987,6 +3045,7 @@ export const getSiteSettings = unstable_cache(
   async (): Promise<Record<string, boolean>> => {
     const supabase = createPublicClient();
     const { data, error } = await supabase.from('site_settings').select('key, value');
+    if (error) logDataError('getSiteSettings', error);
     if (error || !data) return {};
     return Object.fromEntries(
       data.map((row) => [row.key, row.value === true || row.value === 'true']),
