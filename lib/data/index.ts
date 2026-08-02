@@ -2153,21 +2153,27 @@ export const getAllActivityLogs = unstable_cache(
   { tags: ['activity-logs'], revalidate: 60 },
 );
 
-/** admin 전용: 특정 상태의 문의 건수 조회 (count-only, 120초 캐시) */
-export const getInquiryCountByStatus = unstable_cache(
-  async (status: string): Promise<number> => {
-    const supabase = createPublicClient();
-    const { count, error } = await supabase
-      .from('inquiries')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', status);
-    if (error) logDataError('getInquiryCountByStatus', error);
-    if (error) return 0;
-    return count ?? 0;
-  },
-  ['inquiry-count'],
-  { tags: ['inquiries'], revalidate: 120 },
-);
+/**
+ * admin 전용: 특정 상태의 문의 건수 조회 (count-only)
+ *
+ * 예전에는 unstable_cache 로 감싸느라 익명 클라이언트를 썼는데, inquiries 는
+ * 익명 SELECT 가 막혀 있어 **항상 0 을 돌려줬다** — 관리자 대시보드의 "대기 문의"가
+ * 실제 값과 무관하게 0 으로 보이고 있었다.
+ * unstable_cache 안에서는 쿠키를 못 쓰므로 캐시를 포기하고 세션 클라이언트를 쓴다.
+ * (D-009 가 지적한 것과 같은 함정 — 캐시가 필요하면 권한 있는 뷰를 먼저 만들어야 한다)
+ */
+export async function getInquiryCountByStatus(status: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('inquiries')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', status);
+  if (error) {
+    logDataError('getInquiryCountByStatus', error);
+    return 0;
+  }
+  return count ?? 0;
+}
 
 /** admin 전용: 모든 IP 로그 조회 */
 export async function getAllIpLogs(): Promise<IpLog[]> {
