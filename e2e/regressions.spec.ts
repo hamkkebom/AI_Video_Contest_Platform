@@ -132,6 +132,24 @@ test.describe('보호 라우트와 관리자 API', () => {
     expect(res?.status(), '/invite/anything 응답 코드').toBe(404);
   });
 
+  /* 없는 토큰에 "만료됐다"고 답하면 토큰 유효성을 떠볼 수 있다 — 404 여야 한다 (D-022) */
+  test('존재하지 않는 초대 토큰은 404 를 낸다', async ({ page }) => {
+    const res = await page.goto('/judge-invite/0000000000000000000000000000000000000000000000000000000000000000');
+    expect(res?.status(), '/judge-invite 응답 코드').toBe(404);
+  });
+
+  test('초대 수락 API 는 비인증 요청을 거부한다', async ({ request }) => {
+    const res = await request.post('/api/judges/invite/accept', { data: { token: 'nope' } });
+    expect(res.status(), '수락 응답 코드').toBe(401);
+  });
+
+  test('초대 생성 API 는 비인증 요청을 거부한다', async ({ request }) => {
+    const res = await request.post('/api/judges/invite', {
+      data: { email: 'nobody@example.invalid', contestId: 1 },
+    });
+    expect(res.status(), '초대 생성 응답 코드').toBe(401);
+  });
+
   test('호스트 공개 페이지는 대시보드 경로와 섞이지 않는다', async ({ page }) => {
     /* 사고: startsWith('/host') 가 /hosts/[id] 까지 삼켜 공개 주최자 페이지가
        비로그인 방문자를 로그인으로 보냈다. */

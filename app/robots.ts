@@ -26,6 +26,7 @@ export default function robots(): MetadataRoute.Robots {
           '/forgot-password',
           '/reset-password',
           '/find-email',
+          '/judge-invite/',
           '/search',
         ],
       },

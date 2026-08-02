@@ -2141,6 +2141,41 @@ export async function getMyInquiries(): Promise<Inquiry[]> {
   return data.map((row) => toInquiry(row as Record<string, unknown>));
 }
 
+/** 심사위원 초대 정보 (마이그레이션 055) — 수락 화면이 보여줄 최소 정보 */
+export interface JudgeInvite {
+  contestId: number;
+  contestTitle: string;
+  /** 초대받은 주소를 가린 형태 (a***@example.com) — 링크를 주운 사람에게 주소를 알려주지 않는다 */
+  maskedEmail: string;
+  expiresAt: string;
+  isAccepted: boolean;
+  isExpired: boolean;
+}
+
+/**
+ * 토큰으로 초대를 조회한다.
+ * 아직 계정이 없는 사람이 여는 화면이므로 비로그인 상태에서도 호출된다 —
+ * RPC 가 토큰을 아는 사람에게만 응답한다.
+ */
+export async function getJudgeInvite(token: string): Promise<JudgeInvite | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('get_judge_invite', { p_token: token });
+  if (error) {
+    logDataError('getJudgeInvite', error);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    contestId: row.contest_id as number,
+    contestTitle: row.contest_title as string,
+    maskedEmail: row.masked_email as string,
+    expiresAt: row.expires_at as string,
+    isAccepted: Boolean(row.is_accepted),
+    isExpired: Boolean(row.is_expired),
+  };
+}
+
 /** admin 전용: 모든 문의 조회 */
 export async function getAllInquiries(): Promise<Inquiry[]> {
   const supabase = await createClient();
