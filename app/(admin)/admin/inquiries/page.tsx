@@ -17,6 +17,7 @@ import type { Route } from 'next';
 import { getAllInquiries, getUsersByIds } from '@/lib/data';
 import { StatusSelect } from '../_components/status-select';
 import { InquiryAnswer } from '../_components/inquiry-answer';
+import { isEmailConfigured } from '@/lib/email';
 import { formatDate } from '@/lib/utils';
 
 /** inquiries.status CHECK 제약과 같은 값 */
@@ -63,6 +64,10 @@ export default async function AdminInquiriesPage({
       resolved: inquiries.filter((item) => item.status === 'resolved').length,
     };
 
+    /* 비회원 답변은 메일로만 전달된다 — 설정이 안 돼 있으면 답변을 쓰기 전에 알려준다 */
+    const emailReady = isEmailConfigured();
+    const guestPending = inquiries.filter((i) => !i.userId && i.guestEmail && !i.answer).length;
+
     const visibleInquiries = activeStatus ? inquiries.filter((i) => i.status === activeStatus) : inquiries;
     const sortedInquiries = [...visibleInquiries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -107,6 +112,16 @@ export default async function AdminInquiriesPage({
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">문의 관리</h1>
           <p className="text-sm text-muted-foreground">문의 상태별 진행 현황을 추적하고 빠르게 응답합니다.</p>
         </header>
+
+        {!emailReady && guestPending > 0 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-medium">비회원 문의 {guestPending}건에 답변 메일을 보낼 수 없습니다</p>
+            <p className="mt-0.5 text-xs">
+              <code className="font-mono">RESEND_API_KEY</code> 가 설정되지 않았습니다. 답변은 저장되지만
+              문의자에게 전달되지 않으니, 설정 전까지는 표시된 이메일로 직접 회신해 주세요.
+            </p>
+          </div>
+        )}
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => (

@@ -106,6 +106,7 @@
 | FAQ | ✅ 운영 | `app/api/faqs/` | `faqs` |
 | 문의 접수 | ✅ 운영 | `app/(public)/support/` | `inquiries` |
 | 문의 답변·열람 | ✅ 운영 | 관리자 `app/(admin)/admin/inquiries/`, 회원 `app/(auth)/my/inquiries/` | `inquiries.answer` (053) |
+| 비회원 문의 답변 메일 | 🔸 키 대기 | `lib/email/`, `app/api/admin/inquiries/[id]/` | `inquiries.guest_email` |
 | 심사위원 배정·해제 | ✅ 운영 | `app/api/judges/`, 주최자 `app/(host)/host/contests/[id]/judges/`, 관리자 공모전 상세 | `judges` + RPC (054) |
 | 대행 의뢰 접수 | 🔶 부분 | 접수 폼 + `app/(admin)/admin/agency-requests/` (이후 매칭 프로세스 없음) | `agency_requests` |
 | 아리랑 마이크로사이트 (계획외) | ✅ 운영 | `components/contests/arirang/` (한/영 번역 포함) | — |

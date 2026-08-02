@@ -26,11 +26,14 @@ export function InquiryAnswer({ inquiryId, answer, guestEmail }: InquiryAnswerPr
   const [text, setText] = useState(answer ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 저장은 됐지만 메일이 못 나간 경우 — 관리자가 직접 회신해야 하므로 닫지 않고 남긴다 */
+  const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null);
 
   const save = async () => {
     if (pending || !text.trim()) return;
     setPending(true);
     setError(null);
+    setDeliveryWarning(null);
     try {
       const res = await fetch(`/api/admin/inquiries/${inquiryId}`, {
         method: 'PATCH',
@@ -40,6 +43,16 @@ export function InquiryAnswer({ inquiryId, answer, guestEmail }: InquiryAnswerPr
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? '답변 저장에 실패했습니다.');
+        return;
+      }
+      /* 답변은 저장됐다. 다만 비회원인데 메일이 못 나갔으면 그 사실을 반드시 알린다 */
+      if (data.delivery === 'failed') {
+        setDeliveryWarning(
+          data.deliveryReason === 'not_configured'
+            ? '답변은 저장했지만 메일 발송이 아직 설정되지 않아 보내지 못했습니다. 직접 회신해 주세요.'
+            : `답변은 저장했지만 메일 발송에 실패했습니다 (${data.deliveryMessage ?? '원인 불명'}). 직접 회신해 주세요.`,
+        );
+        router.refresh();
         return;
       }
       setOpen(false);
@@ -76,8 +89,13 @@ export function InquiryAnswer({ inquiryId, answer, guestEmail }: InquiryAnswerPr
       />
       {guestEmail && (
         <p className="text-xs text-muted-foreground">
-          비회원 문의입니다. 저장해도 문의자 화면에는 뜨지 않으니{' '}
-          <span className="font-medium text-foreground">{guestEmail}</span> 로 별도 회신이 필요합니다.
+          비회원 문의입니다. 저장하면{' '}
+          <span className="font-medium text-foreground">{guestEmail}</span> 로 답변 메일이 발송됩니다.
+        </p>
+      )}
+      {deliveryWarning && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+          {deliveryWarning}
         </p>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
