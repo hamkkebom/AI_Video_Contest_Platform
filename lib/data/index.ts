@@ -2920,6 +2920,67 @@ export async function createArticle(
   return toArticle(data as Record<string, unknown>);
 }
 
+/** admin 전용: 아티클 단건 조회 (미발행 포함) — 수정 폼 초기값용 */
+export async function getArticleByIdForAdmin(id: string): Promise<Article | null> {
+  const supabase = await createClient();
+  /* 정책에 is_admin() 을 넣으면 익명 조회가 깨지므로 관리자 경로는 함수로 뺐다 (IA.md §3-9) */
+  const { data, error } = await supabase.rpc('admin_list_articles');
+  if (error) {
+    logDataError('getArticleByIdForAdmin', error);
+    return null;
+  }
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const found = rows.find((row) => String(row.id) === String(id));
+  return found ? toArticle(found) : null;
+}
+
+/**
+ * admin 전용: 아티클 수정
+ * slug 는 바꾸지 않는다 — 이미 공유된 /story/[slug] 링크가 끊긴다.
+ * published_at 은 "처음 발행되는 순간"에만 찍고, 이후 수정에서는 건드리지 않는다.
+ */
+export async function updateArticle(
+  id: string,
+  input: ArticleMutationInput,
+  wasPublished: boolean,
+): Promise<Article | null> {
+  const supabase = await createClient();
+
+  const patch: Record<string, unknown> = {
+    type: input.type,
+    title: input.title.trim(),
+    excerpt: input.excerpt?.trim() || null,
+    content: input.content,
+    tags: input.tags ?? [],
+    is_published: input.isPublished,
+    thumbnail_url: input.thumbnailUrl?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (input.isPublished && !wasPublished) {
+    patch.published_at = new Date().toISOString();
+  }
+
+  const { data, error } = await supabase
+    .from('articles')
+    .update(patch)
+    .eq('id', Number(id))
+    .select('*');
+
+  if (error) {
+    logDataError('updateArticle', error);
+    return null;
+  }
+  /* RLS 거부는 에러 없이 0행으로 돌아온다 — 성공으로 오인하지 않는다 */
+  if (!data || data.length === 0) {
+    console.error('[updateArticle] 0행 갱신 — 권한 또는 대상 없음 (마이그레이션 050 확인)');
+    return null;
+  }
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag('articles');
+  return toArticle(data[0] as Record<string, unknown>);
+}
+
 export async function createPopup(input: PopupMutationInput): Promise<Popup | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

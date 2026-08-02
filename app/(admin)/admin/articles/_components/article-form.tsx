@@ -17,22 +17,24 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { Article, ArticleMutationInput, ArticleType } from '@/lib/types';
 
-type ArticleFormMode = 'create';
+type ArticleFormMode = 'create' | 'edit';
 
 type ArticleFormProps = {
   mode: ArticleFormMode;
+  /** 수정 모드에서 초기값으로 채울 기존 아티클 */
+  article?: Article;
 };
 
-export default function ArticleForm({ mode }: ArticleFormProps) {
+export default function ArticleForm({ mode, article }: ArticleFormProps) {
   const router = useRouter();
 
-  const [type, setType] = useState<ArticleType>('notice');
-  const [title, setTitle] = useState('');
-  const [excerpt, setExcerpt] = useState('');
-  const [content, setContent] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
-  const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [isPublished, setIsPublished] = useState(false);
+  const [type, setType] = useState<ArticleType>(article?.type ?? 'notice');
+  const [title, setTitle] = useState(article?.title ?? '');
+  const [excerpt, setExcerpt] = useState(article?.excerpt ?? '');
+  const [content, setContent] = useState(article?.content ?? '');
+  const [tagsInput, setTagsInput] = useState((article?.tags ?? []).join(', '));
+  const [thumbnailUrl, setThumbnailUrl] = useState(article?.thumbnailUrl ?? '');
+  const [isPublished, setIsPublished] = useState(article?.isPublished ?? false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,11 +71,15 @@ export default function ArticleForm({ mode }: ArticleFormProps) {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      /* 수정은 관리자 전용 경로로 — 생성 API 와 권한 검사 방식이 다르다 */
+      const response = await fetch(
+        mode === 'edit' ? `/api/admin/articles/${article!.id}` : '/api/articles',
+        {
+          method: mode === 'edit' ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
 
       const data = (await response.json()) as { article?: Article; error?: string };
       if (!response.ok || !data.article) {

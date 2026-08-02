@@ -5,6 +5,29 @@ import { createClient } from '@/lib/supabase/server';
 /** profiles.status CHECK 제약과 같은 값 */
 const ALLOWED_STATUS = ['active', 'pending', 'suspended'] as const;
 
+/** admin 은 의도적으로 빠져 있다 — 관리자 승격은 UI 경로로 만들지 않는다 (052) */
+const ALLOWED_ROLES = ['participant', 'host', 'judge'] as const;
+
+/** RPC 가 던지는 가드 예외를 사용자 문구로 옮긴다 */
+function mapRpcError(error: { message: string; code?: string }) {
+  if (error.message.includes('CANNOT_EDIT_SELF')) {
+    return NextResponse.json({ error: '본인 계정의 역할은 바꿀 수 없습니다.' }, { status: 400 });
+  }
+  if (error.message.includes('CANNOT_EDIT_ADMIN')) {
+    return NextResponse.json({ error: '관리자 계정의 역할은 이 화면에서 바꿀 수 없습니다.' }, { status: 400 });
+  }
+  if (error.message.includes('ROLE_NOT_ALLOWED')) {
+    return NextResponse.json({ error: '허용되지 않는 역할입니다.' }, { status: 400 });
+  }
+  if (error.message.includes('USER_NOT_FOUND')) {
+    return NextResponse.json({ error: '회원을 찾을 수 없습니다.' }, { status: 404 });
+  }
+  if (error.code === 'PGRST202' || error.message.includes('admin_set_user_roles')) {
+    return NextResponse.json({ error: '마이그레이션 052가 아직 적용되지 않았습니다.' }, { status: 503 });
+  }
+  return null;
+}
+
 /**
  * 회원 상태 변경 (PATCH /api/admin/users/[id])
  *
@@ -37,6 +60,30 @@ export async function PATCH(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 });
+  }
+
+  /* 역할 변경 요청이면 별도 RPC 로 — admin 은 이 경로로 부여할 수 없다 (052) */
+  if (Array.isArray(body.roles)) {
+    const roles = body.roles.filter((r): r is string => typeof r === 'string');
+    if (!roles.every((r) => ALLOWED_ROLES.includes(r as (typeof ALLOWED_ROLES)[number]))) {
+      return NextResponse.json({ error: '허용되지 않는 역할입니다.' }, { status: 400 });
+    }
+    if (roles.length === 0) {
+      return NextResponse.json({ error: '역할은 하나 이상이어야 합니다.' }, { status: 400 });
+    }
+
+    const { error: roleError } = await supabase.rpc('admin_set_user_roles', {
+      target_user_id: id,
+      new_roles: roles,
+    });
+    if (roleError) {
+      const mapped = mapRpcError(roleError);
+      if (mapped) return mapped;
+      console.error('[admin/users] 역할 변경 실패:', roleError);
+      return NextResponse.json({ error: '역할 변경에 실패했습니다.' }, { status: 500 });
+    }
+    revalidateTag('users');
+    return NextResponse.json({ ok: true });
   }
 
   const status = typeof body.status === 'string' ? body.status : '';

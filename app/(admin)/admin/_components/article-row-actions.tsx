@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
+import { Eye, EyeOff, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ArticleRowActionsProps {
@@ -12,9 +14,9 @@ interface ArticleRowActionsProps {
 }
 
 /**
- * 아티클 행 액션 — 발행 토글 / 삭제.
- * 예전에는 보기·수정·삭제 버튼이 있었지만 셋 다 아무 동작이 없었고,
- * DB 에도 관리자 쓰기 정책이 없어 애초에 불가능했다. (마이그레이션 050 이 그 경로를 연다)
+ * 아티클 행 액션 — 수정 / 발행 토글 / 삭제.
+ * 예전에는 세 버튼 모두 아무 동작이 없었고 DB 에도 관리자 쓰기 정책이 없어
+ * 애초에 불가능했다. 050 이 정책을 열고, 수정 폼은 /admin/articles/[id]/edit 에 있다.
  */
 export function ArticleRowActions({ articleId, isPublished, title }: ArticleRowActionsProps) {
   const router = useRouter();
@@ -51,6 +53,12 @@ export function ArticleRowActions({ articleId, isPublished, title }: ArticleRowA
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" className="h-7 cursor-pointer gap-1 px-2 text-xs" asChild>
+          <Link href={`/admin/articles/${articleId}/edit` as Route}>
+            <Pencil className="h-3 w-3" />
+            수정
+          </Link>
+        </Button>
         <Button
           size="sm"
           variant="outline"

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { UserRolesEditor } from '../../_components/user-roles-editor';
+import { UserStatusActions } from '../../_components/user-status-actions';
 import { Activity, Globe, Shield, UserCog } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -97,15 +99,13 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            {/* 역할 변경·상태 변경·계정 정지 세 버튼 모두 동작이 없었다.
+                역할은 아래 카드에서, 정지는 여기서 실제로 처리한다. */}
+            <div className="flex flex-wrap items-center gap-2">
               <Link href="/admin/users">
                 <Button variant="outline">목록</Button>
               </Link>
-              <Button variant="outline">역할 변경</Button>
-              <Button variant="outline">상태 변경</Button>
-              <Button variant="ghost" className="text-destructive hover:text-destructive">
-                계정 정지
-              </Button>
+              <UserStatusActions userId={user.id} status={user.status} name={user.name || user.email} />
             </div>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 pt-0 sm:grid-cols-2 lg:grid-cols-4">
@@ -125,6 +125,17 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
               <p className="text-xs text-muted-foreground">가입일시</p>
               <p className="font-medium">{formatDateTime(user.createdAt)}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 역할 — admin 은 이 경로로 부여·회수할 수 없다 (마이그레이션 052) */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>역할</CardTitle>
+            <CardDescription>참가자·주최자·심사위원을 지정합니다. 관리자 승격은 여기서 처리하지 않습니다.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <UserRolesEditor userId={user.id} roles={user.roles} />
           </CardContent>
         </Card>
 

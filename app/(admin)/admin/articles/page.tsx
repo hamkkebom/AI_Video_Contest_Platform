@@ -207,7 +207,7 @@ export default async function AdminArticlesPage({
                           {article.isPublished ? '발행됨' : '비공개'}
                         </Badge>
                       </TableCell>
-                      {/* 수정은 편집 폼이 없어 뺐다 — 동작하지 않는 버튼을 두지 않는다 (ROADMAP 이관) */}
+                      
                       <TableCell className="text-right">
                         <ArticleRowActions
                           articleId={String(article.id)}
