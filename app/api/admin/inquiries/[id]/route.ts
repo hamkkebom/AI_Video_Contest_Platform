@@ -36,6 +36,49 @@ export async function PATCH(
     return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 });
   }
 
+  /* 답변 등록·수정 — 답변이 오면 상태도 처리중으로 올린다 (마이그레이션 053) */
+  if (typeof body.answer === 'string') {
+    const answer = body.answer.trim();
+    if (!answer) {
+      return NextResponse.json({ error: '답변 내용을 입력하세요.' }, { status: 400 });
+    }
+
+    /* answered_at 은 처음 답변할 때만 찍는다 — 수정할 때마다 바뀌면 안 된다 */
+    const { data: existing } = await supabase
+      .from('inquiries')
+      .select('answered_at')
+      .eq('id', Number(id))
+      .maybeSingle();
+
+    const patch: Record<string, unknown> = {
+      answer,
+      answered_by: user.id,
+      status: 'in_progress',
+    };
+    if (!existing?.answered_at) patch.answered_at = new Date().toISOString();
+
+    const { data, error: answerError } = await supabase
+      .from('inquiries')
+      .update(patch)
+      .eq('id', Number(id))
+      .select('id');
+
+    if (answerError) {
+      console.error('[admin/inquiries] 답변 등록 실패:', answerError);
+      return NextResponse.json({ error: '답변 등록에 실패했습니다.' }, { status: 500 });
+    }
+    /* RLS 거부는 에러 없이 0행으로 온다 — 성공으로 오인하지 않는다 */
+    if (!data || data.length === 0) {
+      return NextResponse.json(
+        { error: '답변 권한이 없거나 문의를 찾을 수 없습니다. (마이그레이션 053 적용 여부 확인)' },
+        { status: 403 },
+      );
+    }
+
+    revalidateTag('inquiries');
+    return NextResponse.json({ ok: true });
+  }
+
   const status = typeof body.status === 'string' ? body.status : '';
   if (!ALLOWED_STATUS.includes(status as (typeof ALLOWED_STATUS)[number])) {
     return NextResponse.json({ error: '허용되지 않는 상태입니다.' }, { status: 400 });

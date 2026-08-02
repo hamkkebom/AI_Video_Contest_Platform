@@ -112,6 +112,9 @@ export interface Inquiry {
   guestName?: string;
   guestEmail?: string;
   guestPhone?: string;
+  /** 관리자 답변 — 회원은 /my/inquiries 에서 읽는다 (마이그레이션 053) */
+  answer?: string;
+  answeredAt?: string;
 }
 
 export type FaqCategory = "participant" | "host" | "judge" | "general";

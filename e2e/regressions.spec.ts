@@ -91,7 +91,7 @@ test.describe('콘텐츠가 실제로 렌더된다', () => {
 test.describe('보호 라우트와 관리자 API', () => {
   /* 사고: /api/admin/* 은 /admin 으로 시작하지 않아 미들웨어가 보호하지 않는다.
      companies 상세 API 가 인증 없이 사업자등록번호를 반환하고 있었다. */
-  for (const path of ['/my/submissions', '/admin/dashboard', '/host/dashboard', '/hosts/apply']) {
+  for (const path of ['/my/submissions', '/my/inquiries', '/admin/dashboard', '/host/dashboard', '/hosts/apply']) {
     test(`${path} 는 로그인을 요구한다`, async ({ page }) => {
       await page.goto(path);
       expect(page.url(), `${path} 리다이렉트`).toContain('/login');

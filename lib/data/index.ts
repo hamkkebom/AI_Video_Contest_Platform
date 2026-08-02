@@ -506,6 +506,8 @@ function toInquiry(row: Record<string, unknown>): Inquiry {
     guestName: (row.guest_name as string) ?? undefined,
     guestEmail: (row.guest_email as string) ?? undefined,
     guestPhone: (row.guest_phone as string) ?? undefined,
+    answer: (row.answer as string) ?? undefined,
+    answeredAt: (row.answered_at as string) ?? undefined,
   };
 }
 
@@ -2121,6 +2123,22 @@ export async function getAllArticles(): Promise<Article[]> {
     return [];
   }
   return (data as Record<string, unknown>[]).map((row) => toArticle(row));
+}
+
+/**
+ * 로그인 회원이 자기 문의와 답변을 조회한다.
+ * RLS "inquiries: 본인만 조회"(auth.uid() = user_id)가 범위를 강제하므로
+ * 여기서 user_id 를 다시 걸지 않아도 남의 문의는 나오지 않는다.
+ */
+export async function getMyInquiries(): Promise<Inquiry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) logDataError('getMyInquiries', error);
+  if (error || !data) return [];
+  return data.map((row) => toInquiry(row as Record<string, unknown>));
 }
 
 /** admin 전용: 모든 문의 조회 */

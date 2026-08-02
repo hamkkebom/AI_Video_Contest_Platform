@@ -105,6 +105,7 @@
 | 소식/아티클 | ✅ 운영 | `app/api/articles/` | `articles` |
 | FAQ | ✅ 운영 | `app/api/faqs/` | `faqs` |
 | 문의 접수 | ✅ 운영 | `app/(public)/support/` | `inquiries` |
+| 문의 답변·열람 | ✅ 운영 | 관리자 `app/(admin)/admin/inquiries/`, 회원 `app/(auth)/my/inquiries/` | `inquiries.answer` (053) |
 | 대행 의뢰 접수 | 🔶 부분 | 접수 폼 + `app/(admin)/admin/agency-requests/` (이후 매칭 프로세스 없음) | `agency_requests` |
 | 아리랑 마이크로사이트 (계획외) | ✅ 운영 | `components/contests/arirang/` (한/영 번역 포함) | — |
 

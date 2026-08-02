@@ -3,11 +3,12 @@
 import type { ReactNode } from 'react';
 import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
-import { Film, UserCircle } from 'lucide-react';
+import { Film, MessageSquareMore, UserCircle } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 
 const participantNavItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: '/my/submissions', label: '내 출품작', icon: Film },
+  { href: '/my/inquiries', label: '내 문의', icon: MessageSquareMore },
   { href: '/my/profile', label: '프로필', icon: UserCircle },
 ];
 

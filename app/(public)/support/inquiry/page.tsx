@@ -145,12 +145,32 @@ export default function InquiryPage() {
                         <CircleCheckBig className="h-8 w-8 text-primary" />
                       </div>
                       <h2 className="text-lg font-semibold mb-2">문의가 접수되었습니다</h2>
+                      {/* 답변 경로를 회원/비회원별로 정확히 안내한다 — 회원 답변은 사이트 안에서 읽는다 */}
                       <p className="text-sm text-muted-foreground mb-6">
-                        영업일 기준 1~2일 내에 입력하신 이메일로 답변드리겠습니다.
+                        {isLoggedIn ? (
+                          <>
+                            영업일 기준 1~2일 내에 답변드립니다.
+                            <br />
+                            답변은 <span className="font-medium text-foreground">내 문의</span> 에서 확인할 수 있습니다.
+                          </>
+                        ) : (
+                          <>
+                            영업일 기준 1~2일 내에 입력하신 이메일로 답변드리겠습니다.
+                            <br />
+                            로그인 후 문의하면 사이트에서 바로 답변을 확인할 수 있습니다.
+                          </>
+                        )}
                       </p>
-                      <Button variant="outline" className="cursor-pointer" onClick={() => setIsSubmitted(false)}>
-                        추가 문의하기
-                      </Button>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {isLoggedIn && (
+                          <Link href="/my/inquiries">
+                            <Button className="cursor-pointer">내 문의 보기</Button>
+                          </Link>
+                        )}
+                        <Button variant="outline" className="cursor-pointer" onClick={() => setIsSubmitted(false)}>
+                          추가 문의하기
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-5">

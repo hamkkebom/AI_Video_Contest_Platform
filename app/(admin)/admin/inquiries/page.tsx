@@ -16,6 +16,7 @@ import {
 import type { Route } from 'next';
 import { getAllInquiries, getUsersByIds } from '@/lib/data';
 import { StatusSelect } from '../_components/status-select';
+import { InquiryAnswer } from '../_components/inquiry-answer';
 import { formatDate } from '@/lib/utils';
 
 /** inquiries.status CHECK 제약과 같은 값 */
@@ -195,6 +196,12 @@ export default async function AdminInquiriesPage({
                         <div>
                           <p className="font-medium">{inquiry.title}</p>
                           <p className="max-w-xs truncate text-xs text-muted-foreground">{inquiry.content}</p>
+                          {inquiry.answer && (
+                            /* 이미 등록된 답변 — 회원이라면 /my/inquiries 에서 이 내용을 본다 */
+                            <p className="mt-1 max-w-xs truncate border-l-2 border-primary/40 pl-2 text-xs text-primary">
+                              답변: {inquiry.answer}
+                            </p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">
@@ -232,11 +239,18 @@ export default async function AdminInquiriesPage({
                         {formatDate(inquiry.updatedAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <StatusSelect
-                          endpoint={`/api/admin/inquiries/${inquiry.id}`}
-                          current={inquiry.status}
-                          options={STATUS_OPTIONS}
-                        />
+                        <div className="flex flex-col items-end gap-2">
+                          <StatusSelect
+                            endpoint={`/api/admin/inquiries/${inquiry.id}`}
+                            current={inquiry.status}
+                            options={STATUS_OPTIONS}
+                          />
+                          <InquiryAnswer
+                            inquiryId={inquiry.id}
+                            answer={inquiry.answer}
+                            guestEmail={inquiry.userId ? undefined : inquiry.guestEmail}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
