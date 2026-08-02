@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   ArrowLeft,
@@ -31,12 +30,20 @@ import {
   Info,
   ChevronDown,
   Shield,
-  Loader2,
 } from 'lucide-react';
 
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { refreshAccessToken } from '@/lib/supabase/refresh-token';
+import {
+  buildStoragePath,
+  reportUploadError,
+  requestVideoUploadUrl,
+  uploadFileToStorage,
+  uploadVideoToStream,
+  userFriendlyError,
+} from './_lib/uploads';
+import { SubmitDialogs, type SubmitErrorType, type UploadStep } from './_components/submit-dialogs';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
 import { formatDate, cn } from '@/lib/utils';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -101,7 +108,7 @@ export default function ContestSubmitPage() {
     videoUrl: string;
     thumbnailUrl: string;
   } | null>(null);
-  const [errorType, setErrorType] = useState<'duplicate' | 'contest_closed' | 'deadline_passed' | 'auth_expired' | 'general' | null>(null);
+  const [errorType, setErrorType] = useState<SubmitErrorType>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
   /* 제출 폼 상태 */
@@ -122,7 +129,7 @@ export default function ContestSubmitPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadStep, setUploadStep] = useState<'preparing' | 'video' | 'thumbnail' | 'proof-images' | 'submission' | null>(null);
+  const [uploadStep, setUploadStep] = useState<UploadStep>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
@@ -149,43 +156,6 @@ export default function ContestSubmitPage() {
   const initialFormRef = useRef<FormState | null>(null);
   const initialBonusFormsRef = useRef<Record<string, BonusFormEntry> | null>(null);
 
-  /** 사용자 친화적 에러 메시지 생성 */
-  const userFriendlyError = (code: string, detail?: string): string => {
-    const guides: Record<string, string> = {
-      'AUTH-EXPIRED': '로그인 세션이 만료되었습니다.\n\n페이지를 새로고침 후 다시 로그인해 주세요.',
-      'VIDEO-URL': '영상 업로드 준비에 실패했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
-      'VIDEO-NETWORK': '영상 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
-      'VIDEO-TIMEOUT': '영상 업로드 시간이 초과되었습니다.\n\n파일 크기가 크면 Wi-Fi 환경에서 다시 시도해 주세요.',
-      'VIDEO-STATUS': '영상 업로드 중 문제가 발생했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
-      'THUMB-AUTH': '썸네일 업로드 권한 오류가 발생했습니다.\n\n페이지를 새로고침 후 다시 로그인해 주세요.',
-      'THUMB-NETWORK': '썸네일 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
-      'THUMB-TIMEOUT': '썸네일 업로드 시간이 초과되었습니다.\n\n이미지 크기를 줄이거나 다시 시도해 주세요.',
-      'THUMB-STATUS': '썸네일 업로드에 실패했습니다.\n\n다른 이미지로 변경하거나 다시 시도해 주세요.',
-      'THUMB-URL': '썸네일 처리 중 오류가 발생했습니다.\n\n다시 시도해 주세요.',
-      'PROOF-NETWORK': '인증 이미지 전송 중 네트워크 오류가 발생했습니다.\n\n인터넷 연결을 확인하고 다시 시도해 주세요.',
-      'PROOF-TIMEOUT': '인증 이미지 업로드 시간이 초과되었습니다.\n\n이미지 크기를 줄이거나 다시 시도해 주세요.',
-      'PROOF-STATUS': '인증 이미지 업로드에 실패했습니다.\n\n다시 시도해 주세요.',
-      'SUBMIT-FAIL': '출품작 저장에 실패했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.',
-    };
-    const msg = guides[code] || '업로드 중 문제가 발생했습니다.\n\n페이지를 새로고침 후 다시 시도해 주세요.';
-    return `${msg}\n\n계속 실패할 경우 페이지를 새로고침(Ctrl+Shift+R) 후 다시 시도해 주세요.\n문제가 지속되면 문의해 주세요. (오류 코드: ${code})`;
-  };
-
-  /** 업로드 에러를 서버에 보고 */
-  const reportUploadError = async (step: string, errorMessage: string, errorCode?: string, details?: string) => {
-    try {
-      await fetch('/api/upload-error-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          step, errorMessage, errorCode, details,
-          /* 디버깅용 추가 정보 */
-          pageUrl: window.location.href,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-    } catch { /* 에러 로그 전송 실패는 무시 */ }
-  };
 
   useEffect(() => {
     const load = async () => {
@@ -510,42 +480,13 @@ export default function ContestSubmitPage() {
         const resubRefresh = await refreshAccessToken(supabase, { timeoutMs: 10000, currentToken: accessToken });
         if (resubRefresh.ok) accessToken = resubRefresh.accessToken;
 
-        /* 영상 업로드 — 새 제출과 동일한 플로우 사용 */
+        /* 영상 업로드 — 신규 제출과 **같은** 경로를 탄다.
+           예전에는 여기만 Cloudflare 폴링도 CORS 구제도 없는 약한 버전이어서,
+           신규 제출은 성공하는 상황에서 재제출만 실패하는 경우가 있었다. */
         setUploadStep('video');
         setUploadProgress(0);
-
-        const fetchUploadUrl = async (): Promise<Response> => {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 60_000);
-          try {
-            return await fetch('/api/upload/video', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ maxDurationSeconds: 600 }),
-              signal: controller.signal,
-            });
-          } finally { clearTimeout(timeout); }
-        };
-
-        let uploadUrlResponse: Response;
-        try { uploadUrlResponse = await fetchUploadUrl(); }
-        catch { await new Promise(r => setTimeout(r, 2000)); uploadUrlResponse = await fetchUploadUrl(); }
-
-        const uploadUrlResult = await uploadUrlResponse.json() as { uploadURL?: string; uid?: string; error?: string };
-        if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
-          throw new Error('영상 업로드 준비에 실패했습니다. 다시 시도해 주세요.');
-        }
-
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', uploadUrlResult.uploadURL!);
-          xhr.timeout = 10 * 60 * 1000;
-          xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
-          xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); } else reject(new Error('영상 업로드에 실패했습니다.')); };
-          xhr.onerror = () => reject(new Error('네트워크 오류로 영상 업로드에 실패했습니다.'));
-          xhr.ontimeout = () => reject(new Error('영상 업로드 시간이 초과되었습니다.'));
-          const fd = new FormData(); fd.append('file', videoFile); xhr.send(fd);
-        });
+        const videoTarget = await requestVideoUploadUrl();
+        await uploadVideoToStream({ file: videoFile, target: videoTarget, onProgress: setUploadProgress });
 
         /* 토큰 갱신 */
         const tokenResult = await refreshAccessToken(supabase, { currentToken: accessToken });
@@ -556,27 +497,16 @@ export default function ContestSubmitPage() {
         if (thumbnailFile) {
           setUploadStep('thumbnail');
           setUploadProgress(0);
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-          if (!supabaseUrl || !anonKey) throw new Error('서버 설정 오류');
-          const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
-          const thumbPath = `${contestId}/${crypto.randomUUID()}.${thumbExt}`;
-          await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbPath}`);
-            xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-            xhr.setRequestHeader('x-upsert', 'false');
-            xhr.setRequestHeader('apikey', anonKey);
-            xhr.setRequestHeader('Content-Type', thumbnailFile.type || 'application/octet-stream');
-            xhr.timeout = 90_000;
-            xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100)); };
-            xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); } else reject(new Error('썸네일 업로드 실패')); };
-            xhr.onerror = () => reject(new Error('썸네일 네트워크 오류'));
-            xhr.ontimeout = () => reject(new Error('썸네일 타임아웃'));
-            xhr.send(thumbnailFile);
+          const thumbPath = buildStoragePath(contestId, thumbnailFile.name);
+          await uploadFileToStorage({
+            bucket: 'thumbnails',
+            path: thumbPath,
+            file: thumbnailFile,
+            accessToken,
+            onProgress: setUploadProgress,
+            errorPrefix: 'THUMB',
           });
-          const { data: thumbPublic } = supabase.storage.from('thumbnails').getPublicUrl(thumbPath);
-          finalThumbnailUrl = thumbPublic.publicUrl;
+          finalThumbnailUrl = supabase.storage.from('thumbnails').getPublicUrl(thumbPath).data.publicUrl;
         }
 
         /* 기존 출품작 업데이트 (영상 + 썸네일만) */
@@ -586,7 +516,7 @@ export default function ContestSubmitPage() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            videoUrl: uploadUrlResult.uid,
+            videoUrl: videoTarget.uid,
             thumbnailUrl: finalThumbnailUrl,
             isResubmission: true,
           }),
@@ -640,12 +570,6 @@ export default function ContestSubmitPage() {
         const editBonusFormEntries = Object.entries(bonusForms);
 
         if (editBonusFormEntries.length > 0) {
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-          if (!supabaseUrl || !anonKey) {
-            throw new Error('서버 설정 오류가 발생했습니다. 관리자에게 문의해 주세요.');
-          }
-
           /* 이미지 업로드 직전 토큰 한 번 더 갱신 (만료 방지) */
           try {
             const imgRefresh = await refreshAccessToken(supabase, {
@@ -659,28 +583,16 @@ export default function ContestSubmitPage() {
           for (const [configId, entry] of editBonusFormEntries) {
             let proofImageUrl: string | undefined;
             if (entry.proofImageFile) {
-              /* 새 이미지 업로드 */
               setUploadStep('proof-images');
-              const safeFileName = entry.proofImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-              const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName}`;
-              await new Promise<void>((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`);
-                xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-                xhr.setRequestHeader('x-upsert', 'false');
-                xhr.setRequestHeader('apikey', anonKey);
-                xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-                xhr.timeout = 90_000;
-                xhr.onload = () => {
-                  if (xhr.status >= 200 && xhr.status < 300) resolve();
-                  else reject(new Error(`인증 이미지 업로드 실패 (${xhr.status})`));
-                };
-                xhr.onerror = () => reject(new Error('네트워크 오류'));
-                xhr.ontimeout = () => reject(new Error('업로드 시간 초과'));
-                xhr.send(entry.proofImageFile);
+              const proofPath = buildStoragePath(contestId, entry.proofImageFile.name, currentUser.id);
+              await uploadFileToStorage({
+                bucket: 'proof-images',
+                path: proofPath,
+                file: entry.proofImageFile,
+                accessToken,
+                errorPrefix: 'PROOF',
               });
-              const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofPath);
-              proofImageUrl = proofPublicData.publicUrl;
+              proofImageUrl = supabase.storage.from('proof-images').getPublicUrl(proofPath).data.publicUrl;
             } else if (entry.proofImagePreview) {
               proofImageUrl = entry.proofImagePreview;
             }
@@ -785,258 +697,32 @@ export default function ContestSubmitPage() {
         }
       } catch { /* 사전 검증 실패는 무시 — 최종 제출 API에서 재검증됨 */ }
 
-      /* 업로드 URL 요청 (60초 타임아웃, 실패 시 1회 재시도) */
-      const fetchUploadUrl = async (): Promise<Response> => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60_000);
-        try {
-          const res = await fetch('/api/upload/video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ maxDurationSeconds: 600 }),
-            signal: controller.signal,
-          });
-          return res;
-        } finally {
-          clearTimeout(timeout);
-        }
-      };
-
-      let uploadUrlResponse: Response;
-      try {
-        uploadUrlResponse = await fetchUploadUrl();
-      } catch {
-        console.warn('[제출] 업로드 URL 1차 실패, 2초 후 재시도...');
-        await new Promise((r) => setTimeout(r, 2000));
-        uploadUrlResponse = await fetchUploadUrl();
-      }
-
-      const uploadUrlResult = (await uploadUrlResponse.json()) as {
-        uploadURL?: string;
-        uid?: string;
-        error?: string;
-      };
-
-      if (!uploadUrlResponse.ok || !uploadUrlResult.uploadURL || !uploadUrlResult.uid) {
-        reportUploadError('preparing', uploadUrlResult.error ?? '영상 업로드 URL 생성 실패', String(uploadUrlResponse.status));
-        throw new Error(userFriendlyError('VIDEO-URL'));
-      }
-
-      /* 영상 업로드 — XMLHttpRequest로 진행률 추적 */
+      /* ── 2단계: 영상 업로드 ── */
       setUploadStep('video');
       setUploadProgress(0);
-      console.log('[제출] 영상 업로드 시작:', selectedVideoFile.name, selectedVideoFile.size, 'bytes');
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', uploadUrlResult.uploadURL!);
-        xhr.timeout = 10 * 60 * 1000;
-        let settled = false;
-        const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
-
-        /* 업로드 멈춤 감지: 2분간 진행률 변화 없으면 로그 */
-        let lastProgress = 0;
-        let lastProgressTime = Date.now();
-        let stallReported = false;
-        const stallChecker = setInterval(() => {
-          if (settled) { clearInterval(stallChecker); return; }
-          const now = Date.now();
-          if (lastProgress === uploadProgress && now - lastProgressTime > 2 * 60 * 1000 && !stallReported) {
-            stallReported = true;
-            console.error('[제출] 업로드 멈춤 감지: 2분간 진행률 변화 없음, progress:', lastProgress);
-            reportUploadError('video', `업로드 멈춤 — ${lastProgress}%에서 2분간 변화 없음`, 'UPLOAD_STALL', `fileSize: ${selectedVideoFile.size}, fileName: ${selectedVideoFile.name}`);
-          }
-        }, 30_000);
-
-        /* 전송 완료 후 Cloudflare 응답 대기 — 폴링으로 확인 */
-        let pollTimer: ReturnType<typeof setInterval> | null = null;
-        let hardDeadline: ReturnType<typeof setTimeout> | null = null;
-        const clearAllTimers = () => {
-          clearInterval(stallChecker);
-          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-          if (hardDeadline) { clearTimeout(hardDeadline); hardDeadline = null; }
-        };
-
-        /* Cloudflare에 영상 존재 여부 + 처리 상태 확인 (#6: error 상태 체크, #16: 타임아웃 추가) */
-        const checkCloudflareStatus = async (): Promise<boolean | 'error'> => {
-          try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 15_000);
-            const statusRes = await fetch(`/api/stream/status?uid=${uploadUrlResult.uid}`, { signal: controller.signal });
-            clearTimeout(timeout);
-            if (!statusRes.ok) return false;
-            try {
-              const data = await statusRes.json();
-              if (data.status?.state === 'error') return 'error';
-            } catch { /* JSON 파싱 실패 시 존재만 확인 */ }
-            return true;
-          } catch { return false; }
-        };
-
-        xhr.upload.onprogress = (ev) => {
-          if (ev.lengthComputable) {
-            const pct = Math.round((ev.loaded / ev.total) * 100);
-            console.log(`[제출] 영상 업로드 진행: ${pct}% (${ev.loaded}/${ev.total})`);
-            setUploadProgress(pct);
-            /* 멈춤 감지용 진행률 업데이트 */
-            lastProgress = pct;
-            lastProgressTime = Date.now();
-            stallReported = false;
-          }
-        };
-        /* 전송 100% 완료 — 즉시 1회 + 30초마다 Cloudflare 폴링, 최대 10분 */
-        xhr.upload.onload = () => {
-          console.log('[제출] 파일 전송 완료, Cloudflare 응답 대기 중...');
-          setUploadProgress(100);
-
-          /* 폴링 공통 핸들러 (#6: error 상태 체크) */
-          const doPoll = async () => {
-            console.log('[제출] Cloudflare 영상 존재 여부 확인 중...');
-            const result = await checkCloudflareStatus();
-            if (result === 'error') {
-              console.error('[제출] Cloudflare 영상 처리 오류 — 재생 불가 영상');
-              clearAllTimers(); xhr.abort();
-              reportUploadError('video', 'Cloudflare 영상 처리 실패', 'CF_ERROR');
-              settle(() => reject(new Error('영상 파일을 처리할 수 없습니다. 다른 형식의 파일로 다시 시도해 주세요.')));
-              return;
-            }
-            if (result === true) {
-              console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
-              clearAllTimers(); xhr.abort();
-              settle(() => resolve());
-            }
-          };
-
-          /* #15: 즉시 첫 폴링 실행 */
-          doPoll();
-          /* 이후 30초마다 폴링 */
-          pollTimer = setInterval(doPoll, 30_000);
-
-          /* 최대 10분 대기 후 최종 확인 → 실패 처리 */
-          hardDeadline = setTimeout(async () => {
-            if (pollTimer) clearInterval(pollTimer);
-            pollTimer = null;
-            console.log('[제출] 10분 경과 — 최종 확인');
-            const result = await checkCloudflareStatus();
-            if (result === true) {
-              console.log('[제출] 최종 확인 성공 — 업로드 성공 처리');
-              xhr.abort();
-              settle(() => resolve());
-            } else {
-              console.error('[제출] 10분 경과 후에도 영상 미확인 — 실패 처리');
-              xhr.abort();
-              reportUploadError('video', '10분 대기 후 미확인', 'POLL_TIMEOUT');
-              settle(() => reject(new Error(userFriendlyError('VIDEO-TIMEOUT'))));
-            }
-          }, 10 * 60 * 1000);
-        };
-        xhr.onload = async () => {
-          clearAllTimers();
-          console.log('[제출] 영상 업로드 완료, status:', xhr.status);
-          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); settle(() => resolve()); }
-          else {
-            /* 상태 코드가 이상해도 Cloudflare에 영상이 있을 수 있음 */
-            console.warn('[제출] 비정상 응답, Cloudflare 확인:', xhr.status);
-            const existsOnCf = await checkCloudflareStatus();
-            if (existsOnCf) {
-              console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
-              setUploadProgress(100);
-              settle(() => resolve());
-            } else {
-              console.error('[제출] 영상 업로드 실패:', xhr.status, xhr.responseText);
-              reportUploadError('video', '영상 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
-              settle(() => reject(new Error(userFriendlyError('VIDEO-STATUS'))));
-            }
-          }
-        };
-        xhr.onerror = async () => {
-          console.warn('[제출] 영상 업로드 네트워크 오류 — Cloudflare에 영상 존재 여부 확인');
-          /* 파일 전송은 완료됐을 수 있음 (CORS 응답 차단 등) — Cloudflare 확인 후 판단 */
-          const existsOnCf = await checkCloudflareStatus();
-          if (existsOnCf) {
-            console.log('[제출] Cloudflare에 영상 존재 확인 — 업로드 성공 처리');
-            clearAllTimers();
-            settle(() => resolve());
-          } else {
-            clearAllTimers();
-            console.error('[제출] Cloudflare에도 영상 없음 — 실제 네트워크 오류');
-            reportUploadError('video', '네트워크 오류', 'NETWORK_ERROR');
-            settle(() => reject(new Error(userFriendlyError('VIDEO-NETWORK'))));
-          }
-        };
-        xhr.ontimeout = () => {
-          clearAllTimers();
-          console.error('[제출] 영상 업로드 타임아웃');
-          reportUploadError('video', '타임아웃', 'TIMEOUT');
-          settle(() => reject(new Error(userFriendlyError('VIDEO-TIMEOUT'))));
-        };
-        const fd = new FormData(); fd.append('file', selectedVideoFile); xhr.send(fd);
-      });
+      const videoTarget = await requestVideoUploadUrl();
+      await uploadVideoToStream({ file: selectedVideoFile, target: videoTarget, onProgress: setUploadProgress });
 
       /* JWT 7일 — 업로드 후 토큰 갱신 불필요. 그대로 사용. */
 
       /* ── 3단계: 썸네일 업로드 ── */
       setUploadStep('thumbnail');
       setUploadProgress(0);
-      console.log('[제출] 썸네일 업로드 시작');
-
-      const thumbExtNew = selectedThumbnailFile.name.split('.').pop() || 'png';
-      const thumbnailPath = `${contestId}/${crypto.randomUUID()}.${thumbExtNew}`;
-      console.log('[제출] 썸네일 경로:', thumbnailPath, '파일크기:', selectedThumbnailFile.size, 'bytes');
-
-      /* #13: 환경변수 안전 처리 */
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (!supabaseUrl || !anonKey) {
-        throw new Error('서버 설정 오류가 발생했습니다. 관리자에게 문의해 주세요.');
-      }
-
-      const thumbnailData = await new Promise<{ path: string }>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${supabaseUrl}/storage/v1/object/thumbnails/${thumbnailPath}`);
-        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-        xhr.setRequestHeader('x-upsert', 'false');
-        xhr.setRequestHeader('apikey', anonKey);
-        xhr.setRequestHeader('Content-Type', selectedThumbnailFile.type || 'application/octet-stream');
-        xhr.timeout = 90_000;
-        xhr.upload.onprogress = (ev) => {
-          if (ev.lengthComputable) {
-            setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            setUploadProgress(100);
-            try {
-              const res = JSON.parse(xhr.responseText);
-              resolve({ path: thumbnailPath });
-            } catch {
-              resolve({ path: thumbnailPath });
-            }
-          } else {
-            const errMsg = xhr.responseText || '썸네일 업로드에 실패했습니다.';
-            reportUploadError('thumbnail', '썸네일 업로드 실패', String(xhr.status), xhr.responseText?.slice(0, 500));
-            if (errMsg.includes('security') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
-              reject(new Error(userFriendlyError('THUMB-AUTH')));
-            } else {
-              reject(new Error(userFriendlyError('THUMB-STATUS')));
-            }
-          }
-        };
-        xhr.onerror = () => { reportUploadError('thumbnail', '네트워크 오류', 'NETWORK_ERROR'); reject(new Error(userFriendlyError('THUMB-NETWORK'))); };
-        xhr.ontimeout = () => { reportUploadError('thumbnail', '타임아웃', 'TIMEOUT'); reject(new Error(userFriendlyError('THUMB-TIMEOUT'))); };
-        xhr.send(selectedThumbnailFile);
+      const thumbnailPath = buildStoragePath(contestId, selectedThumbnailFile.name);
+      await uploadFileToStorage({
+        bucket: 'thumbnails',
+        path: thumbnailPath,
+        file: selectedThumbnailFile,
+        accessToken,
+        onProgress: setUploadProgress,
+        errorPrefix: 'THUMB',
       });
-      console.log('[제출] 썸네일 업로드 성공:', thumbnailData.path);
-
-      const { data: thumbnailPublicData } = supabase.storage
-        .from('thumbnails')
-        .getPublicUrl(thumbnailData.path);
-
+      const { data: thumbnailPublicData } = supabase.storage.from('thumbnails').getPublicUrl(thumbnailPath);
       if (!thumbnailPublicData.publicUrl) {
         throw new Error(userFriendlyError('THUMB-URL'));
       }
 
-      /* 가산점 인증 이미지 업로드 */
+      /* ── 4단계: 가산점 인증 이미지 업로드 ── */
       const bonusEntries: Array<{ bonusConfigId: string; snsUrl?: string; proofImageUrl?: string }> = [];
       const bonusFormEntries = Object.entries(bonusForms).filter(
         ([, entry]) => entry.snsUrl?.trim() || entry.proofImageFile,
@@ -1048,31 +734,15 @@ export default function ContestSubmitPage() {
         for (const [configId, entry] of bonusFormEntries) {
           let proofImageUrl: string | undefined;
           if (entry.proofImageFile) {
-            const proofExt = entry.proofImageFile.name.split('.').pop() || 'png';
-            const proofPath = `${contestId}/${currentUser.id}/${crypto.randomUUID()}.${proofExt}`;
-            /* raw XHR + 갱신된 토큰 사용 (SDK storage.upload() 내부 auth 호출 hang 방지) */
-            const proofUploadUrl = `${supabaseUrl}/storage/v1/object/proof-images/${proofPath}`;
-            await new Promise<void>((resolve, reject) => {
-              const xhr = new XMLHttpRequest();
-              xhr.open('POST', proofUploadUrl);
-              xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-              xhr.setRequestHeader('x-upsert', 'false');
-              xhr.setRequestHeader('apikey', anonKey);
-              xhr.setRequestHeader('Content-Type', entry.proofImageFile!.type || 'application/octet-stream');
-              xhr.timeout = 90_000;
-              xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
-                else {
-                  console.error('인증 이미지 업로드 실패:', xhr.status, xhr.responseText);
-                  reject(new Error(userFriendlyError('PROOF-STATUS')));
-                }
-              };
-              xhr.onerror = () => reject(new Error(userFriendlyError('PROOF-NETWORK')));
-              xhr.ontimeout = () => reject(new Error(userFriendlyError('PROOF-TIMEOUT')));
-              xhr.send(entry.proofImageFile);
+            const proofPath = buildStoragePath(contestId, entry.proofImageFile.name, currentUser.id);
+            await uploadFileToStorage({
+              bucket: 'proof-images',
+              path: proofPath,
+              file: entry.proofImageFile,
+              accessToken,
+              errorPrefix: 'PROOF',
             });
-            const { data: proofPublicData } = supabase.storage.from('proof-images').getPublicUrl(proofPath);
-            proofImageUrl = proofPublicData.publicUrl;
+            proofImageUrl = supabase.storage.from('proof-images').getPublicUrl(proofPath).data.publicUrl;
           }
           bonusEntries.push({
             bonusConfigId: configId,
@@ -1094,7 +764,7 @@ export default function ContestSubmitPage() {
           contestId,
           title: form.title,
           description: form.description,
-          videoUrl: uploadUrlResult.uid,
+          videoUrl: videoTarget.uid,
           thumbnailUrl: thumbnailPublicData.publicUrl,
           tags: [],
           aiTools: aiToolsList.join(', '),
@@ -1985,251 +1655,34 @@ export default function ContestSubmitPage() {
         </div>
       </section>
 
-      {/* ===== 유효성 검사 실패 안내 팝업 ===== */}
-      <Dialog open={showValidationPopup} onOpenChange={setShowValidationPopup}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-brand" />
-            </div>
-            <DialogTitle className="text-center">필수 항목을 확인해주세요</DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground">
-              다음 항목이 입력되지 않았습니다
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            {Object.values(fieldErrors).map((msg) => (
-              <div key={msg} className="flex items-center gap-2 text-sm text-destructive dark:text-destructive">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>{msg}</span>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" className="w-full cursor-pointer" onClick={() => setShowValidationPopup(false)}>확인</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ===== 업로드 진행 / 성공 / 실패 통합 Dialog ===== */}
-      <Dialog
-        open={uploadStep !== null || submitted}
-        onOpenChange={(open) => {
-          if (!open && !isSubmitting) {
-            if (submitted) {
-              setSubmitted(false);
-              setUploadStep(null);
-              router.push('/my/submissions');
-            } else {
-              setUploadStep(null);
-              setSubmitError(null);
-              setUploadProgress(0);
-              setErrorType(null);
-            }
-          }
+      <SubmitDialogs
+        contestId={contestId}
+        showValidationPopup={showValidationPopup}
+        onValidationPopupChange={setShowValidationPopup}
+        fieldErrors={fieldErrors}
+        uploadStep={uploadStep}
+        uploadProgress={uploadProgress}
+        submitted={submitted}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        errorType={errorType}
+        videoFile={videoFile}
+        thumbnailFile={thumbnailFile}
+        isEditMode={isEditMode}
+        isBonusOnly={isBonusOnly}
+        hasBonusConfigs={Boolean(hasBonusConfigs)}
+        submissionTitle={form.title}
+        onSuccessConfirm={() => { setSubmitted(false); setUploadStep(null); }}
+        onErrorDismiss={() => {
+          setIsSubmitting(false);
+          setUploadStep(null);
+          setSubmitError(null);
+          setUploadProgress(0);
+          setErrorType(null);
         }}
-      >
-        <DialogContent
-          className={cn('sm:max-w-md', isSubmitting && '[&>button]:hidden')}
-          onPointerDownOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
-          onEscapeKeyDown={(e) => { if (isSubmitting) e.preventDefault(); }}
-        >
-          {submitted ? (
-            <>
-              <DialogHeader>
-                <div className="mx-auto mb-2 w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                </div>
-                <DialogTitle className="text-center">{isBonusOnly ? '가산점 인증이 저장되었습니다!' : isEditMode ? '수정이 완료되었습니다!' : '영상이 제출되었습니다!'}</DialogTitle>
-                <DialogDescription className="text-center">
-                  {isBonusOnly
-                    ? '가산점 인증 정보가 성공적으로 수정되었습니다.'
-                    : isEditMode
-                    ? `"${form.title}" 출품작이 성공적으로 수정되었습니다.`
-                    : `"${form.title}" 영상이 성공적으로 접수되었습니다. 검수 완료 후 공모전 출품작 목록에 표시됩니다.`}
-                  {!isBonusOnly && hasBonusConfigs && ' 가산점 인증은 마이페이지에서 추후 수정할 수 있습니다.'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2 py-2">
-                {(isEditMode
-                  ? ['출품작 정보 수정']
-                  : ['영상 업로드', '썸네일 업로드', '출품작 등록']
-                ).map((label) => (
-                  <div key={label} className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>{label} 완료</span>
-                  </div>
-                ))}
-              </div>
-              <DialogFooter>
-                <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => { setSubmitted(false); setUploadStep(null); router.push('/my/submissions'); }}>확인</Button>
-              </DialogFooter>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-center text-lg">
-                  {submitError ? '제출 실패' : '영상 제출 중'}
-                </DialogTitle>
-                <DialogDescription className="text-center text-sm text-muted-foreground">
-                  {submitError ? '아래 단계에서 오류가 발생했습니다.' : '창을 닫지 마세요. 영상 크기에 따라 수 분이 걸릴 수 있습니다.'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                {([
-                  { key: 'preparing', label: '업로드 준비', icon: Loader2, showProgress: false, file: null },
-                  { key: 'video', label: '영상 업로드', icon: FileVideo, showProgress: true, file: videoFile },
-                  { key: 'thumbnail', label: '썸네일 업로드', icon: ImageIcon, showProgress: true, file: thumbnailFile },
-                  { key: 'proof-images', label: '인증 이미지 업로드', icon: Shield, showProgress: false, file: null },
-                  { key: 'submission', label: '출품작 등록', icon: CheckCircle2, showProgress: false, file: null },
-                ] as const).map((step) => {
-                  const steps = ['preparing', 'video', 'thumbnail', 'proof-images', 'submission'] as const;
-                  const currentIdx = uploadStep ? steps.indexOf(uploadStep) : -1;
-                  const stepIdx = steps.indexOf(step.key);
-                  const isActive = uploadStep === step.key;
-                  const isCompleted = currentIdx > stepIdx;
-                  const isPending = currentIdx < stepIdx;
-                  const isFailed = isActive && !!submitError;
-                  const Icon = step.icon;
-                  return (
-                    <div key={step.key} className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
-                          isCompleted && 'bg-green-500/10 text-green-500',
-                          isActive && !isFailed && 'bg-primary/10 text-primary',
-                          isFailed && 'bg-destructive/10 text-destructive',
-                          isPending && 'bg-muted text-muted-foreground',
-                        )}>
-                          {isCompleted ? <CheckCircle2 className="h-5 w-5" />
-                            : isFailed ? <AlertCircle className="h-5 w-5" />
-                              : isActive ? <Loader2 className="h-5 w-5 animate-spin" />
-                                : <Icon className="h-4 w-4" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            'text-sm font-medium transition-colors',
-                            isCompleted && 'text-green-600 dark:text-green-400',
-                            isActive && !isFailed && 'text-foreground',
-                            isFailed && 'text-destructive dark:text-destructive',
-                            isPending && 'text-muted-foreground',
-                          )}>
-                            {step.label}{isCompleted && ' ✓'}{isFailed && ' ✕'}
-                          </p>
-                          {isActive && step.file && !isFailed && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {step.file.name} ({(step.file.size / 1024 / 1024).toFixed(1)}MB)
-                            </p>
-                          )}
-                          {isActive && step.key === 'video' && uploadProgress >= 100 && !isFailed && (
-                            <p className="text-xs text-brand animate-pulse">서버에서 처리 중입니다. 잠시 기다려주세요...</p>
-                          )}
-                        </div>
-                        {isActive && step.showProgress && !isFailed && (
-                          <span className="text-sm font-mono font-semibold text-primary dark:text-primary tabular-nums">{uploadProgress}%</span>
-                        )}
-                      </div>
-                      {isActive && step.showProgress && !isFailed && (
-                        <div className="ml-11 h-2 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              {submitError && (
-                <>
-                  {errorType === 'duplicate' ? (
-                    /* 중복 제출 */
-                    <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-brand" />
-                      </div>
-                      <p className="text-center font-semibold">이미 제출한 공모전입니다</p>
-                      <p className="text-center text-sm text-muted-foreground">이 공모전에는 이미 영상을 제출하셨습니다. 추가 제출은 불가합니다.</p>
-                      <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-                        <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
-                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
-                      </DialogFooter>
-                    </>
-                  ) : errorType === 'contest_closed' ? (
-                    /* 공모전 취소/종료 */
-                    <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-destructive" />
-                      </div>
-                      <p className="text-center font-semibold">공모전이 종료되었습니다</p>
-                      <p className="text-center text-sm text-muted-foreground">이 공모전은 현재 접수 기간이 아닙니다.</p>
-                      <DialogFooter>
-                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => router.push(`/contests/${contestId}`)}>공모전으로 돌아가기</Button>
-                      </DialogFooter>
-                    </>
-                  ) : errorType === 'deadline_passed' ? (
-                    /* 마감 초과 */
-                    <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-destructive" />
-                      </div>
-                      <p className="text-center font-semibold">접수 마감일이 지났습니다</p>
-                      <p className="text-center text-sm text-muted-foreground">공모전 접수 마감일이 지나 제출이 완료되지 않았습니다.</p>
-                      <DialogFooter>
-                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => router.push(`/contests/${contestId}`)}>공모전으로 돌아가기</Button>
-                      </DialogFooter>
-                    </>
-                  ) : errorType === 'auth_expired' ? (
-                    /* 세션 만료 */
-                    <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-brand" />
-                      </div>
-                      <p className="text-center font-semibold">로그인이 필요합니다</p>
-                      <p className="text-center text-sm text-muted-foreground">세션이 만료되었습니다. 다시 로그인해 주세요.</p>
-                      <DialogFooter>
-                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => router.push(`/login?redirectTo=/contests/${contestId}/submit`)}>로그인하기</Button>
-                      </DialogFooter>
-                    </>
-                  ) : (
-                    /* 일반 오류 — 사용자 친화적 안내 */
-                    <>
-                      <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <AlertCircle className="h-6 w-6 text-destructive" />
-                      </div>
-                      <div className="p-4 rounded-lg bg-muted/50 text-sm whitespace-pre-line leading-relaxed">
-                        {submitError}
-                      </div>
-                      <DialogFooter className="flex-col gap-2">
-                        <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer w-full" onClick={() => window.location.reload()}>페이지 새로고침</Button>
-                        <Button variant="outline" className="cursor-pointer w-full" onClick={() => { setIsSubmitting(false); setUploadStep(null); setSubmitError(null); setUploadProgress(0); setErrorType(null); }}>닫기</Button>
-                      </DialogFooter>
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* 이미 제출한 경우 안내 Dialog */}
-      <Dialog open={alreadySubmitted} onOpenChange={(open) => { if (!open) router.push(`/contests/${contestId}`); }}>
-        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-brand" />
-            </div>
-            <DialogTitle className="text-center">이미 제출한 공모전입니다</DialogTitle>
-            <DialogDescription className="text-center">
-              이 공모전의 최대 출품 가능 수({contest?.maxSubmissionsPerUser ?? 1}개)를 초과하여
-              더 이상 제출할 수 없습니다.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-            <Button variant="outline" className="cursor-pointer flex-1" onClick={() => router.push(`/contests/${contestId}`)}>확인</Button>
-            <Button className="bg-primary hover:bg-primary/90 text-white cursor-pointer flex-1" onClick={() => router.push('/my/submissions')}>내 출품작 보기</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        alreadySubmitted={alreadySubmitted}
+        maxSubmissionsPerUser={contest?.maxSubmissionsPerUser ?? 1}
+      />
     </div>
   );
 }
