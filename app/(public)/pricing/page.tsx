@@ -25,42 +25,14 @@ export const metadata: Metadata = {
 /**
  * 서버 컴포넌트: DB에서 요금제 데이터 조회
  */
+/**
+ * 요금제 페이지.
+ *
+ * 예전에는 DB 가 비면 9,900원·29,900원 같은 **지어낸 가격**을 폴백으로 렌더했다.
+ * 수익화는 동결 상태이고(D-005) 파는 상품이 없는데 가격이 떠 있으면 그건 거짓말이다.
+ * 이제 플랜이 없으면 없다고 말한다 — 화면은 PricingContent 가 처리한다.
+ */
 export default async function PricingPage() {
-  // DB에서 요금제 조회
-  let plans = await getPricingPlans();
-
-  // Fallback: DB 조회 실패 시 기본 데이터 사용
-  if (!plans || plans.length === 0) {
-    plans = [
-      {
-        id: 'participant-free',
-        role: 'participant',
-        name: '참가자 플랜',
-        monthlyPrice: 9900,
-        yearlyPrice: 118800,
-        active: true,
-        featureKeys: [],
-      },
-      {
-        id: 'host-free',
-        role: 'host',
-        name: '주최자 플랜',
-        monthlyPrice: 29900,
-        yearlyPrice: 358800,
-        active: true,
-        featureKeys: [],
-      },
-      {
-        id: 'judge-free',
-        role: 'judge',
-        name: '심사위원 플랜',
-        monthlyPrice: 0,
-        yearlyPrice: 0,
-        active: true,
-        featureKeys: [],
-      },
-    ];
-  }
-
-  return <PricingContent plans={plans} />;
+  const plans = await getPricingPlans();
+  return <PricingContent plans={plans ?? []} />;
 }

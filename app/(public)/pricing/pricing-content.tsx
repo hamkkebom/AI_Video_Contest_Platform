@@ -52,16 +52,17 @@ export function PricingContent({ plans }: PricingContentProps) {
     ],
   };
 
+  /* 아직 팔지 않는 상품의 취소·환불 규정을 적어 두면 지키지 못할 약속이 된다.
+     지금 사실인 것만 남긴다 — 유료화 시점에 다시 채운다. (D-005) */
   const faqs = [
-    { q: '언제든 취소할 수 있나요?', a: '네, 언제든지 구독을 취소할 수 있습니다. 취소 후 남은 기간은 이용할 수 있습니다.' },
-    { q: '환불이 가능한가요?', a: '구독 후 7일 이내에는 전액 환불이 가능합니다. 자세한 내용은 고객 지원팀에 문의하세요.' },
-    { q: '여러 역할을 가질 수 있나요?', a: '네, 한 계정으로 여러 역할을 가질 수 있습니다. 각 역할별로 요금제를 선택할 수 있습니다.' },
-    { q: '기업 요금제가 있나요?', a: '네, 대량 구독이나 커스텀 요금제는 영업팀에 문의하세요.' },
+    { q: '지금 결제해야 하나요?', a: '아닙니다. 공모전 참가와 출품, 갤러리 이용은 모두 무료이며 현재 판매 중인 유료 플랜이 없습니다.' },
+    { q: '여러 역할을 가질 수 있나요?', a: '네, 한 계정으로 참가자·주최자·심사위원 역할을 함께 가질 수 있습니다.' },
+    { q: '공모전을 열고 싶습니다', a: '개최 신청을 남겨 주시면 운영팀이 연락드립니다. 개최 절차와 비용은 개별 협의로 진행합니다.' },
   ];
 
-  // 현재 탭의 요금제 찾기
+  // 현재 탭의 요금제 찾기. 없으면 카드 자리에 "준비 중"을 렌더한다 —
+  // 예전에는 여기서 null 을 반환해 페이지가 통째로 빈 화면이 됐다.
   const currentPlanData = plans.find((p) => p.role === activeTab);
-  if (!currentPlanData) return null;
 
   const PlanIcon = tabs.find((t) => t.id === activeTab)?.icon || Film;
 
@@ -105,70 +106,85 @@ export function PricingContent({ plans }: PricingContentProps) {
           </div>
 
           {/* 요금제 카드 */}
-          <Card className="border-2 border-accent-foreground/20 shadow-lg">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center">
-                    <PlanIcon className="h-7 w-7 text-accent-foreground" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">{currentPlanData.name}</h2>
-                    <p className="text-muted-foreground text-sm">
-                      {activeTab === 'participant' && '공모전 출품 및 갤러리 활동을 위한 플랜'}
-                      {activeTab === 'host' && '공모전 개최 및 관리를 위한 전문 플랜'}
-                      {activeTab === 'judge' && '공모전 심사 및 채점을 위한 플랜'}
-                    </p>
-                  </div>
+          {!currentPlanData ? (
+            <Card className="border-2 border-dashed border-border">
+              <CardContent className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <PlanIcon className="h-6 w-6 text-muted-foreground" />
                 </div>
-                {activeTab === 'judge' && (
-                  <Badge className="bg-green-500/10 text-green-600 border-0">무료</Badge>
-                )}
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              {/* 가격 */}
-              <div className="mb-8 pb-6 border-b border-border">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-bold">
-                    {activeTab === 'judge' ? '무료' : currentPlanData.monthlyPrice.toLocaleString()}
-                  </span>
-                  {activeTab !== 'judge' && (
-                    <span className="text-muted-foreground text-lg">원 / 월</span>
+                <p className="text-lg font-semibold">아직 판매 중인 요금제가 없습니다</p>
+                <p className="max-w-md text-sm text-muted-foreground">
+                  공모전 참가와 출품, 갤러리 이용은 모두 무료입니다. 유료 플랜이 준비되면
+                  이 화면에서 안내드리겠습니다.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-2 border-accent-foreground/20 shadow-lg">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center">
+                      <PlanIcon className="h-7 w-7 text-accent-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">{currentPlanData.name}</h2>
+                      <p className="text-muted-foreground text-sm">
+                        {activeTab === 'participant' && '공모전 출품 및 갤러리 활동을 위한 플랜'}
+                        {activeTab === 'host' && '공모전 개최 및 관리를 위한 전문 플랜'}
+                        {activeTab === 'judge' && '공모전 심사 및 채점을 위한 플랜'}
+                      </p>
+                    </div>
+                  </div>
+                  {activeTab === 'judge' && (
+                    <Badge className="bg-green-500/10 text-green-600 border-0">무료</Badge>
                   )}
                 </div>
-              </div>
+              </CardHeader>
 
-              {/* 기능 목록 */}
-              <div className="space-y-3 mb-8">
-                {defaultFeatures[activeTab].map((feature) => (
-                  <div key={feature.name} className="flex items-center gap-3">
-                    {feature.included ? (
-                      <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                        <Check className="h-3 w-3 text-green-600" />
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
-                        <X className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                    )}
-                    <span className={feature.included ? 'text-foreground' : 'text-muted-foreground'}>
-                      {feature.name}
+              <CardContent>
+                {/* 가격 */}
+                <div className="mb-8 pb-6 border-b border-border">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl sm:text-5xl font-bold">
+                      {activeTab === 'judge' ? '무료' : currentPlanData.monthlyPrice.toLocaleString()}
                     </span>
-                    {!feature.included && (
-                      <Badge variant="outline" className="ml-auto text-xs">프리미엄</Badge>
+                    {activeTab !== 'judge' && (
+                      <span className="text-muted-foreground text-lg">원 / 월</span>
                     )}
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* CTA 버튼 */}
-              <Button disabled className="w-full font-semibold py-6 text-lg cursor-not-allowed bg-muted text-muted-foreground">
-                서비스 준비 중
-              </Button>
-            </CardContent>
-          </Card>
+                {/* 기능 목록 */}
+                <div className="space-y-3 mb-8">
+                  {defaultFeatures[activeTab].map((feature) => (
+                    <div key={feature.name} className="flex items-center gap-3">
+                      {feature.included ? (
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className={feature.included ? 'text-foreground' : 'text-muted-foreground'}>
+                        {feature.name}
+                      </span>
+                      {!feature.included && (
+                        <Badge variant="outline" className="ml-auto text-xs">프리미엄</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA 버튼 */}
+                <Button disabled className="w-full font-semibold py-6 text-lg cursor-not-allowed bg-muted text-muted-foreground">
+                  서비스 준비 중
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* FAQ 섹션 */}
           <div className="mt-20">

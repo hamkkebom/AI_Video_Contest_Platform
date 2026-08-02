@@ -110,10 +110,38 @@ export async function POST(
 
     const bonusMaxScore = contest.bonus_max_score ?? 3;
 
+    /* ── 채점용 조회수 ──
+       화면에 보이는 submissions.views 는 익명 조회를 포함한다. 표시용으로는 괜찮지만
+       상금을 가르는 값으로 쓸 수는 없다 — ip_hash 는 바꿀 수 있기 때문이다.
+       조회수가 점수에 들어가는 공모전에서만 로그인 조회로 다시 센다. (마이그레이션 056) */
+    const usesViews = onlineVoteType === 'views' || onlineVoteType === 'likes_and_views';
+    const scoringViews = new Map<number, number>();
+    if (usesViews) {
+      const { data: viewRows, error: viewError } = await supabase.rpc(
+        'contest_authenticated_view_counts',
+        { p_contest_id: Number(contestId) },
+      );
+      if (viewError) {
+        console.error('[calculate-results] 인증 조회 집계 실패:', viewError.code, viewError.message);
+        return NextResponse.json(
+          {
+            error: viewError.code === 'PGRST202' || viewError.code === '42883'
+              ? '조회수 채점 설정이 완료되지 않았습니다. 마이그레이션 056을 적용해주세요.'
+              : '조회수 집계에 실패했습니다.',
+          },
+          { status: viewError.code === '42501' ? 403 : 503 },
+        );
+      }
+      for (const row of (viewRows ?? []) as Array<{ submission_id: number; authenticated_views: number }>) {
+        scoringViews.set(row.submission_id, Number(row.authenticated_views));
+      }
+    }
+    const viewsFor = (submissionId: number) => scoringViews.get(submissionId) ?? 0;
+
     /* ── 정규화를 위한 최대값 계산 ── */
     const maxJudgeAvg = Math.max(...submissions.map(s => judgeAvgBySubmission.get(s.id) ?? 0), 1);
     const maxLikes = Math.max(...submissions.map(s => s.like_count ?? 0), 1);
-    const maxViews = Math.max(...submissions.map(s => s.views ?? 0), 1);
+    const maxViews = Math.max(...submissions.map(s => viewsFor(s.id)), 1);
 
     /* ── 최종 점수 계산 ── */
     const results = submissions.map(submission => {
@@ -126,11 +154,11 @@ export async function POST(
       if (onlineVoteType === 'likes') {
         onlineNormalized = maxLikes > 0 ? ((submission.like_count ?? 0) / maxLikes) * 100 : 0;
       } else if (onlineVoteType === 'views') {
-        onlineNormalized = maxViews > 0 ? ((submission.views ?? 0) / maxViews) * 100 : 0;
+        onlineNormalized = maxViews > 0 ? (viewsFor(submission.id) / maxViews) * 100 : 0;
       } else {
         /* likes_and_views */
         const likesNorm = maxLikes > 0 ? ((submission.like_count ?? 0) / maxLikes) * 100 : 0;
-        const viewsNorm = maxViews > 0 ? ((submission.views ?? 0) / maxViews) * 100 : 0;
+        const viewsNorm = maxViews > 0 ? (viewsFor(submission.id) / maxViews) * 100 : 0;
         onlineNormalized = likesNorm * voteLikesPercent + viewsNorm * voteViewsPercent;
       }
 

@@ -1,9 +1,21 @@
 import type { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
+import type { Contest } from '@/lib/types';
 import { getContestById } from '@/lib/data';
 import { safeJsonLd } from '@/lib/utils';
 import ArirangLandingClient from './arirang-landing-client';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aikkumhub.com';
+
+/**
+ * 아리랑 마이크로사이트는 이 공모전 **하나를 위해** 만든 것이다.
+ * 헐버트·채보 130주년·전용 카피가 하드코딩돼 있어 다른 공모전에 렌더하면 남의 이야기가 나온다.
+ * 제1회 아리랑은 id=3 이지만, 복제 등으로 id 가 달라질 수 있어 제목도 함께 본다.
+ */
+const ARIRANG_CONTEST_ID = '3';
+function isArirangContest(id: string, contest: Contest | null): boolean {
+  return id === ARIRANG_CONTEST_ID || Boolean(contest?.title?.includes('아리랑'));
+}
 
 type ContestLandingPageProps = {
   params: Promise<{ id: string }>;
@@ -14,8 +26,7 @@ export async function generateMetadata({ params }: ContestLandingPageProps): Pro
   const { id } = await params;
   const contest = await getContestById(id);
 
-  /* 꿈꾸는 아리랑 공모전(id=3) 전용 메타데이터 */
-  const isArirang = id === '3' || contest?.title?.includes('아리랑');
+  const isArirang = isArirangContest(id, contest);
 
   const title = isArirang
     ? '꿈꾸는 아리랑 AI 영상 공모전 — 호머 헐버트 아리랑 채보 130주년 기념'
@@ -63,13 +74,24 @@ export async function generateMetadata({ params }: ContestLandingPageProps): Pro
 }
 
 /**
- * 공모전 랜딩 페이지
- * - URL의 [id]를 기반으로 접수하기 등 CTA가 해당 공모전으로 연결됨
+ * 공모전 랜딩 페이지.
+ *
+ * 이 라우트는 **아리랑 전용 마이크로사이트 하나만** 서빙한다. 예전에는 id 와 무관하게
+ * `<ArirangLandingClient />` 를 렌더해서, 제2회를 열면 그 공모전 URL 에서 헐버트와
+ * 채보 130주년 이야기가 나오게 돼 있었다. 그래서 아리랑이 아닌 공모전은 상세로 보낸다 —
+ * canonical 이 이미 상세를 가리키고 있으므로(D-013) 방향이 같다.
  */
 export default async function ContestLandingPage({ params }: ContestLandingPageProps) {
   const { id } = await params;
   const contest = await getContestById(id);
-  const isArirang = id === '3' || contest?.title?.includes('아리랑');
+
+  /* 없는 공모전은 404 — 랜딩만 200 을 주면 없는 공모전이 있는 척한다 */
+  if (!contest) notFound();
+  /* 준비 중(draft)은 상세와 같은 기준으로 감춘다 (D-013) */
+  if (contest.status === 'draft') notFound();
+
+  const isArirang = isArirangContest(id, contest);
+  if (!isArirang) redirect(`/contests/${id}`);
 
   /* JSON-LD 구조화 데이터 */
   const jsonLd = {

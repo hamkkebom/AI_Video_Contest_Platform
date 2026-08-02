@@ -1727,6 +1727,14 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
                   <option value="likes_and_views">조회수 + 좋아요</option>
                 </select>
               </div>
+              {(onlineVoteType === 'views' || onlineVoteType === 'likes_and_views') && (
+                /* 채점에 쓰이는 조회수는 화면에 표시되는 값과 다르다 — 주최자가 알아야 한다 */
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                  점수 계산에는 <span className="font-medium">로그인한 사용자의 조회만</span> 반영됩니다.
+                  출품작 화면에 보이는 조회수(비로그인 포함)와 값이 다를 수 있습니다 — 익명 조회로
+                  순위가 움직이지 않게 하기 위해서입니다.
+                </p>
+              )}
               {onlineVoteType === 'likes_and_views' && (
                 <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                   <p className="text-sm font-medium">세부 비율 (합 100%)</p>
