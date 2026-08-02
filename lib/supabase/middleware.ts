@@ -111,14 +111,12 @@ export async function updateSession(request: NextRequest) {
   /* 갤러리 상세(/gallery/[id])는 공개 — 감상은 열고 행위(좋아요 등)만 로그인 요구.
      페이지가 공개 뷰(public_submissions)를 읽고 LikeButton이 자체 로그인 유도를 하므로
      미들웨어 벽이 불필요하다. (docs/IA.md §4, DECISIONS D-013) */
-  /* /invite는 로그인만 요구 (역할 무관) — 초대 수신자는 아직 judge 역할이 없다 (docs/IA.md §4)
-     /hosts/apply(개최 신청)도 로그인만 요구 — 나머지 /hosts/* 는 공개 주최자 페이지 */
+  /* /hosts/apply(개최 신청)는 로그인만 요구 — 나머지 /hosts/* 는 공개 주최자 페이지 */
   const isProtectedRoute =
     isUnder(pathname, '/my') ||
     isUnder(pathname, '/admin') ||
     isUnder(pathname, '/host') ||
     isUnder(pathname, '/judging') ||
-    isUnder(pathname, '/invite') ||
     pathname === '/hosts/apply' ||
     /^\/contests\/[^/]+\/submit/.test(pathname);
 

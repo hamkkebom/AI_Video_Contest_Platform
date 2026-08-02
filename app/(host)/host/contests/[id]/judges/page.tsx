@@ -3,11 +3,12 @@ import type { Route } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getContestById, getJudgesByContest, getUsersByIds } from '@/lib/data';
-import { Lightbulb, MailPlus, UserCheck } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { JudgeAssign } from './_components/judge-assign';
+import { JudgeRemove } from './_components/judge-remove';
 
 type ContestJudgesPageProps = {
   params: Promise<{ id: string }>;
@@ -26,9 +27,10 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
     const users = await getUsersByIds(judgeUserIds);
     const usersMap = new Map(users.map((user) => [user.id, user]));
 
-    const acceptedCount = contestJudges.filter((judge) => judge.acceptedAt).length;
-    const pendingCount = contestJudges.length - acceptedCount;
+    /* 배정이 곧 확정이므로(054) '대기' 상태는 054 이전에 만들어진 행에만 남는다 */
     const externalCount = contestJudges.filter((judge) => judge.isExternal).length;
+    const internalCount = contestJudges.length - externalCount;
+    const legacyPendingCount = contestJudges.filter((judge) => !judge.acceptedAt).length;
 
     return (
       <div className="space-y-6 pb-10">
@@ -49,14 +51,15 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
           </Card>
           <Card className="border-border border-l-4 border-l-emerald-500">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">수락</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">{acceptedCount}</p>
+              <p className="text-sm text-muted-foreground">내부</p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">{internalCount}</p>
             </CardContent>
           </Card>
           <Card className="border-border border-l-4 border-l-amber-500">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">대기</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">{pendingCount}</p>
+              <p className="text-sm text-muted-foreground">수락 대기</p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">{legacyPendingCount}</p>
+              <p className="mt-1 text-xs text-muted-foreground">예전 초대 방식으로 남은 건</p>
             </CardContent>
           </Card>
           <Card className="border-border border-l-4 border-l-sky-500">
@@ -70,19 +73,11 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
         <section>
           <Card className="border-border">
             <CardHeader>
-              <CardTitle>이메일 초대</CardTitle>
-              <CardDescription>데모 모드에서는 실제 메일이 전송되지 않습니다.</CardDescription>
+              <CardTitle>심사위원 배정</CardTitle>
+              <CardDescription>가입한 회원의 이메일로 찾아 바로 배정합니다.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input id="judge-invite-email" type="email" placeholder="judge@example.com" className="flex-1" />
-                 <Button className="gap-1.5 sm:w-auto bg-accent-foreground text-white hover:bg-accent-foreground/90" type="button">
-                   <MailPlus className="h-4 w-4" /> 초대 보내기
-                 </Button>
-              </div>
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Lightbulb className="h-3.5 w-3.5" /> 초대 버튼은 데모 동작이며 실제 발송은 수행되지 않습니다.
-              </p>
+            <CardContent>
+              <JudgeAssign contestId={id} />
             </CardContent>
           </Card>
         </section>
@@ -99,7 +94,7 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
             <Card className="border-border">
               <CardHeader>
                 <CardTitle>심사위원 목록</CardTitle>
-                <CardDescription>수락 상태와 초대 이력을 확인하세요.</CardDescription>
+                <CardDescription>배정 이력을 확인하고 필요하면 해제합니다.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -109,7 +104,7 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
                       <TableHead>이메일</TableHead>
                       <TableHead>유형</TableHead>
                       <TableHead>상태</TableHead>
-                      <TableHead>초대일</TableHead>
+                      <TableHead>배정일</TableHead>
                       <TableHead className="text-right">액션</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -142,7 +137,7 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
                                   : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                               }
                             >
-                              {isAccepted ? '수락' : '대기'}
+                              {isAccepted ? '활동' : '수락 대기'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -150,11 +145,10 @@ export default async function HostContestJudgesPage({ params }: ContestJudgesPag
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
-                              {!isAccepted && (
-                                <Button size="sm" variant="outline" type="button">
-                                  재초대
-                                </Button>
-                              )}
+                              <JudgeRemove
+                                judgeId={judge.id}
+                                judgeName={user?.name ?? '이 심사위원'}
+                              />
                               <Link href={`/host/contests/${id}` as Route}>
                                 <Button size="sm" type="button">
                                   공모전 보기

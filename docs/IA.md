@@ -64,7 +64,6 @@
 
 인증 (로그인)
 ├── /login, /signup, /find-email, /forgot-password, /reset-password
-└── /invite/[token]        심사위원 초대 — 역할 가드 제외 대상 (로그인만 요구)
 
 대시보드 (로그인 + 역할)
 ├── /my/*                  참가자 — 내 출품작, 프로필 (activity·analytics·devices는 redirect 스텁 유지)
@@ -140,7 +139,7 @@ RLS 관련 사고가 세 번 반복됐다(D-009, 050 회귀, 관리자 문의 �
 | `/`, `/contests*`, `/gallery/all`, `/gallery/awards*`, `/creators*`, `/hosts/*`, `/story*`, `/search`, `/support*`, `/terms`, `/privacy` | 공개 | `/hosts`는 승인된 기업만(`public_companies` 뷰). 경로 비교는 세그먼트 경계로 — `/host`(주최자 대시보드)와 접두사가 겹친다 (D-014) |
 | `/gallery/[id]` | **공개로 전환** | 좋아요 등 행위만 로그인 요구 (컴포넌트 단위). sitemap 1,000건과 정합. **트레이드오프**: 익명 조회수가 쌓이므로 `online_vote_type`에 views를 포함하는 공모전 운영 시 인증 조회 집계 정책 필요 (D-013, 로드맵 이관) |
 | `/contests/[id]/submit` | 로그인 | 기존 유지 |
-| `/invite/[token]` | 로그인 (역할 무관) | 미들웨어 로그인 가드 적용, RoleGuard는 `/judging` 전용 레이아웃으로 이동 — 초대 수신자는 아직 judge 역할이 없음. 페이지 자체는 데모 스텁 상태로 실토큰 흐름 재구축은 로드맵 이관(§6) |
+| ~~`/invite/[token]`~~ | — | 2026-08-02 삭제. 가짜 공모전·가짜 주최자를 렌더하고 수락 버튼이 아무것도 저장하지 않는 목업이었다. 심사위원은 주최자가 회원을 직접 배정하므로(D-018) 토큰 흐름 자체가 필요 없다 |
 | `/hosts/apply` | 로그인 | 개최 신청 — RPC(`apply_host_company`)가 기업(pending)+owner 멤버십 원자 생성, 관리자 승인 시 host 역할 부여 (D-015) |
 | `/my/*` | 로그인 | |
 | `/host/*` | 로그인 + host | |

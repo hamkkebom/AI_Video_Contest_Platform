@@ -111,6 +111,27 @@ test.describe('보호 라우트와 관리자 API', () => {
     });
   }
 
+  /* 사고: 심사위원 배정 API 가 소유권을 확인하지 않아 아무 주최자나 남의 공모전에
+     심사위원을 넣을 수 있었다. 소유권 검사는 054 RPC 안에 있으므로 여기서는
+     비인증 요청이 막히는지만 확인한다(운영 DB 라 실제 배정은 시도하지 않는다). */
+  test('심사위원 배정 API 는 비인증 요청을 거부한다', async ({ request }) => {
+    const res = await request.post('/api/judges', {
+      data: { userId: '00000000-0000-0000-0000-000000000000', contestId: 1 },
+    });
+    expect(res.status(), '배정 응답 코드').toBe(401);
+  });
+
+  test('회원 조회 API 는 비인증 요청을 거부한다', async ({ request }) => {
+    const res = await request.post('/api/judges/lookup', { data: { email: 'nobody@example.com' } });
+    expect(res.status(), '조회 응답 코드').toBe(401);
+  });
+
+  /* 가짜 공모전·가짜 주최자를 렌더하던 /invite/[token] 목업은 삭제됐다 (D-018) */
+  test('삭제된 심사위원 초대 목업은 404 를 낸다', async ({ page }) => {
+    const res = await page.goto('/invite/anything');
+    expect(res?.status(), '/invite/anything 응답 코드').toBe(404);
+  });
+
   test('호스트 공개 페이지는 대시보드 경로와 섞이지 않는다', async ({ page }) => {
     /* 사고: startsWith('/host') 가 /hosts/[id] 까지 삼켜 공개 주최자 페이지가
        비로그인 방문자를 로그인으로 보냈다. */

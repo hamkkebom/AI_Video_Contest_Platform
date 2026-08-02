@@ -4,155 +4,112 @@ import { createClient } from '@/lib/supabase/server';
 
 /**
  * 심사위원 배정 API
- * POST: 사용자를 특정 공모전의 심사위원으로 배정
- * GET: 특정 공모전의 심사위원 목록 조회
+ *
+ * 배정·해제는 마이그레이션 054 의 SECURITY DEFINER RPC 로만 수행한다.
+ * 이유가 둘 있다 —
+ *  ① judges 테이블에는 SELECT 정책만 있어 직접 insert/delete 가 RLS 에 막힌다.
+ *  ② 예전 구현은 `roles ⊇ {admin|host}` 만 확인하고 **그 공모전의 주최자인지 보지 않아**
+ *     아무 주최자나 남의 공모전에 심사위원을 넣을 수 있었다. 소유권 검사는 RPC 안에 있다.
  */
+
+/** RPC 예외 → HTTP 상태. 권한(42501)과 없음(P0002)을 500 으로 뭉뚱그리지 않는다 */
+function rpcStatus(code?: string): number {
+  if (code === '42501') return 403;
+  if (code === 'P0002') return 404;
+  if (code === '23503') return 409;
+  return 500;
+}
+
+/** RPC 미배포 환경(054 미적용)을 배정 실패와 구분한다 */
+function isMissingFunction(code?: string): boolean {
+  return code === 'PGRST202' || code === '42883';
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
-  }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
   }
 
-  /* 관리자 권한 확인 */
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('roles')
-    .eq('id', user.id)
-    .single();
-
-  const roles = Array.isArray(profile?.roles) ? profile.roles : [];
-  if (!roles.includes('admin') && !roles.includes('host')) {
-    return NextResponse.json({ error: '관리자 또는 주최자 권한이 필요합니다.' }, { status: 403 });
-  }
-
+  let body: Record<string, unknown>;
   try {
-    const body = await request.json();
-    const { userId, contestId, isExternal } = body;
-
-    if (!userId || !contestId) {
-      return NextResponse.json({ error: '사용자 ID와 공모전 ID가 필요합니다.' }, { status: 400 });
-    }
-
-    /* 이미 배정된 심사위원인지 확인 */
-    const { data: existing } = await supabase
-      .from('judges')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('contest_id', contestId)
-      .maybeSingle();
-
-    if (existing) {
-      return NextResponse.json({ judge: { id: existing.id }, message: '이미 배정된 심사위원입니다.' });
-    }
-
-    const { data: judge, error } = await supabase
-      .from('judges')
-      .insert({
-        user_id: userId,
-        contest_id: contestId,
-        is_external: isExternal ?? false,
-        invited_at: new Date().toISOString(),
-        accepted_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (error || !judge) {
-      console.error('[POST /api/judges] 심사위원 배정 실패:', error);
-      return NextResponse.json({ error: '심사위원 배정에 실패했습니다.' }, { status: 500 });
-    }
-
-    /* 사용자 roles에 judge 추가 */
-    const { data: targetProfile } = await supabase
-      .from('profiles')
-      .select('roles')
-      .eq('id', userId)
-      .single();
-
-    if (targetProfile) {
-      const currentRoles = Array.isArray(targetProfile.roles) ? targetProfile.roles : [];
-      if (!currentRoles.includes('judge')) {
-        await supabase
-          .from('profiles')
-          .update({ roles: [...currentRoles, 'judge'] })
-          .eq('id', userId);
-      }
-    }
-
-    revalidateTag('judges');
-    revalidateTag('users');
-
-    return NextResponse.json({ judge: { id: judge.id } }, { status: 201 });
-  } catch (error) {
-    console.error('[POST /api/judges] 실패:', error);
-    return NextResponse.json({ error: '심사위원 배정 중 오류가 발생했습니다.' }, { status: 500 });
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 });
   }
+
+  const userId = typeof body.userId === 'string' ? body.userId : '';
+  const contestId = Number(body.contestId);
+  if (!userId || !Number.isFinite(contestId)) {
+    return NextResponse.json({ error: '회원과 공모전을 지정해주세요.' }, { status: 400 });
+  }
+
+  const { data: judgeId, error } = await supabase.rpc('assign_contest_judge', {
+    p_contest_id: contestId,
+    p_user_id: userId,
+    p_is_external: Boolean(body.isExternal),
+  });
+
+  if (error) {
+    console.error('[POST /api/judges] 배정 실패:', error.code, error.message);
+    if (isMissingFunction(error.code)) {
+      return NextResponse.json(
+        { error: '심사위원 배정 설정이 완료되지 않았습니다. 마이그레이션 054를 적용해주세요.', code: 'MIGRATION_NOT_APPLIED' },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(
+      { error: error.message || '심사위원 배정에 실패했습니다.' },
+      { status: rpcStatus(error.code) },
+    );
+  }
+
+  revalidateTag('judges');
+  revalidateTag('users');
+
+  return NextResponse.json({ judge: { id: judgeId } }, { status: 201 });
 }
 
 export async function DELETE(request: Request) {
   const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
-  }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
   }
 
-  /* 관리자 권한 확인 */
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('roles')
-    .eq('id', user.id)
-    .single();
-
-  const roles = Array.isArray(profile?.roles) ? profile.roles : [];
-  if (!roles.includes('admin')) {
-    return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
-  }
-
   const { searchParams } = new URL(request.url);
-  const judgeId = searchParams.get('judgeId');
-
-  if (!judgeId) {
+  const judgeId = Number(searchParams.get('judgeId'));
+  if (!Number.isFinite(judgeId)) {
     return NextResponse.json({ error: '심사위원 ID가 필요합니다.' }, { status: 400 });
   }
 
-  try {
-    const { error } = await supabase
-      .from('judges')
-      .delete()
-      .eq('id', judgeId);
+  const { error } = await supabase.rpc('remove_contest_judge', { p_judge_id: judgeId });
 
-    if (error) {
-      console.error('[DELETE /api/judges] 심사위원 해제 실패:', error);
-      return NextResponse.json({ error: '심사위원 해제에 실패했습니다.' }, { status: 500 });
+  if (error) {
+    console.error('[DELETE /api/judges] 해제 실패:', error.code, error.message);
+    if (isMissingFunction(error.code)) {
+      return NextResponse.json(
+        { error: '심사위원 관리 설정이 완료되지 않았습니다. 마이그레이션 054를 적용해주세요.', code: 'MIGRATION_NOT_APPLIED' },
+        { status: 503 },
+      );
     }
-
-    revalidateTag('judges');
-    revalidateTag('users');
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[DELETE /api/judges] 실패:', error);
-    return NextResponse.json({ error: '심사위원 해제 중 오류가 발생했습니다.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || '심사위원 해제에 실패했습니다.' },
+      { status: rpcStatus(error.code) },
+    );
   }
+
+  revalidateTag('judges');
+  revalidateTag('users');
+
+  return NextResponse.json({ success: true });
 }
 
 export async function GET(request: Request) {
   const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Supabase가 설정되지 않았습니다.' }, { status: 500 });
-  }
 
   const { searchParams } = new URL(request.url);
   const contestId = searchParams.get('contestId');
@@ -161,12 +118,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: '공모전 ID가 필요합니다.' }, { status: 400 });
   }
 
+  /* judges 는 042 이후 익명 조회가 막혀 있다 — 미인증 요청은 빈 배열이 아니라 401 로 답한다 */
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  }
+
   const { data: judges, error } = await supabase
     .from('judges')
     .select('id, user_id, contest_id, is_external, invited_at, accepted_at')
     .eq('contest_id', contestId);
 
   if (error) {
+    console.error('[GET /api/judges] 조회 실패:', error.code, error.message);
     return NextResponse.json({ error: '심사위원 목록 조회에 실패했습니다.' }, { status: 500 });
   }
 
