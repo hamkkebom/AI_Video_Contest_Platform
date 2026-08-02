@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "node node_modules/@playwright/test/cli.js test",
+    "test:e2e:prod": "E2E_BASE_URL=https://www.aikkumhub.com node node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -34,11 +36,11 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "playwright": "^1.58.2",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2"
