@@ -33,6 +33,10 @@ import {
   type JudgingCriteriaForm,
   type JudgingStageForm,
 } from './contest-form-helpers';
+import { WeightAllocationCard } from './weight-allocation-card';
+import { BonusConfigCard } from './bonus-config-card';
+import { OnlineVoteCard } from './online-vote-card';
+import { JudgingStagesCard } from './judging-stages-card';
 
 export default function ContestForm({ mode, contestId }: ContestFormProps) {
   const router = useRouter();
@@ -1516,458 +1520,38 @@ export default function ContestForm({ mode, contestId }: ContestFormProps) {
           </CardContent>
         </Card>
 
-        {/* ===== 카드 4.1: 다단계 심사 설정 ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>심사 단계 설정</CardTitle>
-            <CardDescription>심사 단계 수와 각 단계별 심사 방식을 설정합니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 단계 수 조절 */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">심사 단계 수</span>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={judgingStages.length <= 1}
-                  onClick={() => setJudgingStages(judgingStages.slice(0, -1))}
-                >
-                  <span className="text-lg">−</span>
-                </Button>
-                <span className="w-8 text-center text-lg font-bold">{judgingStages.length}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={judgingStages.length >= 5}
-                  onClick={() => setJudgingStages([...judgingStages, createJudgingStage(judgingStages.length + 1)])}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <span className="text-xs text-muted-foreground">최대 5단계</span>
-            </div>
+        <JudgingStagesCard
+          judgingStages={judgingStages}
+          setJudgingStages={setJudgingStages}
+        />
 
-            {/* 단계별 설정 */}
-            {judgingStages.map((stage, stageIndex) => {
-              const stageCriteriaScore = stage.criteria.reduce((sum, c) => sum + (c.maxScore || 0), 0);
-              return (
-                <div key={stage.id} className="rounded-lg border border-border p-4 space-y-3">
-                  {/* 단계 헤더 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{stage.stageNumber}</span>
-                      <Input
-                        type="text"
-                        value={stage.name}
-                        className="w-40 h-8 text-sm font-medium"
-                        onChange={(e) => {
-                          const next = [...judgingStages];
-                          next[stageIndex] = { ...stage, name: e.target.value };
-                          setJudgingStages(next);
-                        }}
-                      />
-                    </div>
-                    {/* 심사 방식 토글 */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${stage.method === 'simple' ? 'bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/30' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                        onClick={() => {
-                          const next = [...judgingStages];
-                          next[stageIndex] = { ...stage, method: 'simple', criteria: [] };
-                          setJudgingStages(next);
-                        }}
-                      >
-                        간편 심사
-                      </button>
-                      <button
-                        type="button"
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${stage.method === 'scored' ? 'bg-primary/10 text-primary ring-1 ring-primary/30' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                        onClick={() => {
-                          const next = [...judgingStages];
-                          next[stageIndex] = {
-                            ...stage,
-                            method: 'scored',
-                            criteria: stage.criteria.length > 0 ? stage.criteria : [createJudgingCriteria('기술력', 0, 'AI 활용 수준'), createJudgingCriteria('스토리', 0, '전달력'), createJudgingCriteria('완성도', 0, '연출 및 편집')],
-                          };
-                          setJudgingStages(next);
-                        }}
-                      >
-                        점수 심사
-                      </button>
-                    </div>
-                  </div>
+        <OnlineVoteCard
+          useOnlineVote={useOnlineVote}
+          setUseOnlineVote={setUseOnlineVote}
+          setOnlineVoteWeightPercentStr={setOnlineVoteWeightPercentStr}
+          onlineVoteType={onlineVoteType}
+          setOnlineVoteType={setOnlineVoteType}
+          voteLikesPercentStr={voteLikesPercentStr}
+          setVoteLikesPercentStr={setVoteLikesPercentStr}
+          voteViewsPercentStr={voteViewsPercentStr}
+          setVoteViewsPercentStr={setVoteViewsPercentStr}
+        />
 
-                  {/* 간편 심사 안내 */}
-                  {stage.method === 'simple' && (
-                    <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
-                      심사위원이 각 출품작에 대해 <span className="font-medium text-emerald-600">합격</span> / <span className="font-medium text-rose-600">불합격</span> / <span className="font-medium text-amber-600">보류</span>로 판정합니다.
-                    </p>
-                  )}
+        <BonusConfigCard
+          bonusConfigs={bonusConfigs}
+          setBonusConfigs={setBonusConfigs}
+          renderRangeWarning={renderRangeWarning}
+        />
 
-                  {/* 점수 심사: 기준 항목 */}
-                  {stage.method === 'scored' && (
-                    <div className="space-y-2">
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1"><span className="text-xs font-medium text-muted-foreground">심사 항목명</span></div>
-                        <div className="w-20"><span className="text-xs font-medium text-muted-foreground">배점</span></div>
-                        <div className="flex-1"><span className="text-xs font-medium text-muted-foreground">설명 (선택)</span></div>
-                        <div className="w-9 shrink-0" />
-                      </div>
-                      {stage.criteria.map((criterion, cIndex) => (
-                        <div key={criterion.id} className="flex items-start gap-3">
-                          <div className="flex-1">
-                            <Input type="text" placeholder="예시) 기술력" value={criterion.label}
-                              onChange={(e) => {
-                                const next = [...judgingStages];
-                                const criteria = [...stage.criteria];
-                                criteria[cIndex] = { ...criterion, label: e.target.value };
-                                next[stageIndex] = { ...stage, criteria };
-                                setJudgingStages(next);
-                              }}
-                            />
-                          </div>
-                          <div className="w-20">
-                            <Input type="text" inputMode="numeric" placeholder="40" value={criterion.maxScore || ''}
-                              onChange={(e) => {
-                                const next = [...judgingStages];
-                                const criteria = [...stage.criteria];
-                                const val = numericOnly(e.target.value);
-                                criteria[cIndex] = { ...criterion, maxScore: val ? parseInt(val, 10) : 0 };
-                                next[stageIndex] = { ...stage, criteria };
-                                setJudgingStages(next);
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Input type="text" placeholder="예시) AI 활용 수준" value={criterion.description}
-                              onChange={(e) => {
-                                const next = [...judgingStages];
-                                const criteria = [...stage.criteria];
-                                criteria[cIndex] = { ...criterion, description: e.target.value };
-                                next[stageIndex] = { ...stage, criteria };
-                                setJudgingStages(next);
-                              }}
-                            />
-                          </div>
-                          {stage.criteria.length > 1 ? (
-                            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => {
-                                const next = [...judgingStages];
-                                next[stageIndex] = { ...stage, criteria: stage.criteria.filter((_, i) => i !== cIndex) };
-                                setJudgingStages(next);
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          ) : <div className="w-9 shrink-0" />}
-                        </div>
-                      ))}
-                      <Button type="button" variant="outline" size="sm" className="gap-1.5"
-                        onClick={() => {
-                          const next = [...judgingStages];
-                          next[stageIndex] = { ...stage, criteria: [...stage.criteria, createJudgingCriteria()] };
-                          setJudgingStages(next);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" /> 항목 추가
-                      </Button>
-                      <div className="text-sm text-muted-foreground">
-                        총 배점: <span className={`font-semibold ${stageCriteriaScore === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>{stageCriteriaScore}점</span>
-                        {stageCriteriaScore !== 100 && <span className="ml-1 text-xs text-amber-600">(100점 권장)</span>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        {/* ===== 카드 4.2: 온라인 투표 방식 (선택) ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>온라인 투표 방식</CardTitle>
-                <CardDescription>온라인 투표를 평가에 반영할지 선택합니다. (선택)</CardDescription>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useOnlineVote}
-                  onChange={(e) => {
-                    setUseOnlineVote(e.target.checked);
-                    if (!e.target.checked) {
-                      setOnlineVoteWeightPercentStr('');
-                    }
-                  }}
-                  className="h-4 w-4 rounded border-input accent-primary"
-                />
-                <span className="text-sm font-medium">사용</span>
-              </label>
-            </div>
-          </CardHeader>
-          {useOnlineVote && (
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">투표 지표 선택</label>
-                <select
-                  value={onlineVoteType}
-                  onChange={(e) => setOnlineVoteType(e.target.value as 'likes' | 'views' | 'likes_and_views')}
-                  className="flex h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="likes">좋아요만</option>
-                  <option value="views">조회수만</option>
-                  <option value="likes_and_views">조회수 + 좋아요</option>
-                </select>
-              </div>
-              {(onlineVoteType === 'views' || onlineVoteType === 'likes_and_views') && (
-                /* 채점에 쓰이는 조회수는 화면에 표시되는 값과 다르다 — 주최자가 알아야 한다 */
-                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
-                  점수 계산에는 <span className="font-medium">로그인한 사용자의 조회만</span> 반영됩니다.
-                  출품작 화면에 보이는 조회수(비로그인 포함)와 값이 다를 수 있습니다 — 익명 조회로
-                  순위가 움직이지 않게 하기 위해서입니다.
-                </p>
-              )}
-              {onlineVoteType === 'likes_and_views' && (
-                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                  <p className="text-sm font-medium">세부 비율 (합 100%)</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-muted-foreground">좋아요</span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="예시) 50"
-                        value={voteLikesPercentStr}
-                        onChange={(e) => setVoteLikesPercentStr(numericOnly(e.target.value))}
-                        className="w-20"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-muted-foreground">조회수</span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="예시) 50"
-                        value={voteViewsPercentStr}
-                        onChange={(e) => setVoteViewsPercentStr(numericOnly(e.target.value))}
-                        className="w-20"
-                      />
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                  {(() => {
-                    const l = parseInt(voteLikesPercentStr, 10) || 0;
-                    const v = parseInt(voteViewsPercentStr, 10) || 0;
-                    const sub = l + v;
-                    return (
-                      <p className={`text-sm font-medium ${sub === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                        세부 합계: {sub}% {sub === 100 ? '✓' : '(100%가 되어야 합니다)'}
-                      </p>
-                    );
-                  })()}
-                </div>
-              )}
-            </CardContent>
-          )}
-        </Card>
-        {/* ===== 카드 4.3: 가산점 항목 ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              가산점 항목
-            </CardTitle>
-            <CardDescription>참가자가 추가 점수를 받을 수 있는 가산점 항목을 설정합니다. (선택)</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {bonusConfigs.map((bc, index) => (
-              <div key={bc.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                <div className="flex-1 space-y-2">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">항목명</label>
-                      <Input
-                        type="text"
-                        placeholder="예: 공식포스터 SNS 공유"
-                        value={bc.label}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, label: e.target.value };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">설명 (선택)</label>
-                      <Input
-                        type="text"
-                        placeholder="참가자에게 보여질 안내"
-                        value={bc.description}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, description: e.target.value };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">점수</label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="예시) 1"
-                        value={bc.score || ''}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          const val = numericOnly(e.target.value);
-                          next[index] = { ...bc, score: val ? Math.max(1, Math.min(10, parseInt(val, 10) || 1)) : 1 };
-                          setBonusConfigs(next);
-                        }}
-                      />
-                      {renderRangeWarning(String(bc.score), 1, 10, '점')}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <label className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        checked={bc.requiresUrl}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, requiresUrl: e.target.checked };
-                          setBonusConfigs(next);
-                        }}
-                        className="rounded"
-                      />
-                      URL 제출 필요
-                    </label>
-                    <label className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        checked={bc.requiresImage}
-                        onChange={(e) => {
-                          const next = [...bonusConfigs];
-                          next[index] = { ...bc, requiresImage: e.target.checked };
-                          setBonusConfigs(next);
-                        }}
-                        className="rounded"
-                      />
-                      이미지 제출 필요
-                    </label>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive mt-5"
-                  onClick={() => setBonusConfigs(bonusConfigs.filter((_, i) => i !== index))}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setBonusConfigs([...bonusConfigs, createBonusConfig()])}
-            >
-              <Plus className="h-4 w-4" />
-              가산점 항목 추가
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* ===== 카드 4.4: 평가 비율 배분 ===== */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>평가 비율 배분</CardTitle>
-            <CardDescription>평가 항목들의 비율 합이 100%가 되어야 합니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">심사위원 평가</label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="예시) 70"
-                    value={judgeWeightPercentStr}
-                    onChange={(e) => setJudgeWeightPercentStr(numericOnly(e.target.value))}
-                    onBlur={() => {
-                      const n = parseInt(judgeWeightPercentStr, 10);
-                      if (!Number.isNaN(n) && n > 100) setJudgeWeightPercentStr('100');
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-              {useOnlineVote && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">온라인 투표</label>
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="예시) 20"
-                      value={onlineVoteWeightPercentStr}
-                      onChange={(e) => setOnlineVoteWeightPercentStr(numericOnly(e.target.value))}
-                      onBlur={() => {
-                        const n = parseInt(onlineVoteWeightPercentStr, 10);
-                        if (!Number.isNaN(n) && n > 100) setOnlineVoteWeightPercentStr('100');
-                      }}
-                      className="w-20"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">가산점</label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="예시) 10"
-                    value={bonusPercentageStr}
-                    onChange={(e) => setBonusPercentageStr(numericOnly(e.target.value))}
-                    onBlur={() => {
-                      const n = parseInt(bonusPercentageStr, 10);
-                      if (!Number.isNaN(n) && n > 100) setBonusPercentageStr('100');
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-            </div>
-            {(() => {
-              const j = parseInt(judgeWeightPercentStr, 10) || 0;
-              const o = useOnlineVote ? (parseInt(onlineVoteWeightPercentStr, 10) || 0) : 0;
-              const b = parseInt(bonusPercentageStr, 10) || 0;
-              const total = j + o + b;
-              return (
-                <p className={`text-sm font-medium ${total === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                  합계: {total}% {total === 100 ? '✓' : '(100%가 되어야 합니다)'}
-                </p>
-              );
-            })()}
-          </CardContent>
-        </Card>
+        <WeightAllocationCard
+          judgeWeightPercentStr={judgeWeightPercentStr}
+          setJudgeWeightPercentStr={setJudgeWeightPercentStr}
+          onlineVoteWeightPercentStr={onlineVoteWeightPercentStr}
+          setOnlineVoteWeightPercentStr={setOnlineVoteWeightPercentStr}
+          bonusPercentageStr={bonusPercentageStr}
+          setBonusPercentageStr={setBonusPercentageStr}
+          useOnlineVote={useOnlineVote}
+        />
 
         {/* ===== 카드 5: 수상 설정 ===== */}
         <Card className="border-border">

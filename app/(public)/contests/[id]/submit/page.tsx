@@ -3,38 +3,21 @@
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { AiToolChips } from '@/components/common/ai-tool-chips';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  ArrowLeft,
-  Upload,
-  Film,
-  FileVideo,
-  ImageIcon,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  ChevronDown,
-  Shield,
-} from 'lucide-react';
+import { ArrowLeft, AlertCircle, Film, Info, Upload } from 'lucide-react';
 
 import type { Contest } from '@/lib/types';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { refreshAccessToken } from '@/lib/supabase/refresh-token';
+import {
+  EXT_TO_MIME,
+  MAX_PROOF_IMAGE_SIZE_BYTES,
+  MAX_THUMBNAIL_SIZE_BYTES,
+  MAX_VIDEO_SIZE_BYTES,
+  type BonusFormEntry,
+  type FormState,
+} from './_lib/form-types';
 import {
   buildStoragePath,
   reportUploadError,
@@ -44,44 +27,13 @@ import {
   userFriendlyError,
 } from './_lib/uploads';
 import { SubmitDialogs, type SubmitErrorType, type UploadStep } from './_components/submit-dialogs';
+import { StepVideoInfo } from './_components/step-video-info';
+import { StepConsent } from './_components/step-consent';
+import { StepBonus } from './_components/step-bonus';
+import { StepFileUpload } from './_components/step-file-upload';
 import { CHAT_AI_TOOLS, IMAGE_AI_TOOLS, VIDEO_AI_TOOLS } from '@/config/constants';
-import { formatDate, cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useAuth } from '@/lib/supabase/auth-context';
-
-const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
-const MAX_THUMBNAIL_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_PROOF_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
-
-/** 확장자 → MIME type 매핑 (영상 파일 형식 검증용) */
-const EXT_TO_MIME: Record<string, string[]> = {
-  mp4: ['video/mp4'],
-  webm: ['video/webm'],
-  mov: ['video/quicktime'],
-  avi: ['video/x-msvideo', 'video/avi'],
-  mkv: ['video/x-matroska'],
-  wmv: ['video/x-ms-wmv'],
-  flv: ['video/x-flv'],
-};
-
-/** 제출 폼 상태 타입 */
-interface FormState {
-  submitterName: string;
-  submitterPhone: string;
-  title: string;
-  description: string;
-  chatAi: string[];
-  imageAi: string[];
-  videoAi: string[];
-  productionProcess: string;
-  agree: boolean;
-}
-
-/** 가산점 인증 상태 (bonusConfigId별) */
-interface BonusFormEntry {
-  snsUrl: string;
-  proofImageFile: File | null;
-  proofImagePreview: string | null;
-}
 
 /**
  * 공모전 영상 제출 페이지
@@ -1056,564 +1008,55 @@ export default function ContestSubmitPage() {
               </div>
             </div>
 
-            {/* ===== STEP 1: 영상 정보 ===== */}
-            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
-                <div>
-                  <h2 className="text-lg font-bold">영상 정보</h2>
-                  <p className="text-xs text-muted-foreground">영상의 기본 정보를 입력해 주세요</p>
-                </div>
-              </div>
-              <div className="space-y-5">
-                {/* 이름 */}
-                <div className="space-y-2">
-                  <Label htmlFor="submitterName" className="text-sm font-semibold">
-                    이름 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="submitterName"
-                    type="text"
-                    required
-                    maxLength={50}
-                    value={form.submitterName}
-                    onChange={(e) => updateField('submitterName', e.target.value)}
-                    placeholder="이름을 입력하세요"
-                    className="bg-background/50 border-border"
-                  />
-                  {fieldErrors.submitterName && <p className="text-xs text-destructive">{fieldErrors.submitterName}</p>}
-                </div>
-                {/* 전화번호 */}
-                <div className="space-y-2">
-                  <Label htmlFor="submitterPhone" className="text-sm font-semibold">
-                    전화번호 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="submitterPhone"
-                    type="tel"
-                    required
-                    maxLength={20}
-                    value={form.submitterPhone}
-                    onChange={(e) => updateField('submitterPhone', e.target.value)}
-                    placeholder="010-0000-0000"
-                    className="bg-background/50 border-border"
-                  />
-                  {fieldErrors.submitterPhone && <p className="text-xs text-destructive">{fieldErrors.submitterPhone}</p>}
-                </div>
-                {/* 영상 제목 */}
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-semibold">
-                    영상 제목 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="title"
-                    type="text"
-                    required
-                    maxLength={100}
-                    value={form.title}
-                    onChange={(e) => updateField('title', e.target.value)}
-                    placeholder="영상 제목을 입력하세요 (최대 100자)"
-                    className="bg-background/50 border-border"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">{form.title.length}/100</p>
-                  {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
-                </div>
-                {/* 영상 설명 */}
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-semibold">
-                    영상 설명 <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="description"
-                    required
-                    maxLength={1000}
-                    value={form.description}
-                    onChange={(e) => updateField('description', e.target.value)}
-                    placeholder="영상에 대한 설명을 입력하세요. 제작 의도, 주제 해석 등을 포함해 주세요."
-                    className="min-h-32 bg-background/50 border-border"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {form.description.length}/1000
-                  </p>
-                  {fieldErrors.description && <p className="text-xs text-destructive">{fieldErrors.description}</p>}
-                </div>
-                {/* 사용한 AI 도구 */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-semibold">
-                    사용한 AI 도구 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
-                  </Label>
-                  <AiToolChips
-                    label="💬 채팅 AI"
-                    tools={CHAT_AI_TOOLS}
-                    selected={form.chatAi}
-                    onChange={(v) => setForm((p) => ({ ...p, chatAi: v }))}
-                    allowCustom
-                  />
-                  <AiToolChips
-                    label="🖼️ 이미지 AI"
-                    tools={IMAGE_AI_TOOLS}
-                    selected={form.imageAi}
-                    onChange={(v) => setForm((p) => ({ ...p, imageAi: v }))}
-                    allowCustom
-                  />
-                  <AiToolChips
-                    label="🎬 영상 AI"
-                    tools={VIDEO_AI_TOOLS}
-                    selected={form.videoAi}
-                    onChange={(v) => setForm((p) => ({ ...p, videoAi: v }))}
-                    allowCustom
-                  />
-                </div>
-                {/* 제작과정 설명 */}
-                <div className="space-y-2">
-                  <Label htmlFor="productionProcess" className="text-sm font-semibold">
-                    제작과정 설명 <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="productionProcess"
-                    required
-                    maxLength={3000}
-                    value={form.productionProcess}
-                    onChange={(e) => updateField('productionProcess', e.target.value)}
-                    placeholder="영상의 기획 → 제작 → 편집 과정을 상세히 설명해 주세요. 어떤 AI 도구를 어떤 단계에서 활용했는지, 제작 기간, 특별한 기법 등을 포함하면 좋습니다."
-                    className="min-h-48 bg-background/50 border-border"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {form.productionProcess.length}/3000
-                  </p>
-                  {fieldErrors.productionProcess && <p className="text-xs text-destructive">{fieldErrors.productionProcess}</p>}
-                </div>
-              </div>
-            </Card>
+            <StepVideoInfo
+              form={form}
+              updateField={updateField}
+              setForm={setForm}
+              fieldErrors={fieldErrors}
+              isBonusOnly={isBonusOnly}
+            />
 
-            {/* ===== STEP 2: 파일 업로드 ===== */}
-            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
-                <div>
-                  <h2 className="text-lg font-bold">파일 업로드</h2>
-                  <p className="text-xs text-muted-foreground">썸네일과 영상 파일을 업로드해 주세요</p>
-                </div>
-              </div>
-              <div className="mb-6 p-3 rounded-lg bg-brand dark:bg-brand/40 border-2 border-brand flex items-start gap-2">
-                <Info className="h-5 w-5 text-brand dark:text-brand mt-0.5 shrink-0" />
-                <p className="text-sm text-brand dark:text-brand font-medium">
-                  ⚠️ 업로드가 안 될 경우 <kbd className="rounded border border-brand bg-white dark:bg-brand px-1.5 py-0.5 text-xs font-mono font-bold">Ctrl+Shift+R</kbd> (Mac: <kbd className="rounded border border-brand bg-white dark:bg-brand px-1.5 py-0.5 text-xs font-mono font-bold">⌘+Shift+R</kbd>)로 <strong className="underline">강력 새로고침</strong> 후 다시 시도해 주세요.
-                </p>
-              </div>
-              {isEditMode && !isResubmitMode && existingSubmission ? (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                    <p className="text-sm font-medium mb-3 text-muted-foreground">업로드된 파일 (수정 불가)</p>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="rounded-lg border border-border overflow-hidden">
-                        <Image src={existingSubmission.thumbnailUrl} alt="썸네일" width={400} height={128} className="w-full h-32 object-cover" />
-                        <div className="px-3 py-2 bg-muted/20">
-                          <p className="text-xs text-muted-foreground">썸네일 이미지</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/10">
-                        <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                          <FileVideo className="h-5 w-5 text-brand" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">영상 파일</p>
-                          <p className="text-xs text-muted-foreground">업로드 완료</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-amber-600 flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    제출 후 영상 파일과 썸네일은 수정이 불가합니다.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-5">
-                  {/* 썸네일 이미지 업로드 */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">
-                      썸네일 이미지 <span className="text-destructive">*</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">JPG, PNG 형식, 최대 10MB · 권장 1920×1080px</p>
-                    <input
-                      ref={thumbnailInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleThumbnailSelect}
-                    />
-                    {thumbnailFile ? (
-                      <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <ImageIcon className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{thumbnailFile.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatFileSize(thumbnailFile.size)}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleThumbnailRemove}
-                            className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
-                          >
-                            <X className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : isResubmitMode && existingSubmission?.thumbnailUrl ? (
-                      <div className="space-y-2">
-                        <div className="rounded-lg border border-border overflow-hidden">
-                          <Image src={existingSubmission.thumbnailUrl} alt="기존 썸네일" width={400} height={128} className="w-full h-32 object-cover" />
-                          <div className="px-3 py-2 bg-muted/20 flex items-center justify-between">
-                            <p className="text-xs text-muted-foreground">기존 썸네일 (변경하려면 아래 클릭)</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => thumbnailInputRef.current?.click()}
-                          className="w-full border border-dashed border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-center"
-                        >
-                          새 썸네일로 변경
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => thumbnailInputRef.current?.click()}
-                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <ImageIcon className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="text-center">
-                          <p className="font-medium text-sm">썸네일 업로드</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
-                        </div>
-                      </button>
-                    )}
-                    {fieldErrors.thumbnailFile && <p className="text-xs text-destructive mt-1">{fieldErrors.thumbnailFile}</p>}
-                  </div>
-                  {/* 영상 파일 업로드 */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">
-                      영상 파일 <span className="text-destructive">*</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {contest.allowedVideoExtensions.map((e) => e.toUpperCase()).join(', ')} 형식, 최대 200MB
-                    </p>
-                    <input
-                      ref={videoInputRef}
-                      type="file"
-                      accept={contest.allowedVideoExtensions.flatMap((e) => EXT_TO_MIME[e.toLowerCase()] ?? [`video/${e}`]).join(',')}
-                      className="hidden"
-                      onChange={handleVideoSelect}
-                    />
-                    {videoFile ? (
-                      <div className="p-4 rounded-xl border border-brand/30 bg-brand/5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                              <FileVideo className="h-5 w-5 text-brand" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{videoFile.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatFileSize(videoFile.size)}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleVideoRemove}
-                            className="p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
-                          >
-                            <X className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => videoInputRef.current?.click()}
-                        className="w-full border-2 border-dashed border-border rounded-xl p-5 sm:p-8 flex flex-col items-center gap-3 hover:border-brand/50 hover:bg-brand/5 transition-all cursor-pointer"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center">
-                          <Upload className="h-6 w-6 text-brand" />
-                        </div>
-                        <div className="text-center">
-                          <p className="font-medium text-sm">영상 업로드</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">클릭하여 선택</p>
-                        </div>
-                      </button>
-                    )}
-                    {fieldErrors.videoFile && <p className="text-xs text-destructive mt-1">{fieldErrors.videoFile}</p>}
-                  </div>
-                </div>
-              )}
-            </Card>
+            <StepFileUpload
+              contest={contest}
+              isBonusOnly={isBonusOnly}
+              isEditMode={isEditMode}
+              isResubmitMode={isResubmitMode}
+              existingSubmission={existingSubmission}
+              videoFile={videoFile}
+              thumbnailFile={thumbnailFile}
+              videoInputRef={videoInputRef}
+              thumbnailInputRef={thumbnailInputRef}
+              handleVideoSelect={handleVideoSelect}
+              handleVideoRemove={handleVideoRemove}
+              handleThumbnailSelect={handleThumbnailSelect}
+              handleThumbnailRemove={handleThumbnailRemove}
+              formatFileSize={formatFileSize}
+              fieldErrors={fieldErrors}
+            />
 
-            {/* ===== STEP 3: 가산점 인증 (조건부) ===== */}
-            {hasBonusConfigs && (
-              <Card className="p-6 border border-border">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
-                  <div>
-                    <h2 className="text-lg font-bold">가산점 인증 <span className="text-xs text-muted-foreground font-normal ml-1">(선택)</span></h2>
-                    <p className="text-xs text-muted-foreground">추후 마이페이지에서도 등록 가능합니다</p>
-                  </div>
-                </div>
-                {contest.bonusMaxScore && (
-                  <p className="text-xs text-muted-foreground mb-4 pl-11">
-                    항목당 1회만 인정 \u00B7 최대 {contest.bonusMaxScore}점
-                  </p>
-                )}
-                <div className="space-y-2">
-                  {contest.bonusConfigs!.map((config) => {
-                    const isOpen = openBonuses.includes(config.id);
-                    const entry = bonusForms[config.id] || { snsUrl: '', proofImageFile: null, proofImagePreview: null };
-                    const hasBothFields = !!(entry.snsUrl?.trim() && (entry.proofImagePreview || entry.proofImageFile));
-                    const isSaved = savedBonusConfigIds.has(String(config.id)) && hasBothFields;
-                    const isNewUpload = !savedBonusConfigIds.has(String(config.id)) && isEditMode && hasBothFields;
-                    return (
-                      <Card key={config.id} className={cn('border overflow-hidden', isSaved ? 'border-emerald-500/50' : isNewUpload ? 'border-blue-500/50' : 'border-border')}>
-                        {/* 아코디언 헤더 */}
-                        <button
-                          type="button"
-                          onClick={() => toggleBonus(config.id)}
-                          className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-muted/50 transition-colors cursor-pointer"
-                        >
-                          <span className="flex-1 text-sm font-medium">{config.label}</span>
-                          {isSaved && (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                              <CheckCircle2 className="w-3 h-3" />
-                              등록완료
-                            </span>
-                          )}
-                          {isNewUpload && (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                              <CheckCircle2 className="w-3 h-3" />
-                              입력 완료
-                            </span>
-                          )}
-                          <ChevronDown
-                            className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-                          />
-                        </button>
-                        {/* 아코디언 본문 */}
-                        <div
-                          className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
-                        >
-                          <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
-                            {config.description && (
-                              <p className="text-xs text-muted-foreground">{config.description}</p>
-                            )}
-                            {/* SNS URL 입력 */}
-                            <Input
-                              type="url"
-                              value={entry.snsUrl}
-                              onChange={(e) => updateBonusForm(config.id, e.target.value)}
-                              placeholder="SNS 게시물 URL (예: https://instagram.com/p/...)"
-                              className="bg-background/50 border-border text-sm"
-                            />
-                            {/* 인증 이미지 업로드 */}
-                            {entry.proofImagePreview ? (
-                              <div className="rounded-lg border border-border overflow-hidden">
-                                <div className="relative bg-muted/30">
-                                  <img
-                                    src={entry.proofImagePreview}
-                                    alt="인증 이미지 미리보기"
-                                    className="w-full max-h-48 object-contain"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between px-3 py-2 bg-muted/20">
-                                  <span className="text-xs text-muted-foreground truncate flex-1 mr-2">
-                                    {entry.proofImageFile ? `${entry.proofImageFile.name} (${formatFileSize(entry.proofImageFile.size)})` : '업로드된 인증 이미지'}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleProofImageRemove(config.id)}
-                                    className="text-xs text-destructive hover:text-destructive cursor-pointer font-medium shrink-0"
-                                  >
-                                    제거
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <label className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
-                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">캡처 이미지 업로드 (JPG, PNG, WebP, 최대 10MB)</span>
-                                <input
-                                  type="file"
-                                  accept="image/jpeg,image/png,image/webp,image/gif"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleProofImageSelect(config.id, file);
-                                    e.target.value = '';
-                                  }}
-                                  className="hidden"
-                                />
-                              </label>
-                            )}
-                            {/* URL + 이미지 모두 필요 안내 */}
-                            <p className="text-xs text-brand">
-                              ※ URL과 캡처 이미지를 모두 제출해야 가산점이 인정됩니다.
-                            </p>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
+            <StepBonus
+              contest={contest}
+              hasBonusConfigs={Boolean(hasBonusConfigs)}
+              isEditMode={isEditMode}
+              openBonuses={openBonuses}
+              toggleBonus={toggleBonus}
+              bonusForms={bonusForms}
+              updateBonusForm={updateBonusForm}
+              savedBonusConfigIds={savedBonusConfigIds}
+              handleProofImageSelect={handleProofImageSelect}
+              handleProofImageRemove={handleProofImageRemove}
+              formatFileSize={formatFileSize}
+            />
 
-            {/* ===== STEP 최종: 안내 및 동의 ===== */}
-            <Card className={`p-6 border border-border ${isBonusOnly ? 'hidden' : ''}`}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">확인 및 제출</h2>
-                  <p className="text-xs text-muted-foreground">안내사항을 확인하고 영상을 제출해 주세요</p>
-                </div>
-              </div>
-              {/* 안내 사항 */}
-              <div className="p-4 rounded-xl bg-brand/5 border border-brand/10 mb-5">
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Film className="h-4 w-4 text-brand" />
-                  제출 전 확인사항
-                </h3>
-                <ul className="space-y-1.5 text-xs text-muted-foreground list-disc pl-5">
-                  <li>공모전 주제에 맞는 AI 영상만 제출할 수 있습니다.</li>
-                  <li>저작권/초상권 문제가 없는 콘텐츠만 허용됩니다.</li>
-                  <li>제출 후 영상 파일과 썸네일은 수정이 불가합니다.</li>
-                  <li>가산점 인증, 영상 설명, 제작과정 등은 마감 전까지 수정 가능합니다.</li>
-                  <li>마감일 이후에는 모든 수정이 불가합니다.</li>
-                </ul>
-              </div>
-              {/* 동의 체크박스 */}
-              <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-muted/20">
-                <input
-                  id="agree"
-                  type="checkbox"
-                  checked={form.agree}
-                  onChange={(e) => updateField('agree', e.target.checked)}
-                  className="mt-0.5 w-5 h-5 rounded cursor-pointer accent-violet-600"
-                />
-                <label
-                  htmlFor="agree"
-                  className={`text-sm cursor-pointer ${form.agree ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
-                  <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
-                    <DialogTrigger asChild>
-                      <button
-                        type="button"
-                        className="underline underline-offset-2 decoration-dashed hover:text-primary transition-colors cursor-pointer"
-                        onClick={(e) => { e.preventDefault(); setNotesOpen(true); }}
-                      >
-                        유의사항 및 저작권 안내
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] p-0 gap-0 overflow-hidden [&>button]:text-white [&>button]:hover:text-white/80 [&>button]:z-20">
-                      {/* 스타일링된 헤더 */}
-                      <div className="relative overflow-hidden bg-zinc-950 px-6 pt-6 pb-5">
-                        <div className="absolute -top-16 -right-16 w-52 h-52 bg-primary/30 rounded-full blur-[60px] pointer-events-none" />
-                        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-brand/20 rounded-full blur-[60px] pointer-events-none" />
-                        <DialogHeader className="relative z-10">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-brand border border-white/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)]">
-                              <Shield className="h-5 w-5 text-white/90" />
-                            </div>
-                            <div>
-                              <DialogTitle className="text-white text-lg font-bold">유의사항 및 저작권 안내</DialogTitle>
-                              <DialogDescription className="text-zinc-400 text-sm mt-0.5">공모전 참가 전 반드시 확인해 주세요.</DialogDescription>
-                            </div>
-                          </div>
-                        </DialogHeader>
-                      </div>
-                      {/* 본문 */}
-                      <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 100px)' }}>
-                        {contest?.notes ? (
-                          <div className="space-y-4">
-                            {contest.notes.split(/\n\s*\n/).map((section, sectionIndex) => {
-                              const lines = section.trim().split('\n').filter((l: string) => l.trim());
-                              if (lines.length === 0) return null;
-
-                              /* 숫자로 시작하는 줄은 섹션 제목으로 처리 */
-                              const isTitle = /^\d+[\.)\s]/.test(lines[0]);
-                              const titleLine = isTitle ? lines[0] : null;
-                              const bodyLines = isTitle ? lines.slice(1) : lines;
-
-                              return (
-                                <div key={`section-${titleLine ?? bodyLines.join('-')}`} className={sectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}>
-                                  {titleLine && (
-                                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                      {titleLine}
-                                    </h3>
-                                  )}
-                                  <div className="space-y-1.5">
-                                    {bodyLines.map((line: string) => {
-                                      const isBullet = /^[\-·•※]\s/.test(line);
-                                      const content = isBullet ? line.replace(/^[\-·•※]\s/, '') : line;
-                                      return (
-                                        <p
-                                          key={`line-${line}`}
-                                          className={`text-sm leading-relaxed text-muted-foreground ${isBullet
-                                            ? 'pl-4 relative before:absolute before:left-1 before:top-[0.55em] before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/40'
-                                            : ''
-                                            }`}
-                                        >
-                                          {content}
-                                        </p>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center py-8 text-center">
-                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                              <Info className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <p className="text-sm text-muted-foreground">유의사항 정보가 아직 등록되지 않았습니다.</p>
-                            <p className="text-xs text-muted-foreground/60 mt-1">공모전 주최자에게 문의해 주세요.</p>
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  에 동의합니다 <span className="text-destructive">*</span>
-                </label>
-              </div>
-              {fieldErrors.agree && <p className="text-xs text-destructive mt-1 ml-8">{fieldErrors.agree}</p>}
-
-              {/* 개인 SNS 업로드 자제 안내 */}
-              <div className="mt-4 rounded-xl border-2 border-blue-400 bg-blue-50 dark:bg-blue-950/30 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-bold">!</div>
-                  <div>
-                    <p className="text-sm font-bold text-blue-900 dark:text-blue-100">📢 제출 작품 개인 SNS 업로드 자제 안내</p>
-                    <p className="mt-1.5 text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                      제출하신 작품은 <strong>공모전 페이지에 게시되어 대중평가(좋아요) 점수가 심사에 반영</strong>됩니다.
-                      수상 발표 전까지 동일한 영상을 <strong>개인 SNS에 업로드하시는 것을 자제</strong>해 주세요.
-                    </p>
-                    <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                      ※ 가산점 인증을 위한 포스터·링크 공유는 해당되지 않습니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <StepConsent
+              contest={contest}
+              form={form}
+              updateField={updateField}
+              fieldErrors={fieldErrors}
+              isBonusOnly={isBonusOnly}
+              notesOpen={notesOpen}
+              setNotesOpen={setNotesOpen}
+            />
 
             {/* ===== 제출/저장 버튼 (항상 표시) ===== */}
             <Card className="p-6 border border-border">
