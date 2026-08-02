@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
 import { BarChart3, FileText, LayoutDashboard, Trophy, UserCircle } from 'lucide-react';
-import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { DashboardSidebar, type DashboardSidebarSection } from '@/components/dashboard/dashboard-sidebar';
+import { useOtherDashboards } from '@/components/dashboard/use-other-dashboards';
 import { RoleGuard } from '@/components/auth/role-guard';
 
 const hostDashboardNavItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
@@ -20,10 +21,16 @@ interface HostDashboardLayoutProps {
 }
 
 export default function HostDashboardLayout({ children }: HostDashboardLayoutProps) {
+  const otherDashboards = useOtherDashboards('host');
+  const sections: DashboardSidebarSection[] = [
+    { items: hostDashboardNavItems },
+    ...(otherDashboards ? [otherDashboards] : []),
+  ];
+
   return (
     <RoleGuard allowedRoles={['host']}>
       <div className="min-h-screen bg-background">
-        <DashboardSidebar items={hostDashboardNavItems} roleLabel="주최자" />
+        <DashboardSidebar sections={sections} roleLabel="주최자" />
         <div className="md:pl-60">
           <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
         </div>

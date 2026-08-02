@@ -19,6 +19,7 @@ import {
   Video,
 } from 'lucide-react';
 import { DashboardSidebar, type DashboardSidebarSection } from '@/components/dashboard/dashboard-sidebar';
+import { useOtherDashboards } from '@/components/dashboard/use-other-dashboards';
 import { RoleGuard } from '@/components/auth/role-guard';
 
 /* 과업 단위 섹션 (docs/IA.md §3.3)
@@ -72,10 +73,16 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const otherDashboards = useOtherDashboards('admin');
+  const sidebarSections: DashboardSidebarSection[] = [
+    ...adminSidebarSections,
+    ...(otherDashboards ? [otherDashboards] : []),
+  ];
+
   return (
     <RoleGuard allowedRoles={['admin']}>
       <div className="min-h-screen bg-background">
-        <DashboardSidebar sections={adminSidebarSections} roleLabel="관리자" />
+        <DashboardSidebar sections={sidebarSections} roleLabel="관리자" />
         <div className="md:pl-60">
           <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
         </div>

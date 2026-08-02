@@ -21,7 +21,10 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const hasRole = profile?.roles?.some((r) => allowedRoles.includes(r)) ?? false;
+  /* admin 은 전체 접근 (AGENTS.md, docs/IA.md §4). 이 예외가 없어서
+     헤더가 관리자에게 안내하는 "주최자 대시보드" 링크가 홈으로 튕겨내고 있었다. */
+  const roles = profile?.roles ?? [];
+  const hasRole = roles.includes('admin') || roles.some((r) => allowedRoles.includes(r));
 
   useEffect(() => {
     /* 로딩 중이면 아직 판단 불가 */
